@@ -1,0 +1,30 @@
+{
+  "name": "ai-novel-assistant-server",
+  "version": "1.0.0",
+  "description": "Backend API for AI Novel Assistant",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "db:push": "npx prisma db push",
+    "db:studio": "npx prisma studio",
+    "db:migrate": "npx prisma migrate dev"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "dotenv": "^16.3.1",
+    "@prisma/client": "^5.6.0",
+    "prisma": "^5.6.0",
+    "openai": "^4.20.0",
+    "multer": "^1.4.5-lts.1",
+    "epub-gen": "^0.1.0",
+    "fs-extra": "^11.1.1",
+    "uuid": "^9.0.1",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./novels.db"
+}
+
+// 小说基本信息
+model Novel {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  genre       String?
+  rating      String   @default("PG") // G, PG, PG-13, R, NC-17
+  status      String   @default("draft") // draft, writing, completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联数据
+  characters  Character[]
+  settings    WorldSetting[]
+  chapters    Chapter[]
+  aiSettings  AIConstraint?
+}
+
+// 角色信息
+model Character {
+  id           String  @id @default(cuid())
+  novelId      String
+  name         String
+  description  String?
+  appearance   String?
+  personality  String?
+  background   String?
+  relationships String? // 关系网络 JSON字符串
+  isLocked     Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  novel        Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  chapterRefs  ChapterCharacter[]
+
+  @@index([novelId])
+}
+
+// 世界设定
+model WorldSetting {
+  id          String  @id @default(cuid())
+  novelId     String
+  type        String  // worldview, location, rule, culture
+  name        String
+  description String
+  details     String? // 详细设定 JSON字符串
+  isLocked    Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  novel       Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  chapterRefs ChapterSetting[]
+
+  @@index([novelId])
+}
+
+// 章节内容
+model Chapter {
+  id             String   @id @default(cuid())
+  novelId        String
+  chapterNumber  Int
+  title          String
+  outline        String?  // AI生成的大纲
+  content        String?  // 正文内容
+  plotPoints     String?  // 剧情要点 JSON字符串
+  illustrations  String?  // 插图位置和描述 JSON字符串
+  status         String   @default("planning") // planning, writing, reviewing, completed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  novel          Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  characters     ChapterCharacter[]
+  settings       ChapterSetting[]
+  consistencyLog ConsistencyCheck[]
+
+  @@index([novelId])
+  @@unique([novelId, chapterNumber])
+}
+
+// AI创作约束
+model AIConstraint {
+  id       String @id @default(cuid())
+  novelId  String @unique
+  rating   String @default("PG")
+  violence Int    @default(2)
+  romance  Int    @default(1)
+  language Int    @default(1)
+  customRules String? // 自定义规则 JSON字符串
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  novel    Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
+}
+
+// 一致性检查记录
+model ConsistencyCheck {
+  id        String   @id @default(cuid())
+  chapterId String
+  type      String   // character, setting, timeline, logic
+  issue     String
+  severity  String   // low, medium, high
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([chapterId])
+}
+
+// 章节-角色关联
+model ChapterCharacter {
+  chapterId   String
+  characterId String
+  role        String? // main, supporting, mentioned
+  
+  chapter     Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  
+  @@id([chapterId, characterId])
+}
+
+// 章节-设定关联
+model ChapterSetting {
+  chapterId String
+  settingId String
+  usage     String? // 使用方式描述
+  
+  chapter   Chapter      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  setting   WorldSetting @relation(fields: [settingId], references: [id], onDelete: Cascade)
+  
+  @@id([chapterId, settingId])
+}

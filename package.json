@@ -1,0 +1,22 @@
+{
+  "name": "ai-novel-assistant",
+  "version": "1.0.0",
+  "description": "AI-powered novel writing collaboration tool",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "nodemon server/index.js",
+    "client:dev": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "db:push": "cd server && npx prisma db push",
+    "db:studio": "cd server && npx prisma studio"
+  },
+  "keywords": ["ai", "novel", "writing", "collaboration"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.1"
+  }
+}
