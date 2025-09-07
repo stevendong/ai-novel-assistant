@@ -80,60 +80,12 @@
         theme="light"
         class="border-r border-gray-200"
       >
-        <a-menu
-          v-model:selectedKeys="selectedKeys"
-          mode="inline"
-          :inline-collapsed="collapsed"
-          class="border-0"
-        >
-          <a-menu-item key="project" @click="activeTab = 'project'">
-            <template #icon>
-              <BookOutlined />
-            </template>
-            <span>项目信息</span>
-          </a-menu-item>
-
-          <a-menu-item key="characters" @click="activeTab = 'characters'">
-            <template #icon>
-              <TeamOutlined />
-            </template>
-            <span>角色库</span>
-          </a-menu-item>
-
-          <a-menu-item key="worldsettings" @click="activeTab = 'worldsettings'">
-            <template #icon>
-              <GlobalOutlined />
-            </template>
-            <span>世界设定</span>
-          </a-menu-item>
-
-          <a-sub-menu key="chapters">
-            <template #icon>
-              <FileTextOutlined />
-            </template>
-            <template #title>章节列表</template>
-            <a-menu-item
-              v-for="chapter in chapters"
-              :key="`chapter-${chapter.id}`"
-              @click="selectChapter(chapter)"
-            >
-              第{{ chapter.chapterNumber }}章：{{ chapter.title }}
-            </a-menu-item>
-            <a-menu-item key="add-chapter" @click="addNewChapter">
-              <template #icon>
-                <PlusOutlined />
-              </template>
-              添加章节
-            </a-menu-item>
-          </a-sub-menu>
-
-          <a-menu-item key="progress" @click="activeTab = 'progress'">
-            <template #icon>
-              <BarChartOutlined />
-            </template>
-            <span>进度统计</span>
-          </a-menu-item>
-        </a-menu>
+        <NavigationMenu
+          :collapsed="collapsed"
+          :chapters="chapters"
+          @chapter-selected="handleChapterSelected"
+          @add-chapter="addNewChapter"
+        />
 
         <div class="p-2 mt-auto">
           <a-button
@@ -152,17 +104,7 @@
         <a-layout-content class="flex">
           <!-- Central Content Area (70%) -->
           <div class="flex-1 bg-white">
-            <ProjectManagement v-if="activeTab === 'project'" />
-            <CharacterManagement v-else-if="activeTab === 'characters'" />
-            <WorldSettingManagement v-else-if="activeTab === 'worldsettings'" />
-            <ChapterEditor
-              v-else-if="activeTab === 'chapter' && selectedChapter"
-              :chapter="selectedChapter"
-            />
-            <ProgressStats v-else-if="activeTab === 'progress'" />
-            <div v-else class="flex items-center justify-center h-full text-gray-500">
-              选择左侧菜单项开始使用
-            </div>
+            <router-view />
           </div>
 
           <!-- Right AI Assistant Panel (30%) -->
@@ -210,30 +152,19 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BookOutlined,
-  TeamOutlined,
-  GlobalOutlined,
-  FileTextOutlined,
-  BarChartOutlined,
   SettingOutlined,
   QuestionCircleOutlined,
-  PlusOutlined,
   DoubleLeftOutlined,
   DoubleRightOutlined,
   UserOutlined,
   LogoutOutlined
 } from '@ant-design/icons-vue'
 import type { Novel, Chapter } from '@/types'
-import ProjectManagement from '@/components/novel/ProjectManagement.vue'
-import CharacterManagement from '@/components/character/CharacterManagement.vue'
-import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
-import ChapterEditor from '@/components/chapter/ChapterEditor.vue'
-import ProgressStats from '@/components/novel/ProgressStats.vue'
+import NavigationMenu from './NavigationMenu.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 
 const collapsed = ref(false)
 const aiPanelCollapsed = ref(false)
-const selectedKeys = ref(['project'])
-const activeTab = ref('project')
 const selectedChapter = ref<Chapter | null>(null)
 
 // Mock data - will be replaced with actual store data
@@ -277,10 +208,8 @@ const projectStatus = computed(() => {
 const wordCount = ref(0)
 const aiStatus = ref<'connected' | 'disconnected'>('disconnected')
 
-const selectChapter = (chapter: Chapter) => {
+const handleChapterSelected = (chapter: Chapter) => {
   selectedChapter.value = chapter
-  activeTab.value = 'chapter'
-  selectedKeys.value = [`chapter-${chapter.id}`]
 }
 
 const addNewChapter = () => {
