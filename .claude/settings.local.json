@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma:*)",
+      "Bash(node:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm create:*)",
+      "Bash(./node_modules/.bin/tailwindcss:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
