@@ -6,8 +6,8 @@
     class="border-0"
   >
     <!-- Main navigation items -->
-    <a-menu-item 
-      v-for="route in navigationRoutes" 
+    <a-menu-item
+      v-for="route in navigationRoutes"
       :key="route.name"
       @click="navigateToRoute(route.name)"
     >
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   BookOutlined,
@@ -49,7 +49,8 @@ import {
   GlobalOutlined,
   FileTextOutlined,
   BarChartOutlined,
-  PlusOutlined
+  PlusOutlined,
+  FolderOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 
@@ -81,20 +82,48 @@ const iconMap = {
   TeamOutlined,
   GlobalOutlined,
   FileTextOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  FolderOutlined
 }
 
-// Get navigation routes from router
-const navigationRoutes = computed(() => {
-  const mainRoute = router.getRoutes().find(r => r.path === '/')
-  if (!mainRoute?.children) return []
-  
-  return mainRoute.children.filter(child => 
-    child.name && 
-    child.meta?.title && 
-    !child.meta?.hidden
-  )
-})
+// Define navigation routes directly
+const navigationRoutes = ref([
+  {
+    name: 'projects',
+    meta: {
+      title: '项目列表',
+      icon: 'FolderOutlined'
+    }
+  },
+  {
+    name: 'project',
+    meta: {
+      title: '项目信息',
+      icon: 'BookOutlined'
+    }
+  },
+  {
+    name: 'characters',
+    meta: {
+      title: '角色库',
+      icon: 'TeamOutlined'
+    }
+  },
+  {
+    name: 'worldsettings',
+    meta: {
+      title: '世界设定',
+      icon: 'GlobalOutlined'
+    }
+  },
+  {
+    name: 'progress',
+    meta: {
+      title: '进度统计',
+      icon: 'BarChartOutlined'
+    }
+  }
+])
 
 // Get icon component
 const getIcon = (iconName?: string) => {

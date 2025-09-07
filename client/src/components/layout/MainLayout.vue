@@ -1,23 +1,21 @@
 <template>
-  <a-layout class="h-screen">
-    <!-- Top Menu Bar -->
-    <a-layout-header class="bg-gray-50 border-b border-gray-300 p-0 h-14 flex items-center justify-between shadow-sm">
-      <div class="flex items-center px-6">
-        <div class="flex items-center space-x-3">
-          <!-- Logo/Icon -->
-          <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-            <span class="text-white text-sm font-bold drop-shadow-sm">AI</span>
-          </div>
-          <!-- Title -->
-          <div class="flex flex-col">
-            <h1 class="text-xl font-bold text-white leading-tight">AI小说创作助手</h1>
-            <span class="text-xs text-gray-600 leading-tight">智能协作，创意无限</span>
-          </div>
+  <div class="h-screen flex flex-col">
+    <!-- Top Header -->
+    <header class="bg-gray-50 border-b border-gray-300 h-14 flex items-center justify-between shadow-sm flex-shrink-0 px-6">
+      <div class="flex items-center space-x-3">
+        <!-- Logo/Icon -->
+        <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+          <span class="text-white text-sm font-bold drop-shadow-sm">AI</span>
+        </div>
+        <!-- Title -->
+        <div class="flex flex-col">
+          <h1 class="text-xl font-bold text-white leading-tight">AI小说创作助手</h1>
+          <span class="text-xs text-gray-600 leading-tight">智能协作，创意无限</span>
         </div>
       </div>
 
       <!-- User Info & Actions -->
-      <div class="flex items-center px-6 space-x-3">
+      <div class="flex items-center space-x-3">
         <!-- Current Project Info -->
         <div v-if="currentProject" class="hidden md:flex items-center space-x-2 px-3 py-1 bg-white rounded-lg border border-gray-200 shadow-sm">
           <BookOutlined class="text-gray-600 text-sm" />
@@ -29,6 +27,22 @@
 
         <!-- Action Buttons -->
         <a-space>
+          <!-- AI Assistant Toggle -->
+          <a-button 
+            type="text" 
+            size="small" 
+            :class="[
+              'flex items-center text-gray-700 hover:text-gray-900 hover:bg-white hover:shadow-sm',
+              { 'bg-blue-50 text-blue-600': !aiPanelCollapsed }
+            ]"
+            @click="aiPanelCollapsed = !aiPanelCollapsed"
+          >
+            <template #icon>
+              <RobotOutlined :class="{ 'text-blue-600': !aiPanelCollapsed, 'text-gray-600': aiPanelCollapsed }" />
+            </template>
+            <span class="hidden sm:inline">AI助手</span>
+          </a-button>
+          
           <a-button type="text" size="small" class="flex items-center text-gray-700 hover:text-gray-900 hover:bg-white hover:shadow-sm">
             <template #icon>
               <SettingOutlined class="text-gray-600" />
@@ -69,16 +83,14 @@
           </a-dropdown>
         </a-space>
       </div>
-    </a-layout-header>
+    </header>
 
-    <a-layout>
-      <!-- Left Navigation Panel -->
-      <a-layout-sider
-        v-model:collapsed="collapsed"
-        :width="280"
-        :collapsed-width="60"
-        theme="light"
-        class="border-r border-gray-200"
+    <!-- Main Layout Container -->
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Left Sidebar -->
+      <div 
+        class="bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 sidebar"
+        :style="{ width: collapsed ? '60px' : '280px', minWidth: collapsed ? '60px' : '280px' }"
       >
         <NavigationMenu
           :collapsed="collapsed"
@@ -97,53 +109,56 @@
             <MenuUnfoldOutlined v-else />
           </a-button>
         </div>
-      </a-layout-sider>
+      </div>
 
-      <a-layout>
-        <!-- Main Content Area -->
-        <a-layout-content class="flex">
-          <!-- Central Content Area (70%) -->
-          <div class="flex-1 bg-white">
-            <router-view />
+      <!-- Center Content -->
+      <div class="flex-1 bg-white overflow-hidden main-content">
+        <router-view />
+      </div>
+
+      <!-- Right AI Panel -->
+      <div 
+        v-if="!aiPanelCollapsed"
+        class="bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 ai-panel"
+        :style="{ width: '384px', minWidth: '384px', maxWidth: '384px' }"
+      >
+        <!-- Panel Header -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+          <div class="flex items-center space-x-2">
+            <RobotOutlined class="text-blue-600" />
+            <span class="font-semibold text-gray-800">AI助手</span>
           </div>
-
-          <!-- Right AI Assistant Panel (30%) -->
-          <div
-            v-show="!aiPanelCollapsed"
-            class="w-96 bg-gray-50 border-l border-gray-200 flex flex-col"
+          <a-button
+            type="text"
+            size="small"
+            @click="aiPanelCollapsed = true"
+            class="text-gray-500 hover:text-gray-700"
           >
-            <AIAssistantPanel />
-          </div>
+            ×
+          </a-button>
+        </div>
+        
+        <!-- Panel Content -->
+        <div class="flex-1 overflow-hidden">
+          <AIAssistantPanel />
+        </div>
+      </div>
+    </div>
 
-          <!-- AI Panel Toggle Button -->
-          <div class="fixed right-0 top-1/2 transform -translate-y-1/2 z-10">
-            <a-button
-              type="primary"
-              @click="aiPanelCollapsed = !aiPanelCollapsed"
-              class="rounded-l-lg rounded-r-none"
-            >
-              <DoubleLeftOutlined v-if="!aiPanelCollapsed" />
-              <DoubleRightOutlined v-else />
-            </a-button>
-          </div>
-        </a-layout-content>
-
-        <!-- Bottom Status Bar -->
-        <a-layout-footer class="bg-gray-100 border-t border-gray-200 p-2 h-8 flex items-center justify-between">
-          <div class="flex items-center space-x-4 text-sm text-gray-600">
-            <span>项目：{{ currentProject?.title || '未选择' }}</span>
-            <span>状态：{{ projectStatus }}</span>
-            <span>字数：{{ wordCount }}</span>
-          </div>
-          <div class="flex items-center space-x-2 text-sm text-gray-600">
-            <span>AI连接：</span>
-            <a-badge :status="aiStatus === 'connected' ? 'success' : 'error'" />
-            <span>{{ aiStatus === 'connected' ? '已连接' : '未连接' }}</span>
-          </div>
-        </a-layout-footer>
-      </a-layout>
-    </a-layout>
-  </a-layout>
+    <!-- Bottom Status Bar -->
+    <footer class="bg-gray-100 border-t border-gray-200 h-8 flex items-center justify-between px-4 flex-shrink-0">
+      <div class="flex items-center space-x-4 text-sm text-gray-600">
+        <span>项目：{{ currentProject?.title || '未选择' }}</span>
+        <span>状态：{{ projectStatus }}</span>
+        <span>字数：{{ wordCount }}</span>
+      </div>
+      <div class="flex items-center space-x-2 text-sm text-gray-600">
+        <span>AI连接：</span>
+        <a-badge :status="aiStatus === 'connected' ? 'success' : 'error'" />
+        <span>{{ aiStatus === 'connected' ? '已连接' : '未连接' }}</span>
+      </div>
+    </footer>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -154,10 +169,9 @@ import {
   BookOutlined,
   SettingOutlined,
   QuestionCircleOutlined,
-  DoubleLeftOutlined,
-  DoubleRightOutlined,
   UserOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  RobotOutlined
 } from '@ant-design/icons-vue'
 import type { Novel, Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'
@@ -213,7 +227,6 @@ const handleChapterSelected = (chapter: Chapter) => {
 }
 
 const addNewChapter = () => {
-  // Logic to add new chapter
   console.log('Add new chapter')
 }
 
@@ -238,19 +251,6 @@ const getStatusText = (status: string) => {
 </script>
 
 <style scoped>
-.ant-layout-header {
-  line-height: 56px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-}
-
-.ant-layout-footer {
-  line-height: 24px;
-}
-
-.ant-menu {
-  border-right: 0;
-}
-
 /* Button hover states for better contrast on light background */
 :deep(.ant-btn-text:hover) {
   background-color: rgba(255, 255, 255, 0.8) !important;
@@ -286,29 +286,34 @@ const getStatusText = (status: string) => {
   font-weight: 500;
 }
 
-/* Responsive design for header */
-@media (max-width: 768px) {
-  .ant-layout-header {
-    padding-left: 12px;
-    padding-right: 12px;
+/* Responsive design for mobile */
+@media (max-width: 1024px) {
+  /* On tablets and smaller, hide AI panel by default */
+  .ai-panel {
+    display: none;
   }
+}
 
-  .ant-layout-header h1 {
-    font-size: 1.125rem;
+@media (max-width: 768px) {
+  /* On mobile, force sidebar to be collapsed */
+  .sidebar {
+    width: 60px !important;
+    min-width: 60px !important;
+  }
+  
+  /* Ensure main content area gets remaining space */
+  .main-content {
+    flex: 1;
+    min-width: 0;
   }
 }
 
 @media (max-width: 640px) {
-  .ant-layout-header {
-    height: 3rem !important;
-    line-height: 3rem;
-  }
-
-  .ant-layout-header h1 {
+  header h1 {
     font-size: 1rem;
   }
 
-  .ant-layout-header .text-xs {
+  header .text-xs {
     display: none;
   }
 }
