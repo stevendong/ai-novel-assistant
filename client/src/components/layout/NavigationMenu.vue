@@ -49,8 +49,7 @@ import {
   GlobalOutlined,
   FileTextOutlined,
   BarChartOutlined,
-  PlusOutlined,
-  FolderOutlined
+  PlusOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 
@@ -82,19 +81,11 @@ const iconMap = {
   TeamOutlined,
   GlobalOutlined,
   FileTextOutlined,
-  BarChartOutlined,
-  FolderOutlined
+  BarChartOutlined
 }
 
 // Define navigation routes directly
 const navigationRoutes = ref([
-  {
-    name: 'projects',
-    meta: {
-      title: '项目列表',
-      icon: 'FolderOutlined'
-    }
-  },
   {
     name: 'project',
     meta: {

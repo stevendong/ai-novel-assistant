@@ -1,149 +1,259 @@
 <template>
-  <div class="h-full flex flex-col">
-    <!-- Panel Header -->
-    <div class="bg-white border-b border-gray-200 p-4">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-lg font-semibold text-gray-800 flex items-center">
-          <RobotOutlined class="mr-2 text-blue-600" />
-          AI 助手
-        </h2>
-        <div class="flex items-center space-x-2">
-          <a-badge :status="aiStatus === 'online' ? 'success' : 'error'" />
-          <span class="text-xs text-gray-500">{{ aiStatus === 'online' ? '在线' : '离线' }}</span>
-        </div>
+  <div class="ai-assistant-panel">
+    <!-- AI Status Bar -->
+    <div class="status-bar">
+      <div class="status-info">
+        <a-badge :status="aiStatus === 'online' ? 'success' : 'error'" />
+        <span class="status-text">AI创作助手</span>
       </div>
-      
-      <div class="flex space-x-1">
-        <a-button 
-          v-for="mode in aiModes"
-          :key="mode.key"
-          size="small"
-          :type="currentMode === mode.key ? 'primary' : 'default'"
-          @click="switchMode(mode.key)"
-        >
-          {{ mode.label }}
+      <a-dropdown :trigger="['click']" placement="bottomRight">
+        <a-button type="text" size="small" class="settings-btn">
+          <SettingOutlined />
         </a-button>
-      </div>
+        <template #overlay>
+          <a-menu>
+            <a-menu-item key="model">
+              <RobotOutlined />
+              <span>切换模型</span>
+            </a-menu-item>
+            <a-menu-item key="settings">
+              <SettingOutlined />
+              <span>AI设置</span>
+            </a-menu-item>
+            <a-menu-divider />
+            <a-menu-item key="clear">
+              <DeleteOutlined />
+              <span>清空对话</span>
+            </a-menu-item>
+          </a-menu>
+        </template>
+      </a-dropdown>
+    </div>
+
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+      <a-tabs 
+        v-model:activeKey="currentMode" 
+        size="small" 
+        @change="switchMode"
+        class="custom-tabs"
+      >
+        <a-tab-pane key="chat" tab="智能对话">
+          <template #tab>
+            <MessageOutlined />
+            <span class="tab-text">对话</span>
+          </template>
+        </a-tab-pane>
+        <a-tab-pane key="enhance" tab="内容完善">
+          <template #tab>
+            <EditOutlined />
+            <span class="tab-text">完善</span>
+          </template>
+        </a-tab-pane>
+        <a-tab-pane key="check" tab="质量检查">
+          <template #tab>
+            <CheckCircleOutlined />
+            <span class="tab-text">检查</span>
+          </template>
+        </a-tab-pane>
+      </a-tabs>
     </div>
 
     <!-- Quick Actions -->
-    <div class="bg-gray-50 border-b border-gray-200 p-3">
-      <div class="grid grid-cols-2 gap-2">
-        <a-button 
-          v-for="action in currentModeActions" 
+    <div class="quick-actions" v-if="currentModeActions.length > 0">
+      <div class="actions-grid">
+        <a-button
+          v-for="action in currentModeActions"
           :key="action.key"
           size="small"
-          block
-          @click="performQuickAction(action.key)"
+          class="action-btn"
           :loading="action.key === loadingAction"
+          @click="performQuickAction(action.key)"
         >
-          <component :is="action.icon" class="mr-1" />
-          {{ action.label }}
+          <component :is="action.icon" />
+          <span>{{ action.label }}</span>
         </a-button>
       </div>
     </div>
 
-    <!-- Chat Interface -->
-    <div class="flex-1 flex flex-col">
-      <!-- Messages -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div
-          v-for="message in messages"
-          :key="message.id"
-          :class="[
-            'flex',
-            message.role === 'user' ? 'justify-end' : 'justify-start'
-          ]"
-        >
-          <div
-            :class="[
-              'max-w-xs lg:max-w-md px-4 py-2 rounded-lg',
-              message.role === 'user' 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-white border border-gray-200 text-gray-800'
-            ]"
-          >
-            <div class="text-sm leading-relaxed">{{ message.content }}</div>
-            <div 
-              :class="[
-                'text-xs mt-1',
-                message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
-              ]"
-            >
-              {{ formatTime(message.timestamp) }}
+    <!-- Chat Container -->
+    <div class="chat-container">
+      <!-- Messages Area -->
+      <div 
+        ref="messagesContainer"
+        class="messages-area"
+        @scroll="handleScroll"
+      >
+        <div class="messages-wrapper">
+          <!-- Welcome Message -->
+          <div class="welcome-message" v-if="messages.length === 1">
+            <div class="welcome-icon">
+              <RobotOutlined />
             </div>
-            
-            <!-- Action buttons for AI responses -->
-            <div v-if="message.role === 'assistant' && message.actions" class="mt-2 space-x-1">
-              <a-button
-                v-for="action in message.actions"
-                :key="action.key"
-                size="small"
-                type="text"
-                @click="performMessageAction(action.key, message)"
-                :class="message.role === 'user' ? 'text-white' : 'text-blue-600'"
-              >
-                {{ action.label }}
-              </a-button>
+            <div class="welcome-content">
+              <h3>AI创作助手</h3>
+              <p>{{ getModeDescription(currentMode) }}</p>
             </div>
           </div>
-        </div>
 
-        <!-- Typing indicator -->
-        <div v-if="isTyping" class="flex justify-start">
-          <div class="bg-white border border-gray-200 px-4 py-2 rounded-lg">
-            <div class="flex space-x-1">
-              <div class="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
-              <div class="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
-              <div class="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+          <!-- Message List -->
+          <div class="message-list">
+            <div
+              v-for="message in messages"
+              :key="message.id"
+              class="message-item"
+              :class="{ 'user-message': message.role === 'user', 'assistant-message': message.role === 'assistant' }"
+            >
+              <!-- User Message -->
+              <div v-if="message.role === 'user'" class="user-message-bubble">
+                <div class="message-content">
+                  <div class="message-text">{{ message.content }}</div>
+                  <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+                </div>
+                <div class="message-avatar">
+                  <a-avatar size="small" class="user-avatar">
+                    <UserOutlined />
+                  </a-avatar>
+                </div>
+              </div>
+
+              <!-- Assistant Message -->
+              <div v-else class="assistant-message-bubble">
+                <div class="message-avatar">
+                  <a-avatar size="small" class="ai-avatar">
+                    <RobotOutlined />
+                  </a-avatar>
+                </div>
+                <div class="message-content">
+                  <div class="message-text">
+                    <div class="markdown-content" v-html="formatMessage(message.content)"></div>
+                  </div>
+                  <div class="message-meta">
+                    <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                    <div class="message-actions" v-if="message.actions">
+                      <a-button
+                        v-for="action in message.actions"
+                        :key="action.key"
+                        type="text"
+                        size="small"
+                        class="action-btn-small"
+                        @click="performMessageAction(action.key, message)"
+                      >
+                        {{ action.label }}
+                      </a-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <!-- Typing Indicator -->
+            <div v-if="isTyping" class="message-item assistant-message">
+              <div class="assistant-message-bubble">
+                <div class="message-avatar">
+                  <a-avatar size="small" class="ai-avatar typing">
+                    <RobotOutlined />
+                  </a-avatar>
+                </div>
+                <div class="message-content">
+                  <div class="typing-indicator">
+                    <div class="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    <span class="typing-text">AI正在思考...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scroll to Bottom Button -->
+          <div 
+            v-show="showScrollButton"
+            class="scroll-to-bottom"
+            @click="() => scrollToBottom()"
+          >
+            <a-button type="primary" shape="circle" size="small">
+              <DownOutlined />
+            </a-button>
           </div>
         </div>
       </div>
 
       <!-- Input Area -->
-      <div class="bg-white border-t border-gray-200 p-4">
-        <div class="flex items-end space-x-2">
-          <div class="flex-1">
+      <div class="input-area">
+        <div class="input-container">
+          <div class="input-wrapper">
             <a-textarea
+              ref="inputRef"
               v-model:value="inputMessage"
-              :rows="2"
-              placeholder="向 AI 助手提问或请求帮助..."
+              :placeholder="getInputPlaceholder(currentMode)"
               :disabled="aiStatus === 'offline'"
-              @keydown.ctrl.enter="sendMessage"
+              :auto-size="{ minRows: 1, maxRows: 4 }"
+              class="message-input"
+              @keydown="handleKeyDown"
+              @input="handleInput"
             />
-            <div class="text-xs text-gray-400 mt-1">
-              Ctrl + Enter 发送
+            <div class="input-actions">
+              <a-tooltip title="发送图片">
+                <a-button type="text" size="small" class="input-action-btn">
+                  <PictureOutlined />
+                </a-button>
+              </a-tooltip>
+              <a-tooltip title="语音输入">
+                <a-button type="text" size="small" class="input-action-btn">
+                  <AudioOutlined />
+                </a-button>
+              </a-tooltip>
+              <a-button
+                type="primary"
+                size="small"
+                class="send-btn"
+                :disabled="!inputMessage.trim() || aiStatus === 'offline'"
+                :loading="isTyping"
+                @click="sendMessage"
+              >
+                <SendOutlined />
+              </a-button>
             </div>
           </div>
-          <a-button 
-            type="primary" 
-            @click="sendMessage"
-            :disabled="!inputMessage.trim() || aiStatus === 'offline'"
-            :loading="isTyping"
-          >
-            <SendOutlined />
-          </a-button>
+          <div class="input-hint">
+            <span class="hint-text">{{ getInputHint() }}</span>
+            <span class="char-count">{{ inputMessage.length }}/2000</span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Suggestions Panel -->
-    <div class="bg-gray-50 border-t border-gray-200 p-4">
-      <h3 class="text-sm font-medium text-gray-700 mb-3">智能建议</h3>
-      <div class="space-y-3">
+    <div class="suggestions-panel" v-if="currentSuggestions.length > 0">
+      <div class="suggestions-header">
+        <span class="suggestions-title">
+          <BulbOutlined />
+          智能建议
+        </span>
+        <a-button type="text" size="small" @click="refreshSuggestions">
+          <ReloadOutlined />
+        </a-button>
+      </div>
+      <div class="suggestions-list">
         <div
           v-for="suggestion in currentSuggestions"
           :key="suggestion.id"
-          class="p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors"
+          class="suggestion-item"
           @click="applySuggestion(suggestion)"
         >
-          <div class="flex items-start space-x-2">
-            <component :is="suggestion.icon" class="text-blue-600 mt-0.5" />
-            <div class="flex-1">
-              <h4 class="text-sm font-medium text-gray-800">{{ suggestion.title }}</h4>
-              <p class="text-xs text-gray-600 mt-1">{{ suggestion.description }}</p>
-            </div>
+          <div class="suggestion-icon">
+            <component :is="suggestion.icon" />
+          </div>
+          <div class="suggestion-content">
+            <div class="suggestion-title">{{ suggestion.title }}</div>
+            <div class="suggestion-desc">{{ suggestion.description }}</div>
+          </div>
+          <div class="suggestion-arrow">
+            <RightOutlined />
           </div>
         </div>
       </div>
@@ -152,13 +262,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import {
   RobotOutlined,
+  UserOutlined,
   SendOutlined,
-  BulbOutlined,
+  MessageOutlined,
   EditOutlined,
   CheckCircleOutlined,
+  BulbOutlined,
+  SettingOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  PictureOutlined,
+  AudioOutlined,
+  ReloadOutlined,
+  RightOutlined,
   FileTextOutlined,
   TeamOutlined,
   GlobalOutlined,
@@ -182,18 +301,17 @@ interface Suggestion {
   action: string
 }
 
+// Reactive state
 const aiStatus = ref<'online' | 'offline'>('online')
 const currentMode = ref('chat')
 const inputMessage = ref('')
 const isTyping = ref(false)
 const loadingAction = ref<string | null>(null)
+const showScrollButton = ref(false)
+const messagesContainer = ref<HTMLElement>()
+const inputRef = ref()
 
-const aiModes = [
-  { key: 'chat', label: '对话' },
-  { key: 'enhance', label: '完善' },
-  { key: 'check', label: '检查' }
-]
-
+// Messages data
 const messages = ref<Message[]>([
   {
     id: '1',
@@ -207,28 +325,43 @@ const messages = ref<Message[]>([
   }
 ])
 
-const currentModeActions = computed(() => {
-  const actions = {
-    chat: [
+// Mode configurations
+const modeConfigs = {
+  chat: {
+    description: '与AI自由对话，获取创作灵感和建议',
+    placeholder: '向AI助手提问或请求帮助...',
+    actions: [
       { key: 'help', label: '帮助', icon: BulbOutlined },
       { key: 'examples', label: '示例', icon: FileTextOutlined },
-      { key: 'clear', label: '清空', icon: EditOutlined },
-      { key: 'export', label: '导出', icon: SendOutlined }
-    ],
-    enhance: [
+      { key: 'brainstorm', label: '头脑风暴', icon: BulbOutlined },
+      { key: 'inspiration', label: '创作灵感', icon: EditOutlined }
+    ]
+  },
+  enhance: {
+    description: '完善你的角色、设定和情节内容',
+    placeholder: '描述你想要完善的内容...',
+    actions: [
       { key: 'enhance-character', label: '完善角色', icon: TeamOutlined },
       { key: 'enhance-setting', label: '扩展设定', icon: GlobalOutlined },
       { key: 'generate-outline', label: '生成大纲', icon: FileTextOutlined },
       { key: 'suggest-plot', label: '情节建议', icon: BulbOutlined }
-    ],
-    check: [
+    ]
+  },
+  check: {
+    description: '检查内容的一致性和逻辑性',
+    placeholder: '输入需要检查的内容...',
+    actions: [
       { key: 'check-consistency', label: '一致性检查', icon: CheckCircleOutlined },
       { key: 'check-character', label: '角色检查', icon: TeamOutlined },
       { key: 'check-timeline', label: '时间线检查', icon: ExclamationCircleOutlined },
       { key: 'check-logic', label: '逻辑检查', icon: BulbOutlined }
     ]
   }
-  return actions[currentMode.value as keyof typeof actions] || actions.chat
+}
+
+// Computed properties
+const currentModeActions = computed(() => {
+  return modeConfigs[currentMode.value as keyof typeof modeConfigs]?.actions || []
 })
 
 const currentSuggestions = ref<Suggestion[]>([
@@ -247,21 +380,62 @@ const currentSuggestions = ref<Suggestion[]>([
     icon: GlobalOutlined,
     type: 'setting',
     action: 'enhance'
-  },
-  {
-    id: '3',
-    title: '一致性问题',
-    description: '发现角色年龄设定前后不一致',
-    icon: ExclamationCircleOutlined,
-    type: 'consistency',
-    action: 'check'
   }
 ])
+
+// Methods
+const getModeDescription = (mode: string) => {
+  return modeConfigs[mode as keyof typeof modeConfigs]?.description || ''
+}
+
+const getInputPlaceholder = (mode: string) => {
+  return modeConfigs[mode as keyof typeof modeConfigs]?.placeholder || '输入消息...'
+}
+
+const getInputHint = () => {
+  if (inputMessage.value.length > 1800) return '字数即将达到上限'
+  return 'Ctrl+Enter 发送，Shift+Enter 换行'
+}
+
+const handleScroll = () => {
+  if (!messagesContainer.value) return
+  
+  const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+  const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+  showScrollButton.value = !isNearBottom && scrollHeight > clientHeight
+}
+
+const scrollToBottom = (smooth = true) => {
+  if (!messagesContainer.value) return
+  
+  messagesContainer.value.scrollTo({
+    top: messagesContainer.value.scrollHeight,
+    behavior: smooth ? 'smooth' : 'auto'
+  })
+}
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    if (e.ctrlKey) {
+      e.preventDefault()
+      sendMessage()
+    } else if (e.shiftKey) {
+      // Allow line break
+      return
+    } else {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+}
+
+const handleInput = () => {
+  // Auto-resize and other input handling
+}
 
 const switchMode = (mode: string) => {
   currentMode.value = mode
   
-  // Add mode switch message
   const modeTexts = {
     chat: '切换到对话模式。你可以与我自由对话，寻求创作建议。',
     enhance: '切换到完善模式。我将帮你完善角色、设定和情节。',
@@ -277,29 +451,23 @@ const performQuickAction = async (actionKey: string) => {
   try {
     switch (actionKey) {
       case 'help':
-        addMessage('assistant', '我可以帮助你：\n1. 完善角色设定和背景\n2. 扩展世界观和设定\n3. 生成章节大纲\n4. 检查内容一致性\n5. 提供创作建议\n\n你可以直接向我提问，比如"帮我完善主角的性格"或"检查这个章节的逻辑"。')
+        addMessage('assistant', '我可以帮助你：\n• 完善角色设定和背景\n• 扩展世界观和设定\n• 生成章节大纲\n• 检查内容一致性\n• 提供创作建议\n\n你可以直接向我提问，比如"帮我完善主角的性格"或"检查这个章节的逻辑"。')
         break
       case 'examples':
-        addMessage('assistant', '以下是一些使用示例：\n\n"请帮我分析李明这个角色的性格特点"\n"这个魔法体系还需要补充什么设定？"\n"检查第三章是否有时间线问题"\n"给我一些关于紧张氛围营造的建议"')
+        addMessage('assistant', '以下是一些使用示例：\n\n**角色完善**\n"请帮我分析李明这个角色的性格特点"\n\n**设定扩展**\n"这个魔法体系还需要补充什么设定？"\n\n**一致性检查**\n"检查第三章是否有时间线问题"\n\n**创作建议**\n"给我一些关于紧张氛围营造的建议"')
         break
       case 'enhance-character':
-        addMessage('assistant', '我来分析当前选中的角色。请告诉我你希望重点完善哪个方面：\n1. 性格特征\n2. 外貌描述\n3. 背景故事\n4. 人际关系\n5. 角色发展弧线')
-        break
-      case 'enhance-setting':
-        addMessage('assistant', '我来帮你扩展世界设定。当前设定看起来不错，建议补充：\n- 历史背景的更多细节\n- 社会制度和文化特色\n- 地理环境的具体描述\n- 重要场所的详细设定')
+        addMessage('assistant', '我来分析当前选中的角色。请告诉我你希望重点完善哪个方面：\n• 性格特征和心理动机\n• 外貌描述和行为习惯\n• 背景故事和成长经历\n• 人际关系和社交模式\n• 角色发展弧线和成长轨迹')
         break
       case 'check-consistency':
         isTyping.value = true
         setTimeout(() => {
           isTyping.value = false
-          addMessage('assistant', '一致性检查完成！发现以下问题：\n\n✅ 角色性格：总体一致\n⚠️ 时间线：第2章与第5章之间有3天时间差异\n❌ 世界设定：魔法规则在第4章有矛盾\n✅ 情节逻辑：连贯性良好\n\n建议优先修复时间线和魔法规则问题。', [
+          addMessage('assistant', '**一致性检查完成！**\n\n✅ **角色性格**：总体一致\n⚠️ **时间线**：第2章与第5章之间有3天时间差异\n❌ **世界设定**：魔法规则在第4章有矛盾\n✅ **情节逻辑**：连贯性良好\n\n**建议**：优先修复时间线和魔法规则问题。', [
             { key: 'fix-timeline', label: '修复时间线' },
             { key: 'fix-magic', label: '修复魔法规则' }
           ])
         }, 2000)
-        break
-      case 'clear':
-        messages.value = messages.value.filter(m => m.id === '1') // Keep welcome message
         break
     }
   } finally {
@@ -308,7 +476,7 @@ const performQuickAction = async (actionKey: string) => {
 }
 
 const sendMessage = async () => {
-  if (!inputMessage.value.trim()) return
+  if (!inputMessage.value.trim() || inputMessage.value.length > 2000) return
   
   const userMessage = inputMessage.value
   addMessage('user', userMessage)
@@ -319,9 +487,7 @@ const sendMessage = async () => {
   
   setTimeout(() => {
     isTyping.value = false
-    
-    // Simple response logic - in real app, this would call AI service
-    let response = generateAIResponse(userMessage)
+    const response = generateAIResponse(userMessage)
     addMessage('assistant', response, getResponseActions(userMessage))
   }, 1500 + Math.random() * 1000)
 }
@@ -335,35 +501,42 @@ const addMessage = (role: 'user' | 'assistant', content: string, actions?: Array
     actions
   })
   
-  // Scroll to bottom
-  setTimeout(() => {
-    const messagesContainer = document.querySelector('.overflow-y-auto')
-    if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight
-    }
-  }, 100)
+  // Auto scroll to bottom
+  nextTick(() => {
+    scrollToBottom()
+  })
+}
+
+const formatMessage = (content: string) => {
+  // Simple markdown-like formatting
+  return content
+    .replace(/\n/g, '<br>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/^• (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+}
+
+const formatTime = (timestamp: Date) => {
+  return timestamp.toLocaleTimeString('zh-CN', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
 }
 
 const generateAIResponse = (userMessage: string): string => {
   const message = userMessage.toLowerCase()
   
   if (message.includes('角色') || message.includes('人物')) {
-    return '我来分析你的角色设定。基于当前信息，我建议：\n\n1. 增加更多性格细节，比如习惯动作或口头禅\n2. 完善背景故事中的关键事件\n3. 明确与其他角色的关系动态\n4. 考虑角色在故事中的成长弧线\n\n需要我详细分析哪个角色？'
+    return '**角色分析建议**\n\n基于你的描述，我建议从以下几个方面完善角色：\n\n• **性格深度**：增加更多性格细节，比如习惯动作或口头禅\n• **背景故事**：完善关键事件和成长经历\n• **关系网络**：明确与其他角色的关系动态\n• **成长弧线**：设计角色在故事中的变化轨迹\n\n需要我详细分析哪个角色？'
   }
   
   if (message.includes('设定') || message.includes('世界')) {
-    return '你的世界设定很有趣！我建议进一步完善：\n\n• 时代背景：明确时间线和历史事件\n• 地理环境：详细描述重要地点\n• 社会制度：政治结构和文化特色\n• 特殊元素：魔法/科技的运作规则\n\n你希望重点扩展哪个方面？'
+    return '**世界设定扩展**\n\n你的世界设定很有潜力！建议从这些方面深化：\n\n• **时代背景**：明确时间线和重要历史事件\n• **地理环境**：详细描述重要地点和地理关系\n• **社会制度**：政治结构、经济体系和文化特色\n• **特殊元素**：魔法/科技的运作规则和限制\n\n你希望重点扩展哪个方面？'
   }
   
-  if (message.includes('大纲') || message.includes('情节')) {
-    return '我来帮你规划情节结构。基于三幕剧结构：\n\n第一幕：建立世界观和角色\n- 介绍主角和环境\n- 引出主要冲突\n\n第二幕：发展冲突和挑战\n- 角色面临困难\n- 关系和设定深化\n\n第三幕：解决和结局\n- 冲突达到高潮\n- 角色完成成长\n\n需要我针对特定章节给出详细建议吗？'
-  }
-  
-  if (message.includes('检查') || message.includes('一致性')) {
-    return '正在进行一致性检查...\n\n发现的问题：\n• 角色年龄前后描述不一致\n• 地理位置存在逻辑错误\n• 时间线需要调整\n\n建议：\n1. 统一角色基本信息\n2. 核查地理关系\n3. 理清事件时间顺序\n\n需要我详细说明哪个问题？'
-  }
-  
-  return '我理解你的需求。我可以从以下方面帮助你：\n• 角色塑造和发展\n• 世界观扩展\n• 情节规划\n• 一致性检查\n• 创作技巧建议\n\n请告诉我你希望重点关注哪个方面？'
+  return '我理解你的需求。我可以从以下方面为你提供帮助：\n\n• **角色塑造**：性格、背景、关系网络\n• **世界观建设**：设定扩展、规则完善\n• **情节规划**：大纲设计、冲突设置\n• **质量检查**：一致性、逻辑性分析\n• **创作技巧**：写作方法和技巧建议\n\n请告诉我你希望重点关注哪个方面？'
 }
 
 const getResponseActions = (userMessage: string): Array<{ key: string; label: string }> | undefined => {
@@ -383,70 +556,548 @@ const getResponseActions = (userMessage: string): Array<{ key: string; label: st
     ]
   }
   
-  if (message.includes('检查')) {
-    return [
-      { key: 'detailed-report', label: '详细报告' },
-      { key: 'auto-fix', label: '自动修复' }
-    ]
-  }
-  
   return undefined
 }
 
 const performMessageAction = (actionKey: string, message: Message) => {
-  // Handle message-specific actions
   console.log('Perform action:', actionKey, 'for message:', message)
-  
-  switch (actionKey) {
-    case 'help':
-      performQuickAction('help')
-      break
-    case 'examples':
-      performQuickAction('examples')
-      break
-    case 'analyze-character':
-      addMessage('assistant', '深度角色分析：\n\n主角李明的特点：\n• 性格：谨慎而好奇，这种矛盾创造了有趣的冲突\n• 动机：寻求真相的渴望源于童年经历\n• 弱点：社交恐惧可能阻碍调查进展\n• 成长潜力：通过案件锻炼社交能力\n\n建议增加具体的习惯动作和思维模式描述。')
-      break
-    case 'expand-setting':
-      addMessage('assistant', '设定扩展建议：\n\n当前"废弃工厂"可以补充：\n• 历史：为什么废弃？以前生产什么？\n• 地理：与城市的距离和交通\n• 氛围：光线、声音、气味的具体描述\n• 隐藏元素：可能存在的线索或危险\n\n这样的细节会让场景更加生动真实。')
-      break
-  }
 }
 
 const applySuggestion = (suggestion: Suggestion) => {
-  addMessage('assistant', `正在应用建议：${suggestion.title}\n\n${suggestion.description}\n\n我来帮你具体处理这个问题...`)
+  addMessage('assistant', `**应用建议：${suggestion.title}**\n\n${suggestion.description}\n\n我来帮你具体处理这个问题...`)
   
   // Remove applied suggestion
   currentSuggestions.value = currentSuggestions.value.filter(s => s.id !== suggestion.id)
 }
 
-const formatTime = (timestamp: Date) => {
-  return timestamp.toLocaleTimeString('zh-CN', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  })
+const refreshSuggestions = () => {
+  // Refresh suggestions logic
+  console.log('Refreshing suggestions...')
 }
+
+// Watch for mode changes
+watch(currentMode, () => {
+  // Update suggestions based on mode
+})
 
 // Initialize
 onMounted(() => {
-  // Simulate initial AI suggestions based on current content
-  setTimeout(() => {
-    // Add more suggestions based on context
-  }, 2000)
+  // Auto-scroll to bottom on mount
+  nextTick(() => {
+    scrollToBottom(false)
+  })
 })
 </script>
 
 <style scoped>
-.animate-pulse {
-  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.ai-assistant-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
 }
 
+/* Status Bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-text {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+}
+
+.settings-btn {
+  color: rgba(0, 0, 0, 0.45);
+  padding: 4px;
+}
+
+.settings-btn:hover {
+  color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Mode Tabs */
+.mode-tabs {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.custom-tabs {
+  margin: 0;
+}
+
+.custom-tabs :deep(.ant-tabs-nav) {
+  margin: 0;
+  padding: 0 16px;
+}
+
+.custom-tabs :deep(.ant-tabs-tab) {
+  padding: 12px 8px;
+  font-size: 12px;
+}
+
+.tab-text {
+  margin-left: 4px;
+}
+
+/* Quick Actions */
+.quick-actions {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.action-btn span {
+  font-size: 12px;
+}
+
+/* Chat Container */
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Messages Area */
+.messages-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  position: relative;
+}
+
+.messages-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-area::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 3px;
+}
+
+.messages-area::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.messages-area::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+.messages-wrapper {
+  position: relative;
+  min-height: 100%;
+}
+
+/* Welcome Message */
+.welcome-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 16px;
+  margin-bottom: 24px;
+}
+
+.welcome-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1890ff, #722ed1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.welcome-icon :deep(.anticon) {
+  font-size: 28px;
+  color: #fff;
+}
+
+.welcome-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.welcome-content p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.5;
+}
+
+/* Message List */
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message-item {
+  display: flex;
+  width: 100%;
+}
+
+/* User Message */
+.user-message-bubble {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-left: auto;
+  max-width: 80%;
+}
+
+.user-message .message-content {
+  background: #1890ff;
+  color: #fff;
+  border-radius: 16px 16px 4px 16px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.user-avatar {
+  background: #1890ff;
+  flex-shrink: 0;
+}
+
+/* Assistant Message */
+.assistant-message-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 80%;
+}
+
+.assistant-message .message-content {
+  background: #f5f5f5;
+  color: rgba(0, 0, 0, 0.85);
+  border-radius: 16px 16px 16px 4px;
+  padding: 12px 16px;
+  border: 1px solid #f0f0f0;
+}
+
+.ai-avatar {
+  background: linear-gradient(135deg, #1890ff, #722ed1);
+  flex-shrink: 0;
+}
+
+.ai-avatar.typing {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Message Content */
+.message-text {
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.markdown-content :deep(strong) {
+  font-weight: 600;
+}
+
+.markdown-content :deep(em) {
+  font-style: italic;
+}
+
+.markdown-content :deep(code) {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content :deep(ul) {
+  margin: 8px 0;
+  padding-left: 16px;
+}
+
+.markdown-content :deep(li) {
+  margin: 4px 0;
+}
+
+.message-time {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.message-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn-small {
+  font-size: 11px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  animation: typing 1.4s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.typing-text {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Scroll to Bottom */
+.scroll-to-bottom {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+/* Input Area */
+.input-area {
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.input-container {
+  padding: 16px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: #fafafa;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.2s;
+}
+
+.input-wrapper:focus-within {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.message-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  resize: none;
+  font-size: 14px;
+}
+
+.message-input:focus {
+  box-shadow: none;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.input-action-btn {
+  color: rgba(0, 0, 0, 0.45);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.input-action-btn:hover {
+  color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.send-btn {
+  padding: 4px 8px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.input-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.char-count {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+/* Suggestions Panel */
+.suggestions-panel {
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.suggestions-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.suggestions-list {
+  padding: 8px;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggestion-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+}
+
+.suggestion-icon {
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.suggestion-content {
+  flex: 1;
+}
+
+.suggestion-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 2px;
+}
+
+.suggestion-desc {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.4;
+}
+
+.suggestion-arrow {
+  color: rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+}
+
+/* Animations */
 @keyframes pulse {
   0%, 100% {
-    opacity: 1;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .user-message-bubble,
+  .assistant-message-bubble {
+    max-width: 95%;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .input-container {
+    padding: 12px;
+  }
+  
+  .welcome-message {
+    padding: 24px 12px;
   }
 }
 </style>

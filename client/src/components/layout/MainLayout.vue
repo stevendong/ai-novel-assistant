@@ -156,20 +156,6 @@
           class="ai-panel"
           :class="{ 'collapsed': aiPanelCollapsed }"
         >
-          <div class="ai-panel-header">
-            <div class="ai-panel-title">
-              <RobotOutlined />
-              <span>AI助手</span>
-            </div>
-            <a-button
-              type="text"
-              size="small"
-              @click="toggleAIPanel"
-              class="close-btn"
-            >
-              <CloseOutlined />
-            </a-button>
-          </div>
           <div class="ai-panel-content">
             <AIAssistantPanel />
           </div>

@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MainLayout from '@/components/layout/MainLayout.vue'
-import ProjectList from '@/components/novel/ProjectList.vue'
 import ProjectManagement from '@/components/novel/ProjectManagement.vue'
 import CharacterManagement from '@/components/character/CharacterManagement.vue'
 import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
