@@ -1,0 +1,256 @@
+/* 小说Markdown样式 */
+.markdown-novel {
+  line-height: 1.8;
+  color: #2c3e50;
+  font-size: 16px;
+  max-width: none;
+}
+
+.markdown-novel h1 {
+  font-size: 2.2em;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 2em 0 1em 0;
+  padding-bottom: 0.3em;
+  border-bottom: 2px solid #e1e8ed;
+}
+
+.markdown-novel h2 {
+  font-size: 1.8em;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 1.8em 0 1em 0;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.markdown-novel h3 {
+  font-size: 1.5em;
+  font-weight: 600;
+  color: #34495e;
+  margin: 1.5em 0 0.8em 0;
+}
+
+.markdown-novel h4 {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #34495e;
+  margin: 1.3em 0 0.6em 0;
+}
+
+.markdown-novel h5 {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #34495e;
+  margin: 1.1em 0 0.5em 0;
+}
+
+.markdown-novel h6 {
+  font-size: 1em;
+  font-weight: 600;
+  color: #34495e;
+  margin: 1em 0 0.5em 0;
+}
+
+.markdown-novel p {
+  margin: 1.2em 0;
+  text-indent: 2em; /* 中文段落首行缩进 */
+  text-align: justify; /* 两端对齐 */
+}
+
+.markdown-novel ul {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+.markdown-novel ol {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+.markdown-novel li {
+  margin: 0.5em 0;
+  text-indent: 0; /* 列表项不缩进 */
+}
+
+.markdown-novel blockquote {
+  margin: 1.5em 0;
+  padding: 1em 2em;
+  background: #f8f9fa;
+  border-left: 4px solid #3498db;
+  color: #555;
+  font-style: italic;
+}
+
+.markdown-novel blockquote p {
+  text-indent: 0; /* 引用不缩进 */
+  margin: 0.5em 0;
+}
+
+.markdown-novel code {
+  background: #f1f2f6;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.9em;
+  color: #e74c3c;
+}
+
+.markdown-novel pre {
+  background: #f8f9fa;
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1.5em 0;
+  border: 1px solid #e1e8ed;
+}
+
+.markdown-novel pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.markdown-novel strong {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.markdown-novel em {
+  font-style: italic;
+  color: #34495e;
+}
+
+.markdown-novel a {
+  color: #3498db;
+  text-decoration: none;
+  border-bottom: 1px dotted #3498db;
+}
+
+.markdown-novel a:hover {
+  color: #2980b9;
+  border-bottom-color: #2980b9;
+}
+
+.markdown-novel table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.95em;
+}
+
+.markdown-novel th,
+.markdown-novel td {
+  padding: 0.8em 1em;
+  text-align: left;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.markdown-novel th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.markdown-novel tr:hover {
+  background: #f8f9fa;
+}
+
+.markdown-novel hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #e1e8ed, transparent);
+  margin: 2em 0;
+}
+
+.markdown-novel img {
+  max-width: 100%;
+  height: auto;
+  margin: 1.5em 0;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 对话样式 */
+.markdown-novel .dialogue {
+  font-style: italic;
+  color: #16a085;
+  position: relative;
+  padding-left: 1em;
+}
+
+.markdown-novel .dialogue::before {
+  content: '"';
+  position: absolute;
+  left: 0;
+  font-size: 1.2em;
+  color: #3498db;
+}
+
+.markdown-novel .dialogue::after {
+  content: '"';
+  font-size: 1.2em;
+  color: #3498db;
+}
+
+/* 场景描述样式 */
+.markdown-novel .scene-description {
+  background: #ecf0f1;
+  padding: 1em 1.5em;
+  margin: 1.5em 0;
+  border-radius: 6px;
+  border-left: 4px solid #95a5a6;
+}
+
+/* 人物动作样式 */
+.markdown-novel .action {
+  color: #8e44ad;
+  font-weight: 500;
+}
+
+/* 内心独白样式 */
+.markdown-novel .thought {
+  font-style: italic;
+  color: #34495e;
+  opacity: 0.8;
+}
+
+/* 小说专用类 */
+.markdown-novel .chapter-title {
+  text-align: center;
+  font-size: 2.5em;
+  font-weight: 700;
+  margin: 2em 0;
+  color: #2c3e50;
+}
+
+.markdown-novel .scene-break {
+  text-align: center;
+  margin: 3em 0;
+  font-size: 1.5em;
+  color: #bdc3c7;
+}
+
+.markdown-novel .scene-break::before {
+  content: '* * *';
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .markdown-novel {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  
+  .markdown-novel p {
+    text-indent: 1.5em;
+  }
+  
+  .markdown-novel h1 {
+    font-size: 1.8em;
+  }
+  
+  .markdown-novel h2 {
+    font-size: 1.5em;
+  }
+}

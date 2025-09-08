@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 3001;
 // 中间件
 app.use(helmet());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
