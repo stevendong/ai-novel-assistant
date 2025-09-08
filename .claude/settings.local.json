@@ -15,7 +15,13 @@
       "Bash(./node_modules/.bin/tailwindcss:*)",
       "Bash(npx tailwindcss:*)",
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run server:dev:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

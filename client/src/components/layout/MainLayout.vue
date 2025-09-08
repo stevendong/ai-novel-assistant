@@ -23,7 +23,7 @@
               <span class="logo-text">AI</span>
             </div>
             <div class="title-section">
-              <h1 class="app-title">AI小说创作助手</h1>
+              <h1 class="app-title">个人智能创作管理系统</h1>
               <span class="app-subtitle">智能协作，创意无限</span>
             </div>
           </div>
