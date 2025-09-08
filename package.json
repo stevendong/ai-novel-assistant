@@ -2,15 +2,29 @@
   "name": "ai-novel-assistant",
   "version": "1.0.0",
   "description": "AI-powered novel writing collaboration tool",
-  "main": "server/index.js",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "server:dev": "nodemon server/index.js",
-    "client:dev": "cd client && npm run dev",
-    "build": "cd client && npm run build",
-    "start": "node server/index.js",
-    "db:push": "cd server && npx prisma db push",
-    "db:studio": "cd server && npx prisma studio"
+    "server:dev": "npm run dev --workspace=server",
+    "client:dev": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=client",
+    "build:all": "npm run build --workspaces",
+    "start": "npm run start --workspace=server",
+    "db:push": "npm run db:push --workspace=server",
+    "db:studio": "npm run db:studio --workspace=server",
+    "db:migrate": "npm run db:migrate --workspace=server",
+    "install:all": "npm install",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "lint": "npm run lint --workspaces --if-present",
+    "type-check": "npm run type-check --workspaces --if-present"
   },
   "keywords": ["ai", "novel", "writing", "collaboration"],
   "author": "",

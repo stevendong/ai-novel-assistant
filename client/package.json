@@ -12,7 +12,9 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build"
+    "type-check": "vue-tsc --build",
+    "clean": "rm -rf dist node_modules .vite",
+    "lint": "echo 'No lint configured for client'"
   },
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",

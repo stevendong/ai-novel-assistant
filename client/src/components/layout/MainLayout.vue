@@ -1,96 +1,141 @@
 <template>
-  <div class="h-screen flex flex-col">
+  <a-layout class="main-layout">
     <!-- Top Header -->
-    <header class="bg-gray-50 border-b border-gray-300 h-14 flex items-center justify-between shadow-sm flex-shrink-0 px-6">
-      <div class="flex items-center space-x-3">
-        <!-- Logo/Icon -->
-        <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-          <span class="text-white text-sm font-bold drop-shadow-sm">AI</span>
-        </div>
-        <!-- Title -->
-        <div class="flex flex-col">
-          <h1 class="text-xl font-bold text-white leading-tight">AI小说创作助手</h1>
-          <span class="text-xs text-gray-600 leading-tight">智能协作，创意无限</span>
-        </div>
-      </div>
-
-      <!-- User Info & Actions -->
-      <div class="flex items-center space-x-3">
-        <!-- Current Project Info -->
-        <div v-if="currentProject" class="hidden md:flex items-center space-x-2 px-3 py-1 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <BookOutlined class="text-gray-600 text-sm" />
-          <span class="text-sm text-gray-800 font-medium">{{ currentProject.title }}</span>
-          <a-tag size="small" :color="getStatusColor(currentProject.status)">
-            {{ getStatusText(currentProject.status) }}
-          </a-tag>
-        </div>
-
-        <!-- Action Buttons -->
-        <a-space>
-          <!-- AI Assistant Toggle -->
+    <a-layout-header class="header">
+      <div class="header-content">
+        <!-- Left Side -->
+        <div class="header-left">
+          <!-- Menu Toggle -->
           <a-button 
             type="text" 
-            size="small" 
-            :class="[
-              'flex items-center text-gray-700 hover:text-gray-900 hover:bg-white hover:shadow-sm',
-              { 'bg-blue-50 text-blue-600': !aiPanelCollapsed }
-            ]"
-            @click="aiPanelCollapsed = !aiPanelCollapsed"
+            class="menu-toggle-btn"
+            @click="toggleSidebar"
           >
             <template #icon>
-              <RobotOutlined :class="{ 'text-blue-600': !aiPanelCollapsed, 'text-gray-600': aiPanelCollapsed }" />
+              <MenuUnfoldOutlined v-if="collapsed" />
+              <MenuFoldOutlined v-else />
             </template>
-            <span class="hidden sm:inline">AI助手</span>
-          </a-button>
-          
-          <a-button type="text" size="small" class="flex items-center text-gray-700 hover:text-gray-900 hover:bg-white hover:shadow-sm">
-            <template #icon>
-              <SettingOutlined class="text-gray-600" />
-            </template>
-            <span class="hidden sm:inline text-gray-700">设置</span>
-          </a-button>
-          <a-button type="text" size="small" class="flex items-center text-gray-700 hover:text-gray-900 hover:bg-white hover:shadow-sm">
-            <template #icon>
-              <QuestionCircleOutlined class="text-gray-600" />
-            </template>
-            <span class="hidden sm:inline text-gray-700">帮助</span>
           </a-button>
 
-          <!-- User Avatar -->
-          <a-dropdown placement="bottomRight">
-            <a-avatar size="small" class="bg-blue-600 cursor-pointer hover:bg-blue-700 transition-colors shadow-sm">
-              <template #icon>
-                <UserOutlined class="text-white" />
+          <!-- Logo and Title -->
+          <div class="logo-section">
+            <div class="logo">
+              <span class="logo-text">AI</span>
+            </div>
+            <div class="title-section">
+              <h1 class="app-title">AI小说创作助手</h1>
+              <span class="app-subtitle">智能协作，创意无限</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="header-right">
+          <a-space size="middle">
+            <!-- Project Selector -->
+            <a-select
+              v-model:value="selectedProject"
+              placeholder="选择项目"
+              style="width: 200px"
+              size="middle"
+              :options="projectOptions"
+              class="project-selector"
+              :dropdown-match-select-width="false"
+            >
+              <template #suffixIcon>
+                <BookOutlined />
               </template>
-            </a-avatar>
-            <template #overlay>
-              <a-menu class="min-w-32">
-                <a-menu-item key="profile" class="flex items-center space-x-2">
-                  <UserOutlined class="text-gray-600" />
-                  <span class="text-gray-800">个人资料</span>
-                </a-menu-item>
-                <a-menu-item key="preferences" class="flex items-center space-x-2">
-                  <SettingOutlined class="text-gray-600" />
-                  <span class="text-gray-800">偏好设置</span>
-                </a-menu-item>
-                <a-menu-divider />
-                <a-menu-item key="logout" class="flex items-center space-x-2">
-                  <LogoutOutlined class="text-red-500" />
-                  <span class="text-red-600">退出登录</span>
-                </a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
-        </a-space>
+            </a-select>
+
+            <!-- Action Buttons -->
+            <a-space size="small">
+              <!-- AI Assistant Toggle -->
+              <a-tooltip title="AI助手">
+                <a-button 
+                  type="text" 
+                  class="header-action-btn"
+                  :class="{ 'active': !aiPanelCollapsed }"
+                  @click="toggleAIPanel"
+                >
+                  <template #icon>
+                    <RobotOutlined />
+                  </template>
+                </a-button>
+              </a-tooltip>
+
+              <!-- Notifications -->
+              <a-tooltip title="通知">
+                <a-badge count="3" size="small">
+                  <a-button type="text" class="header-action-btn">
+                    <template #icon>
+                      <BellOutlined />
+                    </template>
+                  </a-button>
+                </a-badge>
+              </a-tooltip>
+
+              <!-- Settings -->
+              <a-tooltip title="设置">
+                <a-button type="text" class="header-action-btn">
+                  <template #icon>
+                    <SettingOutlined />
+                  </template>
+                </a-button>
+              </a-tooltip>
+
+              <!-- Help -->
+              <a-tooltip title="帮助">
+                <a-button type="text" class="header-action-btn">
+                  <template #icon>
+                    <QuestionCircleOutlined />
+                  </template>
+                </a-button>
+              </a-tooltip>
+            </a-space>
+
+            <!-- User Menu -->
+            <a-dropdown placement="bottomRight" :trigger="['click']">
+              <a-space class="user-menu" style="cursor: pointer;">
+                <a-avatar size="default" class="user-avatar">
+                  <template #icon>
+                    <UserOutlined />
+                  </template>
+                </a-avatar>
+                <span class="username">用户名</span>
+                <DownOutlined class="dropdown-icon" />
+              </a-space>
+              <template #overlay>
+                <a-menu class="user-dropdown-menu">
+                  <a-menu-item key="profile">
+                    <UserOutlined />
+                    <span>个人资料</span>
+                  </a-menu-item>
+                  <a-menu-item key="preferences">
+                    <SettingOutlined />
+                    <span>偏好设置</span>
+                  </a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item key="logout" class="logout-item">
+                    <LogoutOutlined />
+                    <span>退出登录</span>
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </a-space>
+        </div>
       </div>
-    </header>
+    </a-layout-header>
 
     <!-- Main Layout Container -->
-    <div class="flex flex-1 overflow-hidden">
+    <a-layout class="main-content">
       <!-- Left Sidebar -->
-      <div 
-        class="bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 sidebar"
-        :style="{ width: collapsed ? '60px' : '280px', minWidth: collapsed ? '60px' : '280px' }"
+      <a-layout-sider 
+        v-model:collapsed="collapsed"
+        :width="280"
+        :collapsed-width="60"
+        class="sidebar"
+        theme="light"
       >
         <NavigationMenu
           :collapsed="collapsed"
@@ -98,67 +143,58 @@
           @chapter-selected="handleChapterSelected"
           @add-chapter="addNewChapter"
         />
+      </a-layout-sider>
 
-        <div class="p-2 mt-auto">
-          <a-button
-            type="text"
-            @click="collapsed = !collapsed"
-            class="w-full flex items-center justify-center mb-2"
-          >
-            <MenuFoldOutlined v-if="!collapsed" />
-            <MenuUnfoldOutlined v-else />
-          </a-button>
+      <!-- Main Content Area -->
+      <a-layout-content class="content-area">
+        <div class="content-wrapper">
+          <router-view />
         </div>
-      </div>
 
-      <!-- Center Content -->
-      <div class="flex-1 bg-white overflow-hidden main-content">
-        <router-view />
-      </div>
-
-      <!-- Right AI Panel -->
-      <div 
-        v-if="!aiPanelCollapsed"
-        class="bg-gray-50 border-l border-gray-200 flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 ai-panel"
-        :style="{ width: '384px', minWidth: '384px', maxWidth: '384px' }"
-      >
-        <!-- Panel Header -->
-        <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-          <div class="flex items-center space-x-2">
-            <RobotOutlined class="text-blue-600" />
-            <span class="font-semibold text-gray-800">AI助手</span>
+        <!-- Right Panel (AI Assistant) -->
+        <div 
+          class="ai-panel"
+          :class="{ 'collapsed': aiPanelCollapsed }"
+        >
+          <div class="ai-panel-header">
+            <div class="ai-panel-title">
+              <RobotOutlined />
+              <span>AI助手</span>
+            </div>
+            <a-button
+              type="text"
+              size="small"
+              @click="toggleAIPanel"
+              class="close-btn"
+            >
+              <CloseOutlined />
+            </a-button>
           </div>
-          <a-button
-            type="text"
-            size="small"
-            @click="aiPanelCollapsed = true"
-            class="text-gray-500 hover:text-gray-700"
-          >
-            ×
-          </a-button>
+          <div class="ai-panel-content">
+            <AIAssistantPanel />
+          </div>
         </div>
-        
-        <!-- Panel Content -->
-        <div class="flex-1 overflow-hidden">
-          <AIAssistantPanel />
-        </div>
-      </div>
-    </div>
+      </a-layout-content>
+    </a-layout>
 
     <!-- Bottom Status Bar -->
-    <footer class="bg-gray-100 border-t border-gray-200 h-8 flex items-center justify-between px-4 flex-shrink-0">
-      <div class="flex items-center space-x-4 text-sm text-gray-600">
-        <span>项目：{{ currentProject?.title || '未选择' }}</span>
-        <span>状态：{{ projectStatus }}</span>
-        <span>字数：{{ wordCount }}</span>
+    <a-layout-footer class="status-bar">
+      <div class="status-left">
+        <a-space size="large">
+          <span>项目：{{ currentProject?.title || '未选择' }}</span>
+          <span>状态：{{ projectStatus }}</span>
+          <span>字数：{{ wordCount }}</span>
+        </a-space>
       </div>
-      <div class="flex items-center space-x-2 text-sm text-gray-600">
-        <span>AI连接：</span>
-        <a-badge :status="aiStatus === 'connected' ? 'success' : 'error'" />
-        <span>{{ aiStatus === 'connected' ? '已连接' : '未连接' }}</span>
+      <div class="status-right">
+        <a-space size="small">
+          <span>AI连接：</span>
+          <a-badge :status="aiStatus === 'connected' ? 'success' : 'error'" />
+          <span>{{ aiStatus === 'connected' ? '已连接' : '未连接' }}</span>
+        </a-space>
       </div>
-    </footer>
-  </div>
+    </a-layout-footer>
+  </a-layout>
 </template>
 
 <script setup lang="ts">
@@ -171,7 +207,10 @@ import {
   QuestionCircleOutlined,
   UserOutlined,
   LogoutOutlined,
-  RobotOutlined
+  RobotOutlined,
+  BellOutlined,
+  DownOutlined,
+  CloseOutlined
 } from '@ant-design/icons-vue'
 import type { Novel, Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'
@@ -180,6 +219,7 @@ import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 const collapsed = ref(false)
 const aiPanelCollapsed = ref(false)
 const selectedChapter = ref<Chapter | null>(null)
+const selectedProject = ref<string>('1')
 
 // Mock data - will be replaced with actual store data
 const currentProject = ref<Novel | null>({
@@ -192,6 +232,12 @@ const currentProject = ref<Novel | null>({
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 })
+
+const projectOptions = ref([
+  { label: '测试小说', value: '1' },
+  { label: '科幻冒险', value: '2' },
+  { label: '都市传说', value: '3' }
+])
 
 const chapters = ref<Chapter[]>([
   {
@@ -222,6 +268,15 @@ const projectStatus = computed(() => {
 const wordCount = ref(0)
 const aiStatus = ref<'connected' | 'disconnected'>('disconnected')
 
+// Methods
+const toggleSidebar = () => {
+  collapsed.value = !collapsed.value
+}
+
+const toggleAIPanel = () => {
+  aiPanelCollapsed.value = !aiPanelCollapsed.value
+}
+
 const handleChapterSelected = (chapter: Chapter) => {
   selectedChapter.value = chapter
 }
@@ -251,70 +306,328 @@ const getStatusText = (status: string) => {
 </script>
 
 <style scoped>
-/* Button hover states for better contrast on light background */
-:deep(.ant-btn-text:hover) {
-  background-color: rgba(255, 255, 255, 0.8) !important;
-  color: #1f2937 !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+/* Main Layout Styles */
+.main-layout {
+  height: 100vh;
+  overflow: hidden;
 }
 
-:deep(.ant-btn-text) {
-  color: #4b5563 !important;
-  border: none !important;
-  transition: all 0.2s ease-in-out;
+/* Header Styles */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 0;
+  height: 64px;
+  line-height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-/* Avatar hover effect */
-:deep(.ant-avatar) {
-  transition: all 0.2s ease-in-out;
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px;
 }
 
-/* Menu item styles for better readability */
-:deep(.ant-dropdown-menu-item) {
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* Menu Toggle Button */
+.menu-toggle-btn {
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 18px;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.menu-toggle-btn:hover {
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* Logo Section */
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #1890ff, #722ed1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+}
+
+.logo-text {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  margin: 0;
+}
+
+.app-subtitle {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: -2px;
+}
+
+/* Project Selector */
+.project-selector {
+  border-radius: 6px;
+}
+
+.project-selector :deep(.ant-select-selector) {
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Header Action Buttons */
+.header-action-btn {
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.header-action-btn:hover {
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.header-action-btn.active {
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* User Menu */
+.user-menu {
   padding: 8px 12px;
-  color: #374151 !important;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
-:deep(.ant-dropdown-menu-item:hover) {
-  background-color: #f3f4f6 !important;
-  color: #1f2937 !important;
+.user-menu:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
-/* Ensure status tags have good contrast */
-:deep(.ant-tag) {
-  border: 1px solid;
+.user-avatar {
+  background: #1890ff;
+}
+
+.username {
+  color: rgba(0, 0, 0, 0.85);
   font-weight: 500;
+  margin-left: 8px;
 }
 
-/* Responsive design for mobile */
-@media (max-width: 1024px) {
-  /* On tablets and smaller, hide AI panel by default */
-  .ai-panel {
+.dropdown-icon {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+/* User Dropdown Menu */
+.user-dropdown-menu {
+  min-width: 160px;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.user-dropdown-menu :deep(.ant-dropdown-menu-item) {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-item {
+  color: #ff4d4f !important;
+}
+
+.logout-item:hover {
+  background-color: rgba(255, 77, 79, 0.1) !important;
+}
+
+/* Main Content */
+.main-content {
+  height: calc(100vh - 64px - 48px);
+}
+
+/* Sidebar */
+.sidebar {
+  border-right: 1px solid #f0f0f0;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Content Area */
+.content-area {
+  position: relative;
+  display: flex;
+  height: 100%;
+}
+
+.content-wrapper {
+  flex: 1;
+  background: #f5f5f5;
+  overflow: auto;
+  min-width: 0;
+}
+
+/* AI Panel */
+.ai-panel {
+  width: 400px;
+  background: #fff;
+  border-left: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
+}
+
+.ai-panel.collapsed {
+  width: 0;
+  overflow: hidden;
+  border-left: none;
+  box-shadow: none;
+}
+
+.ai-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.ai-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.ai-panel-title :deep(.anticon) {
+  color: #1890ff;
+}
+
+.close-btn {
+  color: rgba(0, 0, 0, 0.45);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.ai-panel-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Status Bar */
+.status-bar {
+  height: 48px;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.status-left,
+.status-right {
+  display: flex;
+  align-items: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .app-subtitle {
     display: none;
+  }
+  
+  .username {
+    display: none;
+  }
+}
+
+@media (max-width: 992px) {
+  .title-section {
+    display: none;
+  }
+  
+  .project-selector {
+    width: 150px !important;
+  }
+  
+  .ai-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    z-index: 10;
   }
 }
 
 @media (max-width: 768px) {
-  /* On mobile, force sidebar to be collapsed */
-  .sidebar {
-    width: 60px !important;
-    min-width: 60px !important;
+  .header-content {
+    padding: 0 16px;
   }
   
-  /* Ensure main content area gets remaining space */
-  .main-content {
-    flex: 1;
-    min-width: 0;
-  }
-}
-
-@media (max-width: 640px) {
-  header h1 {
-    font-size: 1rem;
-  }
-
-  header .text-xs {
+  .project-selector {
     display: none;
+  }
+  
+  .header-action-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .ai-panel {
+    width: 100%;
   }
 }
 </style>
