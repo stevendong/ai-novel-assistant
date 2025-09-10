@@ -376,6 +376,106 @@ router.post('/:id/characters', async (req, res) => {
   }
 });
 
+// 更新章节角色关系
+router.put('/:id/characters/:characterId', async (req, res) => {
+  try {
+    const { id, characterId } = req.params;
+    const { role } = req.body;
+
+    const relation = await prisma.chapterCharacter.update({
+      where: {
+        chapterId_characterId: {
+          chapterId: id,
+          characterId
+        }
+      },
+      data: { role }
+    });
+
+    res.json(relation);
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Chapter-character relation not found' });
+    }
+    console.error('Error updating chapter-character relation:', error);
+    res.status(500).json({ error: 'Failed to update chapter-character relation' });
+  }
+});
+
+// 从章节中移除角色
+router.delete('/:id/characters/:characterId', async (req, res) => {
+  try {
+    const { id, characterId } = req.params;
+
+    await prisma.chapterCharacter.delete({
+      where: {
+        chapterId_characterId: {
+          chapterId: id,
+          characterId
+        }
+      }
+    });
+
+    res.json({ message: 'Character removed from chapter successfully' });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Chapter-character relation not found' });
+    }
+    console.error('Error removing character from chapter:', error);
+    res.status(500).json({ error: 'Failed to remove character from chapter' });
+  }
+});
+
+// 更新章节设定关系
+router.put('/:id/settings/:settingId', async (req, res) => {
+  try {
+    const { id, settingId } = req.params;
+    const { usage } = req.body;
+
+    const relation = await prisma.chapterSetting.update({
+      where: {
+        chapterId_settingId: {
+          chapterId: id,
+          settingId
+        }
+      },
+      data: { usage }
+    });
+
+    res.json(relation);
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Chapter-setting relation not found' });
+    }
+    console.error('Error updating chapter-setting relation:', error);
+    res.status(500).json({ error: 'Failed to update chapter-setting relation' });
+  }
+});
+
+// 从章节中移除设定
+router.delete('/:id/settings/:settingId', async (req, res) => {
+  try {
+    const { id, settingId } = req.params;
+
+    await prisma.chapterSetting.delete({
+      where: {
+        chapterId_settingId: {
+          chapterId: id,
+          settingId
+        }
+      }
+    });
+
+    res.json({ message: 'Setting removed from chapter successfully' });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Chapter-setting relation not found' });
+    }
+    console.error('Error removing setting from chapter:', error);
+    res.status(500).json({ error: 'Failed to remove setting from chapter' });
+  }
+});
+
 // 添加设定到章节
 router.post('/:id/settings', async (req, res) => {
   try {

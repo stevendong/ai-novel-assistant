@@ -220,6 +220,34 @@ class ChapterService {
     return await response.json()
   }
 
+  // 更新章节角色关系
+  async updateCharacterRole(chapterId: string, characterId: string, role: string): Promise<ChapterCharacter> {
+    const response = await fetch(`${API_BASE}/chapters/${chapterId}/characters/${characterId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ role }),
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to update character role')
+    }
+    
+    return await response.json()
+  }
+
+  // 从章节中移除角色
+  async removeCharacterFromChapter(chapterId: string, characterId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/chapters/${chapterId}/characters/${characterId}`, {
+      method: 'DELETE',
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to remove character from chapter')
+    }
+  }
+
   // 添加设定到章节
   async addSettingToChapter(chapterId: string, settingId: string, usage: string = ''): Promise<ChapterSetting> {
     const response = await fetch(`${API_BASE}/chapters/${chapterId}/settings`, {
@@ -235,6 +263,34 @@ class ChapterService {
     }
     
     return await response.json()
+  }
+
+  // 更新章节设定使用说明
+  async updateSettingUsage(chapterId: string, settingId: string, usage: string): Promise<ChapterSetting> {
+    const response = await fetch(`${API_BASE}/chapters/${chapterId}/settings/${settingId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ usage }),
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to update setting usage')
+    }
+    
+    return await response.json()
+  }
+
+  // 从章节中移除设定
+  async removeSettingFromChapter(chapterId: string, settingId: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/chapters/${chapterId}/settings/${settingId}`, {
+      method: 'DELETE',
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to remove setting from chapter')
+    }
   }
 
   // 解析章节数据（处理JSON字符串字段）

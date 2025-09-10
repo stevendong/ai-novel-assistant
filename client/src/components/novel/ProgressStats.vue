@@ -2,7 +2,7 @@
   <div class="h-full p-6 overflow-y-auto bg-gray-50">
     <div class="max-w-6xl mx-auto">
       <h1 class="text-2xl font-bold text-gray-800 mb-6">进度统计</h1>
-      
+
       <!-- Overall Progress -->
       <a-card class="mb-6" title="总体进度">
         <a-row :gutter="[16, 16]">
@@ -39,11 +39,11 @@
             />
           </a-col>
         </a-row>
-        
+
         <div class="mt-6">
           <h4 class="text-sm font-medium text-gray-700 mb-2">完成进度</h4>
-          <a-progress 
-            :percent="overallProgress" 
+          <a-progress
+            :percent="overallProgress"
             :stroke-color="{ '0%': '#108ee9', '100%': '#87d068' }"
             class="mb-2"
           />
@@ -64,7 +64,7 @@
             </div>
           </a-card>
         </a-col>
-        
+
         <!-- Word Count Trends -->
         <a-col :span="8">
           <a-card title="字数趋势" size="small" class="mb-4">
@@ -88,9 +88,9 @@
 
       <!-- Chapter Progress -->
       <a-card title="章节进度" class="mb-6">
-        <a-table 
-          :columns="chapterColumns" 
-          :data-source="chapterProgress" 
+        <a-table
+          :columns="chapterColumns"
+          :data-source="chapterProgress"
           :pagination="false"
           size="small"
         >
@@ -101,9 +101,9 @@
               </a-tag>
             </template>
             <template v-else-if="column.key === 'progress'">
-              <a-progress 
-                :percent="record.progress" 
-                size="small" 
+              <a-progress
+                :percent="record.progress"
+                size="small"
                 :show-info="false"
               />
               <span class="ml-2 text-sm">{{ record.progress }}%</span>
@@ -133,34 +133,31 @@
               <div>
                 <div class="flex justify-between items-center mb-1">
                   <span class="text-sm">日目标 ({{ dailyGoal }}字)</span>
-                  <span class="text-sm">{{ Math.round((todayWords / dailyGoal) * 100) }}%</span>
                 </div>
-                <a-progress 
-                  :percent="Math.min((todayWords / dailyGoal) * 100, 100)" 
+                <a-progress
+                  :percent="Math.round((todayWords / dailyGoal) * 100, 100)"
                   size="small"
                   :stroke-color="todayWords >= dailyGoal ? '#52c41a' : '#1890ff'"
                 />
               </div>
-              
+
               <div>
                 <div class="flex justify-between items-center mb-1">
                   <span class="text-sm">周目标 ({{ weeklyGoal }}字)</span>
-                  <span class="text-sm">{{ Math.round((weekWords / weeklyGoal) * 100) }}%</span>
                 </div>
-                <a-progress 
-                  :percent="Math.min((weekWords / weeklyGoal) * 100, 100)" 
+                <a-progress
+                  :percent="Math.round((weekWords / weeklyGoal) * 100, 100)"
                   size="small"
                   :stroke-color="weekWords >= weeklyGoal ? '#52c41a' : '#1890ff'"
                 />
               </div>
-              
+
               <div>
                 <div class="flex justify-between items-center mb-1">
                   <span class="text-sm">月目标 ({{ monthlyGoal }}字)</span>
-                  <span class="text-sm">{{ Math.round((monthWords / monthlyGoal) * 100) }}%</span>
                 </div>
-                <a-progress 
-                  :percent="Math.min((monthWords / monthlyGoal) * 100, 100)" 
+                <a-progress
+                  :percent="Math.round((monthWords / monthlyGoal) * 100, 100)"
                   size="small"
                   :stroke-color="monthWords >= monthlyGoal ? '#52c41a' : '#1890ff'"
                 />
@@ -168,12 +165,12 @@
             </a-space>
           </a-card>
         </a-col>
-        
+
         <a-col :span="12">
           <a-card title="成就徽章" size="small">
             <div class="grid grid-cols-3 gap-3">
-              <div 
-                v-for="achievement in achievements" 
+              <div
+                v-for="achievement in achievements"
                 :key="achievement.id"
                 class="text-center p-2 border rounded-lg"
                 :class="achievement.earned ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-200'"
@@ -253,7 +250,7 @@ const loadData = async () => {
     try {
       const novels = await novelService.getNovels()
       if (novels.length === 0) return
-      
+
       const novelId = novels[0].id
       await loadStatisticsData(novelId)
     } catch (error) {
@@ -261,7 +258,7 @@ const loadData = async () => {
     }
     return
   }
-  
+
   await loadStatisticsData(props.novelId)
 }
 
@@ -273,7 +270,7 @@ const loadStatisticsData = async (novelId: string) => {
       novelService.getChapterProgress(novelId),
       novelService.getWritingGoals(novelId)
     ])
-    
+
     statistics.value = stats
     chapterProgress.value = progress
     writingGoals.value = goals
@@ -294,7 +291,7 @@ const getChapterStatusColor = (status: string) => {
   const colors = {
     'planning': 'default',
     'writing': 'processing',
-    'reviewing': 'warning', 
+    'reviewing': 'warning',
     'completed': 'success'
   }
   return colors[status as keyof typeof colors] || 'default'

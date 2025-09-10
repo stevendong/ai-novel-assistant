@@ -400,7 +400,7 @@
         :filter-option="filterCharacter"
       >
         <a-select-option
-          v-for="character in availableCharacters"
+          v-for="character in filteredAvailableCharacters"
           :key="character.id"
           :value="character.id"
         >
@@ -418,7 +418,7 @@
         :filter-option="filterSetting"
       >
         <a-select-option
-          v-for="setting in availableSettings"
+          v-for="setting in filteredAvailableSettings"
           :key="setting.id"
           :value="setting.id"
         >
@@ -449,6 +449,8 @@ import {
 import { useChapter } from '@/composables/useChapter'
 import { useMarkdown } from '@/composables/useMarkdown'
 import { chapterService } from '@/services/chapterService'
+import { characterService } from '@/services/characterService'
+import { settingService } from '@/services/settingService'
 import TiptapEditor from './TiptapEditor.vue'
 import type { Character, WorldSetting, PlotPoint, Illustration } from '@/types'
 import '@/assets/markdown-novel.css'
@@ -510,16 +512,26 @@ const showAddSettingModal = ref(false)
 const selectedCharacterId = ref<string>()
 const selectedSettingId = ref<string>()
 
-// 模拟数据 - 在实际应用中应该从API获取
-const availableCharacters = ref<Character[]>([
-  { id: '2', novelId: '1', name: '王警官', description: '经验丰富的老警察', appearance: '', personality: '', background: '', relationships: {}, isLocked: false },
-  { id: '3', novelId: '1', name: '小雨', description: '李明的助手', appearance: '', personality: '', background: '', relationships: {}, isLocked: false }
-])
+// 可用角色和设定数据
+const availableCharacters = ref<Character[]>([])
+const availableSettings = ref<WorldSetting[]>([])
 
-const availableSettings = ref<WorldSetting[]>([
-  { id: '2', novelId: '1', type: 'location', name: '警察局', description: '市区警察局', details: {}, isLocked: false },
-  { id: '3', novelId: '1', type: 'rule', name: '调查流程', description: '私人侦探的调查流程规范', details: {}, isLocked: false }
-])
+// 加载可用角色和设定
+const loadAvailableData = async () => {
+  if (!chapter.value) return
+  
+  try {
+    const [characters, settings] = await Promise.all([
+      characterService.getCharactersByNovel(chapter.value.novelId),
+      settingService.getByNovelId(chapter.value.novelId)
+    ])
+    
+    availableCharacters.value = characters
+    availableSettings.value = settings
+  } catch (err) {
+    console.error('Error loading available data:', err)
+  }
+}
 
 // 不再需要Monaco编辑器初始化
 
@@ -591,31 +603,35 @@ const addCharacterToChapter = async () => {
     message.success('角色添加成功')
   } catch (err) {
     message.error('角色添加失败')
+    console.error('Error adding character to chapter:', err)
   } finally {
     showAddCharacterModal.value = false
     selectedCharacterId.value = undefined
   }
 }
 
-const removeCharacterFromChapter = (characterId: string) => {
-  // 这里应该调用API删除角色关联
-  // 暂时先在前端处理
+const removeCharacterFromChapter = async (characterId: string) => {
   if (!chapter.value) return
   
-  const index = chapter.value.characters.findIndex(c => c.characterId === characterId)
-  if (index > -1) {
-    chapter.value.characters.splice(index, 1)
-    hasUnsavedChanges.value = true
+  try {
+    await chapterService.removeCharacterFromChapter(chapter.value.id, characterId)
+    await loadChapter(chapter.value.id)
+    message.success('角色移除成功')
+  } catch (err) {
+    message.error('角色移除失败')
+    console.error('Error removing character from chapter:', err)
   }
 }
 
-const updateCharacterRole = (characterId: string, role: string) => {
+const updateCharacterRole = async (characterId: string, role: string) => {
   if (!chapter.value) return
   
-  const chapterChar = chapter.value.characters.find(c => c.characterId === characterId)
-  if (chapterChar) {
-    chapterChar.role = role as 'main' | 'supporting' | 'mentioned'
-    hasUnsavedChanges.value = true
+  try {
+    await chapterService.updateCharacterRole(chapter.value.id, characterId, role)
+    message.success('角色关系更新成功')
+  } catch (err) {
+    message.error('角色关系更新失败')
+    console.error('Error updating character role:', err)
   }
 }
 
@@ -629,29 +645,35 @@ const addSettingToChapter = async () => {
     message.success('设定添加成功')
   } catch (err) {
     message.error('设定添加失败')
+    console.error('Error adding setting to chapter:', err)
   } finally {
     showAddSettingModal.value = false
     selectedSettingId.value = undefined
   }
 }
 
-const removeSettingFromChapter = (settingId: string) => {
+const removeSettingFromChapter = async (settingId: string) => {
   if (!chapter.value) return
   
-  const index = chapter.value.settings.findIndex(s => s.settingId === settingId)
-  if (index > -1) {
-    chapter.value.settings.splice(index, 1)
-    hasUnsavedChanges.value = true
+  try {
+    await chapterService.removeSettingFromChapter(chapter.value.id, settingId)
+    await loadChapter(chapter.value.id)
+    message.success('设定移除成功')
+  } catch (err) {
+    message.error('设定移除失败')
+    console.error('Error removing setting from chapter:', err)
   }
 }
 
-const updateSettingUsage = (settingId: string, usage: string) => {
+const updateSettingUsage = async (settingId: string, usage: string) => {
   if (!chapter.value) return
   
-  const chapterSetting = chapter.value.settings.find(s => s.settingId === settingId)
-  if (chapterSetting) {
-    chapterSetting.usage = usage
-    hasUnsavedChanges.value = true
+  try {
+    await chapterService.updateSettingUsage(chapter.value.id, settingId, usage)
+    message.success('设定用法更新成功')
+  } catch (err) {
+    message.error('设定用法更新失败')
+    console.error('Error updating setting usage:', err)
   }
 }
 
@@ -737,6 +759,8 @@ onMounted(async () => {
   // 加载章节数据
   if (chapterId.value) {
     await loadChapter(chapterId.value)
+    // 加载可用角色和设定
+    await loadAvailableData()
   }
   
   // 初始化Markdown内容
@@ -750,11 +774,31 @@ onMounted(async () => {
 
 // 标签页切换处理（如果需要可以添加其他逻辑）
 
+// 监听章节变化，重新加载可用数据
+watch(() => chapter.value?.id, async (newChapterId) => {
+  if (newChapterId) {
+    await loadAvailableData()
+  }
+})
+
 // 监听错误信息
 watch(error, (newError) => {
   if (newError) {
     message.error(newError)
   }
+})
+
+// 计算属性：过滤后的可用角色和设定
+const filteredAvailableCharacters = computed(() => {
+  if (!chapter.value) return availableCharacters.value
+  const chapterCharacterIds = chapter.value.characters.map(c => c.characterId)
+  return availableCharacters.value.filter(c => !chapterCharacterIds.includes(c.id))
+})
+
+const filteredAvailableSettings = computed(() => {
+  if (!chapter.value) return availableSettings.value
+  const chapterSettingIds = chapter.value.settings.map(s => s.settingId)
+  return availableSettings.value.filter(s => !chapterSettingIds.includes(s.id))
 })
 
 // 组件卸载时的清理工作（如需要可以添加）
