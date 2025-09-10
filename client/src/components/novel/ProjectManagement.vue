@@ -212,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, h } from 'vue'
+import { ref, computed, h, onMounted } from 'vue'
 import {
   PlusOutlined,
   ImportOutlined,
@@ -221,63 +221,62 @@ import {
   BookOutlined,
   CheckCircleOutlined
 } from '@ant-design/icons-vue'
-import type { Novel } from '@/types'
+import { message } from 'ant-design-vue'
+import type { Novel, ProjectOverviewStats } from '@/types'
+import { novelService } from '@/services/novelService'
 
-// Mock data - will be replaced with actual store data
-const currentProject = ref<Novel | null>({
-  id: '1',
-  title: '神秘森林的传说',
-  description: '一个关于魔法森林中冒险的奇幻故事，主角是一位年轻的法师学徒。',
-  genre: '奇幻',
-  rating: 'PG-13',
-  status: 'writing',
-  createdAt: '2024-01-15T10:30:00Z',
-  updatedAt: '2024-01-20T15:45:00Z'
-})
-
-const recentProjects = ref<Novel[]>([
-  {
-    id: '2',
-    title: '星际漂流者',
-    description: '科幻背景下的太空探险故事',
-    genre: '科幻',
-    rating: 'PG-13',
-    status: 'completed',
-    createdAt: '2024-01-10T08:00:00Z',
-    updatedAt: '2024-01-18T12:00:00Z'
-  },
-  {
-    id: '3',
-    title: '都市夜行者',
-    description: '现代都市中的悬疑推理小说',
-    genre: '悬疑',
-    rating: 'R',
-    status: 'draft',
-    createdAt: '2024-01-05T14:20:00Z',
-    updatedAt: '2024-01-12T09:15:00Z'
-  }
-])
-
+// 响应式数据
+const currentProject = ref<Novel | null>(null)
+const recentProjects = ref<Novel[]>([])
+const projectStats = ref<ProjectOverviewStats | null>(null)
+const loading = ref(false)
 const showNewProjectModal = ref(false)
 const newProject = ref({
   title: '',
   description: '',
   genre: '',
-  rating: 'PG-13' as const
+  rating: 'PG-13' as const,
+  targetWordCount: 100000
 })
 
-// Statistics
-const chaptersCount = ref(8)
-const charactersCount = ref(15)
-const totalProjects = computed(() => recentProjects.value.length + (currentProject.value ? 1 : 0))
-const inProgressProjects = computed(() => 
-  recentProjects.value.filter(p => p.status === 'writing').length + 
-  (currentProject.value?.status === 'writing' ? 1 : 0)
-)
-const completedProjects = computed(() => 
-  recentProjects.value.filter(p => p.status === 'completed').length + 
-  (currentProject.value?.status === 'completed' ? 1 : 0)
-)
+// 计算属性
+const chaptersCount = computed(() => currentProject.value?._count?.chapters || 0)
+const charactersCount = computed(() => currentProject.value?._count?.characters || 0)
+const totalProjects = computed(() => projectStats.value?.projects.total || 0)
+const inProgressProjects = computed(() => projectStats.value?.projects.writing || 0)
+const completedProjects = computed(() => projectStats.value?.projects.completed || 0)
+
+// 加载数据
+const loadData = async () => {
+  try {
+    loading.value = true
+    const [novels, stats] = await Promise.all([
+      novelService.getNovels(),
+      novelService.getProjectStats()
+    ])
+    
+    recentProjects.value = novels
+    projectStats.value = stats
+    
+    // 设置当前项目（第一个进行中的项目或最近更新的项目）
+    const writingProject = novels.find(n => n.status === 'writing')
+    currentProject.value = writingProject || novels[0] || null
+    
+    // 从列表中移除当前项目
+    if (currentProject.value) {
+      recentProjects.value = novels.filter(n => n.id !== currentProject.value!.id)
+    }
+  } catch (error) {
+    console.error('Failed to load project data:', error)
+    message.error('加载项目数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
 
 // Utility functions
 const formatDate = (dateString: string) => {
@@ -324,34 +323,86 @@ const getProjectColor = (id: string) => {
 
 // Actions
 const editProject = () => {
-  console.log('Edit project')
+  console.log('Edit project:', currentProject.value)
+  // TODO: 打开编辑项目对话框
 }
 
-const deleteProject = () => {
-  console.log('Delete project')
+const deleteProject = async () => {
+  if (!currentProject.value) return
+  
+  try {
+    await novelService.deleteNovel(currentProject.value.id)
+    message.success('项目删除成功')
+    await loadData() // 重新加载数据
+  } catch (error) {
+    console.error('Failed to delete project:', error)
+    message.error('删除项目失败')
+  }
 }
 
 const openProject = (project: Novel) => {
-  console.log('Open project:', project)
+  // 设置为当前项目
+  const previousCurrent = currentProject.value
+  currentProject.value = project
+  
+  // 更新最近项目列表
+  if (previousCurrent) {
+    recentProjects.value = [previousCurrent, ...recentProjects.value.filter(p => p.id !== project.id)]
+  } else {
+    recentProjects.value = recentProjects.value.filter(p => p.id !== project.id)
+  }
+  
+  message.success(`已切换到项目：${project.title}`)
 }
 
-const duplicateProject = (project: Novel) => {
-  console.log('Duplicate project:', project)
+const duplicateProject = async (project: Novel) => {
+  try {
+    const duplicated = await novelService.duplicateNovel(project.id, `${project.title} (副本)`)
+    message.success('项目复制成功')
+    await loadData() // 重新加载数据
+  } catch (error) {
+    console.error('Failed to duplicate project:', error)
+    message.error('复制项目失败')
+  }
 }
 
 const importProject = () => {
-  console.log('Import project')
+  // TODO: 实现项目导入功能
+  message.info('导入功能开发中...')
 }
 
-const createNewProject = () => {
-  console.log('Create new project:', newProject.value)
-  showNewProjectModal.value = false
-  // Reset form
-  newProject.value = {
-    title: '',
-    description: '',
-    genre: '',
-    rating: 'PG-13'
+const createNewProject = async () => {
+  if (!newProject.value.title) {
+    message.error('请输入项目名称')
+    return
+  }
+  
+  try {
+    const created = await novelService.createNovel({
+      title: newProject.value.title,
+      description: newProject.value.description || '',
+      genre: newProject.value.genre || '',
+      rating: newProject.value.rating as any,
+      targetWordCount: newProject.value.targetWordCount
+    })
+    
+    message.success('项目创建成功')
+    showNewProjectModal.value = false
+    
+    // Reset form
+    newProject.value = {
+      title: '',
+      description: '',
+      genre: '',
+      rating: 'PG-13',
+      targetWordCount: 100000
+    }
+    
+    // 重新加载数据
+    await loadData()
+  } catch (error) {
+    console.error('Failed to create project:', error)
+    message.error('创建项目失败')
   }
 }
 </script>

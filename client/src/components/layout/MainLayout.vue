@@ -203,7 +203,7 @@ import NavigationMenu from './NavigationMenu.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 
 const collapsed = ref(false)
-const aiPanelCollapsed = ref(false)
+const aiPanelCollapsed = ref(true)  // 默认关闭 AI 助手面板
 const selectedChapter = ref<Chapter | null>(null)
 const selectedProject = ref<string>('1')
 

@@ -193,34 +193,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
+import type { NovelStatistics, ChapterProgress, WritingGoals, Achievement } from '@/types'
+import { novelService } from '@/services/novelService'
 
-// Mock data
-const totalWords = ref(85600)
-const completedChapters = ref(12)
-const totalChapters = ref(20)
-const writingDays = ref(45)
-const todayWords = ref(1200)
-const weekWords = ref(8500)
-const monthWords = ref(32800)
+// Props - 当前项目ID
+const props = defineProps<{
+  novelId?: string
+}>()
 
-const dailyGoal = ref(1000)
-const weeklyGoal = ref(7000)
-const monthlyGoal = ref(30000)
+// 响应式数据
+const statistics = ref<NovelStatistics | null>(null)
+const chapterProgress = ref<ChapterProgress[]>([])
+const writingGoals = ref<WritingGoals | null>(null)
+const loading = ref(false)
 
-const averageWordsPerDay = computed(() => Math.round(totalWords.value / writingDays.value))
-const overallProgress = computed(() => Math.round((completedChapters.value / totalChapters.value) * 100))
+// 计算属性
+const totalWords = computed(() => statistics.value?.overview.totalWords || 0)
+const completedChapters = computed(() => statistics.value?.chapters.completed || 0)
+const totalChapters = computed(() => statistics.value?.chapters.total || 0)
+const writingDays = computed(() => statistics.value?.overview.writingDays || 0)
+const todayWords = computed(() => statistics.value?.recentActivity.todayWords || 0)
+const weekWords = computed(() => statistics.value?.recentActivity.weekWords || 0)
+const monthWords = computed(() => statistics.value?.recentActivity.monthWords || 0)
 
-const estimatedCompletionDate = computed(() => {
-  const remainingChapters = totalChapters.value - completedChapters.value
-  const avgWordsPerChapter = totalWords.value / completedChapters.value
-  const remainingWords = remainingChapters * avgWordsPerChapter
-  const daysNeeded = Math.ceil(remainingWords / averageWordsPerDay.value)
-  const completionDate = new Date()
-  completionDate.setDate(completionDate.getDate() + daysNeeded)
-  return completionDate.toLocaleDateString('zh-CN')
-})
+const dailyGoal = computed(() => writingGoals.value?.daily.target || 1000)
+const weeklyGoal = computed(() => writingGoals.value?.weekly.target || 7000)
+const monthlyGoal = computed(() => writingGoals.value?.monthly.target || 30000)
 
+const averageWordsPerDay = computed(() => statistics.value?.overview.averageWordsPerDay || 0)
+const overallProgress = computed(() => statistics.value?.overview.overallProgress || 0)
+const estimatedCompletionDate = computed(() => statistics.value?.overview.estimatedCompletionDate || '暂无预计')
+
+// Mock achievements - 实际项目中可以从 API 获取
+const achievements = ref<Achievement[]>([
+  { id: '1', icon: '✍️', title: '初试笔墨', description: '完成第一章', earned: true },
+  { id: '2', icon: '📖', title: '日积月累', description: '连续写作7天', earned: true },
+  { id: '3', icon: '🎯', title: '目标达成', description: '达成月目标', earned: false },
+  { id: '4', icon: '💎', title: '精益求精', description: '修改章节10次', earned: false },
+  { id: '5', icon: '🏆', title: '创作大师', description: '完成10万字', earned: false },
+  { id: '6', icon: '🌟', title: '持之以恒', description: '连续写作30天', earned: false }
+])
+
+// 表格列配置
 const chapterColumns = [
   { title: '章节', dataIndex: 'title', key: 'title' },
   { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
@@ -230,27 +246,55 @@ const chapterColumns = [
   { title: '操作', key: 'actions', width: 120 }
 ]
 
-const chapterProgress = ref([
-  { id: 1, title: '第一章：神秘的开始', status: 'completed', wordCount: 4200, progress: 100, updatedAt: '2024-01-15' },
-  { id: 2, title: '第二章：初次遭遇', status: 'completed', wordCount: 3800, progress: 100, updatedAt: '2024-01-16' },
-  { id: 3, title: '第三章：隐藏的真相', status: 'writing', wordCount: 2100, progress: 65, updatedAt: '2024-01-20' },
-  { id: 4, title: '第四章：意外的盟友', status: 'planning', wordCount: 0, progress: 0, updatedAt: '2024-01-18' },
-])
+// 加载数据
+const loadData = async () => {
+  if (!props.novelId) {
+    // 如果没有提供小说ID，尝试获取第一个小说的统计信息
+    try {
+      const novels = await novelService.getNovels()
+      if (novels.length === 0) return
+      
+      const novelId = novels[0].id
+      await loadStatisticsData(novelId)
+    } catch (error) {
+      console.error('Failed to load novels:', error)
+    }
+    return
+  }
+  
+  await loadStatisticsData(props.novelId)
+}
 
-const achievements = ref([
-  { id: 1, icon: '✍️', title: '初试笔墨', description: '完成第一章', earned: true },
-  { id: 2, icon: '📖', title: '日积月累', description: '连续写作7天', earned: true },
-  { id: 3, icon: '🎯', title: '目标达成', description: '达成月目标', earned: false },
-  { id: 4, icon: '💎', title: '精益求精', description: '修改章节10次', earned: false },
-  { id: 5, icon: '🏆', title: '创作大师', description: '完成10万字', earned: false },
-  { id: 6, title: '🌟', title: '持之以恒', description: '连续写作30天', earned: false }
-])
+const loadStatisticsData = async (novelId: string) => {
+  try {
+    loading.value = true
+    const [stats, progress, goals] = await Promise.all([
+      novelService.getNovelStatistics(novelId),
+      novelService.getChapterProgress(novelId),
+      novelService.getWritingGoals(novelId)
+    ])
+    
+    statistics.value = stats
+    chapterProgress.value = progress
+    writingGoals.value = goals
+  } catch (error) {
+    console.error('Failed to load statistics:', error)
+    message.error('加载统计数据失败')
+  } finally {
+    loading.value = false
+  }
+}
 
+onMounted(() => {
+  loadData()
+})
+
+// 工具函数
 const getChapterStatusColor = (status: string) => {
   const colors = {
     'planning': 'default',
     'writing': 'processing',
-    'reviewing': 'warning',
+    'reviewing': 'warning', 
     'completed': 'success'
   }
   return colors[status as keyof typeof colors] || 'default'
@@ -266,11 +310,14 @@ const getChapterStatusText = (status: string) => {
   return texts[status as keyof typeof texts] || status
 }
 
-const editChapter = (chapter: any) => {
+// 操作函数
+const editChapter = (chapter: ChapterProgress) => {
   console.log('Edit chapter:', chapter)
+  // TODO: 跳转到章节编辑页面或打开编辑对话框
 }
 
-const viewChapter = (chapter: any) => {
+const viewChapter = (chapter: ChapterProgress) => {
   console.log('View chapter:', chapter)
+  // TODO: 跳转到章节详情页面
 }
 </script>

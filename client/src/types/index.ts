@@ -5,8 +5,16 @@ export interface Novel {
   genre: string
   rating: 'G' | 'PG' | 'PG-13' | 'R' | 'NC-17'
   status: 'draft' | 'writing' | 'completed'
+  wordCount?: number
+  targetWordCount?: number
   createdAt: string
   updatedAt: string
+  _count?: {
+    chapters: number
+    characters: number
+    settings: number
+  }
+  aiSettings?: AIConstraint
 }
 
 export interface Character {
@@ -68,6 +76,8 @@ export interface Chapter {
   plotPoints: PlotPoint[]
   illustrations: Illustration[]
   status: 'planning' | 'writing' | 'reviewing' | 'completed'
+  wordCount?: number
+  progress?: number
   characters: ChapterCharacter[]
   settings: ChapterSetting[]
   consistencyLog: ConsistencyCheck[]
@@ -93,4 +103,81 @@ export interface ConsistencyCheck {
   severity: 'low' | 'medium' | 'high'
   resolved: boolean
   createdAt: string
+}
+
+// 项目统计相关类型
+export interface NovelStatistics {
+  overview: {
+    totalWords: number
+    targetWordCount: number
+    writingDays: number
+    averageWordsPerDay: number
+    overallProgress: number
+    estimatedCompletionDate: string | null
+  }
+  chapters: {
+    total: number
+    completed: number
+    writing: number
+    planning: number
+  }
+  counts: {
+    characters: number
+    settings: number
+  }
+  recentActivity: {
+    todayWords: number
+    weekWords: number
+    monthWords: number
+  }
+}
+
+export interface ChapterProgress {
+  id: string
+  chapterNumber: number
+  title: string
+  status: 'planning' | 'writing' | 'reviewing' | 'completed'
+  wordCount: number
+  progress: number
+  updatedAt: string
+}
+
+export interface WritingGoals {
+  daily: {
+    target: number
+    achieved: number
+    progress: number
+  }
+  weekly: {
+    target: number
+    achieved: number
+    progress: number
+  }
+  monthly: {
+    target: number
+    achieved: number
+    progress: number
+  }
+}
+
+export interface ProjectOverviewStats {
+  projects: {
+    total: number
+    draft: number
+    writing: number
+    completed: number
+  }
+  content: {
+    totalWords: number
+    totalChapters: number
+  }
+}
+
+// 成就徽章
+export interface Achievement {
+  id: string
+  icon: string
+  title: string
+  description: string
+  earned: boolean
 }

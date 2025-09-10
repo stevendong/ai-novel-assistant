@@ -1,6 +1,6 @@
 import type { Chapter, PlotPoint, Illustration, ChapterCharacter, ChapterSetting } from '@/types'
 
-const API_BASE = 'http://localhost:3001/api'
+const API_BASE = '/api'
 
 export interface ChapterCreateData {
   novelId: string

@@ -140,7 +140,7 @@ export function useChapter(chapterId?: string) {
 
     try {
       // 这里可以调用AI服务进行一致性检查
-      const response = await fetch(`http://localhost:3001/api/ai/consistency/check`, {
+      const response = await fetch(`/api/ai/consistency/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

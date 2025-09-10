@@ -18,6 +18,8 @@ model Novel {
   genre       String?
   rating      String   @default("PG") // G, PG, PG-13, R, NC-17
   status      String   @default("draft") // draft, writing, completed
+  wordCount   Int      @default(0) // 总字数
+  targetWordCount Int? // 目标字数
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -26,6 +28,8 @@ model Novel {
   settings    WorldSetting[]
   chapters    Chapter[]
   aiSettings  AIConstraint?
+  statistics  NovelStatistics[]
+  goals       WritingGoal[]
 }
 
 // 角色信息
@@ -77,6 +81,8 @@ model Chapter {
   plotPoints     String?  // 剧情要点 JSON字符串
   illustrations  String?  // 插图位置和描述 JSON字符串
   status         String   @default("planning") // planning, writing, reviewing, completed
+  wordCount      Int      @default(0) // 章节字数
+  progress       Int      @default(0) // 章节完成进度 0-100
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
@@ -141,4 +147,36 @@ model ChapterSetting {
   setting   WorldSetting @relation(fields: [settingId], references: [id], onDelete: Cascade)
   
   @@id([chapterId, settingId])
+}
+
+// 写作统计
+model NovelStatistics {
+  id        String   @id @default(cuid())
+  novelId   String
+  date      DateTime // 统计日期，只包含年月日
+  wordCount Int      @default(0) // 当日新增字数
+  timeSpent Int      @default(0) // 写作时间（分钟）
+  createdAt DateTime @default(now())
+  
+  novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  
+  @@unique([novelId, date])
+  @@index([novelId])
+}
+
+// 写作目标
+model WritingGoal {
+  id        String   @id @default(cuid())
+  novelId   String
+  type      String   // daily, weekly, monthly, total
+  target    Int      // 目标字数
+  period    String   // 时间周期标识，如 "2024-01" 表示2024年1月
+  achieved  Int      @default(0) // 已完成字数
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  
+  @@unique([novelId, type, period])
+  @@index([novelId])
 }

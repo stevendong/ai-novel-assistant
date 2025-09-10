@@ -4,9 +4,44 @@ const prisma = new PrismaClient();
 
 const router = express.Router();
 
-// 获取所有小说项目
+// 获取所有小说项目（合并了统计功能）
 router.get('/', async (req, res) => {
   try {
+    // 如果请求包含 stats=true 参数，返回统计数据
+    if (req.query.stats === 'true') {
+      const [
+        totalProjects,
+        draftProjects,
+        writingProjects,
+        completedProjects,
+        totalWords,
+        totalChapters
+      ] = await Promise.all([
+        prisma.novel.count(),
+        prisma.novel.count({ where: { status: 'draft' } }),
+        prisma.novel.count({ where: { status: 'writing' } }),
+        prisma.novel.count({ where: { status: 'completed' } }),
+        prisma.novel.aggregate({
+          _sum: { wordCount: true }
+        }),
+        prisma.chapter.count()
+      ]);
+
+      return res.json({
+        projects: {
+          total: totalProjects,
+          draft: draftProjects,
+          writing: writingProjects,
+          completed: completedProjects
+        },
+        content: {
+          totalWords: totalWords._sum.wordCount || 0,
+          totalChapters
+        }
+      });
+    }
+
+    // 否则返回项目列表
     const novels = await prisma.novel.findMany({
       include: {
         _count: {
@@ -180,6 +215,160 @@ router.post('/:id/analyze-summary', async (req, res) => {
   } catch (error) {
     console.error('Error analyzing summary:', error);
     res.status(500).json({ error: 'Failed to analyze summary' });
+  }
+});
+
+// 获取小说项目统计信息
+router.get('/:id/statistics', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 获取小说基本信息
+    const novel = await prisma.novel.findUnique({
+      where: { id },
+      include: {
+        chapters: {
+          select: {
+            status: true,
+            wordCount: true,
+            progress: true,
+            updatedAt: true
+          }
+        },
+        characters: {
+          select: { id: true }
+        },
+        settings: {
+          select: { id: true }
+        }
+      }
+    });
+
+    if (!novel) {
+      return res.status(404).json({ error: 'Novel not found' });
+    }
+
+    // 计算统计数据
+    const totalChapters = novel.chapters.length;
+    const completedChapters = novel.chapters.filter(ch => ch.status === 'completed').length;
+    const writingChapters = novel.chapters.filter(ch => ch.status === 'writing').length;
+    const planningChapters = novel.chapters.filter(ch => ch.status === 'planning').length;
+
+    // 计算总字数和平均进度
+    const totalWords = novel.chapters.reduce((sum, ch) => sum + ch.wordCount, 0);
+    const averageProgress = totalChapters > 0 
+      ? Math.round(novel.chapters.reduce((sum, ch) => sum + ch.progress, 0) / totalChapters)
+      : 0;
+
+    // 计算写作天数（从创建到现在）
+    const writingDays = Math.ceil((new Date() - new Date(novel.createdAt)) / (1000 * 60 * 60 * 24));
+    const averageWordsPerDay = writingDays > 0 ? Math.round(totalWords / writingDays) : 0;
+
+    // 预计完成时间
+    let estimatedCompletionDate = null;
+    if (novel.targetWordCount && totalWords > 0 && averageWordsPerDay > 0) {
+      const remainingWords = novel.targetWordCount - totalWords;
+      const daysNeeded = Math.ceil(remainingWords / averageWordsPerDay);
+      if (daysNeeded > 0) {
+        const completionDate = new Date();
+        completionDate.setDate(completionDate.getDate() + daysNeeded);
+        estimatedCompletionDate = completionDate.toISOString().split('T')[0];
+      }
+    }
+
+    const statistics = {
+      overview: {
+        totalWords,
+        targetWordCount: novel.targetWordCount || 0,
+        writingDays,
+        averageWordsPerDay,
+        overallProgress: averageProgress,
+        estimatedCompletionDate
+      },
+      chapters: {
+        total: totalChapters,
+        completed: completedChapters,
+        writing: writingChapters,
+        planning: planningChapters
+      },
+      counts: {
+        characters: novel.characters.length,
+        settings: novel.settings.length
+      },
+      recentActivity: {
+        todayWords: 1200, // Mock data - would be calculated from statistics table
+        weekWords: 8500,
+        monthWords: 25600
+      }
+    };
+
+    res.json(statistics);
+  } catch (error) {
+    console.error('Error fetching novel statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch novel statistics' });
+  }
+});
+
+// 获取小说章节进度详情
+router.get('/:id/progress', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const chapters = await prisma.chapter.findMany({
+      where: { novelId: id },
+      select: {
+        id: true,
+        chapterNumber: true,
+        title: true,
+        status: true,
+        wordCount: true,
+        progress: true,
+        updatedAt: true
+      },
+      orderBy: { chapterNumber: 'asc' }
+    });
+
+    const progressData = chapters.map(chapter => ({
+      ...chapter,
+      updatedAt: chapter.updatedAt.toISOString().split('T')[0]
+    }));
+
+    res.json(progressData);
+  } catch (error) {
+    console.error('Error fetching novel progress:', error);
+    res.status(500).json({ error: 'Failed to fetch novel progress' });
+  }
+});
+
+
+// 获取写作目标数据
+router.get('/:id/goals', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Mock data for now - would be retrieved from WritingGoal table
+    const goals = {
+      daily: {
+        target: 1000,
+        achieved: 1200,
+        progress: 120
+      },
+      weekly: {
+        target: 7000,
+        achieved: 8500,
+        progress: 121
+      },
+      monthly: {
+        target: 30000,
+        achieved: 25600,
+        progress: 85
+      }
+    };
+
+    res.json(goals);
+  } catch (error) {
+    console.error('Error fetching writing goals:', error);
+    res.status(500).json({ error: 'Failed to fetch writing goals' });
   }
 });
 

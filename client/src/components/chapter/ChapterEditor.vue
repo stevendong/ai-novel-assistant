@@ -198,7 +198,7 @@
 
         <!-- Content Tab -->
         <div v-else-if="activeTab === 'content'" class="h-full">
-          <NovelTextEditor
+          <TiptapEditor
             v-model="contentText"
             :show-toolbar="true"
             :show-status-bar="true"
@@ -449,7 +449,7 @@ import {
 import { useChapter } from '@/composables/useChapter'
 import { useMarkdown } from '@/composables/useMarkdown'
 import { chapterService } from '@/services/chapterService'
-import NovelTextEditor from './NovelTextEditor.vue'
+import TiptapEditor from './TiptapEditor.vue'
 import type { Character, WorldSetting, PlotPoint, Illustration } from '@/types'
 import '@/assets/markdown-novel.css'
 
