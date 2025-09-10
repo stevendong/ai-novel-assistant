@@ -357,7 +357,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
   TeamOutlined,
@@ -367,32 +368,27 @@ import {
   DeleteOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
+import { useCharacter } from '@/composables/useCharacter'
+import { useProjectStore } from '@/stores/project'
 
-// Mock data
-const characters = ref<Character[]>([
-  {
-    id: '1',
-    novelId: '1',
-    name: '李明',
-    description: '28岁的私人侦探，对细节异常敏感',
-    appearance: '中等身材，深褐色头发，总是穿着整洁的深色西装',
-    personality: '谨慎但好奇心强，有轻微的社交恐惧症',
-    background: '出生于小镇，父亲失踪事件让他走上侦探道路...',
-    relationships: {},
-    isLocked: false
-  },
-  {
-    id: '2',
-    novelId: '1',
-    name: '王警官',
-    description: '经验丰富的老警察，李明的导师',
-    appearance: '高大魁梧，胡须花白，眼神锐利',
-    personality: '严厉但关心下属，有很强的正义感',
-    background: '从警30年，经历过无数案件...',
-    relationships: {},
-    isLocked: true
-  }
-])
+// 使用项目Store
+const projectStore = useProjectStore()
+
+// 使用角色管理 composable
+const {
+  characters,
+  currentCharacter,
+  loading,
+  enhancing,
+  developing,
+  loadCharacters,
+  getCharacter,
+  createCharacter,
+  updateCharacter,
+  deleteCharacter: deleteCharacterAPI,
+  enhanceCharacter,
+  searchCharacters
+} = useCharacter()
 
 const selectedCharacter = ref<Character | null>(null)
 const editingCharacter = ref<any>({})
@@ -406,24 +402,30 @@ const newCharacter = ref({
 
 const filteredCharacters = computed(() => {
   if (!searchQuery.value) return characters.value
-  return characters.value.filter(char => 
-    char.name.includes(searchQuery.value) || 
-    char.description.includes(searchQuery.value)
-  )
+  return searchCharacters(searchQuery.value)
 })
 
-const selectCharacter = (character: Character) => {
+const selectCharacter = async (character: Character) => {
   selectedCharacter.value = character
-  editingCharacter.value = {
-    ...character,
-    age: '28岁',
-    values: '正义、真相、保护无辜',
-    fears: '失败、让别人失望',
-    skills: '观察、推理、搏击',
-    relationships: [
-      { character: '王警官', type: '导师', importance: '高', description: '紧张但信任的关系' },
-      { character: '小雨', type: '助手', importance: '中', description: '相互依赖' }
-    ]
+  
+  // 获取完整角色信息
+  const fullCharacter = await getCharacter(character.id)
+  if (fullCharacter) {
+    editingCharacter.value = {
+      ...fullCharacter,
+      age: fullCharacter.age || '',
+      values: fullCharacter.values || '',
+      fears: fullCharacter.fears || '',
+      skills: fullCharacter.skills || '',
+      relationships: Array.isArray(fullCharacter.relationships) 
+        ? fullCharacter.relationships 
+        : Object.entries(fullCharacter.relationships || {}).map(([character, data]: [string, any]) => ({
+            character,
+            type: data.type || '',
+            importance: data.importance || '',
+            description: data.description || ''
+          }))
+    }
   }
 }
 
@@ -432,22 +434,78 @@ const getCharacterColor = (id: string) => {
   return colors[parseInt(id) % colors.length]
 }
 
-const toggleLock = () => {
+const toggleLock = async () => {
   if (selectedCharacter.value) {
-    selectedCharacter.value.isLocked = !selectedCharacter.value.isLocked
+    const newLockStatus = !selectedCharacter.value.isLocked
+    const updated = await updateCharacter(selectedCharacter.value.id, {
+      isLocked: newLockStatus
+    })
+    
+    if (updated) {
+      selectedCharacter.value = updated
+    }
   }
 }
 
-const saveCharacter = () => {
-  console.log('Save character:', editingCharacter.value)
+const saveCharacter = async () => {
+  if (!selectedCharacter.value) return
+  
+  // 转换关系数据格式
+  const relationshipsObject: Record<string, any> = {}
+  if (Array.isArray(editingCharacter.value.relationships)) {
+    editingCharacter.value.relationships.forEach((rel: any) => {
+      if (rel.character) {
+        relationshipsObject[rel.character] = {
+          type: rel.type,
+          importance: rel.importance,
+          description: rel.description
+        }
+      }
+    })
+  }
+  
+  const updateData = {
+    name: editingCharacter.value.name,
+    description: editingCharacter.value.description,
+    appearance: editingCharacter.value.appearance,
+    personality: editingCharacter.value.personality,
+    background: editingCharacter.value.background,
+    relationships: relationshipsObject
+  }
+  
+  const updated = await updateCharacter(selectedCharacter.value.id, updateData)
+  if (updated) {
+    selectedCharacter.value = updated
+    message.success('角色信息保存成功')
+  }
 }
 
-const deleteCharacter = () => {
-  console.log('Delete character:', selectedCharacter.value)
+const deleteCharacter = async () => {
+  if (!selectedCharacter.value) return
+  
+  const success = await deleteCharacterAPI(selectedCharacter.value.id)
+  if (success) {
+    selectedCharacter.value = null
+    editingCharacter.value = {}
+    // 如果还有其他角色，选择第一个
+    if (characters.value.length > 0) {
+      await selectCharacter(characters.value[0])
+    }
+  }
 }
 
-const requestAIEnhancement = () => {
-  console.log('Request AI enhancement for:', selectedCharacter.value)
+const requestAIEnhancement = async () => {
+  if (!selectedCharacter.value) return
+  
+  const enhancement = await enhanceCharacter(selectedCharacter.value.id, {
+    enhanceAspects: ['personality', 'background', 'appearance'],
+    context: editingCharacter.value.description || ''
+  })
+  
+  if (enhancement) {
+    // TODO: 显示AI建议的弹框或面板
+    console.log('AI Enhancement:', enhancement)
+  }
 }
 
 const addRelationship = () => {
@@ -466,16 +524,74 @@ const removeRelationship = (index: number) => {
   editingCharacter.value.relationships.splice(index, 1)
 }
 
-const addCharacter = () => {
-  console.log('Add character:', newCharacter.value)
-  showAddCharacterModal.value = false
-  newCharacter.value = { name: '', description: '' }
+const addCharacter = async () => {
+  if (!newCharacter.value.name.trim()) {
+    message.error('请输入角色姓名')
+    return
+  }
+  
+  const created = await createCharacter({
+    name: newCharacter.value.name,
+    description: newCharacter.value.description
+  })
+  
+  if (created) {
+    showAddCharacterModal.value = false
+    newCharacter.value = { name: '', description: '' }
+    // 选择新创建的角色
+    await selectCharacter(created)
+  }
 }
 
-// Select first character by default
-if (characters.value.length > 0) {
-  selectCharacter(characters.value[0])
+// 防重复加载标志
+const isInitializing = ref(false)
+
+// 初始化数据加载函数
+const initializeData = async () => {
+  // 防止重复初始化
+  if (isInitializing.value || !projectStore.currentProject) {
+    return
+  }
+  
+  try {
+    isInitializing.value = true
+    
+    // 清除当前选择的角色
+    selectedCharacter.value = null
+    editingCharacter.value = {}
+    
+    await loadCharacters()
+    // 如果有角色，选择第一个
+    if (characters.value.length > 0) {
+      await selectCharacter(characters.value[0])
+    }
+  } finally {
+    isInitializing.value = false
+  }
 }
+
+// 监听项目变化
+watch(
+  () => projectStore.currentProject,
+  async (newProject, oldProject) => {
+    // 只有当项目真正发生变化时才重新加载数据
+    if (newProject && newProject.id !== oldProject?.id) {
+      await initializeData()
+    } else if (!newProject) {
+      // 如果没有当前项目，清空数据
+      selectedCharacter.value = null
+      editingCharacter.value = {}
+    }
+  }
+)
+
+// 组件挂载时加载数据
+onMounted(async () => {
+  // 初始化时加载数据
+  if (projectStore.currentProject) {
+    await initializeData()
+  }
+})
 </script>
 
 <style scoped>

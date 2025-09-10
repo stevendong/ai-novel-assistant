@@ -19,7 +19,14 @@ router.get('/novel/:novelId', async (req, res) => {
       },
       orderBy: { createdAt: 'asc' }
     });
-    res.json(characters);
+    
+    // Parse relationships JSON strings back to objects
+    const parsedCharacters = characters.map(char => ({
+      ...char,
+      relationships: char.relationships ? JSON.parse(char.relationships) : null
+    }));
+    
+    res.json(parsedCharacters);
   } catch (error) {
     console.error('Error fetching characters:', error);
     res.status(500).json({ error: 'Failed to fetch characters' });
@@ -51,7 +58,13 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Character not found' });
     }
 
-    res.json(character);
+    // Parse relationships JSON string back to object
+    const parsedCharacter = {
+      ...character,
+      relationships: character.relationships ? JSON.parse(character.relationships) : null
+    };
+
+    res.json(parsedCharacter);
   } catch (error) {
     console.error('Error fetching character:', error);
     res.status(500).json({ error: 'Failed to fetch character' });
@@ -75,11 +88,17 @@ router.post('/', async (req, res) => {
         appearance,
         personality,
         background,
-        relationships: relationships || {}
+        relationships: relationships ? JSON.stringify(relationships) : null
       }
     });
 
-    res.status(201).json(character);
+    // Parse relationships JSON string back to object for response
+    const parsedCharacter = {
+      ...character,
+      relationships: character.relationships ? JSON.parse(character.relationships) : null
+    };
+
+    res.status(201).json(parsedCharacter);
   } catch (error) {
     console.error('Error creating character:', error);
     res.status(500).json({ error: 'Failed to create character' });
@@ -100,13 +119,19 @@ router.put('/:id', async (req, res) => {
         appearance,
         personality,
         background,
-        relationships,
+        relationships: relationships ? JSON.stringify(relationships) : relationships,
         isLocked,
         updatedAt: new Date()
       }
     });
 
-    res.json(character);
+    // Parse relationships JSON string back to object for response
+    const parsedCharacter = {
+      ...character,
+      relationships: character.relationships ? JSON.parse(character.relationships) : null
+    };
+
+    res.json(parsedCharacter);
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Character not found' });

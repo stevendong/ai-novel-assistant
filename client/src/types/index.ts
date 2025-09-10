@@ -21,12 +21,18 @@ export interface Character {
   id: string
   novelId: string
   name: string
-  description: string
-  appearance: string
-  personality: string
-  background: string
+  description?: string
+  appearance?: string
+  personality?: string
+  background?: string
   relationships: Record<string, any>
   isLocked: boolean
+  chapterRefs?: any[]
+  _count?: {
+    chapterRefs: number
+  }
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface WorldSetting {
