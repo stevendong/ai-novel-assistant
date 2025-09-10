@@ -6,8 +6,8 @@
         <!-- Left Side -->
         <div class="header-left">
           <!-- Menu Toggle -->
-          <a-button 
-            type="text" 
+          <a-button
+            type="text"
             class="menu-toggle-btn"
             @click="toggleSidebar"
           >
@@ -33,26 +33,62 @@
         <div class="header-right">
           <a-space size="middle">
             <!-- Project Selector -->
-            <a-select
-              v-model:value="selectedProject"
-              placeholder="选择项目"
-              style="width: 200px"
-              size="middle"
-              :options="projectOptions"
-              class="project-selector"
-              :dropdown-match-select-width="false"
-            >
-              <template #suffixIcon>
-                <BookOutlined />
-              </template>
-            </a-select>
+            <div class="project-selector">
+              <a-select
+                v-model:value="currentProjectId"
+                @change="handleProjectChange"
+                placeholder="选择项目"
+                size="middle"
+                :loading="projectStore.loading"
+                class="project-select"
+                :disabled="projectStore.projects.length === 0"
+                :not-found-content="projectStore.projects.length === 0 ? '暂无项目，请先创建项目' : '未找到匹配的项目'"
+                show-search
+                :filter-option="filterProject"
+                style="width: 300px"
+              >
+                <template #suffixIcon>
+                  <DownOutlined />
+                </template>
+
+                <a-select-option
+                  v-for="project in projectStore.projects"
+                  :key="project.id"
+                  :value="project.id"
+                  :title="`${project.title} - ${project.description || '暂无描述'}`"
+                >
+                  <div class="project-option">
+                    <a-avatar
+                      :size="24"
+                      :style="{
+                        backgroundColor: getProjectColor(project.id),
+                        fontSize: '12px'
+                      }"
+                      class="project-avatar"
+                    >
+                      {{ project.title.charAt(0).toUpperCase() }}
+                    </a-avatar>
+                    <div class="project-info">
+                      <span class="project-name">{{ project.title }}</span>
+                      <a-tag
+                        :color="getStatusColor(project.status)"
+                        size="small"
+                        class="project-status"
+                      >
+                        {{ getStatusText(project.status) }}
+                      </a-tag>
+                    </div>
+                  </div>
+                </a-select-option>
+              </a-select>
+            </div>
 
             <!-- Action Buttons -->
             <a-space size="small">
               <!-- AI Assistant Toggle -->
               <a-tooltip title="AI助手">
-                <a-button 
-                  type="text" 
+                <a-button
+                  type="text"
                   class="header-action-btn"
                   :class="{ 'active': !aiPanelCollapsed }"
                   @click="toggleAIPanel"
@@ -130,7 +166,7 @@
     <!-- Main Layout Container -->
     <a-layout class="main-content">
       <!-- Left Sidebar -->
-      <a-layout-sider 
+      <a-layout-sider
         v-model:collapsed="collapsed"
         :width="280"
         :collapsed-width="60"
@@ -152,7 +188,7 @@
         </div>
 
         <!-- Right Panel (AI Assistant) -->
-        <div 
+        <div
           class="ai-panel"
           :class="{ 'collapsed': aiPanelCollapsed }"
         >
@@ -167,7 +203,7 @@
     <a-layout-footer class="status-bar">
       <div class="status-left">
         <a-space size="large">
-          <span>项目：{{ currentProject?.title || '未选择' }}</span>
+          <span>项目：{{ projectStore.currentProject?.title || '未选择' }}</span>
           <span>状态：{{ projectStatus }}</span>
           <span>字数：{{ wordCount }}</span>
         </a-space>
@@ -184,7 +220,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -196,34 +232,19 @@ import {
   RobotOutlined,
   BellOutlined,
   DownOutlined,
-  CloseOutlined
+  CloseOutlined,
+  CalendarOutlined,
+  TagsOutlined
 } from '@ant-design/icons-vue'
-import type { Novel, Chapter } from '@/types'
+import type { Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
+import { useProjectStore } from '@/stores/project'
 
+const projectStore = useProjectStore()
 const collapsed = ref(false)
 const aiPanelCollapsed = ref(true)  // 默认关闭 AI 助手面板
 const selectedChapter = ref<Chapter | null>(null)
-const selectedProject = ref<string>('1')
-
-// Mock data - will be replaced with actual store data
-const currentProject = ref<Novel | null>({
-  id: '1',
-  title: '测试小说',
-  description: '这是一个测试小说项目',
-  genre: '奇幻',
-  rating: 'PG-13',
-  status: 'writing',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString()
-})
-
-const projectOptions = ref([
-  { label: '测试小说', value: '1' },
-  { label: '科幻冒险', value: '2' },
-  { label: '都市传说', value: '3' }
-])
 
 const chapters = ref<Chapter[]>([
   {
@@ -241,9 +262,12 @@ const chapters = ref<Chapter[]>([
   }
 ])
 
+// 计算属性
+const currentProjectId = computed(() => projectStore.currentProjectId)
+
 const projectStatus = computed(() => {
-  if (!currentProject.value) return '未选择'
-  switch (currentProject.value.status) {
+  if (!projectStore.currentProject) return '未选择'
+  switch (projectStore.currentProject.status) {
     case 'draft': return '草稿'
     case 'writing': return '写作中'
     case 'completed': return '已完成'
@@ -253,6 +277,39 @@ const projectStatus = computed(() => {
 
 const wordCount = ref(0)
 const aiStatus = ref<'connected' | 'disconnected'>('disconnected')
+
+// 组件挂载时加载项目数据
+onMounted(async () => {
+  await projectStore.loadProjects()
+})
+
+// 项目切换处理
+const handleProjectChange = async (projectId: string) => {
+  await projectStore.switchProject(projectId)
+}
+
+// 项目搜索过滤
+const filterProject = (input: string, option: any) => {
+  const project = projectStore.projects.find(p => p.id === option.value)
+  if (!project) return false
+
+  const searchText = input.toLowerCase()
+  return (
+    project.title.toLowerCase().includes(searchText) ||
+    project.description?.toLowerCase().includes(searchText) ||
+    project.genre?.toLowerCase().includes(searchText)
+  )
+}
+
+// 获取项目颜色
+const getProjectColor = (id: string) => {
+  const colors = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae', '#87d068']
+  const hash = id.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0)
+    return a & a
+  }, 0)
+  return colors[Math.abs(hash) % colors.length]
+}
 
 // Methods
 const toggleSidebar = () => {
@@ -288,6 +345,27 @@ const getStatusText = (status: string) => {
     'completed': '已完成'
   }
   return texts[status as keyof typeof texts] || status
+}
+
+// Date formatting helper
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+
+  if (diffInHours < 1) {
+    return '刚刚'
+  } else if (diffInHours < 24) {
+    return `${diffInHours}小时前`
+  } else if (diffInHours < 24 * 7) {
+    const days = Math.floor(diffInHours / 24)
+    return `${days}天前`
+  } else {
+    return date.toLocaleDateString('zh-CN', {
+      month: 'short',
+      day: 'numeric'
+    })
+  }
 }
 </script>
 
@@ -390,12 +468,42 @@ const getStatusText = (status: string) => {
 
 /* Project Selector */
 .project-selector {
+  display: flex;
+  align-items: center;
+}
+
+.project-select {
   border-radius: 6px;
 }
 
-.project-selector :deep(.ant-select-selector) {
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+.project-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-avatar {
+  flex-shrink: 0;
+}
+
+.project-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.project-name {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-status {
+  flex-shrink: 0;
 }
 
 /* Header Action Buttons */
@@ -423,8 +531,7 @@ const getStatusText = (status: string) => {
 
 /* User Menu */
 .user-menu {
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 0 12px;
   transition: all 0.2s;
 }
 
@@ -574,9 +681,13 @@ const getStatusText = (status: string) => {
   .app-subtitle {
     display: none;
   }
-  
+
   .username {
     display: none;
+  }
+
+  .project-select {
+    width: 160px !important;
   }
 }
 
@@ -584,11 +695,7 @@ const getStatusText = (status: string) => {
   .title-section {
     display: none;
   }
-  
-  .project-selector {
-    width: 150px !important;
-  }
-  
+
   .ai-panel {
     position: absolute;
     right: 0;
@@ -602,16 +709,16 @@ const getStatusText = (status: string) => {
   .header-content {
     padding: 0 16px;
   }
-  
+
   .project-selector {
     display: none;
   }
-  
+
   .header-action-btn {
     width: 32px;
     height: 32px;
   }
-  
+
   .ai-panel {
     width: 100%;
   }

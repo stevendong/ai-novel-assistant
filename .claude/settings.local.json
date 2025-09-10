@@ -5,7 +5,6 @@
       "Bash(npx prisma generate:*)",
       "Bash(npx prisma:*)",
       "Bash(node:*)",
-      "Bash(npm run dev:*)",
       "Bash(curl:*)",
       "Bash(find:*)",
       "Bash(npm install:*)",
@@ -17,15 +16,18 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run server:dev:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git config:*)",
       "Bash(git push:*)",
       "WebSearch",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(xargs kill:*)"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(npm run dev:*)"
+    ],
     "ask": []
   }
 }
