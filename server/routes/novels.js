@@ -295,11 +295,7 @@ router.get('/:id/statistics', async (req, res) => {
         characters: novel.characters.length,
         settings: novel.settings.length
       },
-      recentActivity: {
-        todayWords: 1200, // Mock data - would be calculated from statistics table
-        weekWords: 8500,
-        monthWords: 25600
-      }
+      recentActivity: await getRecentActivity(id)
     };
 
     res.json(statistics);
@@ -346,30 +342,96 @@ router.get('/:id/goals', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Mock data for now - would be retrieved from WritingGoal table
-    const goals = {
-      daily: {
-        target: 1000,
-        achieved: 1200,
-        progress: 120
-      },
-      weekly: {
-        target: 7000,
-        achieved: 8500,
-        progress: 121
-      },
-      monthly: {
-        target: 30000,
-        achieved: 25600,
-        progress: 85
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const thisWeek = `${now.getFullYear()}-W${getWeekNumber(now)}`;
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
+    const goals = await prisma.writingGoal.findMany({
+      where: {
+        novelId: id,
+        OR: [
+          { type: 'daily', period: today },
+          { type: 'weekly', period: thisWeek },
+          { type: 'monthly', period: thisMonth }
+        ]
       }
+    });
+    
+    // 格式化返回数据
+    const formattedGoals = {
+      daily: { target: 1000, achieved: 0, progress: 0 },
+      weekly: { target: 7000, achieved: 0, progress: 0 },
+      monthly: { target: 30000, achieved: 0, progress: 0 }
     };
-
-    res.json(goals);
+    
+    goals.forEach(goal => {
+      if (formattedGoals[goal.type]) {
+        formattedGoals[goal.type] = {
+          target: goal.target,
+          achieved: goal.achieved,
+          progress: goal.target > 0 ? Math.round((goal.achieved / goal.target) * 100) : 0
+        };
+      }
+    });
+    
+    res.json(formattedGoals);
   } catch (error) {
     console.error('Error fetching writing goals:', error);
     res.status(500).json({ error: 'Failed to fetch writing goals' });
   }
 });
+
+// 工具函数：获取最近活动数据
+async function getRecentActivity(novelId) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  
+  try {
+    const [todayStats, weekStats, monthStats] = await Promise.all([
+      prisma.novelStatistics.findMany({
+        where: {
+          novelId,
+          date: { gte: today }
+        }
+      }),
+      prisma.novelStatistics.findMany({
+        where: {
+          novelId,
+          date: { gte: weekStart }
+        }
+      }),
+      prisma.novelStatistics.findMany({
+        where: {
+          novelId,
+          date: { gte: monthStart }
+        }
+      })
+    ]);
+    
+    return {
+      todayWords: todayStats.reduce((sum, stat) => sum + stat.wordCount, 0),
+      weekWords: weekStats.reduce((sum, stat) => sum + stat.wordCount, 0),
+      monthWords: monthStats.reduce((sum, stat) => sum + stat.wordCount, 0)
+    };
+  } catch (error) {
+    console.error('Error fetching recent activity:', error);
+    return {
+      todayWords: 0,
+      weekWords: 0,
+      monthWords: 0
+    };
+  }
+}
+
+// 工具函数：获取周数
+function getWeekNumber(date) {
+  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+  const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+}
 
 module.exports = router;

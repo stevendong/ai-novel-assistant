@@ -395,7 +395,7 @@
                             :disabled="selectedSetting.isLocked"
                           >
                             <a-select-option 
-                              v-for="setting in allSettings.filter(s => s.id !== selectedSetting.id)" 
+                              v-for="setting in allSettings.filter(s => s.id !== selectedSetting?.id)" 
                               :key="setting.id" 
                               :value="setting.id"
                             >
@@ -549,7 +549,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   PlusOutlined,
   GlobalOutlined,
@@ -562,52 +563,13 @@ import {
   DeleteOutlined
 } from '@ant-design/icons-vue'
 import type { WorldSetting } from '@/types'
+import { settingService } from '@/services/settingService'
+import { useProjectStore } from '@/stores/project'
 
-// Mock data
-const allSettings = ref<WorldSetting[]>([
-  {
-    id: '1',
-    novelId: '1',
-    type: 'worldview',
-    name: '魔法大陆阿尔卡纳',
-    description: '一个充满魔法的奇幻大陆，存在多个种族和魔法学院',
-    details: {
-      era: '中世纪奇幻',
-      factions: '人类王国、精灵族、矮人族、魔法学院联盟',
-      history: '千年前，古代魔法师们创建了第一座魔法学院...',
-      specialElements: '元素魔法、召唤术、炼金术、魔法道具'
-    },
-    isLocked: false
-  },
-  {
-    id: '2',
-    novelId: '1',
-    type: 'location',
-    name: '魔法学院主城',
-    description: '大陆上最重要的魔法学习中心，坐落在群山环绕的盆地中',
-    details: {
-      locationType: 'city',
-      climate: '温带',
-      population: '约50万人',
-      geography: '四面环山，中央是巨大的魔法塔群',
-      importantPlaces: '大图书馆、魔法实验室、学生宿舍区、商业街'
-    },
-    isLocked: true
-  },
-  {
-    id: '3',
-    novelId: '1',
-    type: 'rule',
-    name: '元素魔法体系',
-    description: '基于四大元素的魔法理论和实践体系',
-    details: {
-      ruleTypes: ['magic'],
-      coreRules: '通过调动自然元素力量施法，需要咒语、手势和魔力',
-      limitations: '消耗魔力值，需要长期训练，某些魔法有副作用'
-    },
-    isLocked: false
-  }
-])
+const projectStore = useProjectStore()
+
+const allSettings = ref<WorldSetting[]>([])
+const loading = ref(false)
 
 const selectedCategory = ref(['worldview'])
 const currentCategory = ref('worldview')
@@ -687,22 +649,108 @@ const getTypeIconComponent = (type: string) => {
   return components[type as keyof typeof components] || FileTextOutlined
 }
 
-const toggleLock = () => {
-  if (selectedSetting.value) {
-    selectedSetting.value.isLocked = !selectedSetting.value.isLocked
+const toggleLock = async () => {
+  if (!selectedSetting.value) return
+  
+  try {
+    loading.value = true
+    const updatedSetting = await settingService.update(selectedSetting.value.id, {
+      isLocked: !selectedSetting.value.isLocked
+    })
+    
+    selectedSetting.value.isLocked = updatedSetting.isLocked
+    editingSetting.value.isLocked = updatedSetting.isLocked
+    
+    const index = allSettings.value.findIndex(s => s.id === updatedSetting.id)
+    if (index !== -1) {
+      allSettings.value[index] = { ...allSettings.value[index], ...updatedSetting }
+    }
+    
+    message.success(updatedSetting.isLocked ? '设定已锁定' : '设定已解锁')
+  } catch (error) {
+    console.error('Toggle lock failed:', error)
+    message.error('操作失败，请重试')
+  } finally {
+    loading.value = false
   }
 }
 
-const saveSetting = () => {
-  console.log('Save setting:', editingSetting.value)
+const saveSetting = async () => {
+  if (!selectedSetting.value) return
+  
+  try {
+    loading.value = true
+    const updateData = {
+      type: editingSetting.value.type,
+      name: editingSetting.value.name,
+      description: editingSetting.value.description,
+      details: editingSetting.value.details || {}
+    }
+    
+    const updatedSetting = await settingService.update(selectedSetting.value.id, updateData)
+    
+    Object.assign(selectedSetting.value, updatedSetting)
+    
+    const index = allSettings.value.findIndex(s => s.id === updatedSetting.id)
+    if (index !== -1) {
+      allSettings.value[index] = { ...allSettings.value[index], ...updatedSetting }
+    }
+    
+    message.success('保存成功')
+  } catch (error) {
+    console.error('Save setting failed:', error)
+    message.error('保存失败，请重试')
+  } finally {
+    loading.value = false
+  }
 }
 
 const deleteSetting = () => {
-  console.log('Delete setting:', selectedSetting.value)
+  if (!selectedSetting.value) return
+  
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除设定「${selectedSetting.value.name}」吗？此操作不可撤销。`,
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    async onOk() {
+      try {
+        loading.value = true
+        await settingService.delete(selectedSetting.value!.id)
+        
+        allSettings.value = allSettings.value.filter(s => s.id !== selectedSetting.value!.id)
+        selectedSetting.value = null
+        
+        if (currentCategorySettings.value.length > 0) {
+          selectSetting(currentCategorySettings.value[0])
+        }
+        
+        message.success('删除成功')
+      } catch (error) {
+        console.error('Delete setting failed:', error)
+        message.error('删除失败，请重试')
+      } finally {
+        loading.value = false
+      }
+    }
+  })
 }
 
-const requestAIExpansion = () => {
-  console.log('Request AI expansion for:', selectedSetting.value)
+const requestAIExpansion = async () => {
+  if (!selectedSetting.value) return
+  
+  try {
+    loading.value = true
+    const expansion = await settingService.enhance(selectedSetting.value.id)
+    console.log('AI expansion result:', expansion)
+    message.success('AI分析完成')
+  } catch (error) {
+    console.error('AI expansion failed:', error)
+    message.error('AI分析失败，请重试')
+  } finally {
+    loading.value = false
+  }
 }
 
 const addRelation = () => {
@@ -720,16 +768,77 @@ const removeRelation = (index: number) => {
   editingSetting.value.relations.splice(index, 1)
 }
 
-const addSetting = () => {
-  console.log('Add setting:', newSetting.value)
-  showAddSettingModal.value = false
-  newSetting.value = { type: '', name: '', description: '' }
+const addSetting = async () => {
+  if (!newSetting.value.type || !newSetting.value.name) {
+    message.error('请填写必填字段')
+    return
+  }
+  
+  if (!projectStore.currentProject?.id) {
+    message.error('请先选择项目')
+    return
+  }
+  
+  try {
+    loading.value = true
+    const createData = {
+      novelId: projectStore.currentProject.id,
+      type: newSetting.value.type as 'worldview' | 'location' | 'rule' | 'culture',
+      name: newSetting.value.name,
+      description: newSetting.value.description || '',
+      details: {}
+    }
+    
+    const createdSetting = await settingService.create(createData)
+    allSettings.value.push(createdSetting)
+    
+    if (createdSetting.type === currentCategory.value) {
+      selectSetting(createdSetting)
+    }
+    
+    showAddSettingModal.value = false
+    newSetting.value = { type: '', name: '', description: '' }
+    message.success('创建成功')
+  } catch (error) {
+    console.error('Create setting failed:', error)
+    message.error('创建失败，请重试')
+  } finally {
+    loading.value = false
+  }
 }
 
-// Initialize
-if (currentCategorySettings.value.length > 0) {
-  selectSetting(currentCategorySettings.value[0])
+const loadSettings = async () => {
+  if (!projectStore.currentProject?.id) return
+  
+  try {
+    loading.value = true
+    const settings = await settingService.getByNovelId(projectStore.currentProject.id)
+    allSettings.value = settings
+    
+    if (currentCategorySettings.value.length > 0) {
+      selectSetting(currentCategorySettings.value[0])
+    }
+  } catch (error) {
+    console.error('Load settings failed:', error)
+    message.error('加载设定失败，请重试')
+  } finally {
+    loading.value = false
+  }
 }
+
+// Watch for project changes
+watch(() => projectStore.currentProject?.id, (newProjectId) => {
+  if (newProjectId) {
+    selectedSetting.value = null
+    loadSettings()
+  } else {
+    allSettings.value = []
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  loadSettings()
+})
 </script>
 
 <style scoped>

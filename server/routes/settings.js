@@ -22,7 +22,14 @@ router.get('/novel/:novelId', async (req, res) => {
         { createdAt: 'asc' }
       ]
     });
-    res.json(settings);
+    
+    // Parse details field for each setting
+    const parsedSettings = settings.map(setting => ({
+      ...setting,
+      details: setting.details ? JSON.parse(setting.details) : {}
+    }));
+    
+    res.json(parsedSettings);
   } catch (error) {
     console.error('Error fetching settings:', error);
     res.status(500).json({ error: 'Failed to fetch settings' });
@@ -53,6 +60,9 @@ router.get('/:id', async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
+    
+    // Parse details field
+    setting.details = setting.details ? JSON.parse(setting.details) : {};
 
     res.json(setting);
   } catch (error) {
@@ -76,9 +86,12 @@ router.post('/', async (req, res) => {
         type,
         name,
         description,
-        details: details || {}
+        details: JSON.stringify(details || {})
       }
     });
+    
+    // Parse details back to object for response
+    setting.details = JSON.parse(setting.details || '{}');
 
     res.status(201).json(setting);
   } catch (error) {
@@ -93,17 +106,27 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { type, name, description, details, isLocked } = req.body;
 
+    const updateData = {
+      type,
+      name,
+      description,
+      isLocked,
+      updatedAt: new Date()
+    };
+    
+    if (details !== undefined) {
+      updateData.details = JSON.stringify(details);
+    }
+    
     const setting = await prisma.worldSetting.update({
       where: { id },
-      data: {
-        type,
-        name,
-        description,
-        details,
-        isLocked,
-        updatedAt: new Date()
-      }
+      data: updateData
     });
+    
+    // Parse details back to object for response
+    if (setting.details) {
+      setting.details = JSON.parse(setting.details);
+    }
 
     res.json(setting);
   } catch (error) {
