@@ -4,6 +4,7 @@ import ProjectManagement from '@/components/novel/ProjectManagement.vue'
 import CharacterManagement from '@/components/character/CharacterManagement.vue'
 import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
 import ChapterEditor from '@/components/chapter/ChapterEditor.vue'
+import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
 
 const router = createRouter({
@@ -42,6 +43,15 @@ const router = createRouter({
           meta: {
             title: '世界设定',
             icon: 'GlobalOutlined'
+          }
+        },
+        {
+          path: '/chapters',
+          name: 'chapters',
+          component: ChapterList,
+          meta: {
+            title: '章节列表',
+            icon: 'FileTextOutlined'
           }
         },
         {

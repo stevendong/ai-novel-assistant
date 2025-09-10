@@ -175,9 +175,6 @@
       >
         <NavigationMenu
           :collapsed="collapsed"
-          :chapters="chapters"
-          @chapter-selected="handleChapterSelected"
-          @add-chapter="addNewChapter"
         />
       </a-layout-sider>
 
@@ -198,6 +195,54 @@
         </div>
       </a-layout-content>
     </a-layout>
+
+    <!-- Add Chapter Dialog -->
+    <a-modal
+      v-model:open="addChapterVisible"
+      title="添加新章节"
+      width="600px"
+      @ok="handleAddChapter"
+      :confirm-loading="chaptersLoading"
+    >
+      <a-form layout="vertical" :model="addChapterForm">
+        <a-form-item 
+          label="章节标题" 
+          name="title"
+          :rules="[{ required: true, message: '请输入章节标题' }]"
+        >
+          <a-input 
+            v-model:value="addChapterForm.title" 
+            placeholder="请输入章节标题" 
+            maxlength="100"
+            show-count
+          />
+        </a-form-item>
+        
+        <a-form-item 
+          label="章节大纲" 
+          name="outline"
+        >
+          <a-textarea 
+            v-model:value="addChapterForm.outline" 
+            placeholder="请输入章节大纲（可选）"
+            :rows="4"
+            maxlength="500"
+            show-count
+          />
+        </a-form-item>
+        
+        <div class="chapter-info">
+          <a-descriptions :column="2" size="small">
+            <a-descriptions-item label="章节号">
+              第 {{ chapters.length + 1 }} 章
+            </a-descriptions-item>
+            <a-descriptions-item label="状态">
+              规划中
+            </a-descriptions-item>
+          </a-descriptions>
+        </div>
+      </a-form>
+    </a-modal>
 
     <!-- Bottom Status Bar -->
     <a-layout-footer class="status-bar">
@@ -221,6 +266,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -240,27 +286,21 @@ import type { Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 import { useProjectStore } from '@/stores/project'
+import { useChapterList } from '@/composables/useChapterList'
 
 const projectStore = useProjectStore()
+const { chapters, loading: chaptersLoading, loadChapters, createChapter } = useChapterList()
 const collapsed = ref(false)
 const aiPanelCollapsed = ref(true)  // 默认关闭 AI 助手面板
 const selectedChapter = ref<Chapter | null>(null)
 
-const chapters = ref<Chapter[]>([
-  {
-    id: '1',
-    novelId: '1',
-    chapterNumber: 1,
-    title: '神秘的开始',
-    outline: '主角发现了一个神秘的线索...',
-    content: '',
-    plotPoints: {},
-    illustrations: {},
-    status: 'planning',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-])
+// 添加章节对话框状态
+const addChapterVisible = ref(false)
+const addChapterForm = ref({
+  title: '',
+  outline: ''
+})
+
 
 // 计算属性
 const currentProjectId = computed(() => projectStore.currentProjectId)
@@ -286,6 +326,8 @@ onMounted(async () => {
 // 项目切换处理
 const handleProjectChange = async (projectId: string) => {
   await projectStore.switchProject(projectId)
+  // 加载新项目的章节
+  await loadChapters(projectId)
 }
 
 // 项目搜索过滤
@@ -320,12 +362,40 @@ const toggleAIPanel = () => {
   aiPanelCollapsed.value = !aiPanelCollapsed.value
 }
 
-const handleChapterSelected = (chapter: Chapter) => {
-  selectedChapter.value = chapter
+
+// 添加章节相关方法
+const showAddChapterDialog = () => {
+  addChapterVisible.value = true
+  // 重置表单
+  addChapterForm.value = {
+    title: '',
+    outline: ''
+  }
+}
+
+const handleAddChapter = async () => {
+  if (!addChapterForm.value.title.trim()) {
+    message.error('请输入章节标题')
+    return
+  }
+  
+  const newChapter = await createChapter({
+    title: addChapterForm.value.title.trim(),
+    outline: addChapterForm.value.outline.trim()
+  })
+  
+  if (newChapter) {
+    addChapterVisible.value = false
+    // 重置表单
+    addChapterForm.value = {
+      title: '',
+      outline: ''
+    }
+  }
 }
 
 const addNewChapter = () => {
-  console.log('Add new chapter')
+  showAddChapterDialog()
 }
 
 // Status helper functions
@@ -722,5 +792,22 @@ const formatDate = (dateString: string) => {
   .ai-panel {
     width: 100%;
   }
+}
+
+/* Chapter Dialog Styles */
+.chapter-info {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.chapter-info :deep(.ant-descriptions-item-label) {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.chapter-info :deep(.ant-descriptions-item-content) {
+  color: rgba(0, 0, 0, 0.85);
 }
 </style>

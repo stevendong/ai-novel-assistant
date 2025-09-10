@@ -17,26 +17,16 @@
       <span>{{ route.meta?.title }}</span>
     </a-menu-item>
 
-    <!-- Chapters submenu -->
-    <a-sub-menu key="chapters">
+    <!-- Chapters menu item -->
+    <a-menu-item
+      key="chapters"
+      @click="navigateToRoute('chapters')"
+    >
       <template #icon>
         <FileTextOutlined />
       </template>
-      <template #title>章节列表</template>
-      <a-menu-item
-        v-for="chapter in chapters"
-        :key="`chapter-${chapter.id}`"
-        @click="selectChapter(chapter)"
-      >
-        第{{ chapter.chapterNumber }}章：{{ chapter.title }}
-      </a-menu-item>
-      <a-menu-item key="add-chapter" @click="addNewChapter">
-        <template #icon>
-          <PlusOutlined />
-        </template>
-        添加章节
-      </a-menu-item>
-    </a-sub-menu>
+      <span>章节列表</span>
+    </a-menu-item>
   </a-menu>
 </template>
 
@@ -48,27 +38,16 @@ import {
   TeamOutlined,
   GlobalOutlined,
   FileTextOutlined,
-  BarChartOutlined,
-  PlusOutlined
+  BarChartOutlined
 } from '@ant-design/icons-vue'
-import type { Chapter } from '@/types'
 
 interface Props {
   collapsed?: boolean
-  chapters?: Chapter[]
-}
-
-interface Emits {
-  (e: 'chapter-selected', chapter: Chapter): void
-  (e: 'add-chapter'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  collapsed: false,
-  chapters: () => []
+  collapsed: false
 })
-
-const emit = defineEmits<Emits>()
 
 const router = useRouter()
 const route = useRoute()
@@ -127,16 +106,6 @@ const navigateToRoute = (routeName: string) => {
   router.push({ name: routeName })
 }
 
-// Select chapter
-const selectChapter = (chapter: Chapter) => {
-  router.push({ name: 'chapter', params: { id: chapter.id } })
-  emit('chapter-selected', chapter)
-}
-
-// Add new chapter
-const addNewChapter = () => {
-  emit('add-chapter')
-}
 
 // Watch route changes to update selected keys
 watch(() => route.name, (newRouteName) => {

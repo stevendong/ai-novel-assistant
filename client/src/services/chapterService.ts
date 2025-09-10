@@ -50,6 +50,24 @@ export interface AIOutlineResponse {
   }
 }
 
+export interface ChapterListQuery {
+  page?: number
+  pageSize?: number
+  status?: string
+  search?: string
+  sortBy?: 'chapterNumber' | 'title' | 'updatedAt' | 'createdAt'
+  sortOrder?: 'asc' | 'desc'
+}
+
+export interface ChapterListResponse {
+  chapters: Chapter[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  maxChapterNumber: number
+}
+
 class ChapterService {
   // 获取小说的所有章节
   async getChaptersByNovel(novelId: string): Promise<Chapter[]> {
@@ -61,6 +79,45 @@ class ChapterService {
     
     // 解析JSON字符串字段
     return chapters.map((chapter: any) => this.parseChapterData(chapter))
+  }
+
+  // 分页查询小说章节
+  async getChaptersByNovelPaginated(novelId: string, query: ChapterListQuery = {}): Promise<ChapterListResponse> {
+    const params = new URLSearchParams()
+    
+    // 设置默认值
+    const {
+      page = 1,
+      pageSize = 10,
+      status,
+      search,
+      sortBy = 'chapterNumber',
+      sortOrder = 'asc'
+    } = query
+    
+    params.append('page', page.toString())
+    params.append('pageSize', pageSize.toString())
+    params.append('sortBy', sortBy)
+    params.append('sortOrder', sortOrder)
+    
+    if (status) {
+      params.append('status', status)
+    }
+    
+    if (search) {
+      params.append('search', search)
+    }
+    const response = await fetch(`${API_BASE}/chapters/novel/${novelId}/paginated?${params}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch chapters')
+    }
+    
+    const result = await response.json()
+    
+    return {
+      ...result,
+      chapters: result.chapters.map((chapter: any) => this.parseChapterData(chapter))
+    }
   }
 
   // 获取单个章节详情

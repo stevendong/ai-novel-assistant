@@ -23,11 +23,10 @@
       "WebSearch",
       "Bash(lsof:*)",
       "Bash(kill:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(awk:*)"
     ],
-    "deny": [
-      "Bash(npm run dev:*)"
-    ],
+    "deny": [],
     "ask": []
   }
 }
