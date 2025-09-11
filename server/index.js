@@ -17,6 +17,7 @@ const aiProviderRoutes = require('./routes/ai-providers');
 const exportRoutes = require('./routes/export');
 const statisticsRoutes = require('./routes/statistics');
 const goalsRoutes = require('./routes/goals');
+const workflowRoutes = require('./routes/workflow');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +44,7 @@ app.use('/api/ai', aiProviderRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/statistics', statisticsRoutes);
 app.use('/api/goals', goalsRoutes);
+app.use('/api/workflow', workflowRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

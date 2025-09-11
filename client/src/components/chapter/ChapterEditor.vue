@@ -19,7 +19,7 @@
             </div>
           </div>
         </div>
-        
+
         <a-space>
           <a-button @click="requestAIOutline" :loading="loading">
             <template #icon>
@@ -33,9 +33,9 @@
             </template>
             一致性检查
           </a-button>
-          <a-button 
-            type="primary" 
-            @click="saveChapter" 
+          <a-button
+            type="primary"
+            @click="saveChapter"
             :loading="saving"
             :disabled="!hasUnsavedChanges"
           >
@@ -78,8 +78,16 @@
         <a-tab-pane key="settings" tab="设定">
           <template #tab>
             <span class="flex items-center">
-              <GlobalOutlined class="mr-2" />
+              <SettingOutlined class="mr-2" />
               设定
+            </span>
+          </template>
+        </a-tab-pane>
+        <a-tab-pane key="workflow" tab="状态流转">
+          <template #tab>
+            <span class="flex items-center">
+              <BranchesOutlined class="mr-2" />
+              状态流转
             </span>
           </template>
         </a-tab-pane>
@@ -145,8 +153,8 @@
                 >
                   <a-row :gutter="16" align="middle">
                     <a-col :span="4">
-                      <a-select 
-                        :value="point.type" 
+                      <a-select
+                        :value="point.type"
                         @change="(value: string) => updatePlotPoint(index, { ...point, type: value as PlotPoint['type'] })"
                         placeholder="类型"
                       >
@@ -178,13 +186,13 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 预览区 -->
           <div class="flex-1 p-6 overflow-y-auto bg-gray-50" v-if="isOutlinePreviewMode">
             <div class="bg-white rounded-lg p-6 shadow-sm">
               <div class="markdown-novel" v-html="outlineRenderedHtml"></div>
             </div>
-            
+
             <!-- 统计信息 -->
             <div class="mt-4 p-4 bg-white rounded-lg shadow-sm">
               <div class="text-sm text-gray-600 space-y-1">
@@ -317,7 +325,25 @@
           </div>
         </div>
 
+        <!-- Workflow Tab -->
+        <div v-show="activeTab === 'workflow'" class="h-full p-6 overflow-y-auto">
+          <div class="max-w-4xl mx-auto">
+            <StatusFlowControl
+              entity-type="chapter"
+              :entity-id="chapter.id"
+              :current-status="chapter.status"
+              :novel-id="chapter.novelId"
+              :show-batch-actions="false"
+              :show-manual-change="true"
+              @status-changed="handleStatusChanged"
+            />
+          </div>
+        </div>
+
         <!-- Illustrations Tab -->
+        <div v-if="activeTab === 'default'" class="h-full p-6 overflow-y-auto">
+          <!-- Default content -->
+        </div>
         <div v-else-if="activeTab === 'illustrations'" class="h-full p-6 overflow-y-auto">
           <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-4">
@@ -337,8 +363,8 @@
                 <a-row :gutter="16">
                   <a-col :span="6">
                     <a-form-item label="位置">
-                      <a-select 
-                        :value="illustration.position" 
+                      <a-select
+                        :value="illustration.position"
                         @change="(value: string) => updateIllustration(index, { ...illustration, position: value as Illustration['position'] })"
                         placeholder="选择位置"
                       >
@@ -376,7 +402,7 @@
                   </a-form-item>
                 </div>
               </div>
-              
+
               <div v-if="chapter.illustrations.length === 0" class="text-center py-8 text-gray-400">
                 <PictureOutlined style="font-size: 48px; margin-bottom: 16px;" />
                 <p>暂无插图标记</p>
@@ -444,13 +470,16 @@ import {
   PictureOutlined,
   PlusOutlined,
   DeleteOutlined,
-  EyeOutlined
+  EyeOutlined,
+  BranchesOutlined,
+  SettingOutlined
 } from '@ant-design/icons-vue'
 import { useChapter } from '@/composables/useChapter'
 import { useMarkdown } from '@/composables/useMarkdown'
 import { chapterService } from '@/services/chapterService'
 import { characterService } from '@/services/characterService'
 import { settingService } from '@/services/settingService'
+import StatusFlowControl from '@/components/workflow/StatusFlowControl.vue'
 import TiptapEditor from './TiptapEditor.vue'
 import type { Character, WorldSetting, PlotPoint, Illustration } from '@/types'
 import '@/assets/markdown-novel.css'
@@ -519,13 +548,13 @@ const availableSettings = ref<WorldSetting[]>([])
 // 加载可用角色和设定
 const loadAvailableData = async () => {
   if (!chapter.value) return
-  
+
   try {
     const [characters, settings] = await Promise.all([
       characterService.getCharactersByNovel(chapter.value.novelId),
       settingService.getByNovelId(chapter.value.novelId)
     ])
-    
+
     availableCharacters.value = characters
     availableSettings.value = settings
   } catch (err) {
@@ -539,7 +568,7 @@ const loadAvailableData = async () => {
 const getSettingTypeText = (type: string) => {
   const texts = {
     'worldview': '世界观',
-    'location': '地理位置', 
+    'location': '地理位置',
     'rule': '规则体系',
     'culture': '文化背景'
   }
@@ -568,7 +597,7 @@ const getRoleText = (role: string) => {
 const getRoleColor = (role: string) => {
   const colors = {
     'main': 'red',
-    'supporting': 'blue', 
+    'supporting': 'blue',
     'mentioned': 'gray'
   }
   return colors[role as keyof typeof colors] || 'default'
@@ -596,10 +625,10 @@ const addCharacterToChapter = async () => {
   try {
     // 调用API添加角色到章节
     await chapterService.addCharacterToChapter(chapter.value.id, selectedCharacterId.value, 'mentioned')
-    
+
     // 重新加载章节数据
     await loadChapter(chapter.value.id)
-    
+
     message.success('角色添加成功')
   } catch (err) {
     message.error('角色添加失败')
@@ -612,7 +641,7 @@ const addCharacterToChapter = async () => {
 
 const removeCharacterFromChapter = async (characterId: string) => {
   if (!chapter.value) return
-  
+
   try {
     await chapterService.removeCharacterFromChapter(chapter.value.id, characterId)
     await loadChapter(chapter.value.id)
@@ -625,7 +654,7 @@ const removeCharacterFromChapter = async (characterId: string) => {
 
 const updateCharacterRole = async (characterId: string, role: string) => {
   if (!chapter.value) return
-  
+
   try {
     await chapterService.updateCharacterRole(chapter.value.id, characterId, role)
     message.success('角色关系更新成功')
@@ -654,7 +683,7 @@ const addSettingToChapter = async () => {
 
 const removeSettingFromChapter = async (settingId: string) => {
   if (!chapter.value) return
-  
+
   try {
     await chapterService.removeSettingFromChapter(chapter.value.id, settingId)
     await loadChapter(chapter.value.id)
@@ -667,7 +696,7 @@ const removeSettingFromChapter = async (settingId: string) => {
 
 const updateSettingUsage = async (settingId: string, usage: string) => {
   if (!chapter.value) return
-  
+
   try {
     await chapterService.updateSettingUsage(chapter.value.id, settingId, usage)
     message.success('设定用法更新成功')
@@ -733,6 +762,15 @@ const handleContentChange = (value: string) => {
   }
 }
 
+// 状态流转处理
+const handleStatusChanged = (newStatus: string) => {
+  if (chapter.value) {
+    chapter.value.status = newStatus
+    // 重新加载章节数据以获取最新信息
+    loadChapter()
+  }
+}
+
 // 监听大纲内容变化，同步到章节数据
 watch(outlineMarkdown, (newValue) => {
   if (chapter.value) {
@@ -762,7 +800,7 @@ onMounted(async () => {
     // 加载可用角色和设定
     await loadAvailableData()
   }
-  
+
   // 初始化Markdown内容
   if (chapter.value?.outline) {
     setOutlineMarkdown(chapter.value.outline)

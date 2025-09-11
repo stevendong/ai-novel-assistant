@@ -30,6 +30,7 @@ model Novel {
   aiSettings  AIConstraint?
   statistics  NovelStatistics[]
   goals       WritingGoal[]
+  workflows   WorkflowConfig[]
 }
 
 // 角色信息
@@ -178,5 +179,37 @@ model WritingGoal {
   novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
   
   @@unique([novelId, type, period])
+  @@index([novelId])
+}
+
+// 状态变更历史
+model StatusHistory {
+  id          String   @id @default(cuid())
+  entityType  String   // 'novel' | 'chapter'
+  entityId    String
+  fromStatus  String?
+  toStatus    String
+  triggeredBy String   // 'user' | 'system'
+  reason      String?  // 变更原因
+  metadata    String?  // 额外信息 JSON字符串
+  createdAt   DateTime @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// 工作流配置
+model WorkflowConfig {
+  id          String   @id @default(cuid())
+  novelId     String
+  entityType  String   // 'novel' | 'chapter'  
+  transitions String   // JSON格式的流转规则
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  novel       Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  
+  @@unique([novelId, entityType])
   @@index([novelId])
 }

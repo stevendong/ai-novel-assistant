@@ -187,3 +187,44 @@ export interface Achievement {
   description: string
   earned: boolean
 }
+
+// 状态流转相关类型
+export interface StatusTransition {
+  from: string
+  to: string
+  conditions: TransitionCondition[]
+  autoTrigger: boolean
+  validation?: ValidationRule[]
+  canTransition?: boolean
+  reason?: string
+}
+
+export interface TransitionCondition {
+  type: string
+  value?: any
+}
+
+export interface ValidationRule {
+  type: string
+  value?: any
+}
+
+export interface StatusHistory {
+  id: string
+  entityType: 'novel' | 'chapter'
+  entityId: string
+  fromStatus?: string
+  toStatus: string
+  triggeredBy: 'user' | 'system'
+  reason?: string
+  metadata?: string
+  createdAt: string
+}
+
+export interface WorkflowConfig {
+  id: string
+  novelId?: string
+  entityType: 'novel' | 'chapter'
+  transitions: StatusTransition[]
+  isActive: boolean
+}
