@@ -7,6 +7,9 @@ require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+// 导入端口管理工具
+const { ensurePortAvailable } = require('./utils/portManager');
+
 // 导入路由
 const novelRoutes = require('./routes/novels');
 const characterRoutes = require('./routes/characters');
@@ -75,7 +78,36 @@ process.on('SIGINT', async () => {
 });
 
 // 启动服务器
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-});
+async function startServer() {
+  try {
+    // 确保端口可用，如果被占用则自动杀死占用进程
+    const portResult = await ensurePortAvailable(PORT, {
+      autoKill: true,
+      force: false,
+      retryCount: 3,
+      showProcessInfo: true
+    });
+
+    if (!portResult.success) {
+      console.error(`❌ 无法启动服务器: ${portResult.message}`);
+      process.exit(1);
+    }
+
+    // 启动服务器
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+      
+      if (portResult.killedProcesses && portResult.killedProcesses.length > 0) {
+        console.log(`🔧 已自动处理 ${portResult.killedProcesses.length} 个占用端口的进程`);
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ 服务器启动失败:', error);
+    process.exit(1);
+  }
+}
+
+// 启动服务器
+startServer();

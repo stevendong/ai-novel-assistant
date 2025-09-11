@@ -35,7 +35,8 @@ router.post('/chat', async (req, res) => {
     const response = await aiService.generateResponse(novelContext, message, type, {
       provider,
       model,
-      temperature: type === 'creative' ? 0.9 : 0.7
+      taskType: type, // 让aiService使用任务特定的参数
+      temperature: undefined // 让配置系统决定温度
     });
 
     res.json(response);

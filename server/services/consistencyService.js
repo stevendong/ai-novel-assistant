@@ -1,11 +1,28 @@
 const { PrismaClient } = require('@prisma/client');
 const OpenAI = require('openai');
+const { aiConfig, validateConfig } = require('../config/aiConfig');
+const { 
+  withRetry, 
+  buildRequestParams, 
+  normalizeResponse, 
+  validateResponse,
+  createSystemMessage 
+} = require('../utils/aiHelpers');
 
 const prisma = new PrismaClient();
+
+// 验证AI配置
+try {
+  validateConfig();
+} catch (error) {
+  console.warn('AI配置验证警告:', error.message);
+}
+
+// 初始化OpenAI客户端
 const openai = new OpenAI({
-  baseURL: process.env.OPENAI_BASE_URL,
-  apiKey: process.env.OPENAI_API_KEY,
-  model: process.env.OPENAI_MODEL
+  baseURL: aiConfig.openai.baseURL,
+  apiKey: aiConfig.openai.apiKey,
+  timeout: aiConfig.openai.timeout
 });
 
 class ConsistencyService {
@@ -186,15 +203,10 @@ class ConsistencyService {
 
   // 调用AI进行一致性检查
   async callAIForConsistencyCheck(prompt) {
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: `你是一个专业的小说编辑，负责检查小说的一致性问题。请仔细分析提供的内容，识别任何不一致的地方。
-
-返回格式必须是JSON：
+    const systemMessage = createSystemMessage(
+      '专业的小说编辑',
+      '负责检查小说的一致性问题。请仔细分析提供的内容，识别任何不一致的地方。',
+      `返回格式必须是JSON：
 {
   "hasIssues": boolean,
   "description": "具体的问题描述",
@@ -207,22 +219,55 @@ class ConsistencyService {
 严重程度标准：
 - high: 严重矛盾，明显违背之前设定
 - medium: 需要注意的不一致，可能造成困惑
-- low: 轻微问题，建议完善的地方`
+- low: 轻微问题，建议完善的地方`,
+      {
+        constraints: [
+          '只分析提供的内容，不要添加推测',
+          '严格按照JSON格式返回结果',
+          '准确评估问题的严重程度'
+        ]
+      }
+    );
+
+    const requestFn = async () => {
+      const params = buildRequestParams('openai', 'consistency');
+      
+      const response = await openai.chat.completions.create({
+        model: aiConfig.openai.model,
+        messages: [
+          {
+            role: "system",
+            content: systemMessage
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        temperature: 0.3
+        ...params
       });
 
-      const result = JSON.parse(response.choices[0].message.content);
-      console.log(result);
+      const normalized = normalizeResponse(response, 'openai');
+      return validateResponse(normalized.content, 'json');
+    };
+
+    try {
+      const result = await withRetry(requestFn, 'openai');
+      
+      // 验证返回结果的必要字段
+      if (typeof result.hasIssues !== 'boolean') {
+        throw new Error('AI返回结果缺少必要字段: hasIssues');
+      }
+      
       return result;
     } catch (error) {
       console.error('AI一致性检查失败:', error);
-      return { hasIssues: false };
+      return { 
+        hasIssues: false,
+        description: '检查过程中出现错误，请稍后重试',
+        severity: 'low',
+        error: error.message
+      };
     }
   }
 

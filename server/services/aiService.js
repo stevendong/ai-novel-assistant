@@ -1,67 +1,75 @@
 const OpenAI = require('openai');
+const { aiConfig, validateConfig } = require('../config/aiConfig');
+const { 
+  withRetry, 
+  buildRequestParams, 
+  normalizeResponse, 
+  validateResponse
+} = require('../utils/aiHelpers');
 
 class AIService {
   constructor() {
     this.providers = new Map();
     this.initializeProviders();
+    
+    // 验证AI配置
+    try {
+      validateConfig();
+    } catch (error) {
+      console.warn('AI配置验证警告:', error.message);
+    }
   }
 
   initializeProviders() {
     // Initialize OpenAI-compatible providers
-    const openaiConfig = {
-      apiKey: process.env.OPENAI_API_KEY,
-      baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
-    };
-    
-    if (openaiConfig.apiKey) {
+    if (aiConfig.openai.apiKey) {
       this.providers.set('openai', {
-        client: new OpenAI(openaiConfig),
+        client: new OpenAI({
+          apiKey: aiConfig.openai.apiKey,
+          baseURL: aiConfig.openai.baseURL,
+          timeout: aiConfig.openai.timeout
+        }),
         type: 'openai',
         models: {
-          chat: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-          embedding: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-ada-002'
+          chat: aiConfig.openai.model,
+          embedding: aiConfig.openai.embeddingModel
         }
       });
     }
 
     // Initialize Claude provider
-    const claudeConfig = {
-      apiKey: process.env.CLAUDE_API_KEY,
-      baseURL: process.env.CLAUDE_BASE_URL || 'https://api.anthropic.com'
-    };
-    
-    if (claudeConfig.apiKey) {
+    if (aiConfig.claude.apiKey) {
       this.providers.set('claude', {
         client: null, // Will be initialized when needed
-        config: claudeConfig,
+        config: {
+          apiKey: aiConfig.claude.apiKey,
+          baseURL: aiConfig.claude.baseURL,
+          timeout: aiConfig.claude.timeout
+        },
         type: 'claude',
         models: {
-          chat: process.env.CLAUDE_MODEL || 'claude-3-sonnet-20240229'
+          chat: aiConfig.claude.model
         }
       });
     }
 
     // Support for custom OpenAI-compatible providers
-    if (process.env.CUSTOM_PROVIDER_NAME) {
-      const customConfig = {
-        apiKey: process.env.CUSTOM_API_KEY,
-        baseURL: process.env.CUSTOM_BASE_URL
-      };
-      
-      if (customConfig.apiKey && customConfig.baseURL) {
-        this.providers.set(process.env.CUSTOM_PROVIDER_NAME, {
-          client: new OpenAI(customConfig),
-          type: 'openai',
-          models: {
-            chat: process.env.CUSTOM_MODEL || 'gpt-3.5-turbo'
-          }
-        });
-      }
+    if (aiConfig.custom.name && aiConfig.custom.apiKey && aiConfig.custom.baseURL) {
+      this.providers.set(aiConfig.custom.name, {
+        client: new OpenAI({
+          apiKey: aiConfig.custom.apiKey,
+          baseURL: aiConfig.custom.baseURL
+        }),
+        type: 'openai',
+        models: {
+          chat: aiConfig.custom.model || 'gpt-3.5-turbo'
+        }
+      });
     }
   }
 
   getDefaultProvider() {
-    const preferredProvider = process.env.DEFAULT_AI_PROVIDER || 'openai';
+    const preferredProvider = aiConfig.global.defaultProvider;
     return this.providers.get(preferredProvider) || this.providers.values().next().value;
   }
 
@@ -82,19 +90,33 @@ class AIService {
   }
 
   async openaiChat(provider, messages, options) {
-    try {
-      const response = await provider.client.chat.completions.create({
+    const taskType = options.taskType || 'default';
+    
+    const requestFn = async () => {
+      const params = buildRequestParams('openai', taskType, {
         model: options.model || provider.models.chat,
-        messages: messages,
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 2000,
+        temperature: options.temperature,
+        maxTokens: options.maxTokens,
         ...options.additionalParams
       });
 
+      const response = await provider.client.chat.completions.create({
+        messages: messages,
+        ...params
+      });
+
+      return normalizeResponse(response, 'openai');
+    };
+
+    try {
+      const result = await withRetry(requestFn, 'openai');
+      
       return {
-        content: response.choices[0].message.content,
-        usage: response.usage,
-        provider: 'openai'
+        content: result.content,
+        usage: result.usage,
+        provider: 'openai',
+        model: result.model,
+        finishReason: result.finishReason
       };
     } catch (error) {
       console.error('OpenAI API Error:', error);
