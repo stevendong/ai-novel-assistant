@@ -26,7 +26,12 @@
     "lint": "npm run lint --workspaces --if-present",
     "type-check": "npm run type-check --workspaces --if-present"
   },
-  "keywords": ["ai", "novel", "writing", "collaboration"],
+  "keywords": [
+    "ai",
+    "novel",
+    "writing",
+    "collaboration"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {

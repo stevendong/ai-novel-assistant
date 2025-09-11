@@ -76,9 +76,16 @@
             </template>
             
             <template v-else-if="column.key === 'status'">
-              <a-tag :color="getStatusColor(record.status)">
-                {{ getStatusText(record.status) }}
-              </a-tag>
+              <div class="status-cell">
+                <a-tag :color="getStatusColor(record.status)">
+                  {{ getStatusText(record.status) }}
+                </a-tag>
+                <consistency-indicator 
+                  :chapter-id="record.id"
+                  size="small"
+                  class="ml-2"
+                />
+              </div>
             </template>
             
             <template v-else-if="column.key === 'wordCount'">
@@ -263,6 +270,7 @@ import {
 import type { Chapter } from '@/types'
 import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
+import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -308,7 +316,7 @@ const columns = [
     title: '状态',
     key: 'status',
     dataIndex: 'status',
-    width: 100,
+    width: 140,
     sorter: true,
     sortDirections: ['ascend', 'descend']
   },
@@ -579,6 +587,16 @@ const handleStatusFilter = (value: string) => {
 
 .chapter-title-cell {
   font-weight: 500;
+}
+
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
 }
 
 .word-count {

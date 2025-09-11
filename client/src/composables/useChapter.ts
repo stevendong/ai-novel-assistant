@@ -139,24 +139,20 @@ export function useChapter(chapterId?: string) {
     if (!chapter.value) return
 
     try {
-      // 这里可以调用AI服务进行一致性检查
-      const response = await fetch(`/api/ai/consistency/check`, {
+      // 调用一致性检查服务
+      const response = await fetch(`/api/consistency/chapters/${chapter.value.id}/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chapterId: chapter.value.id,
-          content: chapter.value.content,
-          outline: chapter.value.outline,
-          characters: chapter.value.characters,
-          settings: chapter.value.settings
+          types: ['character', 'setting', 'timeline', 'logic']
         }),
       })
       
       if (response.ok) {
-        const checks = await response.json()
-        return checks
+        const result = await response.json()
+        return result.issues
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : '一致性检查失败'

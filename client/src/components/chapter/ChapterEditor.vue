@@ -99,6 +99,20 @@
             </span>
           </template>
         </a-tab-pane>
+        <a-tab-pane key="consistency" tab="一致性检查">
+          <template #tab>
+            <span class="flex items-center">
+              <CheckCircleOutlined class="mr-2" />
+              一致性检查
+              <a-badge 
+                v-if="consistencyIssues.length > 0" 
+                :count="unresolvedIssuesCount" 
+                :number-style="{ backgroundColor: getSeverityColor(highestSeverity) }"
+                class="ml-1"
+              />
+            </span>
+          </template>
+        </a-tab-pane>
       </a-tabs>
     </div>
 
@@ -413,6 +427,162 @@
             </div>
           </div>
         </div>
+
+        <!-- Consistency Check Tab -->
+        <div v-else-if="activeTab === 'consistency'" class="h-full p-6 overflow-y-auto">
+          <div class="max-w-6xl mx-auto">
+            <!-- 检查操作栏 -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-800">一致性检查</h3>
+                <a-space>
+                  <a-button 
+                    type="primary" 
+                    @click="performConsistencyCheck"
+                    :loading="consistencyChecking"
+                  >
+                    <CheckCircleOutlined />
+                    重新检查
+                  </a-button>
+                  <a-button 
+                    v-if="unresolvedIssuesCount > 0"
+                    @click="batchResolveIssues"
+                    :loading="batchResolving"
+                  >
+                    批量解决
+                  </a-button>
+                </a-space>
+              </div>
+
+              <!-- 健康度仪表板 -->
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div class="text-center p-3 bg-gray-50 rounded-lg">
+                  <div class="text-2xl font-bold" :style="{ color: healthGrade.color }">
+                    {{ healthScore }}
+                  </div>
+                  <div class="text-sm text-gray-500">健康度评分</div>
+                  <div class="text-xs mt-1" :style="{ color: healthGrade.color }">
+                    {{ healthGrade.grade }}
+                  </div>
+                </div>
+                <div class="text-center p-3 bg-red-50 rounded-lg">
+                  <div class="text-2xl font-bold text-red-600">{{ severityCounts.high }}</div>
+                  <div class="text-sm text-gray-500">严重问题</div>
+                </div>
+                <div class="text-center p-3 bg-orange-50 rounded-lg">
+                  <div class="text-2xl font-bold text-orange-600">{{ severityCounts.medium }}</div>
+                  <div class="text-sm text-gray-500">中等问题</div>
+                </div>
+                <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                  <div class="text-2xl font-bold text-yellow-600">{{ severityCounts.low }}</div>
+                  <div class="text-sm text-gray-500">轻微问题</div>
+                </div>
+              </div>
+
+              <!-- 筛选器 -->
+              <div class="flex items-center space-x-4">
+                <a-select
+                  v-model:value="issueFilters.type"
+                  placeholder="按类型筛选"
+                  style="width: 150px"
+                  allow-clear
+                >
+                  <a-select-option value="character">角色一致性</a-select-option>
+                  <a-select-option value="setting">设定一致性</a-select-option>
+                  <a-select-option value="timeline">时间线一致性</a-select-option>
+                  <a-select-option value="logic">逻辑一致性</a-select-option>
+                </a-select>
+                <a-select
+                  v-model:value="issueFilters.severity"
+                  placeholder="按严重程度筛选"
+                  style="width: 150px"
+                  allow-clear
+                >
+                  <a-select-option value="high">严重</a-select-option>
+                  <a-select-option value="medium">中等</a-select-option>
+                  <a-select-option value="low">轻微</a-select-option>
+                </a-select>
+                <a-select
+                  v-model:value="issueFilters.resolved"
+                  placeholder="按状态筛选"
+                  style="width: 150px"
+                  allow-clear
+                >
+                  <a-select-option :value="false">未解决</a-select-option>
+                  <a-select-option :value="true">已解决</a-select-option>
+                </a-select>
+              </div>
+            </div>
+
+            <!-- 问题列表 -->
+            <div class="space-y-4">
+              <div
+                v-for="issue in filteredIssues"
+                :key="issue.id"
+                class="bg-white border rounded-lg p-4"
+                :class="{
+                  'border-red-200 bg-red-50': issue.severity === 'high' && !issue.resolved,
+                  'border-orange-200 bg-orange-50': issue.severity === 'medium' && !issue.resolved,
+                  'border-yellow-200 bg-yellow-50': issue.severity === 'low' && !issue.resolved,
+                  'border-gray-200 bg-gray-50': issue.resolved
+                }"
+              >
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2 mb-2">
+                      <span class="text-lg">{{ getTypeIcon(issue.type) }}</span>
+                      <a-tag :color="getSeverityColor(issue.severity)">
+                        {{ getSeverityLabel(issue.severity) }}
+                      </a-tag>
+                      <a-tag>{{ getTypeLabel(issue.type) }}</a-tag>
+                      <span v-if="issue.resolved" class="text-sm text-gray-500">已解决</span>
+                    </div>
+                    <p class="text-gray-800 mb-2">{{ issue.issue }}</p>
+                    <div class="text-xs text-gray-500">
+                      发现时间：{{ formatDate(issue.createdAt) }}
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <a-button 
+                      size="small" 
+                      @click="viewIssueDetails(issue)"
+                    >
+                      <EyeOutlined />
+                      详情
+                    </a-button>
+                    <a-button 
+                      size="small"
+                      :type="issue.resolved ? 'default' : 'primary'"
+                      @click="toggleIssueResolved(issue)"
+                      :loading="resolvingIssues.has(issue.id)"
+                    >
+                      {{ issue.resolved ? '标记未解决' : '标记已解决' }}
+                    </a-button>
+                    <a-button 
+                      size="small" 
+                      danger 
+                      @click="deleteIssue(issue)"
+                      :loading="deletingIssues.has(issue.id)"
+                    >
+                      <DeleteOutlined />
+                    </a-button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 空状态 -->
+              <div v-if="filteredIssues.length === 0" class="text-center py-12">
+                <CheckCircleOutlined style="font-size: 48px; color: #52c41a; margin-bottom: 16px;" />
+                <h4 class="text-lg font-medium text-gray-800 mb-2">
+                  {{ consistencyIssues.length === 0 ? '暂无一致性问题' : '没有符合筛选条件的问题' }}
+                </h4>
+                <p class="text-gray-500">
+                  {{ consistencyIssues.length === 0 ? '点击"重新检查"按钮开始检查章节一致性' : '尝试调整筛选条件' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -452,6 +622,56 @@
         </a-select-option>
       </a-select>
     </a-modal>
+
+    <!-- 问题详情模态框 -->
+    <a-modal
+      v-model:open="showIssueDetailModal"
+      title="一致性问题详情"
+      width="800px"
+      :footer="null"
+    >
+      <div v-if="selectedIssue" class="space-y-4">
+        <!-- 问题基本信息 -->
+        <div class="p-4 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2 mb-2">
+            <span class="text-lg">{{ getTypeIcon(selectedIssue.type) }}</span>
+            <a-tag :color="getSeverityColor(selectedIssue.severity)">
+              {{ getSeverityLabel(selectedIssue.severity) }}
+            </a-tag>
+            <a-tag>{{ getTypeLabel(selectedIssue.type) }}</a-tag>
+            <span v-if="selectedIssue.resolved" class="text-sm text-green-600">已解决</span>
+          </div>
+          <h4 class="font-medium text-gray-800 mb-2">问题描述</h4>
+          <p class="text-gray-700">{{ selectedIssue.issue }}</p>
+          <div class="mt-2 text-xs text-gray-500">
+            发现时间：{{ formatDate(selectedIssue.createdAt) }}
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex justify-between">
+          <a-space>
+            <a-button 
+              :type="selectedIssue.resolved ? 'default' : 'primary'"
+              @click="toggleIssueResolved(selectedIssue)"
+              :loading="resolvingIssues.has(selectedIssue.id)"
+            >
+              {{ selectedIssue.resolved ? '标记未解决' : '标记已解决' }}
+            </a-button>
+            <a-button 
+              danger 
+              @click="deleteIssue(selectedIssue)"
+              :loading="deletingIssues.has(selectedIssue.id)"
+            >
+              删除问题
+            </a-button>
+          </a-space>
+          <a-button @click="showIssueDetailModal = false">
+            关闭
+          </a-button>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -479,9 +699,10 @@ import { useMarkdown } from '@/composables/useMarkdown'
 import { chapterService } from '@/services/chapterService'
 import { characterService } from '@/services/characterService'
 import { settingService } from '@/services/settingService'
+import { consistencyService } from '@/services/consistencyService'
 import StatusFlowControl from '@/components/workflow/StatusFlowControl.vue'
 import TiptapEditor from './TiptapEditor.vue'
-import type { Character, WorldSetting, PlotPoint, Illustration } from '@/types'
+import type { Character, WorldSetting, PlotPoint, Illustration, ConsistencyCheck } from '@/types'
 import '@/assets/markdown-novel.css'
 
 interface Props {
@@ -545,6 +766,22 @@ const selectedSettingId = ref<string>()
 const availableCharacters = ref<Character[]>([])
 const availableSettings = ref<WorldSetting[]>([])
 
+// 一致性检查相关数据
+const consistencyIssues = ref<ConsistencyCheck[]>([])
+const consistencyChecking = ref(false)
+const batchResolving = ref(false)
+const resolvingIssues = ref(new Set<string>())
+const deletingIssues = ref(new Set<string>())
+const selectedIssue = ref<ConsistencyCheck | null>(null)
+const showIssueDetailModal = ref(false)
+
+// 筛选器
+const issueFilters = ref({
+  type: undefined as 'character' | 'setting' | 'timeline' | 'logic' | undefined,
+  severity: undefined as 'low' | 'medium' | 'high' | undefined,
+  resolved: undefined as boolean | undefined
+})
+
 // 加载可用角色和设定
 const loadAvailableData = async () => {
   if (!chapter.value) return
@@ -562,7 +799,67 @@ const loadAvailableData = async () => {
   }
 }
 
-// 不再需要Monaco编辑器初始化
+// 一致性检查计算属性
+const filteredIssues = computed(() => {
+  let filtered = consistencyIssues.value
+
+  if (issueFilters.value.type) {
+    filtered = filtered.filter(issue => issue.type === issueFilters.value.type)
+  }
+
+  if (issueFilters.value.severity) {
+    filtered = filtered.filter(issue => issue.severity === issueFilters.value.severity)
+  }
+
+  if (issueFilters.value.resolved !== undefined) {
+    filtered = filtered.filter(issue => issue.resolved === issueFilters.value.resolved)
+  }
+
+  return filtered.sort((a, b) => {
+    // 按严重程度排序：high > medium > low
+    const severityOrder = { high: 3, medium: 2, low: 1 }
+    const severityDiff = severityOrder[b.severity] - severityOrder[a.severity]
+    if (severityDiff !== 0) return severityDiff
+    
+    // 按解决状态排序：未解决优先
+    if (a.resolved !== b.resolved) {
+      return a.resolved ? 1 : -1
+    }
+    
+    // 按创建时间排序：最新优先
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
+})
+
+const unresolvedIssuesCount = computed(() => {
+  return consistencyIssues.value.filter(issue => !issue.resolved).length
+})
+
+const severityCounts = computed(() => {
+  const counts = { high: 0, medium: 0, low: 0 }
+  consistencyIssues.value.forEach(issue => {
+    if (!issue.resolved) {
+      counts[issue.severity]++
+    }
+  })
+  return counts
+})
+
+const highestSeverity = computed(() => {
+  const unresolvedIssues = consistencyIssues.value.filter(issue => !issue.resolved)
+  if (unresolvedIssues.some(issue => issue.severity === 'high')) return 'high'
+  if (unresolvedIssues.some(issue => issue.severity === 'medium')) return 'medium'
+  if (unresolvedIssues.some(issue => issue.severity === 'low')) return 'low'
+  return 'low'
+})
+
+const healthScore = computed(() => {
+  return consistencyService.calculateHealthScore(consistencyIssues.value)
+})
+
+const healthGrade = computed(() => {
+  return consistencyService.getHealthGrade(healthScore.value)
+})
 
 // 工具函数
 const getSettingTypeText = (type: string) => {
@@ -601,6 +898,23 @@ const getRoleColor = (role: string) => {
     'mentioned': 'gray'
   }
   return colors[role as keyof typeof colors] || 'default'
+}
+
+// 一致性检查工具函数
+const getSeverityColor = (severity: 'low' | 'medium' | 'high') => {
+  return consistencyService.getSeverityColor(severity)
+}
+
+const getSeverityLabel = (severity: 'low' | 'medium' | 'high') => {
+  return consistencyService.getSeverityLabel(severity)
+}
+
+const getTypeIcon = (type: 'character' | 'setting' | 'timeline' | 'logic') => {
+  return consistencyService.getTypeIcon(type)
+}
+
+const getTypeLabel = (type: 'character' | 'setting' | 'timeline' | 'logic') => {
+  return consistencyService.getTypeLabel(type)
 }
 
 // 事件处理函数
@@ -724,16 +1038,93 @@ const requestAIOutline = async () => {
 
 const runConsistencyCheck = async () => {
   if (!chapter.value) return
+  await performConsistencyCheck()
+}
+
+// 一致性检查相关函数
+const loadConsistencyIssues = async () => {
+  if (!chapter.value) return
 
   try {
-    const checks = await checkConsistency()
-    if (checks) {
-      message.success('一致性检查完成')
-      console.log('Consistency Checks:', checks)
+    consistencyIssues.value = await consistencyService.getChapterIssues(chapter.value.id)
+  } catch (err) {
+    console.error('加载一致性检查结果失败:', err)
+  }
+}
+
+const performConsistencyCheck = async () => {
+  if (!chapter.value) return
+
+  try {
+    consistencyChecking.value = true
+    const result = await consistencyService.checkChapter(chapter.value.id)
+    
+    if (result.success) {
+      await loadConsistencyIssues()
+      message.success(`一致性检查完成，发现 ${result.issuesFound} 个问题`)
+      
+      // 如果有严重问题，自动切换到一致性检查标签页
+      if (result.issues.some(issue => issue.severity === 'high')) {
+        activeTab.value = 'consistency'
+      }
     }
   } catch (err) {
+    console.error('一致性检查失败:', err)
     message.error('一致性检查失败')
+  } finally {
+    consistencyChecking.value = false
   }
+}
+
+const toggleIssueResolved = async (issue: ConsistencyCheck) => {
+  try {
+    resolvingIssues.value.add(issue.id)
+    await consistencyService.resolveIssue(issue.id, !issue.resolved)
+    await loadConsistencyIssues()
+    message.success(issue.resolved ? '问题已标记为未解决' : '问题已标记为已解决')
+  } catch (err) {
+    console.error('更新问题状态失败:', err)
+    message.error('更新问题状态失败')
+  } finally {
+    resolvingIssues.value.delete(issue.id)
+  }
+}
+
+const batchResolveIssues = async () => {
+  const unresolvedIssues = consistencyIssues.value.filter(issue => !issue.resolved)
+  if (unresolvedIssues.length === 0) return
+
+  try {
+    batchResolving.value = true
+    const issueIds = unresolvedIssues.map(issue => issue.id)
+    await consistencyService.batchResolveIssues(issueIds, true)
+    await loadConsistencyIssues()
+    message.success(`已解决 ${unresolvedIssues.length} 个问题`)
+  } catch (err) {
+    console.error('批量解决问题失败:', err)
+    message.error('批量解决问题失败')
+  } finally {
+    batchResolving.value = false
+  }
+}
+
+const deleteIssue = async (issue: ConsistencyCheck) => {
+  try {
+    deletingIssues.value.add(issue.id)
+    await consistencyService.deleteIssue(issue.id)
+    await loadConsistencyIssues()
+    message.success('问题已删除')
+  } catch (err) {
+    console.error('删除问题失败:', err)
+    message.error('删除问题失败')
+  } finally {
+    deletingIssues.value.delete(issue.id)
+  }
+}
+
+const viewIssueDetails = async (issue: ConsistencyCheck) => {
+  selectedIssue.value = issue
+  showIssueDetailModal.value = true
 }
 
 // 过滤函数
@@ -799,6 +1190,8 @@ onMounted(async () => {
     await loadChapter(chapterId.value)
     // 加载可用角色和设定
     await loadAvailableData()
+    // 加载一致性检查结果
+    await loadConsistencyIssues()
   }
 
   // 初始化Markdown内容
@@ -816,6 +1209,7 @@ onMounted(async () => {
 watch(() => chapter.value?.id, async (newChapterId) => {
   if (newChapterId) {
     await loadAvailableData()
+    await loadConsistencyIssues()
   }
 })
 

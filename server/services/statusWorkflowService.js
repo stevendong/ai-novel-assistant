@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
+const consistencyService = require('./consistencyService')
 const prisma = new PrismaClient()
 
 class StatusWorkflowService {
@@ -161,12 +162,38 @@ class StatusWorkflowService {
         }
       
       case 'consistency_check_passed':
-        const unresolvedIssues = await prisma.consistencyCheck.count({
-          where: { chapterId: entity.id, resolved: false }
+        const highSeverityIssues = await prisma.consistencyCheck.count({
+          where: { 
+            chapterId: entity.id, 
+            resolved: false,
+            severity: 'high'
+          }
         })
+        const mediumSeverityIssues = await prisma.consistencyCheck.count({
+          where: { 
+            chapterId: entity.id, 
+            resolved: false,
+            severity: 'medium'
+          }
+        })
+        
+        if (highSeverityIssues > 0) {
+          return {
+            passed: false,
+            reason: `存在${highSeverityIssues}个严重一致性问题，必须解决后才能推进`
+          }
+        }
+        
+        if (mediumSeverityIssues > 0) {
+          return {
+            passed: false,
+            reason: `存在${mediumSeverityIssues}个中等一致性问题，建议解决后再推进`
+          }
+        }
+        
         return {
-          passed: unresolvedIssues === 0,
-          reason: '需要解决一致性检查问题'
+          passed: true,
+          reason: ''
         }
       
       case 'manual_trigger':
