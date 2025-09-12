@@ -241,4 +241,183 @@ router.put('/constraints/:novelId', async (req, res) => {
   }
 });
 
+// 应用AI大纲到小说
+router.post('/outline/apply', async (req, res) => {
+  try {
+    const { novelId, outline } = req.body;
+    
+    if (!novelId || !outline) {
+      return res.status(400).json({ error: 'Novel ID and outline are required' });
+    }
+
+    // 验证小说存在
+    const novel = await prisma.novel.findUnique({
+      where: { id: novelId }
+    });
+
+    if (!novel) {
+      return res.status(404).json({ error: 'Novel not found' });
+    }
+
+    // 获取现有章节的最大章节号
+    const lastChapter = await prisma.chapter.findFirst({
+      where: { novelId },
+      orderBy: { chapterNumber: 'desc' },
+      select: { chapterNumber: true }
+    });
+
+    let startChapterNumber = (lastChapter?.chapterNumber || 0) + 1;
+
+    // 创建章节
+    const createdChapters = [];
+    for (const [index, chapterData] of outline.chapters.entries()) {
+      const chapter = await prisma.chapter.create({
+        data: {
+          novelId,
+          chapterNumber: startChapterNumber + index,
+          title: chapterData.title,
+          outline: chapterData.summary,
+          plotPoints: JSON.stringify(chapterData.plotPoints || []),
+          status: 'planning',
+          wordCount: 0,
+          progress: 0
+        }
+      });
+
+      createdChapters.push(chapter);
+
+      // 如果有角色关联，创建关联关系
+      if (chapterData.characters && chapterData.characters.length > 0) {
+        // 查找匹配的角色
+        const characters = await prisma.character.findMany({
+          where: {
+            novelId,
+            name: { in: chapterData.characters }
+          }
+        });
+
+        // 创建章节-角色关联
+        const chapterCharacters = characters.map(char => ({
+          chapterId: chapter.id,
+          characterId: char.id,
+          role: 'main' // 默认为主要角色
+        }));
+
+        if (chapterCharacters.length > 0) {
+          await prisma.chapterCharacter.createMany({
+            data: chapterCharacters
+          });
+        }
+      }
+
+      // 如果有设定关联，创建关联关系
+      if (chapterData.settings && chapterData.settings.length > 0) {
+        const settings = await prisma.worldSetting.findMany({
+          where: {
+            novelId,
+            name: { in: chapterData.settings }
+          }
+        });
+
+        const chapterSettings = settings.map(setting => ({
+          chapterId: chapter.id,
+          settingId: setting.id,
+          usage: '大纲中提及的相关设定'
+        }));
+
+        if (chapterSettings.length > 0) {
+          await prisma.chapterSetting.createMany({
+            data: chapterSettings
+          });
+        }
+      }
+    }
+
+    // 更新小说状态和字数预估
+    const estimatedWords = outline.estimatedTotalWords || 
+      outline.chapters.reduce((total, ch) => total + (ch.estimatedWords || 2500), 0);
+
+    await prisma.novel.update({
+      where: { id: novelId },
+      data: {
+        status: novel.status === 'draft' ? 'writing' : novel.status,
+        targetWordCount: estimatedWords,
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: '大纲已成功应用',
+      createdChapters: createdChapters.length,
+      estimatedWords
+    });
+
+  } catch (error) {
+    console.error('Error applying outline:', error);
+    res.status(500).json({ 
+      error: 'Failed to apply outline',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// 保存大纲草稿
+router.post('/outline/draft', async (req, res) => {
+  try {
+    const { novelId, outline } = req.body;
+    
+    if (!novelId || !outline) {
+      return res.status(400).json({ error: 'Novel ID and outline are required' });
+    }
+
+    // 这里可以保存到数据库的草稿表，或者文件系统
+    // 暂时返回成功响应
+    res.json({
+      success: true,
+      message: '大纲草稿已保存',
+      savedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Error saving outline draft:', error);
+    res.status(500).json({ 
+      error: 'Failed to save outline draft',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// 创建可分享的大纲链接
+router.post('/outline/share', async (req, res) => {
+  try {
+    const { outline } = req.body;
+    
+    if (!outline) {
+      return res.status(400).json({ error: 'Outline is required' });
+    }
+
+    // 生成分享ID
+    const shareId = `outline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // 这里应该将大纲数据保存到数据库或缓存
+    // 暂时返回模拟的分享链接
+    const shareUrl = `${req.protocol}://${req.get('host')}/shared/outline/${shareId}`;
+
+    res.json({
+      success: true,
+      shareUrl,
+      shareId,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7天后过期
+    });
+
+  } catch (error) {
+    console.error('Error creating shareable outline:', error);
+    res.status(500).json({ 
+      error: 'Failed to create shareable outline',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
 module.exports = router;

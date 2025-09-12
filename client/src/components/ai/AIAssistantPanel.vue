@@ -56,6 +56,12 @@
             <span class="tab-text">检查</span>
           </template>
         </a-tab-pane>
+        <a-tab-pane key="outline" tab="大纲生成">
+          <template #tab>
+            <BulbOutlined />
+            <span class="tab-text">大纲</span>
+          </template>
+        </a-tab-pane>
       </a-tabs>
     </div>
 
@@ -76,9 +82,21 @@
       </div>
     </div>
 
-    <!-- Chat Container -->
-    <div class="chat-container">
-      <!-- Messages Area -->
+    <!-- Content Container -->
+    <div class="content-container">
+      
+      <!-- Outline Generation Mode -->
+      <div v-if="currentMode === 'outline'" class="outline-mode">
+        <outline-generator
+          :novel-id="currentProject?.id"
+          @outline-applied="handleOutlineApplied"
+          @close="currentMode = 'chat'"
+        />
+      </div>
+
+      <!-- Chat Container (for other modes) -->
+      <div v-else class="chat-container">
+        <!-- Messages Area -->
       <div 
         ref="messagesContainer"
         class="messages-area"
@@ -259,6 +277,7 @@
       </div>
     </div>
   </div>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -283,6 +302,11 @@ import {
   GlobalOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons-vue'
+import OutlineGenerator from './OutlineGenerator.vue'
+import { useProjectStore } from '@/stores/project'
+
+// Project store
+const projectStore = useProjectStore()
 
 interface Message {
   id: string
@@ -363,6 +387,9 @@ const modeConfigs = {
 const currentModeActions = computed(() => {
   return modeConfigs[currentMode.value as keyof typeof modeConfigs]?.actions || []
 })
+
+// Current project from store
+const currentProject = computed(() => projectStore.currentProject)
 
 const currentSuggestions = ref<Suggestion[]>([
   {
@@ -573,6 +600,17 @@ const applySuggestion = (suggestion: Suggestion) => {
 const refreshSuggestions = () => {
   // Refresh suggestions logic
   console.log('Refreshing suggestions...')
+}
+
+// Handle outline application
+const handleOutlineApplied = (result: any) => {
+  console.log('Outline applied successfully:', result)
+  addMessage('assistant', `**大纲应用成功！**\n\n已成功创建 ${result.createdChapters} 个章节，预计总字数 ${result.estimatedWords} 字。\n\n你可以在章节列表中查看和编辑这些章节。`)
+  
+  // Switch back to chat mode after successful application
+  setTimeout(() => {
+    currentMode.value = 'chat'
+  }, 2000)
 }
 
 // Watch for mode changes

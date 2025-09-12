@@ -84,7 +84,14 @@ class StatusWorkflowService {
       )
       
       const currentStatus = entity.status
-      const transition = workflow.transitions.find(t => t.from === currentStatus && t.to === toStatus)
+      
+      // 确保 workflow.transitions 是数组
+      if (!Array.isArray(workflow.transitions)) {
+        console.warn(`Workflow transitions is not an array for ${entityType} ${entityId}:`, workflow.transitions)
+        return { canTransition: false, reason: 'Invalid workflow configuration' }
+      }
+      
+      const transition = workflow.transitions.find(t => t && t.from === currentStatus && t.to === toStatus)
       
       if (!transition) {
         return { canTransition: false, reason: 'Invalid transition' }
@@ -288,9 +295,18 @@ class StatusWorkflowService {
       config = await this.createDefaultWorkflow(novelId, entityType)
     }
 
+    let transitions = []
+    try {
+      const parsed = JSON.parse(config.transitions || '[]')
+      transitions = Array.isArray(parsed) ? parsed : []
+    } catch (error) {
+      console.warn(`Invalid transitions JSON for workflow ${config.id}:`, error)
+      transitions = this.defaultTransitions[entityType] || []
+    }
+
     return {
       id: config.id,
-      transitions: JSON.parse(config.transitions),
+      transitions,
       isActive: config.isActive
     }
   }
@@ -335,8 +351,14 @@ class StatusWorkflowService {
       const currentStatus = entity.status
       const availableTransitions = []
 
+      // 确保 workflow.transitions 是数组
+      if (!Array.isArray(workflow.transitions)) {
+        console.warn(`Workflow transitions is not an array for ${entityType} ${entityId}:`, workflow.transitions)
+        return availableTransitions
+      }
+
       for (const transition of workflow.transitions) {
-        if (transition.from === currentStatus) {
+        if (transition && transition.from === currentStatus) {
           const check = await this.canTransition(entityType, entityId, transition.to)
           availableTransitions.push({
             ...transition,

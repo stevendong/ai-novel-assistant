@@ -700,6 +700,7 @@ import { chapterService } from '@/services/chapterService'
 import { characterService } from '@/services/characterService'
 import { settingService } from '@/services/settingService'
 import { consistencyService } from '@/services/consistencyService'
+import { aiService } from '@/services/aiService'
 import StatusFlowControl from '@/components/workflow/StatusFlowControl.vue'
 import TiptapEditor from './TiptapEditor.vue'
 import type { Character, WorldSetting, PlotPoint, Illustration, ConsistencyCheck } from '@/types'
@@ -733,7 +734,6 @@ const {
   addIllustration,
   removeIllustration,
   updateIllustration,
-  generateOutline,
   checkConsistency,
   formatDate
 } = useChapter()
@@ -1021,18 +1021,73 @@ const updateSettingUsage = async (settingId: string, usage: string) => {
 }
 
 // AI功能
+const generateOutline = async () => {
+  if (!chapter.value) return null
+
+  try {
+    // 构建章节大纲生成参数
+    const chapterCharacters = chapter.value.characters || []
+    const chapterSettings = chapter.value.settings || []
+    
+    // 获取角色和设定的详细信息
+    const characterDetails = chapterCharacters.map(cc => {
+      const char = availableCharacters.value.find(c => c.id === cc.characterId)
+      return char ? {
+        name: char.name,
+        description: char.description,
+        personality: char.personality,
+        background: char.background
+      } : { name: '未知角色', description: '' }
+    })
+    
+    const settingDetails = chapterSettings.map(cs => {
+      const setting = availableSettings.value.find(s => s.id === cs.settingId)
+      return setting ? {
+        name: setting.name,
+        type: setting.type,
+        description: setting.description
+      } : { name: '未知设定', type: '', description: '' }
+    })
+    
+    const params = {
+      novelId: chapter.value.novelId,
+      type: 'chapter' as const,
+      length: 'standard' as const,
+      coreIdea: `为第${chapter.value.chapterNumber}章"${chapter.value.title}"生成详细大纲`,
+      description: chapter.value.outline || '基于现有章节信息生成详细的章节大纲',
+      characters: characterDetails,
+      settings: settingDetails
+    }
+
+    const outlineData = await aiService.generateOutline(params)
+    return outlineData.chapters[0] // 返回第一个（也是唯一一个）章节的大纲
+  } catch (error) {
+    console.error('Generate outline error:', error)
+    throw error
+  }
+}
+
 const requestAIOutline = async () => {
   if (!chapter.value) return
 
   try {
+    message.loading({ content: '正在生成AI大纲...', key: 'ai-outline', duration: 0 })
     const outline = await generateOutline()
     if (outline) {
-      // 这里可以显示AI生成的大纲建议
-      message.success('AI大纲生成完成')
-      console.log('AI Outline:', outline)
+      // 将AI生成的大纲应用到章节的outline字段
+      const newOutlineContent = `# ${outline.title}\n\n## 章节概述\n${outline.summary}\n\n## 关键情节点\n${outline.plotPoints.map((point, index) => `${index + 1}. **${point.type}**: ${point.description}`).join('\n')}\n\n## 涉及角色\n${outline.characters.map(char => `- ${char}`).join('\n')}\n\n## 相关设定\n${outline.settings.map(setting => `- ${setting}`).join('\n')}\n\n## 章节目标\n${outline.chapterGoals?.map(goal => `- ${goal}`).join('\n') || ''}\n\n## 情感基调\n${outline.emotionalTone}\n\n## 预估字数\n${outline.estimatedWords} 字`
+      
+      // 更新章节大纲
+      await updateChapter('outline', newOutlineContent)
+      
+      // 更新本地markdown内容
+      setOutlineMarkdown(newOutlineContent)
+      
+      message.success({ content: 'AI大纲生成完成！', key: 'ai-outline' })
     }
   } catch (err) {
-    message.error('AI大纲生成失败')
+    console.error('AI outline generation failed:', err)
+    message.error({ content: 'AI大纲生成失败', key: 'ai-outline' })
   }
 }
 
