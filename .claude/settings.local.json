@@ -24,7 +24,8 @@
       "Bash(lsof:*)",
       "Bash(kill:*)",
       "Bash(xargs kill:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []
