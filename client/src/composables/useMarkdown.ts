@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { countValidWords } from '@/utils/textUtils'
 
 // 配置marked选项
 const markedOptions = {
@@ -80,12 +81,10 @@ export function useMarkdown(initialText: string = '') {
 
   // 字数统计（去除markdown标记）
   const wordCount = computed(() => {
-    const plainText = markdownText.value
-      .replace(/[#*`_~\[\]]/g, '') // 移除markdown标记
-      .replace(/!\[.*?\]\(.*?\)/g, '') // 移除图片
-      .replace(/\[.*?\]\(.*?\)/g, '') // 移除链接
-      .replace(/\s+/g, '') // 移除空白字符
-    return plainText.length
+    return countValidWords(markdownText.value, {
+      removeMarkdown: true,
+      removeHtml: true
+    })
   })
 
   // 段落数统计

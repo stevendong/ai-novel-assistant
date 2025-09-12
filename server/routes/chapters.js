@@ -1,5 +1,6 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const { countValidWords } = require('../utils/textUtils');
 const prisma = new PrismaClient();
 
 const router = express.Router();
@@ -234,6 +235,12 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { title, outline, content, plotPoints, illustrations, status } = req.body;
 
+    // 计算有效字数
+    const wordCount = content ? countValidWords(content, {
+      removeMarkdown: true,
+      removeHtml: true
+    }) : 0;
+
     const chapter = await prisma.chapter.update({
       where: { id },
       data: {
@@ -243,6 +250,7 @@ router.put('/:id', async (req, res) => {
         plotPoints,
         illustrations,
         status,
+        wordCount,
         updatedAt: new Date()
       }
     });

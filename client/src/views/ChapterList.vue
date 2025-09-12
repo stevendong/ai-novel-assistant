@@ -270,6 +270,7 @@ import {
 import type { Chapter } from '@/types'
 import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
+import { countValidWords } from '@/utils/textUtils'
 import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
 
 const router = useRouter()
@@ -468,7 +469,10 @@ const getStatusText = (status: string) => {
 
 const getWordCount = (content?: string) => {
   if (!content) return 0
-  return content.replace(/\s/g, '').length
+  return countValidWords(content, {
+    removeMarkdown: true,
+    removeHtml: true
+  })
 }
 
 const formatDate = (dateString: string) => {

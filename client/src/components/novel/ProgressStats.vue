@@ -576,6 +576,7 @@ import {
 import type { NovelStatistics, ChapterProgress, WritingGoals, Achievement } from '@/types'
 import { novelService } from '@/services/novelService'
 import { chapterService } from '@/services/chapterService'
+import { formatWordCount as formatWordCountUtil } from '@/utils/textUtils'
 
 // Props - 当前项目ID
 const props = defineProps<{
@@ -613,11 +614,7 @@ const totalWords = computed(() => {
 
 // 格式化的总字数显示
 const formattedTotalWords = computed(() => {
-  const words = totalWords.value
-  if (words >= 10000) {
-    return (words / 10000).toFixed(1) + '万'
-  }
-  return words.toLocaleString()
+  return formatWordCountUtil(totalWords.value)
 })
 
 const completedChapters = computed(() => {

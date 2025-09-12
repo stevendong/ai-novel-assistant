@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { chapterService } from '@/services/chapterService'
+import { countValidWords } from '@/utils/textUtils'
 import type { Chapter, PlotPoint, Illustration } from '@/types'
 
 export function useChapter(chapterId?: string) {
@@ -11,7 +12,10 @@ export function useChapter(chapterId?: string) {
   // 计算属性
   const wordCount = computed(() => {
     if (!chapter.value?.content) return 0
-    return chapter.value.content.replace(/\s/g, '').length
+    return countValidWords(chapter.value.content, {
+      removeMarkdown: true,
+      removeHtml: true
+    })
   })
 
   const hasUnsavedChanges = ref(false)

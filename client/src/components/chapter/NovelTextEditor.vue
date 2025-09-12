@@ -145,6 +145,7 @@ import {
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { useNovelFormatter } from '@/composables/useNovelFormatter'
+import { countValidWords } from '@/utils/textUtils'
 
 interface Props {
   modelValue: string
@@ -203,7 +204,10 @@ const novelFormatter = useNovelFormatter({
 
 // 计算属性
 const wordCount = computed(() => {
-  return content.value.replace(/\s/g, '').length
+  return countValidWords(content.value, {
+    removeMarkdown: false,
+    removeHtml: true
+  })
 })
 
 const paragraphCount = computed(() => {

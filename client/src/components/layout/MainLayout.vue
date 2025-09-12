@@ -282,6 +282,7 @@ import ThemeToggle from './ThemeToggle.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 import { useProjectStore } from '@/stores/project'
 import { useThemeStore } from '@/stores/theme'
+import { countValidWords, formatWordCount } from '@/utils/textUtils'
 import { useChapterList } from '@/composables/useChapterList'
 
 const projectStore = useProjectStore()
@@ -312,7 +313,22 @@ const projectStatus = computed(() => {
   }
 })
 
-const wordCount = ref(0)
+// 计算总字数
+const wordCount = computed(() => {
+  if (!chapters.value || chapters.value.length === 0) return 0
+  
+  const totalWords = chapters.value.reduce((total, chapter) => {
+    if (chapter.content) {
+      return total + countValidWords(chapter.content, {
+        removeMarkdown: true,
+        removeHtml: true
+      })
+    }
+    return total
+  }, 0)
+  
+  return formatWordCount(totalWords)
+})
 const aiStatus = ref<'connected' | 'disconnected'>('disconnected')
 
 // 组件挂载时加载项目数据

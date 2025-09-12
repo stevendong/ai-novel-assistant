@@ -164,6 +164,7 @@ import {
   FormatPainterOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import { countValidWords } from '@/utils/textUtils'
 
 interface Props {
   modelValue: string
@@ -202,6 +203,9 @@ const writingTime = ref(0)
 const writingTimer = ref<NodeJS.Timeout>()
 const autoSaveTimer = ref<NodeJS.Timeout>()
 
+// 添加一个标志来防止循环更新
+const isUpdating = ref(false)
+
 // Tiptap 编辑器实例
 const editor = useEditor({
   content: props.modelValue,
@@ -229,6 +233,9 @@ const editor = useEditor({
     },
   },
   onUpdate: ({ editor }) => {
+    // 如果正在程序化更新，不触发change事件
+    if (isUpdating.value) return
+    
     const content = editor.getHTML()
     hasUnsavedChanges.value = true
     emit('update:modelValue', content)
@@ -248,12 +255,23 @@ const editor = useEditor({
 // 计算属性
 const wordCount = computed(() => {
   if (!editor.value) return 0
-  return editor.value.storage.characterCount.words()
+  // 使用自定义的字数统计，忽略空格换行等无意义字符
+  const plainText = editor.value.getText()
+  return countValidWords(plainText, {
+    removeMarkdown: false,
+    removeHtml: true
+  })
 })
 
 const characterCount = computed(() => {
   if (!editor.value) return 0
   return editor.value.storage.characterCount.characters()
+})
+
+// 原始字符统计（包含空格等）
+const rawCharacterCount = computed(() => {
+  if (!editor.value) return 0
+  return editor.value.getText().length
 })
 
 const saveStatus = computed(() => {
@@ -382,8 +400,38 @@ const startAutoSave = () => {
 
 // 监听外部内容变化
 watch(() => props.modelValue, (newValue) => {
-  if (editor.value && newValue !== editor.value.getHTML()) {
-    editor.value.commands.setContent(newValue, false)
+  if (editor.value && newValue !== undefined) {
+    // 获取当前编辑器内容
+    const currentContent = editor.value.getHTML()
+    
+    // 标准化内容进行比较，避免空格、换行等微小差异导致的误判
+    const normalizeHTML = (html: string) => {
+      return html
+        .replace(/>\s+</g, '><') // 移除标签间的空白
+        .replace(/(<[^>]+>)\s+/g, '$1') // 移除开标签后的空格
+        .replace(/\s+(<\/[^>]+>)/g, '$1') // 移除闭标签前的空格
+        .replace(/\s{2,}/g, ' ') // 将多个空格合并为一个
+        .replace(/\n\s*/g, ' ') // 将换行和后续空格替换为单个空格
+        .trim()
+    }
+    
+    const normalizedNew = normalizeHTML(newValue || '')
+    const normalizedCurrent = normalizeHTML(currentContent)
+    
+    // 只有在内容真正不同时才更新
+    if (normalizedNew !== normalizedCurrent) {
+      // 暂时关闭更新事件，避免循环更新
+      const wasUpdating = isUpdating.value
+      isUpdating.value = true
+      
+      // 设置内容，第二个参数false表示不触发onUpdate回调
+      editor.value.commands.setContent(newValue || '', false)
+      
+      // 恢复更新事件
+      setTimeout(() => {
+        isUpdating.value = wasUpdating
+      }, 0)
+    }
   }
 }, { immediate: true })
 
@@ -440,7 +488,21 @@ defineExpose({
   blur: () => editor.value?.commands.blur(),
   insertText: (text: string) => editor.value?.commands.insertContent(text),
   clear: () => editor.value?.commands.clearContent(),
-  getEditor: () => editor.value
+  getEditor: () => editor.value,
+  // 强制更新内容，用于解决格式丢失问题
+  forceSetContent: (content: string) => {
+    if (editor.value) {
+      isUpdating.value = true
+      editor.value.commands.setContent(content || '', false)
+      setTimeout(() => {
+        isUpdating.value = false
+      }, 0)
+    }
+  },
+  // 获取当前HTML内容
+  getHTML: () => editor.value?.getHTML() || '',
+  // 获取纯文本内容
+  getText: () => editor.value?.getText() || ''
 })
 </script>
 

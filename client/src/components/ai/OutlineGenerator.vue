@@ -211,50 +211,52 @@
             </div>
           </div>
 
-          <div class="chapters-grid">
-            <div 
-              v-for="(chapter, index) in outlineData.chapters" 
-              :key="index"
-              class="chapter-card"
-              :class="{ 'selected': selectedChapter === index }"
-              @click="selectChapter(index)"
-            >
-              <div class="card-header">
-                <h5 class="chapter-title">{{ chapter.title }}</h5>
-                <div class="chapter-meta">
-                  <a-tag size="small" :color="getChapterTypeColor(chapter.type)">
-                    {{ chapter.type }}
-                  </a-tag>
-                  <span class="word-count">~{{ chapter.estimatedWords }}字</span>
-                </div>
-              </div>
-              
-              <div class="card-content">
-                <p class="chapter-summary">{{ chapter.summary }}</p>
-                <div class="plot-points">
-                  <div 
-                    v-for="point in chapter.plotPoints" 
-                    :key="point.id"
-                    class="plot-point"
-                  >
-                    <span class="point-type">{{ point.type }}:</span>
-                    <span class="point-desc">{{ point.description }}</span>
+          <div class="chapters-scroll-container">
+            <div class="chapters-grid">
+              <div 
+                v-for="(chapter, index) in outlineData.chapters" 
+                :key="index"
+                class="chapter-card"
+                :class="{ 'selected': selectedChapter === index }"
+                @click="selectChapter(index)"
+              >
+                <div class="card-header">
+                  <h5 class="chapter-title">{{ chapter.title }}</h5>
+                  <div class="chapter-meta">
+                    <a-tag size="small" :color="getChapterTypeColor(chapter.type)">
+                      {{ chapter.type }}
+                    </a-tag>
+                    <span class="word-count">~{{ chapter.estimatedWords }}字</span>
                   </div>
                 </div>
-              </div>
-
-              <div class="card-footer">
-                <div class="chapter-elements">
-                  <a-tooltip title="涉及角色">
-                    <a-tag 
-                      v-for="char in chapter.characters" 
-                      :key="char"
-                      size="small"
-                      color="blue"
+                
+                <div class="card-content">
+                  <p class="chapter-summary">{{ chapter.summary }}</p>
+                  <div class="plot-points">
+                    <div 
+                      v-for="point in chapter.plotPoints" 
+                      :key="point.id"
+                      class="plot-point"
                     >
-                      {{ char }}
-                    </a-tag>
-                  </a-tooltip>
+                      <span class="point-type">{{ point.type }}:</span>
+                      <span class="point-desc">{{ point.description }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <div class="chapter-elements">
+                    <a-tooltip title="涉及角色">
+                      <a-tag 
+                        v-for="char in chapter.characters" 
+                        :key="char"
+                        size="small"
+                        color="blue"
+                      >
+                        {{ char }}
+                      </a-tag>
+                    </a-tooltip>
+                  </div>
                 </div>
               </div>
             </div>
@@ -263,13 +265,14 @@
 
         <!-- 列表视图 -->
         <div v-else-if="viewMode === 'list'" class="list-view">
-          <a-table
-            :columns="listColumns"
-            :data-source="outlineData.chapters"
-            :pagination="false"
-            size="middle"
-            :scroll="{ x: 800 }"
-          >
+          <div class="list-scroll-container">
+            <a-table
+              :columns="listColumns"
+              :data-source="outlineData.chapters"
+              :pagination="false"
+              size="middle"
+              :scroll="{ x: 800, y: 480 }"
+            >
             <template #bodyCell="{ column, record, index }">
               <template v-if="column.key === 'title'">
                 <div class="title-cell">
@@ -307,54 +310,57 @@
                 <span class="word-count">~{{ record.estimatedWords }}字</span>
               </template>
             </template>
-          </a-table>
+            </a-table>
+          </div>
         </div>
 
         <!-- 时间线视图 -->
         <div v-else-if="viewMode === 'timeline'" class="timeline-view">
-          <a-timeline mode="left">
-            <a-timeline-item
-              v-for="(chapter, index) in outlineData.chapters"
-              :key="index"
-              :color="getTimelineColor(chapter.type)"
-            >
-              <template #label>
-                <div class="timeline-label">
-                  <div class="chapter-number">第{{ index + 1 }}章</div>
-                  <div class="chapter-type">{{ chapter.type }}</div>
-                </div>
-              </template>
-              
-              <div class="timeline-content">
-                <h5 class="timeline-title">{{ chapter.title }}</h5>
-                <p class="timeline-summary">{{ chapter.summary }}</p>
-                <div class="timeline-details">
-                  <div class="plot-points">
-                    <div 
-                      v-for="point in chapter.plotPoints" 
-                      :key="point.id"
-                      class="plot-point"
-                    >
-                      <span class="point-badge">{{ point.type }}</span>
-                      <span class="point-text">{{ point.description }}</span>
-                    </div>
+          <div class="timeline-scroll-container">
+            <a-timeline mode="left">
+              <a-timeline-item
+                v-for="(chapter, index) in outlineData.chapters"
+                :key="index"
+                :color="getTimelineColor(chapter.type)"
+              >
+                <template #label>
+                  <div class="timeline-label">
+                    <div class="chapter-number">第{{ index + 1 }}章</div>
+                    <div class="chapter-type">{{ chapter.type }}</div>
                   </div>
-                  <div class="chapter-meta">
-                    <span class="word-estimate">预估{{ chapter.estimatedWords }}字</span>
-                    <div class="involved-elements">
-                      <a-tag 
-                        v-for="char in chapter.characters" 
-                        :key="char"
-                        size="small"
+                </template>
+                
+                <div class="timeline-content">
+                  <h5 class="timeline-title">{{ chapter.title }}</h5>
+                  <p class="timeline-summary">{{ chapter.summary }}</p>
+                  <div class="timeline-details">
+                    <div class="plot-points">
+                      <div 
+                        v-for="point in chapter.plotPoints" 
+                        :key="point.id"
+                        class="plot-point"
                       >
-                        {{ char }}
-                      </a-tag>
+                        <span class="point-badge">{{ point.type }}</span>
+                        <span class="point-text">{{ point.description }}</span>
+                      </div>
+                    </div>
+                    <div class="chapter-meta">
+                      <span class="word-estimate">预估{{ chapter.estimatedWords }}字</span>
+                      <div class="involved-elements">
+                        <a-tag 
+                          v-for="char in chapter.characters" 
+                          :key="char"
+                          size="small"
+                        >
+                          {{ char }}
+                        </a-tag>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </a-timeline-item>
-          </a-timeline>
+              </a-timeline-item>
+            </a-timeline>
+          </div>
         </div>
       </div>
 
@@ -848,6 +854,10 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 24px;
+  max-height: 700px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .preview-header {
@@ -856,6 +866,8 @@ onMounted(() => {
   align-items: center;
   padding: 16px 24px;
   border-bottom: 1px solid var(--theme-border);
+  flex-shrink: 0;
+  background: var(--theme-bg-container);
 }
 
 .outline-stats {
@@ -873,6 +885,35 @@ onMounted(() => {
 
 .card-view {
   padding: 24px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chapters-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.chapters-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chapters-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chapters-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.chapters-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .outline-summary {
@@ -975,6 +1016,17 @@ onMounted(() => {
 
 .list-view {
   padding: 0 24px 24px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-scroll-container {
+  border-radius: 8px;
+  border: 1px solid var(--theme-border);
+  flex: 1;
+  overflow: hidden;
 }
 
 .title-cell {
@@ -1007,6 +1059,38 @@ onMounted(() => {
 
 .timeline-view {
   padding: 24px;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid var(--theme-border-light, rgba(0, 0, 0, 0.06));
+}
+
+.timeline-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timeline-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timeline-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.timeline-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .timeline-label {

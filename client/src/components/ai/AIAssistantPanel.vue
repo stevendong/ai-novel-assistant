@@ -32,9 +32,9 @@
 
     <!-- Mode Tabs -->
     <div class="mode-tabs">
-      <a-tabs 
-        v-model:activeKey="currentMode" 
-        size="small" 
+      <a-tabs
+        v-model:activeKey="currentMode"
+        size="small"
         @change="switchMode"
         class="custom-tabs"
       >
@@ -84,7 +84,7 @@
 
     <!-- Content Container -->
     <div class="content-container">
-      
+
       <!-- Outline Generation Mode -->
       <div v-if="currentMode === 'outline'" class="outline-mode">
         <outline-generator
@@ -97,7 +97,7 @@
       <!-- Chat Container (for other modes) -->
       <div v-else class="chat-container">
         <!-- Messages Area -->
-      <div 
+      <div
         ref="messagesContainer"
         class="messages-area"
         @scroll="handleScroll"
@@ -188,7 +188,7 @@
           </div>
 
           <!-- Scroll to Bottom Button -->
-          <div 
+          <div
             v-show="showScrollButton"
             class="scroll-to-bottom"
             @click="() => scrollToBottom()"
@@ -369,7 +369,7 @@ const getInputHint = () => {
 
 const handleScroll = () => {
   if (!messagesContainer.value) return
-  
+
   const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
   const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
   showScrollButton.value = !isNearBottom && scrollHeight > clientHeight
@@ -377,7 +377,7 @@ const handleScroll = () => {
 
 const scrollToBottom = (smooth = true) => {
   if (!messagesContainer.value) return
-  
+
   messagesContainer.value.scrollTo({
     top: messagesContainer.value.scrollHeight,
     behavior: smooth ? 'smooth' : 'auto'
@@ -405,19 +405,19 @@ const handleInput = () => {
 
 const switchMode = (mode: string) => {
   currentMode.value = mode
-  
+
   const modeTexts = {
     chat: '切换到对话模式。你可以与我自由对话，寻求创作建议。',
     enhance: '切换到完善模式。我将帮你完善角色、设定和情节。',
     check: '切换到检查模式。我将检查作品的一致性和逻辑性。'
   }
-  
+
   addMessage('assistant', modeTexts[mode as keyof typeof modeTexts] || '模式已切换')
 }
 
 const performQuickAction = async (actionKey: string) => {
   loadingAction.value = actionKey
-  
+
   try {
     switch (actionKey) {
       case 'help':
@@ -447,14 +447,14 @@ const performQuickAction = async (actionKey: string) => {
 
 const sendMessage = async () => {
   if (!inputMessage.value.trim() || inputMessage.value.length > 2000) return
-  
+
   const userMessage = inputMessage.value
   addMessage('user', userMessage)
   inputMessage.value = ''
-  
+
   // Simulate AI thinking
   isTyping.value = true
-  
+
   setTimeout(() => {
     isTyping.value = false
     const response = generateAIResponse(userMessage)
@@ -470,7 +470,7 @@ const addMessage = (role: 'user' | 'assistant', content: string, actions?: Array
     timestamp: new Date(),
     actions
   })
-  
+
   // Auto scroll to bottom
   nextTick(() => {
     scrollToBottom()
@@ -489,43 +489,43 @@ const formatMessage = (content: string) => {
 }
 
 const formatTime = (timestamp: Date) => {
-  return timestamp.toLocaleTimeString('zh-CN', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  return timestamp.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
 
 const generateAIResponse = (userMessage: string): string => {
   const message = userMessage.toLowerCase()
-  
+
   if (message.includes('角色') || message.includes('人物')) {
     return '**角色分析建议**\n\n基于你的描述，我建议从以下几个方面完善角色：\n\n• **性格深度**：增加更多性格细节，比如习惯动作或口头禅\n• **背景故事**：完善关键事件和成长经历\n• **关系网络**：明确与其他角色的关系动态\n• **成长弧线**：设计角色在故事中的变化轨迹\n\n需要我详细分析哪个角色？'
   }
-  
+
   if (message.includes('设定') || message.includes('世界')) {
     return '**世界设定扩展**\n\n你的世界设定很有潜力！建议从这些方面深化：\n\n• **时代背景**：明确时间线和重要历史事件\n• **地理环境**：详细描述重要地点和地理关系\n• **社会制度**：政治结构、经济体系和文化特色\n• **特殊元素**：魔法/科技的运作规则和限制\n\n你希望重点扩展哪个方面？'
   }
-  
+
   return '我理解你的需求。我可以从以下方面为你提供帮助：\n\n• **角色塑造**：性格、背景、关系网络\n• **世界观建设**：设定扩展、规则完善\n• **情节规划**：大纲设计、冲突设置\n• **质量检查**：一致性、逻辑性分析\n• **创作技巧**：写作方法和技巧建议\n\n请告诉我你希望重点关注哪个方面？'
 }
 
 const getResponseActions = (userMessage: string): Array<{ key: string; label: string }> | undefined => {
   const message = userMessage.toLowerCase()
-  
+
   if (message.includes('角色')) {
     return [
       { key: 'analyze-character', label: '深度分析' },
       { key: 'suggest-traits', label: '性格建议' }
     ]
   }
-  
+
   if (message.includes('设定')) {
     return [
       { key: 'expand-setting', label: '详细扩展' },
       { key: 'check-logic', label: '逻辑检查' }
     ]
   }
-  
+
   return undefined
 }
 
@@ -538,7 +538,7 @@ const performMessageAction = (actionKey: string, message: Message) => {
 const handleOutlineApplied = (result: any) => {
   console.log('Outline applied successfully:', result)
   addMessage('assistant', `**大纲应用成功！**\n\n已成功创建 ${result.createdChapters} 个章节，预计总字数 ${result.estimatedWords} 字。\n\n你可以在章节列表中查看和编辑这些章节。`)
-  
+
   // Switch back to chat mode after successful application
   setTimeout(() => {
     currentMode.value = 'chat'
@@ -659,7 +659,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Chat Container */
@@ -1000,15 +1000,15 @@ onMounted(() => {
   .assistant-message-bubble {
     max-width: 95%;
   }
-  
+
   .actions-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .input-container {
     padding: 12px;
   }
-  
+
   .welcome-message {
     padding: 24px 12px;
   }

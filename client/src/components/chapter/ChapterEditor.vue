@@ -777,6 +777,7 @@ import { characterService } from '@/services/characterService'
 import { settingService } from '@/services/settingService'
 import { consistencyService } from '@/services/consistencyService'
 import { aiService } from '@/services/aiService'
+import { countValidWords } from '@/utils/textUtils'
 import StatusFlowControl from '@/components/workflow/StatusFlowControl.vue'
 import TiptapEditor from './TiptapEditor.vue'
 import type { Character, WorldSetting, PlotPoint, Illustration, ConsistencyCheck } from '@/types'
@@ -942,9 +943,11 @@ const healthGrade = computed(() => {
 // 正文字数统计
 const contentWordCount = computed(() => {
   if (!contentText.value) return 0
-  // 简单的中文字数统计，去除HTML标签
-  const plainText = contentText.value.replace(/<[^>]*>/g, '')
-  return plainText.length
+  // 使用优化后的字数统计，忽略空格、换行等无意义字符
+  return countValidWords(contentText.value, {
+    removeMarkdown: true,
+    removeHtml: true
+  })
 })
 
 const targetWordCount = computed(() => {
@@ -1549,8 +1552,13 @@ watch(() => chapter.value?.outline, (newValue) => {
 
 // 监听章节正文变化，同步到编辑器
 watch(() => chapter.value?.content, (newValue) => {
-  if (newValue !== contentText.value) {
-    contentText.value = newValue || ''
+  // 避免不必要的更新，特别是在内容只有微小差异时
+  const currentContent = contentText.value || ''
+  const newContent = newValue || ''
+  
+  // 如果内容确实不同，才进行更新
+  if (newContent !== currentContent) {
+    contentText.value = newContent
   }
 }, { immediate: true })
 
