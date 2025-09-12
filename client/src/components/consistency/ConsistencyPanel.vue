@@ -1,9 +1,9 @@
 <template>
   <div class="consistency-panel h-full flex flex-col">
     <!-- 头部工具栏 -->
-    <div class="flex-shrink-0 p-4 border-b border-gray-200 bg-gray-50">
+    <div class="flex-shrink-0 p-4 border-b theme-border theme-bg-elevated">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-lg font-medium text-gray-900">一致性检查</h3>
+        <h3 class="text-lg font-medium theme-text-primary">一致性检查</h3>
         <div class="flex space-x-2">
           <a-button 
             type="primary" 
@@ -28,8 +28,8 @@
 
       <!-- 快速统计 -->
       <div class="grid grid-cols-4 gap-3 text-sm">
-        <div class="bg-white p-2 rounded border text-center">
-          <div class="text-xs text-gray-500">总问题</div>
+        <div class="theme-bg-container p-2 rounded border text-center">
+          <div class="text-xs theme-text-primary">总问题</div>
           <div class="font-semibold text-lg">{{ stats.totalIssues }}</div>
         </div>
         <div class="bg-red-50 border-red-200 p-2 rounded border text-center">
@@ -48,7 +48,7 @@
     </div>
 
     <!-- 筛选工具 -->
-    <div class="flex-shrink-0 p-4 border-b border-gray-100 bg-white">
+    <div class="flex-shrink-0 p-4 border-b theme-border theme-bg-container">
       <div class="grid grid-cols-2 gap-3">
         <a-select
           v-model:value="filters.type"
@@ -118,10 +118,10 @@
     <div class="flex-1 overflow-auto">
       <div v-if="loading" class="p-4 text-center">
         <a-spin size="large" />
-        <div class="mt-2 text-gray-500">加载中...</div>
+        <div class="mt-2 theme-text-primary">加载中...</div>
       </div>
 
-      <div v-else-if="issues.length === 0" class="p-8 text-center text-gray-500">
+      <div v-else-if="issues.length === 0" class="p-8 text-center theme-text-primary">
         <div class="text-4xl mb-3">✅</div>
         <div class="text-lg font-medium mb-1">暂无问题</div>
         <div class="text-sm">
@@ -145,11 +145,11 @@
           <div
             v-for="issue in issues"
             :key="issue.id"
-            class="border rounded-lg p-3 hover:bg-gray-50 transition-colors"
+            class="border rounded-lg p-3 hover:theme-bg-elevated transition-colors"
             :class="{
               'border-red-200 bg-red-50': issue.severity === 'high',
               'border-yellow-200 bg-yellow-50': issue.severity === 'medium',
-              'border-gray-200': issue.severity === 'low',
+              'theme-border': issue.severity === 'low',
               'opacity-60': issue.resolved
             }"
           >
@@ -179,11 +179,11 @@
                   </span>
                 </div>
                 
-                <div class="text-sm text-gray-800 leading-relaxed mb-2">
+                <div class="text-sm theme-text-primary leading-relaxed mb-2">
                   {{ issue.issue }}
                 </div>
                 
-                <div class="text-xs text-gray-500">
+                <div class="text-xs theme-text-primary">
                   {{ formatDate(issue.createdAt) }}
                 </div>
               </div>
@@ -239,7 +239,7 @@
       <div v-if="selectedIssueDetails">
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">问题类型</label>
+            <label class="block text-sm font-medium theme-text-primary mb-1">问题类型</label>
             <a-tag :color="getTypeColor(selectedIssueDetails.issue.type)">
               {{ getTypeName(selectedIssueDetails.issue.type) }}
             </a-tag>
@@ -249,14 +249,14 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">问题描述</label>
-            <div class="bg-gray-50 p-3 rounded text-sm">
+            <label class="block text-sm font-medium theme-text-primary mb-1">问题描述</label>
+            <div class="theme-bg-elevated p-3 rounded text-sm">
               {{ selectedIssueDetails.issue.issue }}
             </div>
           </div>
           
           <div v-if="selectedIssueDetails.context.relatedCharacters?.length > 0">
-            <label class="block text-sm font-medium text-gray-700 mb-2">相关角色</label>
+            <label class="block text-sm font-medium theme-text-primary mb-2">相关角色</label>
             <div class="flex flex-wrap gap-2">
               <a-tag v-for="char in selectedIssueDetails.context.relatedCharacters" :key="char.id">
                 {{ char.name }}
@@ -265,7 +265,7 @@
           </div>
           
           <div v-if="selectedIssueDetails.context.relatedSettings?.length > 0">
-            <label class="block text-sm font-medium text-gray-700 mb-2">相关设定</label>
+            <label class="block text-sm font-medium theme-text-primary mb-2">相关设定</label>
             <div class="flex flex-wrap gap-2">
               <a-tag v-for="setting in selectedIssueDetails.context.relatedSettings" :key="setting.id">
                 {{ setting.name }}
@@ -274,7 +274,7 @@
           </div>
           
           <div v-if="selectedIssueDetails.context.relatedChapters?.length > 0">
-            <label class="block text-sm font-medium text-gray-700 mb-2">相关章节</label>
+            <label class="block text-sm font-medium theme-text-primary mb-2">相关章节</label>
             <div class="space-y-1">
               <div 
                 v-for="chapter in selectedIssueDetails.context.relatedChapters" 

@@ -202,11 +202,11 @@
                 {{ item.fromStatus ? `${workflowService.getStatusText(item.fromStatus, entityType)} → ` : '' }}
                 {{ workflowService.getStatusText(item.toStatus, entityType) }}
               </span>
-              <span class="text-xs text-gray-500">
+              <span class="text-xs theme-text-primary">
                 {{ formatDate(item.createdAt) }}
               </span>
             </div>
-            <div class="text-sm text-gray-600">
+            <div class="text-sm theme-text-primary">
               <span class="inline-flex items-center">
                 <UserOutlined v-if="item.triggeredBy === 'user'" class="mr-1" />
                 <RobotOutlined v-else class="mr-1" />
@@ -461,7 +461,9 @@ watch(() => props.currentStatus, async () => {
 
 <style scoped>
 .status-flow-control {
-  @apply bg-white rounded-lg border p-4;
+  @apply rounded-lg border p-4;
+  background-color: var(--theme-bg-container);
+  border-color: var(--theme-border);
 }
 
 .status-progress :deep(.ant-steps-item-title) {
@@ -473,6 +475,7 @@ watch(() => props.currentStatus, async () => {
 }
 
 .status-actions {
-  @apply pt-4 border-t border-gray-100;
+  @apply pt-4 border-t;
+  border-color: var(--theme-border);
 }
 </style>

@@ -34,6 +34,131 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+
+  /* 主题变量 - 默认亮色 */
+  --theme-bg-base: #ffffff;
+  --theme-bg-container: #ffffff;
+  --theme-bg-elevated: #fafafa;
+  --theme-border: #f0f0f0;
+  --theme-text: rgba(0, 0, 0, 0.85);
+  --theme-text-secondary: rgba(0, 0, 0, 0.65);
+  
+  /* 选中状态主题变量 */
+  --theme-selected-bg: #e6f7ff;
+  --theme-selected-border: #91d5ff;
+  --theme-selected-hover-bg: #bae7ff;
+  
+  /* 图标背景主题变量 */
+  --theme-icon-bg: #e6f7ff;
+  --theme-icon-text: #1890ff;
+  
+  /* 编辑器主题变量 */
+  --theme-editor-bg: #ffffff;
+  --theme-editor-text: #333333;
+  --theme-editor-toolbar: #fafafa;
+  --theme-editor-border: #e8e8e8;
+  --theme-editor-preview: #f9f9f9;
+  --theme-chapter-avatar: #1890ff;
+  --theme-warning-text: #ff6b35;
+  
+  /* 编辑器内容样式变量 */
+  --theme-editor-focus-bg: #fefefe;
+  --theme-editor-placeholder: #bbbbbb;
+  --theme-editor-dialogue: #2c5aa0;
+  --theme-editor-scene: #999999;
+  --theme-editor-thought: #7b68ee;
+  --theme-editor-active-btn: #1890ff;
+  --theme-editor-secondary-text: #666666;
+  --theme-editor-unsaved: #ff6b6b;
+}
+
+/* 主题响应式工具类 */
+.theme-text-primary {
+  color: var(--theme-text);
+  transition: color 0.3s ease;
+}
+
+.theme-text-secondary {
+  color: var(--theme-text-secondary);
+  transition: color 0.3s ease;
+}
+
+.theme-bg-container {
+  background-color: var(--theme-bg-container);
+  transition: background-color 0.3s ease;
+}
+
+.theme-bg-elevated {
+  background-color: var(--theme-bg-elevated);
+  transition: background-color 0.3s ease;
+}
+
+.theme-border {
+  border-color: var(--theme-border);
+  transition: border-color 0.3s ease;
+}
+
+/* 选中状态主题响应式工具类 */
+.theme-selected-bg {
+  background-color: var(--theme-selected-bg);
+  transition: background-color 0.3s ease;
+}
+
+.theme-selected-border {
+  border-color: var(--theme-selected-border);
+  transition: border-color 0.3s ease;
+}
+
+.theme-selected-hover:hover {
+  background-color: var(--theme-selected-hover-bg);
+  transition: background-color 0.3s ease;
+}
+
+/* 图标背景主题响应式工具类 */
+.theme-icon-bg {
+  background-color: var(--theme-icon-bg);
+  transition: background-color 0.3s ease;
+}
+
+.theme-icon-text {
+  color: var(--theme-icon-text);
+  transition: color 0.3s ease;
+}
+
+/* 编辑器主题响应式工具类 */
+.theme-editor-bg {
+  background-color: var(--theme-editor-bg);
+  transition: background-color 0.3s ease;
+}
+
+.theme-editor-text {
+  color: var(--theme-editor-text);
+  transition: color 0.3s ease;
+}
+
+.theme-editor-toolbar {
+  background-color: var(--theme-editor-toolbar);
+  transition: background-color 0.3s ease;
+}
+
+.theme-editor-border {
+  border-color: var(--theme-editor-border);
+  transition: border-color 0.3s ease;
+}
+
+.theme-editor-preview {
+  background-color: var(--theme-editor-preview);
+  transition: background-color 0.3s ease;
+}
+
+.theme-chapter-avatar {
+  background-color: var(--theme-chapter-avatar);
+  transition: background-color 0.3s ease;
+}
+
+.theme-warning-text {
+  color: var(--theme-warning-text);
+  transition: color 0.3s ease;
 }
 
 @media (prefers-color-scheme: dark) {

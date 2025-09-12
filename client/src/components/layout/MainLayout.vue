@@ -110,14 +110,8 @@
                 </a-badge>
               </a-tooltip>
 
-              <!-- Settings -->
-              <a-tooltip title="设置">
-                <a-button type="text" class="header-action-btn">
-                  <template #icon>
-                    <SettingOutlined />
-                  </template>
-                </a-button>
-              </a-tooltip>
+              <!-- Theme Toggle -->
+              <ThemeToggle />
 
               <!-- Help -->
               <a-tooltip title="帮助">
@@ -205,32 +199,32 @@
       :confirm-loading="chaptersLoading"
     >
       <a-form layout="vertical" :model="addChapterForm">
-        <a-form-item 
-          label="章节标题" 
+        <a-form-item
+          label="章节标题"
           name="title"
           :rules="[{ required: true, message: '请输入章节标题' }]"
         >
-          <a-input 
-            v-model:value="addChapterForm.title" 
-            placeholder="请输入章节标题" 
+          <a-input
+            v-model:value="addChapterForm.title"
+            placeholder="请输入章节标题"
             maxlength="100"
             show-count
           />
         </a-form-item>
-        
-        <a-form-item 
-          label="章节大纲" 
+
+        <a-form-item
+          label="章节大纲"
           name="outline"
         >
-          <a-textarea 
-            v-model:value="addChapterForm.outline" 
+          <a-textarea
+            v-model:value="addChapterForm.outline"
             placeholder="请输入章节大纲（可选）"
             :rows="4"
             maxlength="500"
             show-count
           />
         </a-form-item>
-        
+
         <div class="chapter-info">
           <a-descriptions :column="2" size="small">
             <a-descriptions-item label="章节号">
@@ -284,11 +278,14 @@ import {
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'
+import ThemeToggle from './ThemeToggle.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 import { useProjectStore } from '@/stores/project'
+import { useThemeStore } from '@/stores/theme'
 import { useChapterList } from '@/composables/useChapterList'
 
 const projectStore = useProjectStore()
+const themeStore = useThemeStore()
 const { chapters, loading: chaptersLoading, loadChapters, createChapter } = useChapterList()
 const collapsed = ref(false)
 const aiPanelCollapsed = ref(true)  // 默认关闭 AI 助手面板
@@ -378,12 +375,12 @@ const handleAddChapter = async () => {
     message.error('请输入章节标题')
     return
   }
-  
+
   const newChapter = await createChapter({
     title: addChapterForm.value.title.trim(),
     outline: addChapterForm.value.outline.trim()
   })
-  
+
   if (newChapter) {
     addChapterVisible.value = false
     // 重置表单
@@ -448,8 +445,8 @@ const formatDate = (dateString: string) => {
 
 /* Header Styles */
 .header {
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  background: var(--theme-bg-container);
+  border-bottom: 1px solid var(--theme-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   padding: 0;
   height: 64px;
@@ -457,6 +454,7 @@ const formatDate = (dateString: string) => {
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: all 0.3s ease;
 }
 
 .header-content {
@@ -480,7 +478,7 @@ const formatDate = (dateString: string) => {
 
 /* Menu Toggle Button */
 .menu-toggle-btn {
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
   font-size: 18px;
   padding: 4px;
   border-radius: 6px;
@@ -526,14 +524,16 @@ const formatDate = (dateString: string) => {
 .app-title {
   font-size: 20px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-text);
   margin: 0;
+  transition: color 0.3s;
 }
 
 .app-subtitle {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--theme-text-secondary);
   margin-top: -2px;
+  transition: color 0.3s;
 }
 
 /* Project Selector */
@@ -546,10 +546,37 @@ const formatDate = (dateString: string) => {
   border-radius: 6px;
 }
 
+.project-select :deep(.ant-select-selector) {
+  background-color: var(--theme-bg-container);
+  border-color: var(--theme-border);
+  transition: all 0.3s ease;
+}
+
+.project-select :deep(.ant-select-selector):hover {
+  border-color: #1890ff;
+}
+
+.project-select :deep(.ant-select-arrow) {
+  color: var(--theme-text-secondary);
+}
+
+.project-select :deep(.ant-select-selection-placeholder) {
+  color: var(--theme-text-secondary);
+}
+
+.project-select :deep(.ant-select-selection-item) {
+  color: var(--theme-text);
+}
+
 .project-option {
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.project-option:hover .project-name {
+  color: #1890ff;
 }
 
 .project-avatar {
@@ -566,7 +593,7 @@ const formatDate = (dateString: string) => {
 
 .project-name {
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -578,7 +605,7 @@ const formatDate = (dateString: string) => {
 
 /* Header Action Buttons */
 .header-action-btn {
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
   font-size: 16px;
   width: 36px;
   height: 36px;
@@ -599,6 +626,7 @@ const formatDate = (dateString: string) => {
   background-color: rgba(24, 144, 255, 0.1);
 }
 
+
 /* User Menu */
 .user-menu {
   padding: 0 12px;
@@ -614,15 +642,17 @@ const formatDate = (dateString: string) => {
 }
 
 .username {
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-text);
   font-weight: 500;
   margin-left: 8px;
+  transition: color 0.3s;
 }
 
 .dropdown-icon {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--theme-text-secondary);
   font-size: 12px;
   margin-left: 4px;
+  transition: color 0.3s;
 }
 
 /* User Dropdown Menu */
@@ -654,8 +684,9 @@ const formatDate = (dateString: string) => {
 
 /* Sidebar */
 .sidebar {
-  border-right: 1px solid #f0f0f0;
+  border-right: 1px solid var(--theme-border);
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
 }
 
 /* Content Area */
@@ -667,16 +698,17 @@ const formatDate = (dateString: string) => {
 
 .content-wrapper {
   flex: 1;
-  background: #f5f5f5;
+  background: var(--theme-bg-base);
   overflow: auto;
   min-width: 0;
+  transition: background-color 0.3s;
 }
 
 /* AI Panel */
 .ai-panel {
   width: 400px;
-  background: #fff;
-  border-left: 1px solid #f0f0f0;
+  background: var(--theme-bg-container);
+  border-left: 1px solid var(--theme-border);
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
@@ -730,14 +762,15 @@ const formatDate = (dateString: string) => {
 /* Status Bar */
 .status-bar {
   height: 48px;
-  background: #fafafa;
-  border-top: 1px solid #f0f0f0;
+  background: var(--theme-bg-elevated);
+  border-top: 1px solid var(--theme-border);
   padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
+  transition: all 0.3s ease;
 }
 
 .status-left,

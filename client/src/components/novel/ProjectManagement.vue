@@ -2,7 +2,7 @@
   <div class="h-full p-6 overflow-y-auto">
     <div class="max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">项目管理</h1>
+        <h1 class="text-2xl font-bold theme-text-primary">项目管理</h1>
         <a-space>
           <a-button type="primary" @click="showNewProjectModal = true">
             <template #icon>
@@ -78,8 +78,8 @@
         </a-row>
 
         <div class="mt-4">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">项目描述</h4>
-          <p class="text-gray-600 text-sm leading-relaxed">
+          <h4 class="text-sm font-medium theme-text-primary mb-2">项目描述</h4>
+          <p class="theme-text-secondary text-sm leading-relaxed">
             {{ projectStore.currentProject.description }}
           </p>
         </div>
@@ -119,13 +119,13 @@
               
               <a-list-item-meta>
                 <template #title>
-                  <span class="text-gray-800">{{ item.title }}</span>
+                  <span class="theme-text-primary">{{ item.title }}</span>
                   <a-tag size="small" class="ml-2" :color="getStatusColor(item.status)">
                     {{ getStatusText(item.status) }}
                   </a-tag>
                 </template>
                 <template #description>
-                  <div class="text-sm text-gray-500">
+                  <div class="text-sm theme-text-secondary">
                     {{ item.description }}
                     <br>
                     <span class="text-xs">

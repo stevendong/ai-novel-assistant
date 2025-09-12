@@ -1,10 +1,10 @@
 <template>
   <div class="h-full flex">
     <!-- Settings Categories (25%) -->
-    <div class="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
-      <div class="p-4 border-b border-gray-200">
+    <div class="w-64 theme-bg-elevated border-r theme-border flex flex-col">
+      <div class="p-4 border-b theme-border">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold text-gray-800">世界设定</h2>
+          <h2 class="text-lg font-semibold theme-text-primary">世界设定</h2>
           <a-button type="primary" size="small" @click="showAddSettingModal = true">
             <template #icon>
               <PlusOutlined />
@@ -45,10 +45,10 @@
     </div>
 
     <!-- Settings List (35%) -->
-    <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
-      <div class="p-4 border-b border-gray-200">
+    <div class="w-80 theme-bg-container border-r theme-border flex flex-col">
+      <div class="p-4 border-b theme-border">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-md font-medium text-gray-800">
+          <h3 class="text-md font-medium theme-text-primary">
             {{ getCategoryTitle(currentCategory) }}
           </h3>
           <a-tag>{{ currentCategorySettings.length }}</a-tag>
@@ -68,30 +68,30 @@
           @click="selectSetting(setting)"
           class="p-3 mb-2 rounded-lg cursor-pointer transition-colors"
           :class="selectedSetting?.id === setting.id 
-            ? 'bg-blue-50 border border-blue-200' 
-            : 'bg-gray-50 border border-gray-100 hover:bg-gray-100'"
+            ? 'theme-selected-bg border theme-selected-border' 
+            : 'theme-bg-elevated border theme-border theme-selected-hover'"
         >
           <div class="flex items-start justify-between">
             <div class="flex-1 min-w-0">
               <div class="flex items-center space-x-2">
-                <h4 class="text-sm font-medium text-gray-800 truncate">
+                <h4 class="text-sm font-medium theme-text-primary truncate">
                   {{ setting.name }}
                 </h4>
                 <a-tag v-if="setting.isLocked" size="small" color="red">
                   锁定
                 </a-tag>
               </div>
-              <p class="text-xs text-gray-500 mt-1 line-clamp-3">
+              <p class="text-xs theme-text-primary mt-1 line-clamp-3">
                 {{ setting.description }}
               </p>
-              <div class="flex items-center mt-2 text-xs text-gray-400">
+              <div class="flex items-center mt-2 text-xs theme-text-primary">
                 <span>{{ getTypeIcon(setting.type) }} {{ getTypeText(setting.type) }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-if="currentCategorySettings.length === 0" class="text-center py-8 text-gray-400">
+        <div v-if="currentCategorySettings.length === 0" class="text-center py-8 theme-text-primary">
           <GlobalOutlined style="font-size: 32px; margin-bottom: 8px;" />
           <p>暂无{{ getCategoryTitle(currentCategory) }}</p>
           <a-button type="link" @click="showAddSettingModal = true">
@@ -103,7 +103,7 @@
 
     <!-- Setting Details (40%) -->
     <div class="flex-1 flex flex-col">
-      <div v-if="!selectedSetting" class="flex-1 flex items-center justify-center text-gray-500">
+      <div v-if="!selectedSetting" class="flex-1 flex items-center justify-center theme-text-primary">
         <div class="text-center">
           <GlobalOutlined style="font-size: 48px; margin-bottom: 16px;" />
           <p>选择一个设定以查看和编辑详情</p>
@@ -117,12 +117,12 @@
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center space-x-4">
-                <div class="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <component :is="getTypeIconComponent(selectedSetting.type)" class="text-blue-600 text-2xl" />
+                <div class="w-14 h-14 theme-icon-bg rounded-lg flex items-center justify-center">
+                  <component :is="getTypeIconComponent(selectedSetting.type)" class="theme-icon-text text-2xl" />
                 </div>
                 <div>
-                  <h1 class="text-2xl font-bold text-gray-800">{{ selectedSetting.name }}</h1>
-                  <p class="text-sm text-gray-500">{{ getTypeText(selectedSetting.type) }}</p>
+                  <h1 class="text-2xl font-bold theme-text-primary">{{ selectedSetting.name }}</h1>
+                  <p class="text-sm theme-text-primary">{{ getTypeText(selectedSetting.type) }}</p>
                 </div>
               </div>
               <a-space>
@@ -192,7 +192,7 @@
                 <a-tab-pane key="details" tab="详细信息">
                   <div class="space-y-6">
                     <div v-if="selectedSetting.type === 'worldview'">
-                      <h4 class="text-sm font-medium text-gray-700 mb-3">世界观要素</h4>
+                      <h4 class="text-sm font-medium theme-text-primary mb-3">世界观要素</h4>
                       <a-row :gutter="16">
                         <a-col :span="12">
                           <a-form-item label="时代背景">
@@ -234,7 +234,7 @@
                     </div>
 
                     <div v-else-if="selectedSetting.type === 'location'">
-                      <h4 class="text-sm font-medium text-gray-700 mb-3">地理信息</h4>
+                      <h4 class="text-sm font-medium theme-text-primary mb-3">地理信息</h4>
                       <a-row :gutter="16">
                         <a-col :span="8">
                           <a-form-item label="位置类型">
@@ -290,7 +290,7 @@
                     </div>
 
                     <div v-else-if="selectedSetting.type === 'rule'">
-                      <h4 class="text-sm font-medium text-gray-700 mb-3">规则体系</h4>
+                      <h4 class="text-sm font-medium theme-text-primary mb-3">规则体系</h4>
                       
                       <a-form-item label="规则类型">
                         <a-checkbox-group 
@@ -326,7 +326,7 @@
                     </div>
 
                     <div v-else-if="selectedSetting.type === 'culture'">
-                      <h4 class="text-sm font-medium text-gray-700 mb-3">文化特征</h4>
+                      <h4 class="text-sm font-medium theme-text-primary mb-3">文化特征</h4>
                       
                       <a-row :gutter="16">
                         <a-col :span="12">
@@ -385,7 +385,7 @@
                     <div 
                       v-for="(relation, index) in editingSetting.relations" 
                       :key="index"
-                      class="p-4 border border-gray-200 rounded-lg"
+                      class="p-4 border theme-border rounded-lg"
                     >
                       <a-row :gutter="16" align="middle">
                         <a-col :span="8">
@@ -474,12 +474,12 @@
         </div>
 
         <!-- AI Suggestions Panel (30%) -->
-        <div class="w-80 bg-gray-50 border-l border-gray-200 p-4">
-          <h3 class="text-sm font-medium text-gray-800 mb-4">AI 建议</h3>
+        <div class="w-80 theme-bg-elevated border-l theme-border p-4">
+          <h3 class="text-sm font-medium theme-text-primary mb-4">AI 建议</h3>
           
           <div class="space-y-4">
             <a-card size="small" title="扩展建议">
-              <p class="text-sm text-gray-600">
+              <p class="text-sm theme-text-primary">
                 该世界观设定可以进一步细化魔法体系的具体规则和限制。
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">
@@ -488,7 +488,7 @@
             </a-card>
             
             <a-card size="small" title="一致性检查">
-              <p class="text-sm text-gray-600">
+              <p class="text-sm theme-text-primary">
                 发现与"古代王国"设定存在时代冲突，建议调整时间线。
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">
@@ -497,7 +497,7 @@
             </a-card>
             
             <a-card size="small" title="关联建议">
-              <p class="text-sm text-gray-600">
+              <p class="text-sm theme-text-primary">
                 建议添加与"主城"位置的关联，增强设定完整性。
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">

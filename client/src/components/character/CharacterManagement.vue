@@ -1,10 +1,10 @@
 <template>
   <div class="h-full flex">
     <!-- Character List (30%) -->
-    <div class="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
-      <div class="p-4 border-b border-gray-200">
+    <div class="w-80 theme-bg-elevated border-r theme-border flex flex-col">
+      <div class="p-4 border-b theme-border">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold text-gray-800">角色库</h2>
+          <h2 class="text-lg font-semibold theme-text-primary">角色库</h2>
           <a-button type="primary" size="small" @click="showAddCharacterModal = true">
             <template #icon>
               <PlusOutlined />
@@ -27,8 +27,8 @@
           @click="selectCharacter(character)"
           class="p-3 mb-2 rounded-lg cursor-pointer transition-colors"
           :class="selectedCharacter?.id === character.id 
-            ? 'bg-blue-50 border border-blue-200' 
-            : 'bg-white border border-gray-100 hover:bg-gray-50'"
+            ? 'theme-selected-bg border theme-selected-border' 
+            : 'theme-bg-container border theme-border theme-selected-hover'"
         >
           <div class="flex items-start space-x-3">
             <a-avatar :size="40" :style="{ backgroundColor: getCharacterColor(character.id) }">
@@ -36,17 +36,17 @@
             </a-avatar>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
-                <h4 class="text-sm font-medium text-gray-800 truncate">
+                <h4 class="text-sm font-medium theme-text-primary truncate">
                   {{ character.name }}
                 </h4>
                 <a-tag v-if="character.isLocked" size="small" color="red">
                   锁定
                 </a-tag>
               </div>
-              <p class="text-xs text-gray-500 mt-1 line-clamp-2">
+              <p class="text-xs theme-text-primary mt-1 line-clamp-2">
                 {{ character.description }}
               </p>
-              <div class="flex items-center mt-2 text-xs text-gray-400">
+              <div class="flex items-center mt-2 text-xs theme-text-primary">
                 <span>{{ character.personality?.split('，')[0] || '未设定性格' }}</span>
               </div>
             </div>
@@ -57,7 +57,7 @@
 
     <!-- Character Details (70%) -->
     <div class="flex-1 flex flex-col">
-      <div v-if="!selectedCharacter" class="flex-1 flex items-center justify-center text-gray-500">
+      <div v-if="!selectedCharacter" class="flex-1 flex items-center justify-center theme-text-primary">
         <div class="text-center">
           <TeamOutlined style="font-size: 48px; margin-bottom: 16px;" />
           <p>选择一个角色以查看和编辑详情</p>
@@ -75,8 +75,8 @@
                   {{ selectedCharacter.name.charAt(0) }}
                 </a-avatar>
                 <div>
-                  <h1 class="text-2xl font-bold text-gray-800">{{ selectedCharacter.name }}</h1>
-                  <p class="text-sm text-gray-500">角色详情编辑</p>
+                  <h1 class="text-2xl font-bold theme-text-primary">{{ selectedCharacter.name }}</h1>
+                  <p class="text-sm theme-text-primary">角色详情编辑</p>
                 </div>
               </div>
               <a-space>
@@ -207,7 +207,7 @@
                     <div 
                       v-for="(relation, index) in editingCharacter.relationships" 
                       :key="index"
-                      class="p-4 border border-gray-200 rounded-lg"
+                      class="p-4 border theme-border rounded-lg"
                     >
                       <a-row :gutter="16" align="middle">
                         <a-col :span="6">
@@ -290,12 +290,12 @@
         </div>
 
         <!-- AI Suggestions Panel (30%) -->
-        <div class="w-96 bg-gray-50 border-l border-gray-200 p-4">
-          <h3 class="text-sm font-medium text-gray-800 mb-4">AI 建议</h3>
+        <div class="w-96 theme-bg-elevated border-l theme-border p-4">
+          <h3 class="text-sm font-medium theme-text-primary mb-4">AI 建议</h3>
           
           <div class="space-y-4">
             <a-card size="small" title="性格分析">
-              <p class="text-sm text-gray-600">
+              <p class="text-sm theme-text-primary">
                 基于当前描述，该角色表现出谨慎但好奇的性格特征。建议进一步探索其社交恐惧的具体表现形式。
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">
@@ -304,7 +304,7 @@
             </a-card>
             
             <a-card size="small" title="关系建议">
-              <p class="text-sm text-gray-600">
+              <p class="text-sm theme-text-primary">
                 建议为该角色添加一个导师角色，这将有助于解释其专业技能的来源。
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">
@@ -313,7 +313,7 @@
             </a-card>
             
             <a-card size="small" title="背景完善">
-              <p class="text-sm text-gray-600">
+              <p class="text-sm theme-text-primary">
                 可以添加一个重要的童年事件来解释角色的性格形成原因。
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">

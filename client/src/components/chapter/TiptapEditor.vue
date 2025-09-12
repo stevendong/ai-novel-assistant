@@ -449,7 +449,8 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background-color: var(--theme-editor-bg);
+  transition: background-color 0.3s ease;
 }
 
 /* 工具栏样式 */
@@ -458,8 +459,9 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  border-bottom: 1px solid #e8e8e8;
-  background: #fafafa;
+  border-bottom: 1px solid var(--theme-editor-border);
+  background-color: var(--theme-editor-toolbar);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   min-height: 48px;
 }
 
@@ -474,7 +476,8 @@ defineExpose({
   align-items: center;
   gap: 4px;
   padding: 0 8px;
-  border-right: 1px solid #e8e8e8;
+  border-right: 1px solid var(--theme-editor-border);
+  transition: border-color 0.3s ease;
 }
 
 .tool-group:last-child {
@@ -485,7 +488,8 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 16px;
-  color: #666;
+  color: var(--theme-editor-secondary-text);
+  transition: color 0.3s ease;
   font-size: 12px;
 }
 
@@ -497,8 +501,9 @@ defineExpose({
 
 /* 工具按钮激活状态 */
 .ant-btn.is-active {
-  background-color: #1890ff;
+  background-color: var(--theme-editor-active-btn);
   color: white;
+  transition: background-color 0.3s ease;
 }
 
 /* 编辑器容器 */
@@ -529,15 +534,17 @@ defineExpose({
   font-family: 'Source Han Serif CN', 'Noto Serif CJK SC', serif;
   font-size: 16px;
   line-height: 1.8;
-  color: #333;
-  background: #fff;
+  color: var(--theme-editor-text);
+  background-color: var(--theme-editor-bg);
+  transition: color 0.3s ease, background-color 0.3s ease;
   outline: none;
   overflow-y: auto;
 }
 
 :deep(.ProseMirror.focus-mode) {
   padding: 10% 15%;
-  background: #fefefe;
+  background-color: var(--theme-editor-focus-bg);
+  transition: background-color 0.3s ease;
 }
 
 /* 小说文本样式 */
@@ -551,21 +558,24 @@ defineExpose({
 }
 
 :deep(.ProseMirror .dialogue) {
-  color: #2c5aa0;
+  color: var(--theme-editor-dialogue);
   font-style: italic;
+  transition: color 0.3s ease;
 }
 
 :deep(.ProseMirror .scene-break) {
   text-align: center;
   margin: 2em 0;
-  color: #999;
+  color: var(--theme-editor-scene);
   font-size: 1.2em;
   font-weight: bold;
+  transition: color 0.3s ease;
 }
 
 :deep(.ProseMirror .thought) {
-  color: #7b68ee;
+  color: var(--theme-editor-thought);
   font-style: italic;
+  transition: color 0.3s ease;
 }
 
 :deep(.ProseMirror h1, .ProseMirror h2, .ProseMirror h3) {
@@ -589,7 +599,8 @@ defineExpose({
 :deep(.ProseMirror p.is-editor-empty:first-child::before) {
   content: attr(data-placeholder);
   float: left;
-  color: #bbb;
+  color: var(--theme-editor-placeholder);
+  transition: color 0.3s ease;
   pointer-events: none;
   height: 0;
 }
@@ -600,10 +611,11 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  border-top: 1px solid #e8e8e8;
-  background: #fafafa;
+  border-top: 1px solid var(--theme-editor-border);
+  background-color: var(--theme-editor-toolbar);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   font-size: 12px;
-  color: #666;
+  color: var(--theme-editor-secondary-text);
   min-height: 32px;
 }
 
@@ -615,7 +627,8 @@ defineExpose({
 }
 
 .save-status.unsaved {
-  color: #ff6b6b;
+  color: var(--theme-editor-unsaved);
+  transition: color 0.3s ease;
 }
 
 /* 响应式设计 */

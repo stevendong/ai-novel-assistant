@@ -80,7 +80,7 @@
           :class="{
             'border-red-300 bg-red-50': issue.severity === 'high',
             'border-yellow-300 bg-yellow-50': issue.severity === 'medium',
-            'border-gray-300 bg-gray-50': issue.severity === 'low',
+            'theme-border theme-bg-elevated': issue.severity === 'low',
             'opacity-60': issue.resolved
           }"
         >
@@ -98,7 +98,7 @@
                 </span>
               </div>
               
-              <div class="text-sm text-gray-800 leading-relaxed">
+              <div class="text-sm theme-text-primary leading-relaxed">
                 {{ issue.issue }}
               </div>
             </div>
@@ -120,7 +120,7 @@
       </div>
     </div>
 
-    <div v-else class="text-center py-6 text-gray-500">
+    <div v-else class="text-center py-6 theme-text-primary">
       暂无一致性问题
     </div>
   </a-modal>
@@ -187,7 +187,7 @@ const getIconClass = () => {
   if (mediumCount > 0) {
     return 'text-yellow-500'
   }
-  return 'text-gray-500'
+  return 'theme-text-primary'
 }
 
 // 获取分数样式类

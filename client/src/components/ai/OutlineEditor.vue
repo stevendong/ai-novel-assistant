@@ -474,7 +474,7 @@ onMounted(() => {
   text-align: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .editor-header h4 {
@@ -483,7 +483,7 @@ onMounted(() => {
 }
 
 .editor-header p {
-  color: #666;
+  color: var(--theme-text-secondary);
   font-size: 14px;
 }
 
@@ -507,14 +507,14 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .header-info {
   display: flex;
   gap: 16px;
   font-size: 14px;
-  color: #666;
+  color: var(--theme-text-secondary);
 }
 
 .chapter-count {
@@ -532,17 +532,17 @@ onMounted(() => {
 }
 
 .chapter-editor-item {
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   margin-bottom: 12px;
-  background: #fafafa;
+  background: var(--theme-bg-elevated);
 }
 
 .chapter-header {
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: #fff;
+  background: var(--theme-bg-container);
   border-radius: 8px 8px 0 0;
 }
 
@@ -555,7 +555,7 @@ onMounted(() => {
 
 .drag-handle {
   cursor: grab;
-  color: #999;
+  color: var(--theme-text-secondary);
   padding: 4px;
 }
 
@@ -586,15 +586,15 @@ onMounted(() => {
 
 .chapter-content {
   padding: 16px;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
+  background: var(--theme-bg-container);
+  border-top: 1px solid var(--theme-border);
 }
 
 .plot-points-editor {
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--theme-border);
   border-radius: 6px;
   padding: 12px;
-  background: #fafafa;
+  background: var(--theme-bg-elevated);
 }
 
 .plot-point-item {
@@ -617,7 +617,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 0;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--theme-border);
   margin-top: 24px;
 }
 
@@ -625,7 +625,7 @@ onMounted(() => {
   display: flex;
   gap: 16px;
   font-size: 13px;
-  color: #666;
+  color: var(--theme-text-secondary);
 }
 
 .save-status {
@@ -646,18 +646,18 @@ onMounted(() => {
 
 .editor-content::-webkit-scrollbar-track,
 .chapters-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--theme-bg-elevated);
   border-radius: 3px;
 }
 
 .editor-content::-webkit-scrollbar-thumb,
 .chapters-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--theme-border);
   border-radius: 3px;
 }
 
 .editor-content::-webkit-scrollbar-thumb:hover,
 .chapters-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--theme-text-secondary);
 }
 </style>

@@ -551,7 +551,8 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background-color: var(--theme-editor-bg);
+  transition: background-color 0.3s ease;
 }
 
 /* 工具栏样式 */
@@ -560,8 +561,9 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  border-bottom: 1px solid #e8e8e8;
-  background: #fafafa;
+  border-bottom: 1px solid var(--theme-editor-border);
+  background-color: var(--theme-editor-toolbar);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   min-height: 48px;
 }
 
@@ -576,7 +578,8 @@ defineExpose({
   align-items: center;
   gap: 4px;
   padding: 0 8px;
-  border-right: 1px solid #e8e8e8;
+  border-right: 1px solid var(--theme-editor-border);
+  transition: border-color 0.3s ease;
 }
 
 .tool-group:last-child {
@@ -587,7 +590,8 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 16px;
-  color: #666;
+  color: var(--theme-editor-secondary-text);
+  transition: color 0.3s ease;
   font-size: 12px;
 }
 
@@ -635,8 +639,9 @@ defineExpose({
   font-family: 'Source Han Serif CN', 'Noto Serif CJK SC', serif;
   font-size: 16px;
   line-height: 1.8;
-  color: #333;
-  background: #fff;
+  color: var(--theme-editor-text);
+  background-color: var(--theme-editor-bg);
+  transition: color 0.3s ease, background-color 0.3s ease;
   overflow-y: auto;
   outline: none;
   white-space: pre-wrap;
@@ -645,15 +650,17 @@ defineExpose({
 
 .editor-content:empty::before {
   content: attr(placeholder);
-  color: #bbb;
+  color: var(--theme-editor-placeholder);
+  transition: color 0.3s ease;
   font-style: italic;
 }
 
 /* 预览区域 */
 .preview-pane {
   width: 45%;
-  border-left: 1px solid #e8e8e8;
-  background: #f9f9f9;
+  border-left: 1px solid var(--theme-editor-border);
+  background-color: var(--theme-editor-preview);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   overflow: hidden;
 }
 
@@ -664,14 +671,15 @@ defineExpose({
 }
 
 .novel-preview {
-  background: #fff;
+  background-color: var(--theme-editor-bg);
   padding: 32px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-family: 'Source Han Serif CN', 'Noto Serif CJK SC', serif;
   font-size: 16px;
   line-height: 1.8;
-  color: #333;
+  color: var(--theme-editor-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* 状态栏 */
@@ -680,10 +688,11 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  border-top: 1px solid #e8e8e8;
-  background: #fafafa;
+  border-top: 1px solid var(--theme-editor-border);
+  background-color: var(--theme-editor-toolbar);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   font-size: 12px;
-  color: #666;
+  color: var(--theme-editor-secondary-text);
   min-height: 32px;
 }
 
@@ -695,7 +704,8 @@ defineExpose({
 }
 
 .save-status.unsaved {
-  color: #ff6b6b;
+  color: var(--theme-editor-unsaved);
+  transition: color 0.3s ease;
 }
 
 /* 小说文本样式 */
@@ -706,31 +716,35 @@ defineExpose({
 }
 
 :deep(.dialogue) {
-  color: #2c5aa0;
+  color: var(--theme-editor-dialogue);
   font-style: italic;
   text-indent: 2em;
   margin: 0.8em 0;
+  transition: color 0.3s ease;
 }
 
 :deep(.scene-break) {
   text-align: center;
   margin: 2em 0;
-  color: #999;
+  color: var(--theme-editor-scene);
   font-size: 1.2em;
+  transition: color 0.3s ease;
 }
 
 :deep(.thought) {
-  color: #7b68ee;
+  color: var(--theme-editor-thought);
   font-style: italic;
   text-indent: 2em;
   margin: 0.8em 0;
+  transition: color 0.3s ease;
 }
 
 :deep(.empty-preview) {
   text-align: center;
-  color: #bbb;
+  color: var(--theme-editor-placeholder);
   font-style: italic;
   margin: 40px 0;
+  transition: color 0.3s ease;
 }
 
 /* 响应式设计 */
@@ -743,7 +757,7 @@ defineExpose({
     width: 100%;
     height: 50%;
     border-left: none;
-    border-top: 1px solid #e8e8e8;
+    border-top: 1px solid var(--theme-editor-border);
   }
   
   .tool-stats {
@@ -759,7 +773,8 @@ defineExpose({
 /* 专注模式样式 */
 .editor-container.focus-mode .editor-content {
   padding: 10% 15%;
-  background: #fefefe;
+  background-color: var(--theme-editor-focus-bg);
+  transition: background-color 0.3s ease;
 }
 
 @media (max-width: 768px) {

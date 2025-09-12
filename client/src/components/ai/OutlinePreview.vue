@@ -415,7 +415,7 @@ const generateOutlineText = () => {
   text-align: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid var(--theme-border);
 }
 
 .outline-title {
@@ -434,7 +434,7 @@ const generateOutlineText = () => {
 }
 
 .creation-time {
-  color: #999;
+  color: var(--theme-text-secondary);
 }
 
 .summary-card,
@@ -448,7 +448,7 @@ const generateOutlineText = () => {
 }
 
 .main-summary {
-  background: #f8f9ff;
+  background: var(--theme-bg-elevated);
   padding: 16px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -462,7 +462,7 @@ const generateOutlineText = () => {
 
 .detail-item {
   padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .detail-item strong {
@@ -539,7 +539,7 @@ const generateOutlineText = () => {
 
 .chapter-title {
   font-size: 18px;
-  color: #262626;
+  color: var(--theme-text);
   margin-bottom: 8px;
 }
 
@@ -551,8 +551,8 @@ const generateOutlineText = () => {
 }
 
 .word-count {
-  color: #666;
-  background: #f0f0f0;
+  color: var(--theme-text-secondary);
+  background: var(--theme-bg-elevated);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 12px;
@@ -564,7 +564,7 @@ const generateOutlineText = () => {
 }
 
 .chapter-content {
-  background: #fafafa;
+  background: var(--theme-bg-elevated);
   padding: 20px;
   border-radius: 12px;
   margin-left: -60px;
@@ -574,7 +574,7 @@ const generateOutlineText = () => {
 .chapter-summary {
   font-size: 14px;
   line-height: 1.6;
-  color: #595959;
+  color: var(--theme-text-secondary);
   margin-bottom: 16px;
 }
 
@@ -618,7 +618,7 @@ const generateOutlineText = () => {
 }
 
 .chapter-elements {
-  border-top: 1px solid #e8e8e8;
+  border-top: 1px solid var(--theme-border);
   padding-top: 16px;
   display: flex;
   flex-direction: column;
@@ -640,7 +640,7 @@ const generateOutlineText = () => {
 .element-label {
   font-weight: 500;
   min-width: 50px;
-  color: #595959;
+  color: var(--theme-text-secondary);
 }
 
 .element-tag {
@@ -657,7 +657,7 @@ const generateOutlineText = () => {
 
 .key-event,
 .chapter-goal {
-  background: #fff;
+  background: var(--theme-bg-container);
   padding: 6px 12px;
   border-radius: 6px;
   border-left: 3px solid #1890ff;
@@ -672,12 +672,12 @@ const generateOutlineText = () => {
 .chapter-type-distribution {
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--theme-border);
 }
 
 .chapter-type-distribution h5 {
   margin-bottom: 12px;
-  color: #262626;
+  color: var(--theme-text);
 }
 
 .type-stats {
@@ -690,21 +690,21 @@ const generateOutlineText = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fafafa;
+  background: var(--theme-bg-elevated);
   padding: 8px 12px;
   border-radius: 6px;
 }
 
 .count {
   font-weight: 500;
-  color: #262626;
+  color: var(--theme-text);
 }
 
 .preview-actions {
   text-align: center;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 2px solid #f0f0f0;
+  border-top: 2px solid var(--theme-border);
 }
 
 /* 响应式设计 */

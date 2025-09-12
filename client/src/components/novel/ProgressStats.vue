@@ -92,16 +92,30 @@
               </div>
             </template>
             <template #extra>
-              <a-tag color="blue">
-                过去一年：{{ totalContributions }} 次贡献
-              </a-tag>
+              <div class="activity-stats">
+                <a-tag color="blue">
+                  过去一年：{{ totalContributions }} 次贡献
+                </a-tag>
+                <a-tag color="green" v-if="currentStreakDays > 0">
+                  连续写作：{{ currentStreakDays }} 天
+                </a-tag>
+                <a-tag color="purple">
+                  总字数：{{ formatWordCount(totalWordsThisYear) }}
+                </a-tag>
+              </div>
             </template>
 
             <div class="writing-activity-chart">
               <!-- 月份标签 -->
               <div class="months-row">
-                <div class="month-label" v-for="month in months" :key="month.index">
-                  {{ month.name }}
+                <div 
+                  class="month-label" 
+                  v-for="month in months" 
+                  :key="month.index"
+                  :class="{ 'current-month': month.isCurrent }"
+                  :title="`${month.year}年${month.name}`"
+                >
+                  {{ month.displayName }}
                 </div>
               </div>
 
@@ -271,7 +285,7 @@
                   <a-progress
                     :percent="overallProgress"
                     stroke-color="#722ed1"
-                    trail-color="#f0f0f0"
+                    trail-color="var(--theme-border)"
                     :stroke-width="8"
                     class="mb-4"
                   />
@@ -769,10 +783,15 @@ const months = computed(() => {
 
   for (let i = 0; i < 12; i++) {
     const month = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
+    const isCurrentMonth = month.getFullYear() === now.getFullYear() && 
+                          month.getMonth() === now.getMonth()
     result.push({
       index: i,
       name: monthNames[month.getMonth()],
-      month: month.getMonth()
+      month: month.getMonth(),
+      year: month.getFullYear(),
+      isCurrent: isCurrentMonth,
+      displayName: isCurrentMonth ? '本月' : monthNames[month.getMonth()]
     })
   }
 
@@ -785,12 +804,79 @@ const totalContributions = computed(() => {
   return activityData.value.filter(day => day.level > 0).length
 })
 
+// 计算今年总字数
+const totalWordsThisYear = computed(() => {
+  if (!activityData.value || activityData.value.length === 0) return 0
+  return activityData.value.reduce((total, day) => total + day.wordCount, 0)
+})
+
+// 计算当前连续写作天数
+const currentStreakDays = computed(() => {
+  if (!activityData.value || activityData.value.length === 0) return 0
+  
+  let streak = 0
+  const sortedData = [...activityData.value].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  
+  for (const day of sortedData) {
+    if (day.level > 0) {
+      streak++
+    } else {
+      break
+    }
+  }
+  
+  return streak
+})
+
+// 格式化字数显示
+const formatWordCount = (count: number): string => {
+  if (count >= 10000) {
+    return `${(count / 10000).toFixed(1)}万`
+  } else if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}k`
+  }
+  return count.toString()
+}
+
+// 格式化活跃度日期显示（相对时间）
+const formatActivityDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  
+  const diffTime = today.getTime() - targetDate.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) {
+    return '今天'
+  } else if (diffDays === 1) {
+    return '昨天'
+  } else if (diffDays === 2) {
+    return '前天'
+  } else if (diffDays <= 7) {
+    return `${diffDays}天前`
+  } else {
+    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
+  }
+}
+
 // 工具提示
 const getTooltip = (day: ActivityDay): string => {
+  const dateDisplay = formatActivityDate(day.date)
+  const weekDay = new Date(day.date).toLocaleDateString('zh-CN', { weekday: 'long' })
+  
   if (day.wordCount === 0) {
-    return `${day.date}: 未写作`
+    return `${dateDisplay} (${weekDay})\n未写作`
+  } else if (day.wordCount < 500) {
+    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 少量写作`
+  } else if (day.wordCount < 1000) {
+    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 正常写作`
+  } else if (day.wordCount < 2000) {
+    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 高产出`
+  } else {
+    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 超高产出！`
   }
-  return `${day.date}: ${day.wordCount} 字`
 }
 
 // 显示/隐藏提示框
@@ -1170,7 +1256,7 @@ onMounted(() => {
 /* 页面容器 */
 .progress-stats-container {
   min-height: 100vh;
-  background: #f0f2f5;
+  background: var(--theme-bg-base);
   overflow-y: auto;
 }
 
@@ -1183,7 +1269,7 @@ onMounted(() => {
 .page-title {
   font-size: 32px;
   font-weight: bold;
-  color: #262626;
+  color: var(--theme-text);
   margin: 0;
   display: flex;
   align-items: center;
@@ -1192,7 +1278,7 @@ onMounted(() => {
 }
 
 .page-subtitle {
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
   margin-top: 8px;
   font-size: 16px;
 }
@@ -1203,11 +1289,11 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #262626;
+  color: var(--theme-text);
 }
 
 .card-subtitle {
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
   font-size: 14px;
 }
 
@@ -1216,7 +1302,7 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--theme-border);
 }
 
 .metric-card:hover {
@@ -1242,11 +1328,11 @@ onMounted(() => {
 
 .metric-icon {
   font-size: 20px;
-  color: #595959;
+  color: var(--theme-text-secondary);
 }
 
 .metric-subtitle {
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
   font-size: 12px;
   margin-top: 4px;
 }
@@ -1257,11 +1343,26 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+.activity-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .activity-stats {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+}
+
 /* 写作活跃度图表样式 - GitHub风格 */
 .writing-activity-chart {
   padding: 16px;
   font-size: 12px;
-  color: #666;
+  color: var(--theme-text-secondary);
 }
 
 .months-row {
@@ -1274,8 +1375,33 @@ onMounted(() => {
   width: 14px; /* 与日期格子对齐 */
   text-align: center;
   font-size: 11px;
-  color: #666;
+  color: var(--theme-text-secondary);
   margin-right: 2px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.month-label:hover {
+  color: var(--theme-text);
+  transform: scale(1.1);
+}
+
+.month-label.current-month {
+  color: #1890ff;
+  font-weight: 600;
+  position: relative;
+}
+
+.month-label.current-month::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 2px;
+  background: #1890ff;
+  border-radius: 1px;
 }
 
 .activity-grid {
@@ -1294,7 +1420,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   font-size: 10px;
-  color: #666;
+  color: var(--theme-text-secondary);
   margin-bottom: 2px;
 }
 
@@ -1319,25 +1445,46 @@ onMounted(() => {
   border: 1px solid #1890ff;
 }
 
-/* 活跃度等级颜色 - 类似GitHub */
+/* 活跃度等级颜色 - 类似GitHub，支持暗色主题 */
 .activity-level-0 {
-  background-color: #ebedf0; /* 无活跃度 */
+  background-color: var(--theme-border); /* 无活跃度 */
 }
 
 .activity-level-1 {
-  background-color: #9be9a8; /* 低活跃度 */
+  background-color: #0e4429; /* 低活跃度 - 暗色主题适配 */
 }
 
 .activity-level-2 {
-  background-color: #40c463; /* 中等活跃度 */
+  background-color: #006d32; /* 中等活跃度 - 暗色主题适配 */
 }
 
 .activity-level-3 {
-  background-color: #30a14e; /* 高活跃度 */
+  background-color: #26a641; /* 高活跃度 - 暗色主题适配 */
 }
 
 .activity-level-4 {
-  background-color: #216e39; /* 极高活跃度 */
+  background-color: #39d353; /* 极高活跃度 - 暗色主题适配 */
+}
+
+/* 亮色主题下的活跃度颜色 */
+:global(.light) .activity-level-0 {
+  background-color: #ebedf0;
+}
+
+:global(.light) .activity-level-1 {
+  background-color: #9be9a8;
+}
+
+:global(.light) .activity-level-2 {
+  background-color: #40c463;
+}
+
+:global(.light) .activity-level-3 {
+  background-color: #30a14e;
+}
+
+:global(.light) .activity-level-4 {
+  background-color: #216e39;
 }
 
 .legend {
@@ -1350,7 +1497,7 @@ onMounted(() => {
 
 .legend-text {
   font-size: 11px;
-  color: #666;
+  color: var(--theme-text-secondary);
 }
 
 .legend-colors {
@@ -1377,11 +1524,17 @@ onMounted(() => {
 .achievement-item {
   border-radius: 8px;
   transition: all 0.3s ease;
+  background: var(--theme-bg-container);
 }
 
 .achievement-item:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 暗色主题下的悬停效果 */
+html.dark .achievement-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .achievement-today {
@@ -1398,18 +1551,18 @@ onMounted(() => {
 
 .achievement-label {
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
 }
 
 .achievement-value {
   font-size: 18px;
   font-weight: bold;
-  color: #262626;
+  color: var(--theme-text);
 }
 
 .achievement-icon {
   font-size: 20px;
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
 }
 
 /* 写作目标卡片 */
@@ -1431,13 +1584,13 @@ onMounted(() => {
 
 .goal-label {
   font-size: 14px;
-  color: #595959;
+  color: var(--theme-text-secondary);
   font-weight: 500;
 }
 
 .goal-text {
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
 }
 
 /* 整体进度卡片 */
@@ -1455,20 +1608,20 @@ onMounted(() => {
 
 .progress-label {
   font-size: 16px;
-  color: #595959;
+  color: var(--theme-text-secondary);
   font-weight: 500;
 }
 
 .progress-percentage {
   font-size: 24px;
   font-weight: bold;
-  color: #262626;
+  color: var(--theme-text);
 }
 
 .estimated-completion {
   display: flex;
   align-items: center;
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
   font-size: 14px;
 }
 
@@ -1480,7 +1633,7 @@ onMounted(() => {
 }
 
 .circle-label {
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
   font-size: 14px;
   margin-top: 16px;
   margin-bottom: 0;
@@ -1493,25 +1646,27 @@ onMounted(() => {
 }
 
 .chapter-table :deep(.ant-table-thead > tr > th) {
-  background: #fafafa;
-  border-bottom: 2px solid #f0f0f0;
+  background: var(--theme-bg-elevated);
+  border-bottom: 2px solid var(--theme-border);
   font-weight: 600;
 }
 
 .chapter-table :deep(.ant-table-tbody > tr:hover > td) {
-  background: #f5f5f5;
+  background: var(--theme-bg-elevated);
 }
 
 /* 成就系统卡片 */
 .achievement-card {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: var(--theme-bg-container);
 }
 
 .achievement-badge {
   text-align: center;
   border-radius: 8px;
   transition: all 0.3s ease;
+  background: var(--theme-bg-container);
 }
 
 .achievement-badge:hover {
@@ -1519,18 +1674,56 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* 暗色主题下的悬停效果和阴影优化 */
+html.dark .achievement-badge:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 暗色主题下的卡片阴影优化 */
+html.dark .achievement-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .achievement-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* 暗色模式下已获得成就的微妙发光效果 */
+html.dark .achievement-earned {
+  box-shadow: 0 0 10px rgba(250, 173, 20, 0.15);
+}
+
+html.dark .achievement-earned:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 15px rgba(250, 173, 20, 0.2);
+}
+
 .achievement-earned {
   border: 2px solid #faad14;
-  background: linear-gradient(135deg, #fff7e6 0%, #fffbe6 100%);
+  background: var(--theme-bg-elevated);
+  position: relative;
+}
+
+.achievement-earned::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.1) 0%, rgba(255, 251, 230, 0.05) 100%);
+  border-radius: 6px;
+  pointer-events: none;
 }
 
 .achievement-locked {
-  border: 2px solid #d9d9d9;
-  background: #fafafa;
+  border: 2px solid var(--theme-border);
+  background: var(--theme-bg-elevated);
 }
 
 .achievement-content {
   padding: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .achievement-icon-large {
@@ -1547,13 +1740,13 @@ onMounted(() => {
 .achievement-title {
   font-size: 14px;
   font-weight: 600;
-  color: #262626;
+  color: var(--theme-text);
   margin-bottom: 4px;
 }
 
 .achievement-description {
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
   margin-bottom: 12px;
   line-height: 1.4;
 }
@@ -1566,12 +1759,13 @@ onMounted(() => {
   background: #faad14;
   border-color: #faad14;
   color: #ffffff;
+  font-weight: 500;
 }
 
 .achievement-locked-tag {
-  background: #d9d9d9;
-  border-color: #d9d9d9;
-  color: #8c8c8c;
+  background: var(--theme-bg-elevated);
+  border-color: var(--theme-border);
+  color: var(--theme-text-secondary);
 }
 
 /* 响应式适配 */
@@ -1624,13 +1818,13 @@ onMounted(() => {
 .batch-actions {
   margin-top: 16px;
   padding: 16px;
-  background: #fafafa;
+  background: var(--theme-bg-elevated);
   border-radius: 8px;
 }
 
 /* 目标设置提示 */
 .goal-hint {
-  color: #8c8c8c;
+  color: var(--theme-text-secondary);
   font-size: 12px;
   margin-top: 4px;
 }
@@ -1641,7 +1835,7 @@ onMounted(() => {
 }
 
 .chapter-table :deep(.ant-table-row-selected) {
-  background-color: #e6f7ff;
+  background-color: rgba(24, 144, 255, 0.1);
 }
 
 .chapter-table :deep(.ant-btn-link[disabled]) {
@@ -1675,7 +1869,7 @@ onMounted(() => {
 
 /* 进度条优化 */
 .chapter-table :deep(.ant-progress-inner) {
-  background-color: #f5f5f5;
+  background-color: var(--theme-bg-elevated);
 }
 
 .chapter-table :deep(.ant-progress-bg) {

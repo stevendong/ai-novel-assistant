@@ -1,8 +1,8 @@
 <template>
   <div class="chapter-editor-demo h-screen flex flex-col">
-    <div class="bg-white shadow-sm border-b p-4">
-      <h2 class="text-xl font-bold text-gray-800">章节编辑器演示</h2>
-      <p class="text-sm text-gray-600 mt-1">
+    <div class="theme-bg-container shadow-sm border-b p-4">
+      <h2 class="text-xl font-bold theme-text-primary">章节编辑器演示</h2>
+      <p class="text-sm theme-text-primary mt-1">
         测试章节编辑功能，包括Markdown预览和AI协作功能
       </p>
     </div>
@@ -12,11 +12,11 @@
       <ChapterEditor v-if="chapterId" :chapterId="chapterId" />
       
       <!-- 如果没有章节ID，显示选择界面 -->
-      <div v-else class="flex items-center justify-center h-full bg-gray-50">
+      <div v-else class="flex items-center justify-center h-full theme-bg-elevated">
         <div class="text-center">
-          <div class="text-6xl text-gray-300 mb-4">📝</div>
-          <h3 class="text-lg font-medium text-gray-800 mb-2">选择或创建章节</h3>
-          <p class="text-gray-600 mb-6">请选择一个已有的章节，或创建新章节来开始编辑</p>
+          <div class="text-6xl theme-text-primary mb-4">📝</div>
+          <h3 class="text-lg font-medium theme-text-primary mb-2">选择或创建章节</h3>
+          <p class="theme-text-primary mb-6">请选择一个已有的章节，或创建新章节来开始编辑</p>
           
           <div class="space-x-4">
             <a-button type="primary" @click="createNewChapter">

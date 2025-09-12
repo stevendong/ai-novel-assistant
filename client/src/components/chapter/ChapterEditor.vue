@@ -1,21 +1,21 @@
 <template>
   <div class="h-full flex flex-col" v-if="chapter">
     <!-- Chapter Header -->
-    <div class="bg-white border-b border-gray-200 p-4">
+    <div class="theme-bg-container border-b theme-border p-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <a-avatar :size="40" class="bg-blue-500">
+          <a-avatar :size="40" class="theme-chapter-avatar">
             {{ chapter.chapterNumber }}
           </a-avatar>
           <div>
-            <h1 class="text-xl font-bold text-gray-800">
+            <h1 class="text-xl font-bold theme-text-primary">
               第{{ chapter.chapterNumber }}章：{{ chapter.title }}
             </h1>
-            <div class="flex items-center space-x-4 text-sm text-gray-500">
+            <div class="flex items-center space-x-4 text-sm theme-text-primary">
               <span>状态：{{ statusText }}</span>
               <span>字数：{{ wordCount }}</span>
               <span>更新：{{ formatDate(chapter.updatedAt) }}</span>
-              <span v-if="hasUnsavedChanges" class="text-orange-500">● 有未保存的更改</span>
+              <span v-if="hasUnsavedChanges" class="theme-warning-text">● 有未保存的更改</span>
             </div>
           </div>
         </div>
@@ -49,7 +49,7 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div class="bg-white border-b border-gray-200">
+    <div class="theme-bg-container border-b theme-border">
       <a-tabs v-model:activeKey="activeTab" type="card" class="px-4">
         <a-tab-pane key="outline" tab="大纲">
           <template #tab>
@@ -119,14 +119,14 @@
     <!-- Main Content Area -->
     <div class="flex-1 flex">
       <!-- Editor Area (70%) -->
-      <div class="flex-1 bg-white">
+      <div class="flex-1 theme-bg-container">
         <!-- Outline Tab -->
         <div v-if="activeTab === 'outline'" class="h-full flex">
           <!-- 编辑区 -->
-          <div class="flex-1 p-6 overflow-y-auto border-r border-gray-200">
+          <div class="flex-1 p-6 overflow-y-auto border-r theme-border">
             <div class="mb-4">
               <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-medium text-gray-800">章节大纲</h3>
+                <h3 class="text-lg font-medium theme-text-primary">章节大纲</h3>
                 <div class="space-x-2">
                   <a-button size="small" @click="applyOutlineTemplate">
                     <template #icon>
@@ -153,7 +153,7 @@
 
             <div>
               <div class="flex items-center justify-between mb-3">
-                <h4 class="text-md font-medium text-gray-700">情节要点</h4>
+                <h4 class="text-md font-medium theme-text-primary">情节要点</h4>
                 <a-button type="primary" size="small" @click="handleAddPlotPoint">
                   <PlusOutlined />
                   添加要点
@@ -163,7 +163,7 @@
                 <div
                   v-for="(point, index) in chapter.plotPoints"
                   :key="index"
-                  class="p-3 border border-gray-200 rounded-lg"
+                  class="p-3 border theme-border rounded-lg"
                 >
                   <a-row :gutter="16" align="middle">
                     <a-col :span="4">
@@ -193,7 +193,7 @@
                     </a-col>
                   </a-row>
                 </div>
-                <div v-if="chapter.plotPoints.length === 0" class="text-center py-8 text-gray-400">
+                <div v-if="chapter.plotPoints.length === 0" class="text-center py-8 theme-text-primary">
                   <FileTextOutlined style="font-size: 48px; margin-bottom: 16px;" />
                   <p>暂无情节要点</p>
                 </div>
@@ -202,14 +202,14 @@
           </div>
 
           <!-- 预览区 -->
-          <div class="flex-1 p-6 overflow-y-auto bg-gray-50" v-if="isOutlinePreviewMode">
-            <div class="bg-white rounded-lg p-6 shadow-sm">
+          <div class="flex-1 p-6 overflow-y-auto theme-bg-elevated" v-if="isOutlinePreviewMode">
+            <div class="theme-bg-container rounded-lg p-6 shadow-sm">
               <div class="markdown-novel" v-html="outlineRenderedHtml"></div>
             </div>
 
             <!-- 统计信息 -->
-            <div class="mt-4 p-4 bg-white rounded-lg shadow-sm">
-              <div class="text-sm text-gray-600 space-y-1">
+            <div class="mt-4 p-4 theme-bg-container rounded-lg shadow-sm">
+              <div class="text-sm theme-text-primary space-y-1">
                 <div>字数统计: {{ outlineWordCount }}</div>
                 <div>段落数: {{ outlineParagraphCount }}</div>
                 <div v-if="outlineHeadings.length > 0">标题数: {{ outlineHeadings.length }}</div>
@@ -234,7 +234,7 @@
         <div v-else-if="activeTab === 'characters'" class="h-full p-6 overflow-y-auto">
           <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium text-gray-800">章节角色</h3>
+              <h3 class="text-lg font-medium theme-text-primary">章节角色</h3>
               <a-button type="primary" @click="showAddCharacterModal = true">
                 <PlusOutlined />
                 添加角色
@@ -245,18 +245,18 @@
               <div
                 v-for="chapterChar in chapter.characters"
                 :key="chapterChar.characterId"
-                class="p-4 border border-gray-200 rounded-lg"
+                class="p-4 border theme-border rounded-lg"
               >
                 <div class="flex items-start space-x-3">
                   <a-avatar :size="48">{{ chapterChar.character.name.charAt(0) }}</a-avatar>
                   <div class="flex-1">
                     <div class="flex items-center space-x-2 mb-1">
-                      <h4 class="font-medium text-gray-800">{{ chapterChar.character.name }}</h4>
+                      <h4 class="font-medium theme-text-primary">{{ chapterChar.character.name }}</h4>
                       <a-tag :color="getRoleColor(chapterChar.role)">
                         {{ getRoleText(chapterChar.role) }}
                       </a-tag>
                     </div>
-                    <p class="text-sm text-gray-500 mb-3">{{ chapterChar.character.description }}</p>
+                    <p class="text-sm theme-text-primary mb-3">{{ chapterChar.character.description }}</p>
                     <a-select
                       :value="chapterChar.role"
                       @change="(value: string) => updateCharacterRole(chapterChar.characterId, value)"
@@ -275,7 +275,7 @@
               </div>
             </div>
 
-            <div v-if="chapter.characters.length === 0" class="text-center py-8 text-gray-400">
+            <div v-if="chapter.characters.length === 0" class="text-center py-8 theme-text-primary">
               <TeamOutlined style="font-size: 48px; margin-bottom: 16px;" />
               <p>暂无章节角色</p>
               <a-button type="link" @click="showAddCharacterModal = true">
@@ -289,7 +289,7 @@
         <div v-else-if="activeTab === 'settings'" class="h-full p-6 overflow-y-auto">
           <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium text-gray-800">相关设定</h3>
+              <h3 class="text-lg font-medium theme-text-primary">相关设定</h3>
               <a-button type="primary" @click="showAddSettingModal = true">
                 <PlusOutlined />
                 添加设定
@@ -300,7 +300,7 @@
               <div
                 v-for="chapterSetting in chapter.settings"
                 :key="chapterSetting.settingId"
-                class="p-4 border border-gray-200 rounded-lg"
+                class="p-4 border theme-border rounded-lg"
               >
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
@@ -308,11 +308,11 @@
                       <a-tag :color="getSettingTypeColor(chapterSetting.setting.type)">
                         {{ getSettingTypeText(chapterSetting.setting.type) }}
                       </a-tag>
-                      <h4 class="font-medium text-gray-800">{{ chapterSetting.setting.name }}</h4>
+                      <h4 class="font-medium theme-text-primary">{{ chapterSetting.setting.name }}</h4>
                     </div>
-                    <p class="text-sm text-gray-500 mb-3">{{ chapterSetting.setting.description }}</p>
+                    <p class="text-sm theme-text-primary mb-3">{{ chapterSetting.setting.description }}</p>
                     <div>
-                      <h5 class="text-xs font-medium text-gray-600 mb-1">使用说明</h5>
+                      <h5 class="text-xs font-medium theme-text-primary mb-1">使用说明</h5>
                       <a-textarea
                         :value="chapterSetting.usage"
                         @input="(e: Event) => updateSettingUsage(chapterSetting.settingId, (e.target as HTMLTextAreaElement).value)"
@@ -329,7 +329,7 @@
               </div>
             </div>
 
-            <div v-if="chapter.settings.length === 0" class="text-center py-8 text-gray-400">
+            <div v-if="chapter.settings.length === 0" class="text-center py-8 theme-text-primary">
               <GlobalOutlined style="font-size: 48px; margin-bottom: 16px;" />
               <p>暂无相关设定</p>
               <a-button type="link" @click="showAddSettingModal = true">
@@ -361,7 +361,7 @@
         <div v-else-if="activeTab === 'illustrations'" class="h-full p-6 overflow-y-auto">
           <div class="max-w-4xl mx-auto">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium text-gray-800">插图标记</h3>
+              <h3 class="text-lg font-medium theme-text-primary">插图标记</h3>
               <a-button type="primary" @click="handleAddIllustration">
                 <PlusOutlined />
                 添加插图
@@ -372,7 +372,7 @@
               <div
                 v-for="(illustration, index) in chapter.illustrations"
                 :key="index"
-                class="p-4 border border-gray-200 rounded-lg"
+                class="p-4 border theme-border rounded-lg"
               >
                 <a-row :gutter="16">
                   <a-col :span="6">
@@ -417,7 +417,7 @@
                 </div>
               </div>
 
-              <div v-if="chapter.illustrations.length === 0" class="text-center py-8 text-gray-400">
+              <div v-if="chapter.illustrations.length === 0" class="text-center py-8 theme-text-primary">
                 <PictureOutlined style="font-size: 48px; margin-bottom: 16px;" />
                 <p>暂无插图标记</p>
                 <a-button type="link" @click="handleAddIllustration">
@@ -432,9 +432,9 @@
         <div v-else-if="activeTab === 'consistency'" class="h-full p-6 overflow-y-auto">
           <div class="max-w-6xl mx-auto">
             <!-- 检查操作栏 -->
-            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+            <div class="theme-bg-container border theme-border rounded-lg p-4 mb-6">
               <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-800">一致性检查</h3>
+                <h3 class="text-lg font-medium theme-text-primary">一致性检查</h3>
                 <a-space>
                   <a-button 
                     type="primary" 
@@ -456,26 +456,26 @@
 
               <!-- 健康度仪表板 -->
               <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div class="text-center p-3 bg-gray-50 rounded-lg">
+                <div class="text-center p-3 theme-bg-elevated rounded-lg">
                   <div class="text-2xl font-bold" :style="{ color: healthGrade.color }">
                     {{ healthScore }}
                   </div>
-                  <div class="text-sm text-gray-500">健康度评分</div>
+                  <div class="text-sm theme-text-primary">健康度评分</div>
                   <div class="text-xs mt-1" :style="{ color: healthGrade.color }">
                     {{ healthGrade.grade }}
                   </div>
                 </div>
                 <div class="text-center p-3 bg-red-50 rounded-lg">
                   <div class="text-2xl font-bold text-red-600">{{ severityCounts.high }}</div>
-                  <div class="text-sm text-gray-500">严重问题</div>
+                  <div class="text-sm theme-text-primary">严重问题</div>
                 </div>
                 <div class="text-center p-3 bg-orange-50 rounded-lg">
                   <div class="text-2xl font-bold text-orange-600">{{ severityCounts.medium }}</div>
-                  <div class="text-sm text-gray-500">中等问题</div>
+                  <div class="text-sm theme-text-primary">中等问题</div>
                 </div>
                 <div class="text-center p-3 bg-yellow-50 rounded-lg">
                   <div class="text-2xl font-bold text-yellow-600">{{ severityCounts.low }}</div>
-                  <div class="text-sm text-gray-500">轻微问题</div>
+                  <div class="text-sm theme-text-primary">轻微问题</div>
                 </div>
               </div>
 
@@ -519,12 +519,12 @@
               <div
                 v-for="issue in filteredIssues"
                 :key="issue.id"
-                class="bg-white border rounded-lg p-4"
+                class="theme-bg-container border rounded-lg p-4"
                 :class="{
                   'border-red-200 bg-red-50': issue.severity === 'high' && !issue.resolved,
                   'border-orange-200 bg-orange-50': issue.severity === 'medium' && !issue.resolved,
                   'border-yellow-200 bg-yellow-50': issue.severity === 'low' && !issue.resolved,
-                  'border-gray-200 bg-gray-50': issue.resolved
+                  'theme-border theme-bg-elevated': issue.resolved
                 }"
               >
                 <div class="flex items-start justify-between">
@@ -535,10 +535,10 @@
                         {{ getSeverityLabel(issue.severity) }}
                       </a-tag>
                       <a-tag>{{ getTypeLabel(issue.type) }}</a-tag>
-                      <span v-if="issue.resolved" class="text-sm text-gray-500">已解决</span>
+                      <span v-if="issue.resolved" class="text-sm theme-text-primary">已解决</span>
                     </div>
-                    <p class="text-gray-800 mb-2">{{ issue.issue }}</p>
-                    <div class="text-xs text-gray-500">
+                    <p class="theme-text-primary mb-2">{{ issue.issue }}</p>
+                    <div class="text-xs theme-text-primary">
                       发现时间：{{ formatDate(issue.createdAt) }}
                     </div>
                   </div>
@@ -573,10 +573,10 @@
               <!-- 空状态 -->
               <div v-if="filteredIssues.length === 0" class="text-center py-12">
                 <CheckCircleOutlined style="font-size: 48px; color: #52c41a; margin-bottom: 16px;" />
-                <h4 class="text-lg font-medium text-gray-800 mb-2">
+                <h4 class="text-lg font-medium theme-text-primary mb-2">
                   {{ consistencyIssues.length === 0 ? '暂无一致性问题' : '没有符合筛选条件的问题' }}
                 </h4>
-                <p class="text-gray-500">
+                <p class="theme-text-primary">
                   {{ consistencyIssues.length === 0 ? '点击"重新检查"按钮开始检查章节一致性' : '尝试调整筛选条件' }}
                 </p>
               </div>
@@ -632,7 +632,7 @@
     >
       <div v-if="selectedIssue" class="space-y-4">
         <!-- 问题基本信息 -->
-        <div class="p-4 bg-gray-50 rounded-lg">
+        <div class="p-4 theme-bg-elevated rounded-lg">
           <div class="flex items-center space-x-2 mb-2">
             <span class="text-lg">{{ getTypeIcon(selectedIssue.type) }}</span>
             <a-tag :color="getSeverityColor(selectedIssue.severity)">
@@ -641,9 +641,9 @@
             <a-tag>{{ getTypeLabel(selectedIssue.type) }}</a-tag>
             <span v-if="selectedIssue.resolved" class="text-sm text-green-600">已解决</span>
           </div>
-          <h4 class="font-medium text-gray-800 mb-2">问题描述</h4>
-          <p class="text-gray-700">{{ selectedIssue.issue }}</p>
-          <div class="mt-2 text-xs text-gray-500">
+          <h4 class="font-medium theme-text-primary mb-2">问题描述</h4>
+          <p class="theme-text-primary">{{ selectedIssue.issue }}</p>
+          <div class="mt-2 text-xs theme-text-primary">
             发现时间：{{ formatDate(selectedIssue.createdAt) }}
           </div>
         </div>

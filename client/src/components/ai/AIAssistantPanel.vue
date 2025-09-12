@@ -245,37 +245,6 @@
       </div>
     </div>
 
-    <!-- Suggestions Panel -->
-    <div class="suggestions-panel" v-if="currentSuggestions.length > 0">
-      <div class="suggestions-header">
-        <span class="suggestions-title">
-          <BulbOutlined />
-          智能建议
-        </span>
-        <a-button type="text" size="small" @click="refreshSuggestions">
-          <ReloadOutlined />
-        </a-button>
-      </div>
-      <div class="suggestions-list">
-        <div
-          v-for="suggestion in currentSuggestions"
-          :key="suggestion.id"
-          class="suggestion-item"
-          @click="applySuggestion(suggestion)"
-        >
-          <div class="suggestion-icon">
-            <component :is="suggestion.icon" />
-          </div>
-          <div class="suggestion-content">
-            <div class="suggestion-title">{{ suggestion.title }}</div>
-            <div class="suggestion-desc">{{ suggestion.description }}</div>
-          </div>
-          <div class="suggestion-arrow">
-            <RightOutlined />
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 </template>
@@ -316,14 +285,6 @@ interface Message {
   actions?: Array<{ key: string; label: string }>
 }
 
-interface Suggestion {
-  id: string
-  title: string
-  description: string
-  icon: any
-  type: string
-  action: string
-}
 
 // Reactive state
 const aiStatus = ref<'online' | 'offline'>('online')
@@ -391,24 +352,6 @@ const currentModeActions = computed(() => {
 // Current project from store
 const currentProject = computed(() => projectStore.currentProject)
 
-const currentSuggestions = ref<Suggestion[]>([
-  {
-    id: '1',
-    title: '角色性格完善',
-    description: '主角李明的性格描述可以更加具体',
-    icon: TeamOutlined,
-    type: 'character',
-    action: 'enhance'
-  },
-  {
-    id: '2',
-    title: '场景描述增强',
-    description: '当前章节的场景描述偏简单，可以增加细节',
-    icon: GlobalOutlined,
-    type: 'setting',
-    action: 'enhance'
-  }
-])
 
 // Methods
 const getModeDescription = (mode: string) => {
@@ -590,17 +533,6 @@ const performMessageAction = (actionKey: string, message: Message) => {
   console.log('Perform action:', actionKey, 'for message:', message)
 }
 
-const applySuggestion = (suggestion: Suggestion) => {
-  addMessage('assistant', `**应用建议：${suggestion.title}**\n\n${suggestion.description}\n\n我来帮你具体处理这个问题...`)
-  
-  // Remove applied suggestion
-  currentSuggestions.value = currentSuggestions.value.filter(s => s.id !== suggestion.id)
-}
-
-const refreshSuggestions = () => {
-  // Refresh suggestions logic
-  console.log('Refreshing suggestions...')
-}
 
 // Handle outline application
 const handleOutlineApplied = (result: any) => {
@@ -632,17 +564,19 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--theme-bg-container);
+  overflow: hidden;
 }
 
 /* Status Bar */
 .status-bar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-bg-elevated);
 }
 
 .status-info {
@@ -653,23 +587,24 @@ onMounted(() => {
 
 .status-text {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
   font-weight: 500;
 }
 
 .settings-btn {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--theme-text-secondary);
   padding: 4px;
 }
 
 .settings-btn:hover {
-  color: rgba(0, 0, 0, 0.65);
-  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--theme-text-secondary);
+  background-color: var(--theme-bg-elevated);
 }
 
 /* Mode Tabs */
 .mode-tabs {
-  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .custom-tabs {
@@ -692,9 +627,10 @@ onMounted(() => {
 
 /* Quick Actions */
 .quick-actions {
+  flex-shrink: 0;
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-bg-elevated);
 }
 
 .actions-grid {
@@ -717,12 +653,22 @@ onMounted(() => {
   font-size: 12px;
 }
 
+/* Content Container */
+.content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* Chat Container */
 .chat-container {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* Messages Area */
@@ -731,6 +677,7 @@ onMounted(() => {
   overflow-y: auto;
   padding: 16px;
   position: relative;
+  scroll-behavior: smooth;
 }
 
 .messages-area::-webkit-scrollbar {
@@ -738,17 +685,17 @@ onMounted(() => {
 }
 
 .messages-area::-webkit-scrollbar-track {
-  background: #f5f5f5;
+  background: var(--theme-bg-elevated);
   border-radius: 3px;
 }
 
 .messages-area::-webkit-scrollbar-thumb {
-  background: #d9d9d9;
+  background: var(--theme-border);
   border-radius: 3px;
 }
 
 .messages-area::-webkit-scrollbar-thumb:hover {
-  background: #bfbfbf;
+  background: var(--theme-text-secondary);
 }
 
 .messages-wrapper {
@@ -786,13 +733,13 @@ onMounted(() => {
   margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-text);
 }
 
 .welcome-content p {
   margin: 0;
   font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
   line-height: 1.5;
 }
 
@@ -839,11 +786,11 @@ onMounted(() => {
 }
 
 .assistant-message .message-content {
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.85);
+  background: var(--theme-bg-elevated);
+  color: var(--theme-text);
   border-radius: 16px 16px 16px 4px;
   padding: 12px 16px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--theme-border);
 }
 
 .ai-avatar {
@@ -870,7 +817,7 @@ onMounted(() => {
 }
 
 .markdown-content :deep(code) {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--theme-bg-elevated);
   padding: 2px 4px;
   border-radius: 3px;
   font-family: 'Monaco', 'Menlo', monospace;
@@ -927,7 +874,7 @@ onMounted(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--theme-text-secondary);
   animation: typing 1.4s ease-in-out infinite;
 }
 
@@ -941,7 +888,7 @@ onMounted(() => {
 
 .typing-text {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--theme-text-secondary);
 }
 
 /* Scroll to Bottom */
@@ -954,8 +901,9 @@ onMounted(() => {
 
 /* Input Area */
 .input-area {
-  border-top: 1px solid #f0f0f0;
-  background: #fff;
+  flex-shrink: 0;
+  border-top: 1px solid var(--theme-border);
+  background: var(--theme-bg-container);
 }
 
 .input-container {
@@ -966,8 +914,8 @@ onMounted(() => {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  background: #fafafa;
-  border: 1px solid #d9d9d9;
+  background: var(--theme-bg-elevated);
+  border: 1px solid var(--theme-border);
   border-radius: 8px;
   padding: 8px 12px;
   transition: all 0.2s;
@@ -997,14 +945,14 @@ onMounted(() => {
 }
 
 .input-action-btn {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--theme-text-secondary);
   padding: 4px;
   border-radius: 4px;
 }
 
 .input-action-btn:hover {
-  color: rgba(0, 0, 0, 0.65);
-  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--theme-text-secondary);
+  background-color: var(--theme-bg-elevated);
 }
 
 .send-btn {
@@ -1019,86 +967,13 @@ onMounted(() => {
   align-items: center;
   margin-top: 8px;
   font-size: 11px;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--theme-text-secondary);
 }
 
 .char-count {
-  color: rgba(0, 0, 0, 0.25);
+  color: var(--theme-text-secondary);
 }
 
-/* Suggestions Panel */
-.suggestions-panel {
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.suggestions-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.suggestions-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
-}
-
-.suggestions-list {
-  padding: 8px;
-}
-
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.suggestion-item:hover {
-  border-color: #1890ff;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
-}
-
-.suggestion-icon {
-  color: #1890ff;
-  font-size: 16px;
-}
-
-.suggestion-content {
-  flex: 1;
-}
-
-.suggestion-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.85);
-  margin-bottom: 2px;
-}
-
-.suggestion-desc {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.65);
-  line-height: 1.4;
-}
-
-.suggestion-arrow {
-  color: rgba(0, 0, 0, 0.25);
-  font-size: 12px;
-}
 
 /* Animations */
 @keyframes pulse {

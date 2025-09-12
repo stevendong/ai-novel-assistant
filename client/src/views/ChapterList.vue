@@ -533,7 +533,7 @@ const handleStatusFilter = (value: string) => {
 <style scoped>
 .chapter-list-page {
   padding: 24px;
-  background: #f5f5f5;
+  background: var(--theme-bg-base);
   min-height: 50vh;
 }
 
@@ -545,7 +545,7 @@ const handleStatusFilter = (value: string) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
+  background: var(--theme-bg-container);
   padding: 24px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -561,7 +561,7 @@ const handleStatusFilter = (value: string) => {
   gap: 8px;
   font-size: 24px;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-text);
   margin: 0 0 8px 0;
 }
 
@@ -571,7 +571,7 @@ const handleStatusFilter = (value: string) => {
 }
 
 .page-description {
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
   margin: 0;
   font-size: 14px;
 }
@@ -600,12 +600,12 @@ const handleStatusFilter = (value: string) => {
 }
 
 .word-count {
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
 .update-time {
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
   font-size: 12px;
 }
 
@@ -613,32 +613,32 @@ const handleStatusFilter = (value: string) => {
 .chapter-info {
   margin-top: 16px;
   padding: 12px;
-  background: #fafafa;
+  background: var(--theme-bg-elevated);
   border-radius: 6px;
 }
 
 .chapter-info :deep(.ant-descriptions-item-label) {
   font-weight: 500;
-  color: rgba(0, 0, 0, 0.65);
+  color: var(--theme-text-secondary);
 }
 
 .chapter-info :deep(.ant-descriptions-item-content) {
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-text);
 }
 
 /* Table styles */
 :deep(.ant-table-thead > tr > th) {
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
+  background: var(--theme-bg-elevated);
+  border-bottom: 1px solid var(--theme-border);
   font-weight: 600;
 }
 
 :deep(.ant-table-tbody > tr:hover > td) {
-  background: #f5f5f5;
+  background: var(--theme-bg-elevated);
 }
 
 :deep(.ant-table-tbody > tr > td) {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 /* Responsive design */
