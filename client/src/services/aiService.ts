@@ -4,6 +4,7 @@ export interface AIResponse {
   content: string
   success?: boolean
   message?: string
+  data?: string
 }
 
 export interface OutlineGenerationParams {
@@ -453,6 +454,124 @@ ${description}
       high: '高强度冲突'
     }
     return texts[conflict] || '中强度冲突'
+  }
+
+  // AI生成正文内容
+  async generateContent(params: {
+    novelId: string
+    chapterId: string
+    outline?: string
+    existingContent?: string
+    targetLength?: number
+    style?: string
+    characters?: any[]
+    settings?: any[]
+  }): Promise<AIResponse> {
+    const {
+      novelId,
+      chapterId,
+      outline,
+      existingContent,
+      targetLength = 2000,
+      style = 'modern',
+      characters = [],
+      settings = []
+    } = params
+
+    const prompt = this.buildContentPrompt({
+      outline,
+      existingContent,
+      targetLength,
+      style,
+      characters,
+      settings
+    })
+
+    const response = await this.chat(novelId, prompt, {
+      chapterId,
+      characters,
+      settings,
+      contentGeneration: true
+    }, {
+      type: 'creative',
+      taskType: 'content_generation'
+    })
+
+    return response
+  }
+
+  // 构建正文生成提示词
+  buildContentPrompt(params: {
+    outline?: string
+    existingContent?: string
+    targetLength: number
+    style: string
+    characters: any[]
+    settings: any[]
+  }): string {
+    const {
+      outline,
+      existingContent,
+      targetLength,
+      style,
+      characters,
+      settings
+    } = params
+
+    let prompt = `请为我创作小说正文内容，要求如下：
+
+**创作要求：**
+- 目标长度：约${targetLength}字
+- 写作风格：${this.getStyleText(style)}
+- 文字风格：生动自然，适合网络小说阅读
+- 段落格式：每段开头空两格，适当使用对话和描写
+
+**章节信息：**`
+
+    if (outline) {
+      prompt += `
+**章节大纲：**
+${outline}
+
+请严格按照大纲内容进行创作，确保情节发展符合大纲设计。`
+    }
+
+    if (existingContent) {
+      prompt += `
+**现有内容：**
+${existingContent.slice(0, 500)}...
+
+请基于现有内容继续创作，保持文风和情节的连贯性。`
+    }
+
+    if (characters.length > 0) {
+      prompt += `\n**相关角色：**\n`
+      characters.forEach((char: any) => {
+        prompt += `- ${char.name}：${char.description || '暂无描述'}\n`
+        if (char.personality) prompt += `  性格：${char.personality}\n`
+        if (char.background) prompt += `  背景：${char.background}\n`
+      })
+    }
+
+    if (settings.length > 0) {
+      prompt += `\n**世界设定：**\n`
+      settings.forEach((setting: any) => {
+        prompt += `- ${setting.name}(${setting.type})：${setting.description}\n`
+      })
+    }
+
+    prompt += `\n**创作指导：**
+1. 内容要生动有趣，情节紧凑
+2. 人物对话要符合角色性格
+3. 环境描写要有画面感
+4. 适当运用修辞手法增强表现力
+5. 段落之间要有逻辑关系
+6. 如有对话，请使用标准的引号格式
+
+**输出格式：**
+请直接输出小说正文内容，不要添加任何说明性文字或格式标记。内容应该可以直接插入到小说编辑器中使用。`
+
+    return prompt
   }
 }
 

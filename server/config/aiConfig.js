@@ -27,6 +27,10 @@ const aiConfig = {
       analysis: {
         temperature: parseFloat(process.env.OPENAI_ANALYSIS_TEMPERATURE) || 0.2,
         maxTokens: parseInt(process.env.OPENAI_ANALYSIS_MAX_TOKENS) || 2000
+      },
+      content_generation: {
+        temperature: parseFloat(process.env.OPENAI_CONTENT_TEMPERATURE) || 0.8,
+        maxTokens: parseInt(process.env.OPENAI_CONTENT_MAX_TOKENS) || 4000
       }
     },
     // 重试配置

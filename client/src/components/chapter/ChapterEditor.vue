@@ -219,15 +219,85 @@
         </div>
 
         <!-- Content Tab -->
-        <div v-else-if="activeTab === 'content'" class="h-full">
-          <TiptapEditor
-            v-model="contentText"
-            :show-toolbar="true"
-            :show-status-bar="true"
-            :auto-save="true"
-            placeholder="在这里开始你的小说创作...支持快捷键操作，专注于写作本身。"
-            @change="handleContentChange"
-          />
+        <div v-else-if="activeTab === 'content'" class="h-full flex flex-col">
+          <!-- 正文工具栏 -->
+          <div class="content-toolbar theme-bg-container border-b theme-border p-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="text-sm theme-text-primary">正文编辑</span>
+                <a-divider type="vertical" />
+                <span class="text-xs theme-text-secondary">
+                  字数：{{ contentWordCount }} | 目标：{{ targetWordCount || 2000 }}字
+                </span>
+              </div>
+              
+              <a-space>
+                <a-dropdown>
+                  <template #overlay>
+                    <a-menu @click="handleAIGenerateLength">
+                      <a-menu-item key="500">
+                        <FileTextOutlined />
+                        短篇续写 (~500字)
+                      </a-menu-item>
+                      <a-menu-item key="1000">
+                        <BookOutlined />
+                        中篇续写 (~1000字)
+                      </a-menu-item>
+                      <a-menu-item key="2000">
+                        <ReadOutlined />
+                        标准章节 (~2000字)
+                      </a-menu-item>
+                      <a-menu-item key="3000">
+                        <ContainerOutlined />
+                        长篇续写 (~3000字)
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                  <a-button :loading="generatingContent" type="primary">
+                    <template #icon>
+                      <RobotOutlined />
+                    </template>
+                    AI生成正文
+                    <DownOutlined />
+                  </a-button>
+                </a-dropdown>
+                
+                <a-button 
+                  @click="clearContent" 
+                  :disabled="!contentText"
+                  title="清空内容"
+                >
+                  <template #icon>
+                    <ClearOutlined />
+                  </template>
+                  清空
+                </a-button>
+                
+                <a-button 
+                  @click="insertContentTemplate"
+                  title="插入段落模板"
+                >
+                  <template #icon>
+                    <PlusSquareOutlined />
+                  </template>
+                  模板
+                </a-button>
+              </a-space>
+            </div>
+          </div>
+
+          <!-- 编辑器区域 -->
+          <div class="flex-1">
+            <TiptapEditor
+              ref="contentEditor"
+              v-model="contentText"
+              :show-toolbar="true"
+              :show-status-bar="true"
+              :auto-save="true"
+              placeholder="在这里开始你的小说创作...支持快捷键操作，专注于写作本身。"
+              @change="handleContentChange"
+            />
+          </div>
         </div>
 
         <!-- Characters Tab -->
@@ -676,9 +746,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, h } from 'vue'
 import { useRoute } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   RobotOutlined,
   CheckCircleOutlined,
@@ -692,7 +762,13 @@ import {
   DeleteOutlined,
   EyeOutlined,
   BranchesOutlined,
-  SettingOutlined
+  SettingOutlined,
+  BookOutlined,
+  ReadOutlined,
+  ContainerOutlined,
+  DownOutlined,
+  ClearOutlined,
+  PlusSquareOutlined
 } from '@ant-design/icons-vue'
 import { useChapter } from '@/composables/useChapter'
 import { useMarkdown } from '@/composables/useMarkdown'
@@ -755,6 +831,8 @@ const isOutlinePreviewMode = ref(false)
 
 // 正文编辑器内容
 const contentText = ref('')
+const contentEditor = ref()
+const generatingContent = ref(false)
 
 // 模态框状态
 const showAddCharacterModal = ref(false)
@@ -859,6 +937,18 @@ const healthScore = computed(() => {
 
 const healthGrade = computed(() => {
   return consistencyService.getHealthGrade(healthScore.value)
+})
+
+// 正文字数统计
+const contentWordCount = computed(() => {
+  if (!contentText.value) return 0
+  // 简单的中文字数统计，去除HTML标签
+  const plainText = contentText.value.replace(/<[^>]*>/g, '')
+  return plainText.length
+})
+
+const targetWordCount = computed(() => {
+  return 2000 // 默认目标字数，可以后续从章节设置中获取
 })
 
 // 工具函数
@@ -1208,12 +1298,238 @@ const handleContentChange = (value: string) => {
   }
 }
 
+// AI生成正文功能
+const handleAIGenerateLength = async ({ key }: { key: string }) => {
+  const targetLength = parseInt(key)
+  await generateAIContent(targetLength)
+}
+
+const generateAIContent = async (targetLength: number = 2000) => {
+  if (!chapter.value) {
+    message.error('章节信息未加载')
+    return
+  }
+
+  try {
+    generatingContent.value = true
+    message.loading({ content: `正在生成约${targetLength}字的正文内容...`, key: 'ai-content', duration: 0 })
+
+    // 获取相关角色和设定信息
+    const chapterCharacters = chapter.value.characters || []
+    const chapterSettings = chapter.value.settings || []
+    
+    const characterDetails = chapterCharacters.map(cc => {
+      const char = availableCharacters.value.find(c => c.id === cc.characterId)
+      return char ? {
+        name: char.name,
+        description: char.description,
+        personality: char.personality,
+        background: char.background
+      } : null
+    }).filter(Boolean)
+    
+    const settingDetails = chapterSettings.map(cs => {
+      const setting = availableSettings.value.find(s => s.id === cs.settingId)
+      return setting ? {
+        name: setting.name,
+        type: setting.type,
+        description: setting.description
+      } : null
+    }).filter(Boolean)
+
+    // 调用AI服务生成正文
+    const response = await aiService.generateContent({
+      novelId: chapter.value.novelId,
+      chapterId: chapter.value.id,
+      outline: chapter.value.outline || outlineMarkdown.value,
+      existingContent: contentText.value,
+      targetLength,
+      style: 'modern',
+      characters: characterDetails,
+      settings: settingDetails
+    })
+
+    let generatedContent = ''
+    if (typeof response === 'string') {
+      generatedContent = response
+    } else if (response && typeof response === 'object') {
+      generatedContent = response.content || response.message || response.data || ''
+    }
+
+    if (!generatedContent) {
+      message.error({ content: 'AI生成内容为空', key: 'ai-content' })
+      return
+    }
+
+    // 处理生成的内容格式
+    generatedContent = processGeneratedContent(generatedContent)
+
+    // 判断是继续写还是重新写
+    if (contentText.value.trim()) {
+      // 有现有内容，询问用户选择
+      const action = await showContentInsertOptions()
+      if (action === 'append') {
+        // 追加到现有内容
+        const newContent = contentText.value + '\n\n' + generatedContent
+        contentText.value = newContent
+        if (contentEditor.value) {
+          contentEditor.value.insertText('\n\n' + generatedContent)
+        }
+      } else if (action === 'replace') {
+        // 替换现有内容
+        contentText.value = generatedContent
+        if (contentEditor.value) {
+          contentEditor.value.clear()
+          contentEditor.value.insertText(generatedContent)
+        }
+      }
+    } else {
+      // 没有现有内容，直接插入
+      contentText.value = generatedContent
+      if (contentEditor.value) {
+        contentEditor.value.insertText(generatedContent)
+      }
+    }
+
+    message.success({ content: `AI正文生成完成！已生成约${generatedContent.length}字`, key: 'ai-content' })
+    
+    // 触发保存
+    if (chapter.value) {
+      updateChapter('content', contentText.value)
+    }
+
+  } catch (err) {
+    console.error('AI content generation failed:', err)
+    message.error({ content: 'AI正文生成失败', key: 'ai-content' })
+  } finally {
+    generatingContent.value = false
+  }
+}
+
+// 处理生成的内容格式
+const processGeneratedContent = (content: string): string => {
+  // 清理可能的markdown标记或多余的空行
+  let processed = content
+    .replace(/```[\s\S]*?```/g, '') // 移除代码块
+    .replace(/\*\*(.*?)\*\*/g, '$1') // 移除粗体标记
+    .replace(/\*(.*?)\*/g, '$1') // 移除斜体标记
+    .replace(/^\s*#+\s*/gm, '') // 移除标题标记
+    .replace(/^\s*[-*]\s*/gm, '') // 移除列表标记
+    .replace(/\n{3,}/g, '\n\n') // 移除多余空行
+    .trim()
+
+  // 确保段落格式正确（每段开头空两格）
+  const paragraphs = processed.split('\n\n')
+  const formattedParagraphs = paragraphs
+    .filter(p => p.trim())
+    .map(p => p.trim().startsWith('　　') ? p : '　　' + p.trim())
+
+  return formattedParagraphs.join('\n\n')
+}
+
+// 显示内容插入选项
+const showContentInsertOptions = (): Promise<'append' | 'replace' | 'cancel'> => {
+  return new Promise((resolve) => {
+    const modal = Modal.confirm({
+      title: '插入生成内容',
+      content: '检测到已有正文内容，请选择插入方式：',
+      okText: '追加到末尾',
+      cancelText: '替换现有内容',
+      onOk() {
+        resolve('append')
+      },
+      onCancel() {
+        // 添加第三个选项按钮
+        const replaceModal = Modal.confirm({
+          title: '确认替换',
+          content: '是否要替换现有内容？此操作不可撤销。',
+          okText: '确认替换',
+          cancelText: '取消',
+          onOk() {
+            resolve('replace')
+          },
+          onCancel() {
+            resolve('cancel')
+          }
+        })
+      }
+    })
+  })
+}
+
+// 清空内容
+const clearContent = () => {
+  Modal.confirm({
+    title: '确认清空',
+    content: '确定要清空所有正文内容吗？此操作不可撤销。',
+    okText: '确认清空',
+    cancelText: '取消',
+    onOk() {
+      contentText.value = ''
+      if (contentEditor.value) {
+        contentEditor.value.clear()
+      }
+      if (chapter.value) {
+        updateChapter('content', '')
+      }
+      message.success('内容已清空')
+    }
+  })
+}
+
+// 插入内容模板
+const insertContentTemplate = () => {
+  const templates = [
+    {
+      name: '对话场景',
+      content: '　　"在这里输入对话内容。"角色甲说道。\n\n　　角色乙听了，若有所思地点点头："你说得对。"'
+    },
+    {
+      name: '环境描写',
+      content: '　　夜幕降临，街道上的灯光逐一亮起。微风轻抚过面庞，带来阵阵凉意。'
+    },
+    {
+      name: '动作描写',
+      content: '　　他缓缓起身，目光坚定地望向远方。脚步声在空旷的走廊中回响。'
+    },
+    {
+      name: '心理描写',
+      content: '　　【这件事情不对劲，】他心中暗想，【必须要小心行事。】'
+    }
+  ]
+
+  // 创建模板选择菜单
+  Modal.info({
+    title: '选择内容模板',
+    width: 500,
+    content: h('div', { class: 'space-y-3' }, [
+      ...templates.map(template => 
+        h('div', { 
+          class: 'p-3 border rounded cursor-pointer hover:bg-gray-50',
+          onClick: () => {
+            if (contentEditor.value) {
+              contentEditor.value.insertText('\n\n' + template.content)
+            }
+            Modal.destroyAll()
+            message.success(`已插入${template.name}模板`)
+          }
+        }, [
+          h('div', { class: 'font-medium mb-1' }, template.name),
+          h('div', { class: 'text-sm text-gray-600' }, template.content.slice(0, 50) + '...')
+        ])
+      )
+    ])
+  })
+}
+
 // 状态流转处理
 const handleStatusChanged = (newStatus: string) => {
   if (chapter.value) {
-    chapter.value.status = newStatus
+    chapter.value.status = newStatus as any
     // 重新加载章节数据以获取最新信息
-    loadChapter()
+    if (chapter.value.id) {
+      loadChapter(chapter.value.id)
+    }
   }
 }
 
@@ -1333,5 +1649,32 @@ const filteredAvailableSettings = computed(() => {
 .consistency-low-text {
   color: var(--theme-consistency-low-text);
   transition: color 0.3s ease;
+}
+
+/* 正文工具栏样式 */
+.content-toolbar {
+  min-height: 48px;
+  transition: all 0.3s ease;
+}
+
+.content-toolbar .ant-space {
+  gap: 8px !important;
+}
+
+.content-toolbar .ant-btn {
+  height: 32px;
+  font-size: 12px;
+}
+
+.content-toolbar .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff, #096dd9);
+  border: none;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.3);
+}
+
+.content-toolbar .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff, #1890ff);
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.4);
+  transform: translateY(-1px);
 }
 </style>
