@@ -114,6 +114,7 @@
                   :key="month.index"
                   :class="{ 'current-month': month.isCurrent }"
                   :title="`${month.year}年${month.name}`"
+                  :style="{ left: `${month.leftOffset}px` }"
                 >
                   {{ month.displayName }}
                 </div>
@@ -124,7 +125,7 @@
                 <!-- 周标签 -->
                 <div class="weeks-column">
                   <div class="week-label" v-for="(day, index) in weekDays" :key="index">
-                    <span v-if="index % 2 === 1">{{ day }}</span>
+                    <span v-if="index === 1 || index === 3 || index === 5">{{ day }}</span>
                   </div>
                 </div>
 
@@ -698,7 +699,7 @@ interface ActivityDay {
 }
 
 // 周标签
-const weekDays = ['', '周一', '', '周三', '', '周五', '']
+const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
 // 活跃度数据 - 使用ref以便响应式更新
 const activityData = ref<ActivityDay[]>([])
@@ -780,18 +781,38 @@ const months = computed(() => {
                      '7月', '8月', '9月', '10月', '11月', '12月']
   const result = []
   const now = new Date()
+  const oneYearAgo = new Date(now)
+  oneYearAgo.setFullYear(now.getFullYear() - 1)
+
+  // 计算一年中每个月的起始周位置
+  let currentDate = new Date(oneYearAgo)
+  const startOfYear = new Date(currentDate)
+  
+  // 找到年初第一个周日（热力图从周日开始）
+  while (currentDate.getDay() !== 0) {
+    currentDate.setDate(currentDate.getDate() - 1)
+  }
 
   for (let i = 0; i < 12; i++) {
     const month = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
     const isCurrentMonth = month.getFullYear() === now.getFullYear() && 
                           month.getMonth() === now.getMonth()
+    
+    // 计算该月第一天是一年中的第几周
+    const monthFirstDay = new Date(month.getFullYear(), month.getMonth(), 1)
+    const diffTime = monthFirstDay.getTime() - currentDate.getTime()
+    const weekIndex = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7))
+    
     result.push({
       index: i,
       name: monthNames[month.getMonth()],
       month: month.getMonth(),
       year: month.getFullYear(),
       isCurrent: isCurrentMonth,
-      displayName: isCurrentMonth ? '本月' : monthNames[month.getMonth()]
+      displayName: isCurrentMonth ? '本月' : monthNames[month.getMonth()],
+      weekIndex: Math.max(0, weekIndex), // 确保不为负数
+      // 每个网格列宽14px（10px格子 + 2px间隙 + 2px边距）
+      leftOffset: Math.max(0, weekIndex) * 14
     })
   }
 
@@ -1366,19 +1387,22 @@ onMounted(() => {
 }
 
 .months-row {
-  display: flex;
+  position: relative;
+  height: 18px;
   margin-bottom: 8px;
   margin-left: 40px; /* 为左侧周标签留空间 */
 }
 
 .month-label {
-  width: 14px; /* 与日期格子对齐 */
-  text-align: center;
+  position: absolute;
+  top: 0;
+  min-width: 20px;
+  text-align: left;
   font-size: 11px;
   color: var(--theme-text-secondary);
-  margin-right: 2px;
   transition: all 0.3s ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .month-label:hover {

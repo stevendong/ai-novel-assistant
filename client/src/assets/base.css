@@ -70,6 +70,21 @@
   --theme-editor-active-btn: #1890ff;
   --theme-editor-secondary-text: #666666;
   --theme-editor-unsaved: #ff6b6b;
+  
+  /* 一致性检查主题变量 */
+  --theme-consistency-panel-bg: #fafafa;
+  --theme-consistency-hover: rgba(0, 0, 0, 0.04);
+  --theme-consistency-success: #52c41a;
+  --theme-consistency-high-bg: #fff2f0;
+  --theme-consistency-high-border: #ffccc7;
+  --theme-consistency-high-text: #f5222d;
+  --theme-consistency-medium-bg: #fffbe6;
+  --theme-consistency-medium-border: #ffe58f;
+  --theme-consistency-medium-text: #faad14;
+  --theme-consistency-low-bg: #f6ffed;
+  --theme-consistency-low-border: #b7eb8f;
+  --theme-consistency-low-text: #52c41a;
+  --theme-consistency-link: #1890ff;
 }
 
 /* 主题响应式工具类 */

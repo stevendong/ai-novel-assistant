@@ -58,7 +58,7 @@
             :value="highSeverityCount"
             prefix=""
             suffix="个"
-            :value-style="{ color: '#f5222d' }"
+            :value-style="{ color: getScoreColor(0) }"
           />
           <a-statistic
             title="健康度"
@@ -78,9 +78,9 @@
           :key="issue.id"
           class="issue-item p-3 border rounded"
           :class="{
-            'border-red-300 bg-red-50': issue.severity === 'high',
-            'border-yellow-300 bg-yellow-50': issue.severity === 'medium',
-            'theme-border theme-bg-elevated': issue.severity === 'low',
+            'consistency-issue-high': issue.severity === 'high',
+            'consistency-issue-medium': issue.severity === 'medium',
+            'consistency-issue-low': issue.severity === 'low',
             'opacity-60': issue.resolved
           }"
         >
@@ -93,7 +93,7 @@
                 <a-tag :color="getSeverityColor(issue.severity)" size="small">
                   {{ getSeverityName(issue.severity) }}
                 </a-tag>
-                <span v-if="issue.resolved" class="text-green-600 text-xs">
+                <span v-if="issue.resolved" class="consistency-resolved text-xs">
                   ✓ 已解决
                 </span>
               </div>
@@ -181,11 +181,11 @@ const sizeClass = computed(() => `size-${props.size}`)
 // 获取图标样式类
 const getIconClass = () => {
   if (highSeverityCount.value > 0) {
-    return 'text-red-500'
+    return 'consistency-high-icon'
   }
   const mediumCount = issues.value.filter(issue => issue.severity === 'medium').length
   if (mediumCount > 0) {
-    return 'text-yellow-500'
+    return 'consistency-medium-icon'
   }
   return 'theme-text-primary'
 }
@@ -199,9 +199,10 @@ const getScoreClass = (score) => {
 
 // 获取分数颜色
 const getScoreColor = (score) => {
-  if (score >= 80) return '#52c41a'
-  if (score >= 60) return '#faad14'
-  return '#f5222d'
+  const documentStyle = getComputedStyle(document.documentElement)
+  if (score >= 80) return documentStyle.getPropertyValue('--theme-consistency-low-text').trim()
+  if (score >= 60) return documentStyle.getPropertyValue('--theme-consistency-medium-text').trim()
+  return documentStyle.getPropertyValue('--theme-consistency-high-text').trim()
 }
 
 // 获取问题类型颜色
@@ -337,15 +338,27 @@ onMounted(() => {
 }
 
 .status-indicator:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--theme-consistency-hover);
+  transition: background-color 0.3s ease;
 }
 
 .status-good .status-icon {
-  color: #52c41a;
+  color: var(--theme-consistency-success);
+  transition: color 0.3s ease;
 }
 
 .status-warning .status-icon {
   /* 颜色由 getIconClass 动态设置 */
+}
+
+.consistency-high-icon {
+  color: var(--theme-consistency-high-text);
+  transition: color 0.3s ease;
+}
+
+.consistency-medium-icon {
+  color: var(--theme-consistency-medium-text);
+  transition: color 0.3s ease;
 }
 
 .issue-badge {
@@ -371,25 +384,29 @@ onMounted(() => {
   font-weight: 600;
   padding: 1px 4px;
   border-radius: 2px;
-  background-color: #f0f0f0;
+  background-color: var(--theme-bg-elevated);
+  transition: background-color 0.3s ease;
 }
 
 .score-good {
-  background-color: #f6ffed;
-  color: #52c41a;
-  border: 1px solid #b7eb8f;
+  background-color: var(--theme-consistency-low-bg);
+  color: var(--theme-consistency-low-text);
+  border: 1px solid var(--theme-consistency-low-border);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .score-warning {
-  background-color: #fffbe6;
-  color: #faad14;
-  border: 1px solid #ffe58f;
+  background-color: var(--theme-consistency-medium-bg);
+  color: var(--theme-consistency-medium-text);
+  border: 1px solid var(--theme-consistency-medium-border);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .score-danger {
-  background-color: #fff2f0;
-  color: #f5222d;
-  border: 1px solid #ffccc7;
+  background-color: var(--theme-consistency-high-bg);
+  color: var(--theme-consistency-high-text);
+  border: 1px solid var(--theme-consistency-high-border);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* 尺寸样式 */
@@ -469,5 +486,29 @@ onMounted(() => {
 .issue-item:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 一致性问题样式 */
+.consistency-issue-high {
+  background-color: var(--theme-consistency-high-bg);
+  border-color: var(--theme-consistency-high-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-issue-medium {
+  background-color: var(--theme-consistency-medium-bg);
+  border-color: var(--theme-consistency-medium-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-issue-low {
+  background-color: var(--theme-consistency-low-bg) !important;
+  border-color: var(--theme-consistency-low-border) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-resolved {
+  color: var(--theme-consistency-success);
+  transition: color 0.3s ease;
 }
 </style>

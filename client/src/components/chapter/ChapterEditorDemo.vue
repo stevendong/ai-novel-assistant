@@ -69,6 +69,7 @@ const loadExistingChapter = () => {
 
 <style scoped>
 .chapter-editor-demo {
-  background: #f5f5f5;
+  background-color: var(--theme-consistency-panel-bg);
+  transition: background-color 0.3s ease;
 }
 </style>

@@ -27,22 +27,18 @@
       </div>
 
       <!-- 快速统计 -->
-      <div class="grid grid-cols-4 gap-3 text-sm">
-        <div class="theme-bg-container p-2 rounded border text-center">
-          <div class="text-xs theme-text-primary">总问题</div>
-          <div class="font-semibold text-lg">{{ stats.totalIssues }}</div>
+      <div class="grid grid-cols-3 gap-4 text-sm">
+        <div class="consistency-stat-high p-3 rounded border text-center">
+          <div class="text-xs consistency-high-text mb-1">严重问题</div>
+          <div class="font-semibold text-xl consistency-high-text">{{ stats.highSeverity }}</div>
         </div>
-        <div class="bg-red-50 border-red-200 p-2 rounded border text-center">
-          <div class="text-xs text-red-600">严重</div>
-          <div class="font-semibold text-lg text-red-600">{{ stats.highSeverity }}</div>
+        <div class="consistency-stat-medium p-3 rounded border text-center">
+          <div class="text-xs consistency-medium-text mb-1">中等问题</div>
+          <div class="font-semibold text-xl consistency-medium-text">{{ stats.mediumSeverity }}</div>
         </div>
-        <div class="bg-yellow-50 border-yellow-200 p-2 rounded border text-center">
-          <div class="text-xs text-yellow-700">中等</div>
-          <div class="font-semibold text-lg text-yellow-700">{{ stats.mediumSeverity }}</div>
-        </div>
-        <div class="bg-green-50 border-green-200 p-2 rounded border text-center">
-          <div class="text-xs text-green-600">已解决</div>
-          <div class="font-semibold text-lg text-green-600">{{ stats.resolvedIssues }}</div>
+        <div class="consistency-stat-low p-3 rounded border text-center">
+          <div class="text-xs consistency-low-text mb-1">轻微问题</div>
+          <div class="font-semibold text-xl consistency-low-text">{{ stats.lowSeverity }}</div>
         </div>
       </div>
     </div>
@@ -147,9 +143,9 @@
             :key="issue.id"
             class="border rounded-lg p-3 hover:theme-bg-elevated transition-colors"
             :class="{
-              'border-red-200 bg-red-50': issue.severity === 'high',
-              'border-yellow-200 bg-yellow-50': issue.severity === 'medium',
-              'theme-border': issue.severity === 'low',
+              'consistency-issue-high': issue.severity === 'high',
+              'consistency-issue-medium': issue.severity === 'medium',
+              'consistency-issue-low': issue.severity === 'low',
               'opacity-60': issue.resolved
             }"
           >
@@ -174,7 +170,7 @@
                   >
                     {{ getSeverityName(issue.severity) }}
                   </a-tag>
-                  <span v-if="issue.resolved" class="text-green-600 text-xs">
+                  <span v-if="issue.resolved" class="consistency-resolved text-xs">
                     ✓ 已解决
                   </span>
                 </div>
@@ -279,7 +275,7 @@
               <div 
                 v-for="chapter in selectedIssueDetails.context.relatedChapters" 
                 :key="chapter.id"
-                class="text-sm text-blue-600 cursor-pointer hover:underline"
+                class="text-sm consistency-link cursor-pointer hover:underline"
                 @click="jumpToChapter(chapter.id)"
               >
                 第{{ chapter.chapterNumber }}章: {{ chapter.title }}
@@ -620,7 +616,8 @@ onMounted(() => {
 
 <style scoped>
 .consistency-panel {
-  background: #fafafa;
+  background-color: var(--theme-consistency-panel-bg);
+  transition: background-color 0.3s ease;
 }
 
 .consistency-panel :deep(.ant-tag) {
@@ -630,5 +627,74 @@ onMounted(() => {
 
 .consistency-panel :deep(.ant-checkbox-wrapper) {
   align-items: flex-start;
+}
+
+/* 统计卡片样式 */
+.consistency-stat-high {
+  background-color: var(--theme-consistency-high-bg);
+  border-color: var(--theme-consistency-high-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-stat-medium {
+  background-color: var(--theme-consistency-medium-bg);
+  border-color: var(--theme-consistency-medium-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-stat-low {
+  background-color: var(--theme-consistency-low-bg);
+  border-color: var(--theme-consistency-low-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 文本颜色样式 */
+.consistency-high-text {
+  color: var(--theme-consistency-high-text);
+  transition: color 0.3s ease;
+}
+
+.consistency-medium-text {
+  color: var(--theme-consistency-medium-text);
+  transition: color 0.3s ease;
+}
+
+.consistency-success-text {
+  color: var(--theme-consistency-success);
+  transition: color 0.3s ease;
+}
+
+.consistency-low-text {
+  color: var(--theme-consistency-low-text);
+  transition: color 0.3s ease;
+}
+
+/* 问题项样式 */
+.consistency-issue-high {
+  background-color: var(--theme-consistency-high-bg);
+  border-color: var(--theme-consistency-high-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-issue-medium {
+  background-color: var(--theme-consistency-medium-bg);
+  border-color: var(--theme-consistency-medium-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-issue-low {
+  background-color: var(--theme-consistency-low-bg) !important;
+  border-color: var(--theme-consistency-low-border) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-resolved {
+  color: var(--theme-consistency-success);
+  transition: color 0.3s ease;
+}
+
+.consistency-link {
+  color: var(--theme-consistency-link);
+  transition: color 0.3s ease;
 }
 </style>

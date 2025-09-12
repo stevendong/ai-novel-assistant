@@ -454,27 +454,27 @@
                 </a-space>
               </div>
 
-              <!-- 健康度仪表板 -->
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div class="text-center p-3 theme-bg-elevated rounded-lg">
-                  <div class="text-2xl font-bold" :style="{ color: healthGrade.color }">
-                    {{ healthScore }}
-                  </div>
-                  <div class="text-sm theme-text-primary">健康度评分</div>
-                  <div class="text-xs mt-1" :style="{ color: healthGrade.color }">
-                    {{ healthGrade.grade }}
-                  </div>
+              <div class="text-center p-3 theme-bg-elevated rounded-lg">
+                <div class="text-2xl font-bold" :style="{ color: healthGrade.color }">
+                  {{ healthScore }}
                 </div>
-                <div class="text-center p-3 bg-red-50 rounded-lg">
-                  <div class="text-2xl font-bold text-red-600">{{ severityCounts.high }}</div>
+                <div class="text-sm theme-text-primary">健康度评分</div>
+                <div class="text-xs mt-1" :style="{ color: healthGrade.color }">
+                  {{ healthGrade.grade }}
+                </div>
+              </div>
+              <!-- 健康度仪表板 -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="text-center p-4 consistency-stat-high rounded-lg">
+                  <div class="text-2xl font-bold consistency-high-text">{{ severityCounts.high }}</div>
                   <div class="text-sm theme-text-primary">严重问题</div>
                 </div>
-                <div class="text-center p-3 bg-orange-50 rounded-lg">
-                  <div class="text-2xl font-bold text-orange-600">{{ severityCounts.medium }}</div>
+                <div class="text-center p-4 consistency-stat-medium rounded-lg">
+                  <div class="text-2xl font-bold consistency-medium-text">{{ severityCounts.medium }}</div>
                   <div class="text-sm theme-text-primary">中等问题</div>
                 </div>
-                <div class="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div class="text-2xl font-bold text-yellow-600">{{ severityCounts.low }}</div>
+                <div class="text-center p-4 consistency-stat-low rounded-lg">
+                  <div class="text-2xl font-bold consistency-low-text">{{ severityCounts.low }}</div>
                   <div class="text-sm theme-text-primary">轻微问题</div>
                 </div>
               </div>
@@ -1298,5 +1298,40 @@ const filteredAvailableSettings = computed(() => {
 
 :deep(.ant-tabs-tabpane) {
   height: 100%;
+}
+
+/* 一致性检查统计卡片样式 */
+.consistency-stat-high {
+  background-color: var(--theme-consistency-high-bg) !important;
+  border: 1px solid var(--theme-consistency-high-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-stat-medium {
+  background-color: var(--theme-consistency-medium-bg) !important;
+  border: 1px solid var(--theme-consistency-medium-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.consistency-stat-low {
+  background-color: var(--theme-consistency-low-bg) !important;
+  border: 1px solid var(--theme-consistency-low-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 文本颜色样式 */
+.consistency-high-text {
+  color: var(--theme-consistency-high-text);
+  transition: color 0.3s ease;
+}
+
+.consistency-medium-text {
+  color: var(--theme-consistency-medium-text);
+  transition: color 0.3s ease;
+}
+
+.consistency-low-text {
+  color: var(--theme-consistency-low-text);
+  transition: color 0.3s ease;
 }
 </style>

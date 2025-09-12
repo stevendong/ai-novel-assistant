@@ -159,6 +159,20 @@ export const useThemeStore = defineStore('theme', () => {
       html.style.setProperty('--theme-editor-active-btn', '#4db8ff')
       html.style.setProperty('--theme-editor-secondary-text', 'rgba(255, 255, 255, 0.55)')
       html.style.setProperty('--theme-editor-unsaved', '#ff7a7a')
+      // 一致性检查变量 - 暗黑模式
+      html.style.setProperty('--theme-consistency-panel-bg', '#262626')
+      html.style.setProperty('--theme-consistency-hover', 'rgba(255, 255, 255, 0.08)')
+      html.style.setProperty('--theme-consistency-success', '#73d13d')
+      html.style.setProperty('--theme-consistency-high-bg', '#2a1a1a')
+      html.style.setProperty('--theme-consistency-high-border', '#5c2d2d')
+      html.style.setProperty('--theme-consistency-high-text', '#ff7875')
+      html.style.setProperty('--theme-consistency-medium-bg', '#2a261a')
+      html.style.setProperty('--theme-consistency-medium-border', '#5c5a2d')
+      html.style.setProperty('--theme-consistency-medium-text', '#ffd666')
+      html.style.setProperty('--theme-consistency-low-bg', '#1f3a1f')
+      html.style.setProperty('--theme-consistency-low-border', '#2d5c2d')
+      html.style.setProperty('--theme-consistency-low-text', '#73d13d')
+      html.style.setProperty('--theme-consistency-link', '#4db8ff')
     } else {
       html.classList.add('light')
       html.classList.remove('dark')
@@ -193,6 +207,20 @@ export const useThemeStore = defineStore('theme', () => {
       html.style.setProperty('--theme-editor-active-btn', '#1890ff')
       html.style.setProperty('--theme-editor-secondary-text', '#666666')
       html.style.setProperty('--theme-editor-unsaved', '#ff6b6b')
+      // 一致性检查变量 - 亮色模式
+      html.style.setProperty('--theme-consistency-panel-bg', '#fafafa')
+      html.style.setProperty('--theme-consistency-hover', 'rgba(0, 0, 0, 0.04)')
+      html.style.setProperty('--theme-consistency-success', '#52c41a')
+      html.style.setProperty('--theme-consistency-high-bg', '#fff2f0')
+      html.style.setProperty('--theme-consistency-high-border', '#ffccc7')
+      html.style.setProperty('--theme-consistency-high-text', '#f5222d')
+      html.style.setProperty('--theme-consistency-medium-bg', '#fffbe6')
+      html.style.setProperty('--theme-consistency-medium-border', '#ffe58f')
+      html.style.setProperty('--theme-consistency-medium-text', '#faad14')
+      html.style.setProperty('--theme-consistency-low-bg', '#f6ffed')
+      html.style.setProperty('--theme-consistency-low-border', '#b7eb8f')
+      html.style.setProperty('--theme-consistency-low-text', '#52c41a')
+      html.style.setProperty('--theme-consistency-link', '#1890ff')
     }
   }
   
