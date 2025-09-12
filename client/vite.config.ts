@@ -18,6 +18,15 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5175,
+    hmr: {
+      port: 5176,
+      host: 'localhost'
+    },
+    watch: {
+      usePolling: true,
+      interval: 1000,
+      ignored: ['**/node_modules/**', '**/.git/**']
+    },
     proxy: {
       // 代理所有 /api 开头的请求到后端服务器
       '/api': {
@@ -35,6 +44,13 @@ export default defineConfig({
             console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
           });
         }
+      }
+    }
+  },
+  build: {
+    rollupOptions: {
+      watch: {
+        exclude: ['node_modules/**']
       }
     }
   }

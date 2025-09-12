@@ -1,0 +1,26 @@
+{
+  "watch": [
+    "**/*.js",
+    "routes/**/*.js",
+    "services/**/*.js",
+    "utils/**/*.js",
+    "config/**/*.js",
+    "middleware/**/*.js",
+    "controllers/**/*.js",
+    "prisma/schema.prisma"
+  ],
+  "ignore": [
+    "node_modules/**",
+    "tests/**",
+    "coverage/**",
+    "*.test.js",
+    "*.spec.js",
+    "prisma/novels.db*",
+    "uploads/**"
+  ],
+  "ext": "js,json,prisma",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000
+}
