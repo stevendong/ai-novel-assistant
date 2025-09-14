@@ -219,7 +219,7 @@
         </div>
 
         <!-- Content Tab -->
-        <div v-else-if="activeTab === 'content'" class="h-full flex flex-col">
+        <div v-else-if="activeTab === 'content'" class="h-full flex flex-col" :class="{ 'fullscreen-content': isFullscreen }">
           <!-- 正文工具栏 -->
           <div class="content-toolbar theme-bg-container border-b theme-border p-3">
             <div class="flex items-center justify-between">
@@ -273,7 +273,7 @@
                   清空
                 </a-button>
                 
-                <a-button 
+                <a-button
                   @click="insertContentTemplate"
                   title="插入段落模板"
                 >
@@ -281,6 +281,17 @@
                     <PlusSquareOutlined />
                   </template>
                   模板
+                </a-button>
+
+                <a-button
+                  @click="toggleFullscreen"
+                  :title="isFullscreen ? '退出全屏' : '进入全屏'"
+                >
+                  <template #icon>
+                    <FullscreenExitOutlined v-if="isFullscreen" />
+                    <FullscreenOutlined v-else />
+                  </template>
+                  {{ isFullscreen ? '退出全屏' : '全屏' }}
                 </a-button>
               </a-space>
             </div>
@@ -746,7 +757,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick, h } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, h } from 'vue'
 import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -768,7 +779,9 @@ import {
   ContainerOutlined,
   DownOutlined,
   ClearOutlined,
-  PlusSquareOutlined
+  PlusSquareOutlined,
+  FullscreenOutlined,
+  FullscreenExitOutlined
 } from '@ant-design/icons-vue'
 import { useChapter } from '@/composables/useChapter'
 import { useMarkdown } from '@/composables/useMarkdown'
@@ -834,6 +847,9 @@ const isOutlinePreviewMode = ref(false)
 const contentText = ref('')
 const contentEditor = ref()
 const generatingContent = ref(false)
+
+// 全屏状态
+const isFullscreen = ref(false)
 
 // 模态框状态
 const showAddCharacterModal = ref(false)
@@ -1480,6 +1496,25 @@ const clearContent = () => {
   })
 }
 
+// 全屏切换功能
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
+// 键盘快捷键处理
+const handleKeydown = (event: KeyboardEvent) => {
+  // F11 键切换全屏
+  if (event.key === 'F11') {
+    event.preventDefault()
+    toggleFullscreen()
+  }
+  // Escape 键退出全屏
+  if (event.key === 'Escape' && isFullscreen.value) {
+    event.preventDefault()
+    isFullscreen.value = false
+  }
+}
+
 // 插入内容模板
 const insertContentTemplate = () => {
   const templates = [
@@ -1580,6 +1615,14 @@ onMounted(async () => {
   if (chapter.value?.content) {
     contentText.value = chapter.value.content
   }
+
+  // 添加键盘事件监听
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  // 清理键盘事件监听
+  document.removeEventListener('keydown', handleKeydown)
 })
 
 // 标签页切换处理（如果需要可以添加其他逻辑）
@@ -1684,5 +1727,27 @@ const filteredAvailableSettings = computed(() => {
   background: linear-gradient(135deg, #40a9ff, #1890ff);
   box-shadow: 0 4px 8px rgba(24, 144, 255, 0.4);
   transform: translateY(-1px);
+}
+
+/* 全屏模式样式 */
+.fullscreen-content {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background-color: var(--theme-bg-container) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.fullscreen-content .content-toolbar {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.fullscreen-content :deep(.tiptap-editor) {
+  height: calc(100vh - 60px) !important; /* 减去工具栏高度 */
 }
 </style>
