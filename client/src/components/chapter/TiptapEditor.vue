@@ -482,11 +482,41 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
 
+// 处理文本插入，正确处理换行符
+const insertTextWithLineBreaks = (text: string) => {
+  if (!editor.value) return
+
+  // 将文本中的换行符转换为HTML段落
+  const htmlContent = text
+    // 先处理连续的换行符，将3个以上的换行符替换为2个
+    .replace(/\n{3,}/g, '\n\n')
+    // 将双换行符分割成段落
+    .split('\n\n')
+    .filter(paragraph => paragraph.trim()) // 过滤空段落
+    .map(paragraph => {
+      // 处理段落内的单换行符，转换为 <br>
+      const processedParagraph = paragraph
+        .replace(/\n/g, '<br>')
+        .trim()
+
+      // 如果段落不是以中文缩进开始，添加缩进
+      if (processedParagraph && !processedParagraph.startsWith('　　')) {
+        return `<p class="paragraph-indent">　　${processedParagraph}</p>`
+      } else {
+        return `<p class="paragraph-indent">${processedParagraph}</p>`
+      }
+    })
+    .join('')
+
+  // 插入HTML内容而不是纯文本
+  editor.value.commands.insertContent(htmlContent)
+}
+
 // 暴露方法给父组件
 defineExpose({
   focus: () => editor.value?.commands.focus(),
   blur: () => editor.value?.commands.blur(),
-  insertText: (text: string) => editor.value?.commands.insertContent(text),
+  insertText: insertTextWithLineBreaks,
   clear: () => editor.value?.commands.clearContent(),
   getEditor: () => editor.value,
   // 强制更新内容，用于解决格式丢失问题

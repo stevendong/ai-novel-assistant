@@ -1427,23 +1427,14 @@ const generateAIContent = async (targetLength: number = 2000) => {
 
 // 处理生成的内容格式
 const processGeneratedContent = (content: string): string => {
-  // 清理可能的markdown标记或多余的空行
-  let processed = content
+  // 清理可能的markdown标记或其他格式标记，但保留换行符
+  return content
     .replace(/```[\s\S]*?```/g, '') // 移除代码块
     .replace(/\*\*(.*?)\*\*/g, '$1') // 移除粗体标记
     .replace(/\*(.*?)\*/g, '$1') // 移除斜体标记
     .replace(/^\s*#+\s*/gm, '') // 移除标题标记
     .replace(/^\s*[-*]\s*/gm, '') // 移除列表标记
-    .replace(/\n{3,}/g, '\n\n') // 移除多余空行
     .trim()
-
-  // 确保段落格式正确（每段开头空两格）
-  const paragraphs = processed.split('\n\n')
-  const formattedParagraphs = paragraphs
-    .filter(p => p.trim())
-    .map(p => p.trim().startsWith('　　') ? p : '　　' + p.trim())
-
-  return formattedParagraphs.join('\n\n')
 }
 
 // 显示内容插入选项
