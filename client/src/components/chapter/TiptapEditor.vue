@@ -327,21 +327,191 @@ const insertParagraphBreak = () => {
 
 const formatDocument = () => {
   if (!editor.value) return
-  
-  // 获取当前内容
+
+  // 获取当前HTML内容
   let content = editor.value.getHTML()
-  
-  // 简单的小说格式化
-  content = content
-    // 段落首行缩进
-    .replace(/<p>/g, '<p class="paragraph-indent">　　')
-    // 对话格式
+
+  // 先转换为纯文本进行处理，然后重新格式化为HTML
+  const tempDiv = document.createElement('div')
+  tempDiv.innerHTML = content
+  let plainText = tempDiv.textContent || tempDiv.innerText || ''
+
+  // 清理和标准化文本
+  plainText = cleanAndNormalizeText(plainText)
+
+  // 按段落分割并格式化
+  const paragraphs = plainText.split(/\n\s*\n+/).filter(p => p.trim())
+
+  const formattedParagraphs = paragraphs.map(paragraph => {
+    return formatParagraph(paragraph.trim())
+  }).filter(p => p) // 过滤空段落
+
+  // 重新构建HTML内容
+  const formattedHTML = formattedParagraphs.join('\n')
+
+  // 使用更新标志避免触发onChange事件
+  isUpdating.value = true
+  editor.value.commands.setContent(formattedHTML, false)
+
+  // 恢复事件监听
+  setTimeout(() => {
+    isUpdating.value = false
+  }, 0)
+
+  message.success(`文档格式化完成，共处理 ${formattedParagraphs.length} 个段落`)
+}
+
+// 清理和标准化文本
+const cleanAndNormalizeText = (text: string): string => {
+  return text
+    // 统一引号格式
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    // 统一破折号
+    .replace(/[—–]/g, '——')
+    // 统一省略号
+    .replace(/\.{3,}/g, '……')
+    .replace(/。{3,}/g, '……')
+    // 清理多余的空格和换行
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    // 移除段落开头的空格，但保留有意义的缩进
+    .replace(/\n[ \t]*([　\s]*)/g, '\n')
+    .trim()
+}
+
+// 格式化单个段落
+const formatParagraph = (paragraph: string): string => {
+  if (!paragraph) return ''
+
+  // 检测段落类型并应用相应格式
+  const paragraphType = detectParagraphType(paragraph)
+
+  switch (paragraphType) {
+    case 'dialogue':
+      return formatDialogueParagraph(paragraph)
+    case 'scene-break':
+      return formatSceneBreak(paragraph)
+    case 'thought':
+      return formatThoughtParagraph(paragraph)
+    case 'action':
+      return formatActionParagraph(paragraph)
+    case 'description':
+      return formatDescriptionParagraph(paragraph)
+    case 'normal':
+    default:
+      return formatNormalParagraph(paragraph)
+  }
+}
+
+// 检测段落类型
+const detectParagraphType = (paragraph: string): 'dialogue' | 'scene-break' | 'thought' | 'action' | 'description' | 'normal' => {
+  // 对话：以引号开始或包含引号
+  if (/^[""]/.test(paragraph) || /[""][^"""]*?[""]/.test(paragraph)) {
+    return 'dialogue'
+  }
+
+  // 场景分隔：星号、破折号等
+  if (/^[*\-=]{2,}$/.test(paragraph.trim()) || /^\s*[*]{2,}\s*$/.test(paragraph)) {
+    return 'scene-break'
+  }
+
+  // 内心独白：方括号包围
+  if (/【[^】]*】/.test(paragraph)) {
+    return 'thought'
+  }
+
+  // 动作描写：包含动作词汇
+  if (/[走跑跳坐站起身转身点头摇头等着看到听到感到想到伸手拿起放下打开关闭]/.test(paragraph)) {
+    return 'action'
+  }
+
+  // 环境描写：包含景物描述词汇
+  if (/[天空阳光月光风雨雪山水树花草房屋建筑街道道路窗户门灯光影子]/.test(paragraph)) {
+    return 'description'
+  }
+
+  return 'normal'
+}
+
+// 格式化对话段落
+const formatDialogueParagraph = (paragraph: string): string => {
+  // 处理对话格式
+  let formatted = paragraph
+    // 标准化引号内的对话
+    .replace(/"([^"]*)"/g, (match, content) => {
+      return `<span class="dialogue">"${content.trim()}"</span>`
+    })
+    // 处理对话后的说话人描述
+    .replace(/(<span class="dialogue">"[^"]*"<\/span>)([^。，！？]*?)([。，！？])/g, '$1$2$3')
+
+  return `<p class="paragraph-indent dialogue-paragraph">　　${formatted}</p>`
+}
+
+// 格式化场景分隔
+const formatSceneBreak = (paragraph: string): string => {
+  let breakText = paragraph.trim()
+
+  // 标准化场景分隔符
+  if (/^[*\-=]+$/.test(breakText)) {
+    breakText = '* * *'
+  }
+
+  return `<div class="scene-break">${breakText}</div>`
+}
+
+// 格式化内心独白段落
+const formatThoughtParagraph = (paragraph: string): string => {
+  const formatted = paragraph.replace(/【([^】]*)】/g, '<span class="thought">【$1】</span>')
+  return `<p class="paragraph-indent thought-paragraph">　　${formatted}</p>`
+}
+
+// 格式化动作描写段落
+const formatActionParagraph = (paragraph: string): string => {
+  const needsIndent = !paragraph.startsWith('　　')
+  const indentPrefix = needsIndent ? '　　' : ''
+
+  let formatted = paragraph
     .replace(/"([^"]*)"/g, '<span class="dialogue">"$1"</span>')
-    // 内心独白格式
     .replace(/【([^】]*)】/g, '<span class="thought">【$1】</span>')
-  
-  editor.value.commands.setContent(content)
-  message.success('文档格式化完成')
+    .replace(/《([^》]*)》/g, '<em>《$1》</em>')
+    .replace(/……/g, '<span class="ellipsis">……</span>')
+
+  return `<p class="paragraph-indent action-paragraph">${indentPrefix}${formatted}</p>`
+}
+
+// 格式化环境描写段落
+const formatDescriptionParagraph = (paragraph: string): string => {
+  const needsIndent = !paragraph.startsWith('　　')
+  const indentPrefix = needsIndent ? '　　' : ''
+
+  let formatted = paragraph
+    .replace(/"([^"]*)"/g, '<span class="dialogue">"$1"</span>')
+    .replace(/【([^】]*)】/g, '<span class="thought">【$1】</span>')
+    .replace(/《([^》]*)》/g, '<em>《$1》</em>')
+    .replace(/……/g, '<span class="ellipsis">……</span>')
+
+  return `<p class="paragraph-indent description-paragraph">${indentPrefix}${formatted}</p>`
+}
+
+// 格式化普通段落
+const formatNormalParagraph = (paragraph: string): string => {
+  // 确保段落不是以缩进开始就添加缩进
+  const needsIndent = !paragraph.startsWith('　　')
+  const indentPrefix = needsIndent ? '　　' : ''
+
+  // 处理段落内的特殊格式
+  let formatted = paragraph
+    // 处理引号对话（如果段落中间有对话）
+    .replace(/"([^"]*)"/g, '<span class="dialogue">"$1"</span>')
+    // 处理内心独白
+    .replace(/【([^】]*)】/g, '<span class="thought">【$1】</span>')
+    // 处理强调（书名号、专有名词等）
+    .replace(/《([^》]*)》/g, '<em>《$1》</em>')
+    // 处理省略号
+    .replace(/……/g, '<span class="ellipsis">……</span>')
+
+  return `<p class="paragraph-indent">${indentPrefix}${formatted}</p>`
 }
 
 const toggleFocusMode = () => {
@@ -643,31 +813,113 @@ defineExpose({
 :deep(.ProseMirror p) {
   margin: 0.8em 0;
   text-align: justify;
+  line-height: 1.8;
 }
 
 :deep(.ProseMirror p.paragraph-indent) {
   text-indent: 2em;
 }
 
+/* 对话段落样式 */
+:deep(.ProseMirror p.dialogue-paragraph) {
+  margin: 0.6em 0;
+  position: relative;
+}
+
 :deep(.ProseMirror .dialogue) {
   color: var(--theme-editor-dialogue);
-  font-style: italic;
+  font-weight: 500;
+  position: relative;
   transition: color 0.3s ease;
 }
 
-:deep(.ProseMirror .scene-break) {
-  text-align: center;
-  margin: 2em 0;
-  color: var(--theme-editor-scene);
-  font-size: 1.2em;
-  font-weight: bold;
-  transition: color 0.3s ease;
+:deep(.ProseMirror .dialogue::before) {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--theme-editor-dialogue);
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+/* 内心独白段落样式 */
+:deep(.ProseMirror p.thought-paragraph) {
+  margin: 0.6em 0;
+  background: var(--theme-editor-thought-bg, rgba(108, 117, 125, 0.1));
+  border-left: 3px solid var(--theme-editor-thought);
+  padding: 0.5em 1em;
+  border-radius: 0 8px 8px 0;
+  transition: background-color 0.3s ease;
 }
 
 :deep(.ProseMirror .thought) {
   color: var(--theme-editor-thought);
   font-style: italic;
+  font-weight: 500;
   transition: color 0.3s ease;
+}
+
+/* 场景分隔样式 */
+:deep(.ProseMirror .scene-break) {
+  text-align: center;
+  margin: 3em 0;
+  padding: 1.5em 0;
+  color: var(--theme-editor-scene);
+  font-size: 1.2em;
+  font-weight: bold;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+:deep(.ProseMirror .scene-break::before),
+:deep(.ProseMirror .scene-break::after) {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 30%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--theme-editor-scene), transparent);
+}
+
+:deep(.ProseMirror .scene-break::before) {
+  left: 0;
+}
+
+:deep(.ProseMirror .scene-break::after) {
+  right: 0;
+}
+
+/* 强调文本样式 */
+:deep(.ProseMirror em) {
+  font-style: normal;
+  color: var(--theme-editor-emphasis, #1890ff);
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+/* 省略号样式 */
+:deep(.ProseMirror .ellipsis) {
+  color: var(--theme-editor-ellipsis, #8c8c8c);
+  letter-spacing: 2px;
+  transition: color 0.3s ease;
+}
+
+/* 动作描写段落 */
+:deep(.ProseMirror p.action-paragraph) {
+  border-left: 2px solid var(--theme-editor-action, #52c41a);
+  padding-left: 1em;
+  margin-left: 0.5em;
+}
+
+/* 环境描写段落 */
+:deep(.ProseMirror p.description-paragraph) {
+  background: var(--theme-editor-description-bg, rgba(24, 144, 255, 0.05));
+  border-radius: 4px;
+  padding: 0.5em 1em;
+  margin: 1em 0;
 }
 
 :deep(.ProseMirror h1, .ProseMirror h2, .ProseMirror h3) {
