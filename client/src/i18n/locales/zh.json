@@ -1,0 +1,166 @@
+{
+  "common": {
+    "confirm": "确定",
+    "cancel": "取消",
+    "save": "保存",
+    "edit": "编辑",
+    "delete": "删除",
+    "add": "添加",
+    "search": "搜索",
+    "filter": "筛选",
+    "reset": "重置",
+    "submit": "提交",
+    "close": "关闭",
+    "loading": "加载中...",
+    "refresh": "刷新",
+    "export": "导出",
+    "import": "导入",
+    "settings": "设置",
+    "help": "帮助",
+    "preview": "预览",
+    "create": "创建"
+  },
+  "app": {
+    "title": "个人智能创作管理系统",
+    "subtitle": "智能协作，创意无限"
+  },
+  "nav": {
+    "project": "项目管理",
+    "chapters": "章节管理",
+    "characters": "人物设定",
+    "worldSettings": "世界设定",
+    "progress": "进度统计",
+    "consistency": "一致性检查",
+    "export": "导出发布"
+  },
+  "project": {
+    "title": "项目管理",
+    "selectProject": "选择项目",
+    "noProject": "暂无项目，请先创建项目",
+    "createProject": "创建新项目",
+    "projectName": "项目名称",
+    "projectDescription": "项目描述",
+    "projectType": "项目类型",
+    "enterProjectName": "请输入项目名称",
+    "enterProjectDescription": "请输入项目描述（可选）",
+    "deleteConfirm": "确定要删除这个项目吗？",
+    "stats": {
+      "totalWords": "总字数",
+      "totalChapters": "总章节",
+      "completedChapters": "完成章节",
+      "writingDays": "写作天数",
+      "dailyAverage": "日均产量",
+      "days": "天",
+      "wordsPerDay": "字/天"
+    }
+  },
+  "chapter": {
+    "title": "章节管理",
+    "addChapter": "添加新章节",
+    "editChapter": "编辑章节",
+    "chapterTitle": "章节标题",
+    "chapterOutline": "章节大纲",
+    "chapterContent": "章节内容",
+    "chapterNumber": "章节号",
+    "chapterStatus": "状态",
+    "wordCount": "字数",
+    "targetWords": "目标字数",
+    "searchPlaceholder": "搜索章节标题或大纲",
+    "enterTitle": "请输入章节标题",
+    "enterOutline": "请输入章节大纲（可选）",
+    "deleteConfirm": "确定要删除这个章节吗？",
+    "status": {
+      "draft": "草稿",
+      "writing": "写作中",
+      "reviewing": "审阅中",
+      "completed": "已完成",
+      "published": "已发布"
+    },
+    "selectedChapters": "已选择 {count} 个章节"
+  },
+  "character": {
+    "title": "人物设定",
+    "addCharacter": "添加新人物",
+    "editCharacter": "编辑人物",
+    "characterName": "人物姓名",
+    "characterDescription": "人物描述",
+    "characterBackground": "人物背景",
+    "characterRelationships": "人物关系",
+    "enterName": "请输入人物姓名",
+    "enterDescription": "请输入人物描述（可选）",
+    "deleteConfirm": "确定要删除这个人物吗？"
+  },
+  "worldSetting": {
+    "title": "世界设定",
+    "addSetting": "添加新设定",
+    "editSetting": "编辑设定",
+    "settingName": "设定名称",
+    "settingDescription": "设定描述",
+    "settingCategory": "设定分类",
+    "enterName": "请输入设定名称",
+    "enterDescription": "请输入设定描述（可选）",
+    "deleteConfirm": "确定要删除这个设定吗？",
+    "categories": {
+      "location": "地点设定",
+      "culture": "文化设定",
+      "technology": "科技设定",
+      "magic": "魔法设定",
+      "politics": "政治设定",
+      "economics": "经济设定",
+      "religion": "宗教设定",
+      "other": "其他设定"
+    }
+  },
+  "ai": {
+    "assistant": "AI助手",
+    "dialogue": "对话模式",
+    "enhance": "文本优化",
+    "consistency": "一致性检查",
+    "generating": "生成中...",
+    "askAnything": "有什么我可以帮助您的吗？",
+    "enhance": {
+      "title": "文本优化",
+      "selectText": "请先选择要优化的文本",
+      "optimizing": "正在优化文本...",
+      "applyChanges": "应用修改",
+      "originalText": "原文",
+      "optimizedText": "优化后"
+    },
+    "consistency": {
+      "title": "一致性检查",
+      "checking": "正在检查一致性...",
+      "noIssues": "暂无一致性问题",
+      "issuesFound": "发现 {count} 个问题"
+    }
+  },
+  "export": {
+    "title": "导出发布",
+    "exportEpub": "导出为EPUB",
+    "exportTxt": "导出为TXT",
+    "exporting": "正在导出...",
+    "exportSuccess": "导出成功",
+    "exportFailed": "导出失败"
+  },
+  "theme": {
+    "light": "浅色模式",
+    "dark": "深色模式",
+    "auto": "跟随系统"
+  },
+  "language": {
+    "title": "语言设置",
+    "chinese": "中文",
+    "english": "English"
+  },
+  "message": {
+    "saveSuccess": "保存成功",
+    "saveFailed": "保存失败",
+    "deleteSuccess": "删除成功",
+    "deleteFailed": "删除失败",
+    "createSuccess": "创建成功",
+    "createFailed": "创建失败",
+    "updateSuccess": "更新成功",
+    "updateFailed": "更新失败",
+    "networkError": "网络错误，请检查连接",
+    "serverError": "服务器错误，请稍后重试"
+  }
+}

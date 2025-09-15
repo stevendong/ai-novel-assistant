@@ -14,7 +14,7 @@
       <template #icon>
         <component :is="getIcon(route.meta?.icon)" />
       </template>
-      <span>{{ route.meta?.title }}</span>
+      <span>{{ $t(`nav.${route.name}`) }}</span>
     </a-menu-item>
 
     <!-- Chapters menu item -->
@@ -25,7 +25,7 @@
       <template #icon>
         <FileTextOutlined />
       </template>
-      <span>章节列表</span>
+      <span>{{ $t('nav.chapters') }}</span>
     </a-menu-item>
   </a-menu>
 </template>
@@ -80,7 +80,7 @@ const navigationRoutes = ref([
     }
   },
   {
-    name: 'worldsettings',
+    name: 'worldSettings',
     meta: {
       title: '世界设定',
       icon: 'GlobalOutlined'

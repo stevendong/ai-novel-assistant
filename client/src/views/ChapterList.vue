@@ -5,15 +5,15 @@
         <div class="header-left">
           <h1 class="page-title">
             <FileTextOutlined />
-            章节列表
+            {{ $t('chapter.title') }}
           </h1>
-          <p class="page-description">管理当前项目的所有章节</p>
+          <p class="page-description">{{ $t('nav.chapters') }}</p>
         </div>
         <div class="header-actions">
           <a-space>
             <a-input-search
               v-model:value="searchText"
-              placeholder="搜索章节标题或大纲"
+              :placeholder="$t('chapter.searchPlaceholder')"
               style="width: 200px"
               @search="handleSearch"
               @pressEnter="handleSearch"
@@ -21,7 +21,7 @@
             />
             <a-select
               v-model:value="statusFilter"
-              placeholder="筛选状态"
+              :placeholder="$t('common.filter')"
               style="width: 120px"
               @change="handleStatusFilter"
               allow-clear

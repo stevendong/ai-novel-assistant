@@ -1,0 +1,166 @@
+{
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "submit": "Submit",
+    "close": "Close",
+    "loading": "Loading...",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import",
+    "settings": "Settings",
+    "help": "Help",
+    "preview": "Preview",
+    "create": "Create"
+  },
+  "app": {
+    "title": "AI Novel Assistant",
+    "subtitle": "Smart Collaboration, Unlimited Creativity"
+  },
+  "nav": {
+    "project": "Project Management",
+    "chapters": "Chapter Management",
+    "characters": "Character Settings",
+    "worldSettings": "World Settings",
+    "progress": "Progress Statistics",
+    "consistency": "Consistency Check",
+    "export": "Export & Publish"
+  },
+  "project": {
+    "title": "Project Management",
+    "selectProject": "Select Project",
+    "noProject": "No projects available, please create one first",
+    "createProject": "Create New Project",
+    "projectName": "Project Name",
+    "projectDescription": "Project Description",
+    "projectType": "Project Type",
+    "enterProjectName": "Please enter project name",
+    "enterProjectDescription": "Please enter project description (optional)",
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "stats": {
+      "totalWords": "Total Words",
+      "totalChapters": "Total Chapters",
+      "completedChapters": "Completed Chapters",
+      "writingDays": "Writing Days",
+      "dailyAverage": "Daily Average",
+      "days": "days",
+      "wordsPerDay": "words/day"
+    }
+  },
+  "chapter": {
+    "title": "Chapter Management",
+    "addChapter": "Add New Chapter",
+    "editChapter": "Edit Chapter",
+    "chapterTitle": "Chapter Title",
+    "chapterOutline": "Chapter Outline",
+    "chapterContent": "Chapter Content",
+    "chapterNumber": "Chapter Number",
+    "chapterStatus": "Status",
+    "wordCount": "Word Count",
+    "targetWords": "Target Words",
+    "searchPlaceholder": "Search chapter title or outline",
+    "enterTitle": "Please enter chapter title",
+    "enterOutline": "Please enter chapter outline (optional)",
+    "deleteConfirm": "Are you sure you want to delete this chapter?",
+    "status": {
+      "draft": "Draft",
+      "writing": "Writing",
+      "reviewing": "Reviewing",
+      "completed": "Completed",
+      "published": "Published"
+    },
+    "selectedChapters": "{count} chapters selected"
+  },
+  "character": {
+    "title": "Character Settings",
+    "addCharacter": "Add New Character",
+    "editCharacter": "Edit Character",
+    "characterName": "Character Name",
+    "characterDescription": "Character Description",
+    "characterBackground": "Character Background",
+    "characterRelationships": "Character Relationships",
+    "enterName": "Please enter character name",
+    "enterDescription": "Please enter character description (optional)",
+    "deleteConfirm": "Are you sure you want to delete this character?"
+  },
+  "worldSetting": {
+    "title": "World Settings",
+    "addSetting": "Add New Setting",
+    "editSetting": "Edit Setting",
+    "settingName": "Setting Name",
+    "settingDescription": "Setting Description",
+    "settingCategory": "Setting Category",
+    "enterName": "Please enter setting name",
+    "enterDescription": "Please enter setting description (optional)",
+    "deleteConfirm": "Are you sure you want to delete this setting?",
+    "categories": {
+      "location": "Location Settings",
+      "culture": "Culture Settings",
+      "technology": "Technology Settings",
+      "magic": "Magic Settings",
+      "politics": "Politics Settings",
+      "economics": "Economics Settings",
+      "religion": "Religion Settings",
+      "other": "Other Settings"
+    }
+  },
+  "ai": {
+    "assistant": "AI Assistant",
+    "dialogue": "Dialogue Mode",
+    "enhance": "Text Enhancement",
+    "consistency": "Consistency Check",
+    "generating": "Generating...",
+    "askAnything": "How can I help you today?",
+    "enhance": {
+      "title": "Text Enhancement",
+      "selectText": "Please select text to enhance first",
+      "optimizing": "Optimizing text...",
+      "applyChanges": "Apply Changes",
+      "originalText": "Original Text",
+      "optimizedText": "Optimized Text"
+    },
+    "consistency": {
+      "title": "Consistency Check",
+      "checking": "Checking consistency...",
+      "noIssues": "No consistency issues found",
+      "issuesFound": "{count} issues found"
+    }
+  },
+  "export": {
+    "title": "Export & Publish",
+    "exportEpub": "Export as EPUB",
+    "exportTxt": "Export as TXT",
+    "exporting": "Exporting...",
+    "exportSuccess": "Export successful",
+    "exportFailed": "Export failed"
+  },
+  "theme": {
+    "light": "Light Mode",
+    "dark": "Dark Mode",
+    "auto": "Follow System"
+  },
+  "language": {
+    "title": "Language Settings",
+    "chinese": "中文",
+    "english": "English"
+  },
+  "message": {
+    "saveSuccess": "Save successful",
+    "saveFailed": "Save failed",
+    "deleteSuccess": "Delete successful",
+    "deleteFailed": "Delete failed",
+    "createSuccess": "Create successful",
+    "createFailed": "Create failed",
+    "updateSuccess": "Update successful",
+    "updateFailed": "Update failed",
+    "networkError": "Network error, please check connection",
+    "serverError": "Server error, please try again later"
+  }
+}

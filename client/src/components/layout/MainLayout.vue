@@ -23,8 +23,8 @@
               <span class="logo-text">AI</span>
             </div>
             <div class="title-section">
-              <h1 class="app-title">个人智能创作管理系统</h1>
-              <span class="app-subtitle">智能协作，创意无限</span>
+              <h1 class="app-title">{{ $t('app.title') }}</h1>
+              <span class="app-subtitle">{{ $t('app.subtitle') }}</span>
             </div>
           </div>
         </div>
@@ -37,12 +37,12 @@
               <a-select
                 v-model:value="currentProjectId"
                 @change="handleProjectChange"
-                placeholder="选择项目"
+                :placeholder="$t('project.selectProject')"
                 size="middle"
                 :loading="projectStore.loading"
                 class="project-select"
                 :disabled="projectStore.projects.length === 0"
-                :not-found-content="projectStore.projects.length === 0 ? '暂无项目，请先创建项目' : '未找到匹配的项目'"
+                :not-found-content="projectStore.projects.length === 0 ? $t('project.noProject') : $t('common.search')"
                 show-search
                 :filter-option="filterProject"
                 style="width: 300px"
@@ -112,6 +112,9 @@
 
               <!-- Theme Toggle -->
               <ThemeToggle />
+
+              <!-- Language Toggle -->
+              <LanguageToggle />
 
               <!-- Help -->
               <a-tooltip title="帮助">
@@ -279,6 +282,7 @@ import {
 import type { Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'
 import ThemeToggle from './ThemeToggle.vue'
+import LanguageToggle from './LanguageToggle.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 import { useProjectStore } from '@/stores/project'
 import { useThemeStore } from '@/stores/theme'
