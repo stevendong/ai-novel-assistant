@@ -47,7 +47,7 @@ export function useChapter(chapterId?: string) {
 
   // 保存章节
   const saveChapter = async () => {
-    if (!chapter.value) return
+    if (!chapter.value) return false
 
     saving.value = true
     error.value = null
@@ -62,8 +62,10 @@ export function useChapter(chapterId?: string) {
         status: chapter.value.status
       })
       hasUnsavedChanges.value = false
+      return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : '保存章节失败'
+      return false
     } finally {
       saving.value = false
     }

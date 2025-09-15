@@ -555,17 +555,19 @@ const formatTime = (seconds: number) => {
 // 自动保存
 const saveContent = () => {
   hasUnsavedChanges.value = false
-  message.success('内容已保存')
+  // 不在这里显示保存成功消息，让父组件处理
 }
 
 const startAutoSave = () => {
+  // 禁用自动保存，让父组件控制保存时机
   if (!props.autoSave) return
-  
-  autoSaveTimer.value = setInterval(() => {
-    if (hasUnsavedChanges.value) {
-      saveContent()
-    }
-  }, props.autoSaveInterval)
+
+  // 注释掉自动保存逻辑，避免与父组件冲突
+  // autoSaveTimer.value = setInterval(() => {
+  //   if (hasUnsavedChanges.value) {
+  //     saveContent()
+  //   }
+  // }, props.autoSaveInterval)
 }
 
 // 监听外部内容变化
@@ -617,10 +619,7 @@ const handleKeydown = (event: KeyboardEvent) => {
         event.preventDefault()
         insertThought()
         break
-      case 's':
-        event.preventDefault()
-        saveContent()
-        break
+      // 移除 Ctrl+S 处理，让父组件处理保存
     }
   }
 
@@ -702,7 +701,13 @@ defineExpose({
   // 获取当前HTML内容
   getHTML: () => editor.value?.getHTML() || '',
   // 获取纯文本内容
-  getText: () => editor.value?.getText() || ''
+  getText: () => editor.value?.getText() || '',
+  // 重置未保存状态
+  markAsSaved: () => {
+    hasUnsavedChanges.value = false
+  },
+  // 获取未保存状态
+  getHasUnsavedChanges: () => hasUnsavedChanges.value
 })
 </script>
 

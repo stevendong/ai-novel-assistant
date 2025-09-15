@@ -35,9 +35,10 @@
           </a-button>
           <a-button
             type="primary"
-            @click="saveChapter"
+            @click="handleSaveChapter"
             :loading="saving"
             :disabled="!hasUnsavedChanges"
+            title="保存章节 (Ctrl+S)"
           >
             <template #icon>
               <SaveOutlined />
@@ -53,7 +54,7 @@
       <a-tabs v-model:activeKey="activeTab" type="card" class="px-4">
         <a-tab-pane key="outline" tab="大纲">
           <template #tab>
-            <span class="flex items-center">
+            <span class="flex items-center" title="大纲 (Ctrl+1)">
               <FileTextOutlined class="mr-2" />
               大纲
             </span>
@@ -61,7 +62,7 @@
         </a-tab-pane>
         <a-tab-pane key="content" tab="正文">
           <template #tab>
-            <span class="flex items-center">
+            <span class="flex items-center" title="正文 (Ctrl+2)">
               <EditOutlined class="mr-2" />
               正文
             </span>
@@ -69,7 +70,7 @@
         </a-tab-pane>
         <a-tab-pane key="characters" tab="角色">
           <template #tab>
-            <span class="flex items-center">
+            <span class="flex items-center" title="角色 (Ctrl+3)">
               <TeamOutlined class="mr-2" />
               角色
             </span>
@@ -77,7 +78,7 @@
         </a-tab-pane>
         <a-tab-pane key="settings" tab="设定">
           <template #tab>
-            <span class="flex items-center">
+            <span class="flex items-center" title="设定 (Ctrl+4)">
               <SettingOutlined class="mr-2" />
               设定
             </span>
@@ -85,7 +86,7 @@
         </a-tab-pane>
         <a-tab-pane key="workflow" tab="状态流转">
           <template #tab>
-            <span class="flex items-center">
+            <span class="flex items-center" title="状态流转 (Ctrl+5)">
               <BranchesOutlined class="mr-2" />
               状态流转
             </span>
@@ -93,7 +94,7 @@
         </a-tab-pane>
         <a-tab-pane key="illustrations" tab="插图">
           <template #tab>
-            <span class="flex items-center">
+            <span class="flex items-center" title="插图 (Ctrl+6)">
               <PictureOutlined class="mr-2" />
               插图
             </span>
@@ -101,12 +102,12 @@
         </a-tab-pane>
         <a-tab-pane key="consistency" tab="一致性检查">
           <template #tab>
-            <span class="flex items-center">
+            <span class="flex items-center" title="一致性检查">
               <CheckCircleOutlined class="mr-2" />
               一致性检查
-              <a-badge 
-                v-if="consistencyIssues.length > 0" 
-                :count="unresolvedIssuesCount" 
+              <a-badge
+                v-if="consistencyIssues.length > 0"
+                :count="unresolvedIssuesCount"
                 :number-style="{ backgroundColor: getSeverityColor(highestSeverity) }"
                 class="ml-1"
               />
@@ -1026,6 +1027,23 @@ const getTypeLabel = (type: 'character' | 'setting' | 'timeline' | 'logic') => {
   return consistencyService.getTypeLabel(type)
 }
 
+// 保存章节处理函数
+const handleSaveChapter = async () => {
+  try {
+    const success = await saveChapter()
+    if (success) {
+      // 保存成功后，重置编辑器的未保存状态
+      if (contentEditor.value) {
+        contentEditor.value.markAsSaved()
+      }
+      message.success('章节保存成功')
+    }
+  } catch (err) {
+    console.error('Save chapter error:', err)
+    message.error('章节保存失败')
+  }
+}
+
 // 事件处理函数
 const handleAddPlotPoint = () => {
   addPlotPoint({
@@ -1494,11 +1512,30 @@ const toggleFullscreen = () => {
 
 // 键盘快捷键处理
 const handleKeydown = (event: KeyboardEvent) => {
+  // Ctrl+S / Cmd+S 保存
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault()
+    if (hasUnsavedChanges.value && !saving.value) {
+      handleSaveChapter()
+    }
+  }
+
+  // Ctrl+1-6 切换标签页
+  if ((event.ctrlKey || event.metaKey) && event.key >= '1' && event.key <= '6') {
+    event.preventDefault()
+    const tabKeys = ['outline', 'content', 'characters', 'settings', 'workflow', 'illustrations']
+    const tabIndex = parseInt(event.key) - 1
+    if (tabIndex < tabKeys.length) {
+      activeTab.value = tabKeys[tabIndex]
+    }
+  }
+
   // F11 键切换全屏
   if (event.key === 'F11') {
     event.preventDefault()
     toggleFullscreen()
   }
+
   // Escape 键退出全屏
   if (event.key === 'Escape' && isFullscreen.value) {
     event.preventDefault()
