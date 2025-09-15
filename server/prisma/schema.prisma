@@ -83,6 +83,7 @@ model Chapter {
   illustrations  String?  // 插图位置和描述 JSON字符串
   status         String   @default("planning") // planning, writing, reviewing, completed
   wordCount      Int      @default(0) // 章节字数
+  targetWordCount Int?    // 章节目标字数
   progress       Int      @default(0) // 章节完成进度 0-100
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

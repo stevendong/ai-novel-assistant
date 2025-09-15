@@ -83,6 +83,7 @@ export interface Chapter {
   illustrations: Illustration[]
   status: 'planning' | 'writing' | 'reviewing' | 'completed'
   wordCount?: number
+  targetWordCount?: number
   progress?: number
   characters: ChapterCharacter[]
   settings: ChapterSetting[]

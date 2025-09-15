@@ -25,7 +25,6 @@
               title="总字数"
               :value="totalWords"
               :value-style="{ color: '#1890ff' }"
-              suffix="字"
             >
               <template #formatter="{ value }">
                 {{ formattedTotalWords }}
@@ -108,9 +107,9 @@
             <div class="writing-activity-chart">
               <!-- 月份标签 -->
               <div class="months-row">
-                <div 
-                  class="month-label" 
-                  v-for="month in months" 
+                <div
+                  class="month-label"
+                  v-for="month in months"
                   :key="month.index"
                   :class="{ 'current-month': month.isCurrent }"
                   :title="`${month.year}年${month.name}`"
@@ -330,8 +329,8 @@
                   <ReloadOutlined />
                   刷新
                 </a-button>
-                <a-button 
-                  type="primary" 
+                <a-button
+                  type="primary"
                   size="small"
                   @click="createNewChapter"
                 >
@@ -394,9 +393,9 @@
                       <EditOutlined />
                       编辑
                     </a-button>
-                    <a-button 
-                      type="link" 
-                      size="small" 
+                    <a-button
+                      type="link"
+                      size="small"
                       danger
                       @click="deleteChapter(record)"
                       :disabled="record.status === 'completed'"
@@ -411,9 +410,9 @@
 
             <!-- 批量操作栏 -->
             <div v-if="selectedChapterKeys.length > 0" class="batch-actions">
-              <a-alert 
-                :message="`已选择 ${selectedChapterKeys.length} 个章节`" 
-                type="info" 
+              <a-alert
+                :message="`已选择 ${selectedChapterKeys.length} 个章节`"
+                type="info"
                 show-icon
                 class="mb-3"
               >
@@ -707,22 +706,22 @@ const generateActivityData = () => {
   const now = new Date()
   const oneYearAgo = new Date(now)
   oneYearAgo.setFullYear(now.getFullYear() - 1)
-  
+
   // 创建日期到字数的映射
   const dailyWordCount = new Map<string, number>()
-  
+
   // 基于章节数据计算每日活跃度
   if (chapterProgress.value && chapterProgress.value.length > 0) {
     chapterProgress.value.forEach(chapter => {
       if (chapter.updatedAt && chapter.wordCount > 0) {
         const updateDate = new Date(chapter.updatedAt).toISOString().split('T')[0]
-        
+
         // 基于章节字数和进度估算当天写作字数
         const estimatedDailyWords = Math.min(
           Math.round(chapter.wordCount * (chapter.progress / 100) * 0.1), // 假设当天写作了进度的10%
           1500 // 最大单日字数限制
         )
-        
+
         if (estimatedDailyWords > 0) {
           const existingCount = dailyWordCount.get(updateDate) || 0
           dailyWordCount.set(updateDate, existingCount + estimatedDailyWords)
@@ -745,17 +744,17 @@ const generateActivityData = () => {
     const date = new Date(oneYearAgo)
     date.setDate(date.getDate() + i)
     const dateStr = date.toISOString().split('T')[0]
-    
+
     const wordCount = dailyWordCount.get(dateStr) || 0
     let level = 0
-    
+
     if (wordCount > 0) {
       if (wordCount < 300) level = 1
-      else if (wordCount < 800) level = 2  
+      else if (wordCount < 800) level = 2
       else if (wordCount < 1500) level = 3
       else level = 4
     }
-    
+
     days.push({
       date: dateStr,
       level,
@@ -763,7 +762,7 @@ const generateActivityData = () => {
       contributions: wordCount > 0 ? [`写作 ${wordCount} 字`] : []
     })
   }
-  
+
   activityData.value = days
 }
 
@@ -784,7 +783,7 @@ const months = computed(() => {
   // 计算一年中每个月的起始周位置
   let currentDate = new Date(oneYearAgo)
   const startOfYear = new Date(currentDate)
-  
+
   // 找到年初第一个周日（热力图从周日开始）
   while (currentDate.getDay() !== 0) {
     currentDate.setDate(currentDate.getDate() - 1)
@@ -792,14 +791,14 @@ const months = computed(() => {
 
   for (let i = 0; i < 12; i++) {
     const month = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1)
-    const isCurrentMonth = month.getFullYear() === now.getFullYear() && 
+    const isCurrentMonth = month.getFullYear() === now.getFullYear() &&
                           month.getMonth() === now.getMonth()
-    
+
     // 计算该月第一天是一年中的第几周
     const monthFirstDay = new Date(month.getFullYear(), month.getMonth(), 1)
     const diffTime = monthFirstDay.getTime() - currentDate.getTime()
     const weekIndex = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7))
-    
+
     result.push({
       index: i,
       name: monthNames[month.getMonth()],
@@ -831,10 +830,10 @@ const totalWordsThisYear = computed(() => {
 // 计算当前连续写作天数
 const currentStreakDays = computed(() => {
   if (!activityData.value || activityData.value.length === 0) return 0
-  
+
   let streak = 0
   const sortedData = [...activityData.value].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  
+
   for (const day of sortedData) {
     if (day.level > 0) {
       streak++
@@ -842,7 +841,7 @@ const currentStreakDays = computed(() => {
       break
     }
   }
-  
+
   return streak
 })
 
@@ -862,10 +861,10 @@ const formatActivityDate = (dateString: string): string => {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-  
+
   const diffTime = today.getTime() - targetDate.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 0) {
     return '今天'
   } else if (diffDays === 1) {
@@ -883,7 +882,7 @@ const formatActivityDate = (dateString: string): string => {
 const getTooltip = (day: ActivityDay): string => {
   const dateDisplay = formatActivityDate(day.date)
   const weekDay = new Date(day.date).toLocaleDateString('zh-CN', { weekday: 'long' })
-  
+
   if (day.wordCount === 0) {
     return `${dateDisplay} (${weekDay})\n未写作`
   } else if (day.wordCount < 500) {
@@ -939,7 +938,7 @@ const loadStatisticsData = async (novelId: string) => {
     loading.value = true
     chaptersLoading.value = true
     currentNovelId.value = novelId
-    
+
     // 并行加载所有数据
     const [stats, progress, goals] = await Promise.allSettled([
       novelService.getNovelStatistics(novelId),
@@ -1006,7 +1005,7 @@ const loadStatisticsData = async (novelId: string) => {
         monthly: { target: 30000, achieved: 0, progress: 0 }
       }
     }
-    
+
     // 清除选择
     clearSelection()
   } catch (error) {
@@ -1142,7 +1141,7 @@ const deleteChapter = (chapter: ChapterProgress) => {
 const createNewChapter = () => {
   router.push({
     name: 'chapter',
-    query: { 
+    query: {
       create: 'true',
       novelId: currentNovelId.value
     }
@@ -1184,7 +1183,7 @@ const batchUpdateStatus = async (status: string) => {
       try {
         chaptersLoading.value = true
         await Promise.all(
-          selectedChapterKeys.value.map(id => 
+          selectedChapterKeys.value.map(id =>
             chapterService.updateChapter(id, { status })
           )
         )
@@ -1248,14 +1247,14 @@ const saveGoals = async () => {
   try {
     // 这里应该调用API保存目标
     // await novelService.updateWritingGoals(currentNovelId.value, goalForm.value)
-    
+
     // 模拟保存
     if (writingGoals.value) {
       writingGoals.value.daily.target = goalForm.value.daily
       writingGoals.value.weekly.target = goalForm.value.weekly
       writingGoals.value.monthly.target = goalForm.value.monthly
     }
-    
+
     message.success('写作目标已保存')
     goalModalVisible.value = false
   } catch (error) {

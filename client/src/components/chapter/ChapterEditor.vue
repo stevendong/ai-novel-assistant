@@ -14,6 +14,28 @@
             <div class="flex items-center space-x-4 text-sm theme-text-primary">
               <span>状态：{{ statusText }}</span>
               <span>字数：{{ wordCount }}</span>
+              <span class="flex items-center space-x-2">
+                <span>目标：</span>
+                <a-input-number
+                  v-if="isEditingTargetWords"
+                  v-model:value="editingTargetWords"
+                  :min="100"
+                  :max="20000"
+                  :step="100"
+                  size="small"
+                  style="width: 80px"
+                  @blur="saveTargetWords"
+                  @press-enter="saveTargetWords"
+                />
+                <span
+                  v-else
+                  class="cursor-pointer hover:text-blue-500 underline"
+                  @click="startEditTargetWords"
+                  title="点击编辑目标字数"
+                >
+                  {{ targetWordCount }}字
+                </span>
+              </span>
               <span>更新：{{ formatDate(chapter.updatedAt) }}</span>
               <span v-if="hasUnsavedChanges" class="theme-warning-text">● 有未保存的更改</span>
             </div>
@@ -792,6 +814,7 @@ import { settingService } from '@/services/settingService'
 import { consistencyService } from '@/services/consistencyService'
 import { aiService } from '@/services/aiService'
 import { countValidWords } from '@/utils/textUtils'
+import { useProjectStore } from '@/stores/project'
 import StatusFlowControl from '@/components/workflow/StatusFlowControl.vue'
 import TiptapEditor from './TiptapEditor.vue'
 import type { Character, WorldSetting, PlotPoint, Illustration, ConsistencyCheck } from '@/types'
@@ -803,6 +826,9 @@ interface Props {
 
 const props = defineProps<Props>()
 const route = useRoute()
+
+// 项目store
+const projectStore = useProjectStore()
 
 // 获取章节ID - 优先使用props，然后是路由参数
 const chapterId = computed(() => props.chapterId || route.params.id as string)
@@ -861,6 +887,10 @@ const selectedSettingId = ref<string>()
 // 可用角色和设定数据
 const availableCharacters = ref<Character[]>([])
 const availableSettings = ref<WorldSetting[]>([])
+
+// 目标字数编辑相关
+const isEditingTargetWords = ref(false)
+const editingTargetWords = ref<number>(2000)
 
 // 一致性检查相关数据
 const consistencyIssues = ref<ConsistencyCheck[]>([])
@@ -968,7 +998,28 @@ const contentWordCount = computed(() => {
 })
 
 const targetWordCount = computed(() => {
-  return 2000 // 默认目标字数，可以后续从章节设置中获取
+  // 优先使用章节自己的目标字数
+  if (chapter.value?.targetWordCount) {
+    return chapter.value.targetWordCount
+  }
+
+  // 如果章节没有设置目标字数，尝试从小说总字数计算
+  const currentProject = projectStore.currentProject
+  if (currentProject?.targetWordCount) {
+    // 获取当前小说的章节总数进行平均分配
+    // 这里我们使用一个简单的估算：假设平均每章2000字
+    const estimatedChapters = Math.ceil(currentProject.targetWordCount / 2000)
+    const averagePerChapter = Math.round(currentProject.targetWordCount / estimatedChapters)
+
+    // 设置合理的范围：最少500字，最多8000字
+    const minWordCount = 500
+    const maxWordCount = 8000
+
+    return Math.max(minWordCount, Math.min(maxWordCount, averagePerChapter))
+  }
+
+  // 默认目标字数
+  return 2000
 })
 
 // 工具函数
@@ -1586,6 +1637,30 @@ const insertContentTemplate = () => {
       )
     ])
   })
+}
+
+// 目标字数编辑功能
+const startEditTargetWords = () => {
+  isEditingTargetWords.value = true
+  editingTargetWords.value = chapter.value?.targetWordCount || targetWordCount.value
+}
+
+const saveTargetWords = async () => {
+  if (!chapter.value || !editingTargetWords.value) {
+    isEditingTargetWords.value = false
+    return
+  }
+
+  try {
+    // 调用API更新章节目标字数
+    await updateChapter('targetWordCount', editingTargetWords.value)
+    message.success('目标字数更新成功')
+  } catch (err) {
+    message.error('目标字数更新失败')
+    console.error('Error updating target word count:', err)
+  } finally {
+    isEditingTargetWords.value = false
+  }
 }
 
 // 状态流转处理

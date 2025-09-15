@@ -233,7 +233,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, outline, content, plotPoints, illustrations, status } = req.body;
+    const { title, outline, content, plotPoints, illustrations, status, targetWordCount } = req.body;
 
     // 计算有效字数
     const wordCount = content ? countValidWords(content, {
@@ -251,6 +251,7 @@ router.put('/:id', async (req, res) => {
         illustrations,
         status,
         wordCount,
+        targetWordCount,
         updatedAt: new Date()
       }
     });
