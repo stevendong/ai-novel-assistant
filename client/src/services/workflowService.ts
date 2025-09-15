@@ -54,14 +54,15 @@ class WorkflowService {
     entityType: 'novel' | 'chapter',
     entityId: string,
     toStatus: string,
-    reason?: string
+    reason?: string,
+    triggeredBy: 'user' | 'manual' = 'user'
   ): Promise<TransitionResult> {
     const response = await fetch(`${API_BASE}/workflow/${entityType}/${entityId}/transition`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ toStatus, reason }),
+      body: JSON.stringify({ toStatus, reason, triggeredBy }),
     })
 
     if (!response.ok) {

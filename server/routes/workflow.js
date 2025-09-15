@@ -24,8 +24,8 @@ router.get('/:entityType/:entityId/transitions', async (req, res) => {
 router.post('/:entityType/:entityId/transition', async (req, res) => {
   try {
     const { entityType, entityId } = req.params
-    const { toStatus, reason } = req.body
-    
+    const { toStatus, reason, triggeredBy } = req.body
+
     if (!['novel', 'chapter'].includes(entityType)) {
       return res.status(400).json({ error: 'Invalid entity type' })
     }
@@ -35,13 +35,13 @@ router.post('/:entityType/:entityId/transition', async (req, res) => {
     }
 
     const result = await statusWorkflowService.transitionStatus(
-      entityType, 
-      entityId, 
-      toStatus, 
-      'user', 
+      entityType,
+      entityId,
+      toStatus,
+      triggeredBy || 'user',
       reason
     )
-    
+
     res.json(result)
   } catch (error) {
     console.error('Error transitioning status:', error)

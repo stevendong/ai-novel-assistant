@@ -321,10 +321,29 @@ const handleKeydown = (event: KeyboardEvent) => {
     }
   }
 
-  // Enter 自动段落格式化
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
-    insertParagraph()
+  // Enter 智能段落处理
+  if (event.key === 'Enter') {
+    // Shift+Enter: 简单换行
+    if (event.shiftKey) {
+      event.preventDefault()
+      insertTextAtCursor('\n')
+      return false
+    }
+
+    // Ctrl/Cmd+Enter: 强制新段落
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault()
+      insertTextAtCursor('\n\n　　')
+      return false
+    }
+
+    // 普通Enter: 智能段落处理
+    if (!event.altKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      handleSmartEnter()
+      return false
+    }
   }
 }
 
@@ -344,6 +363,138 @@ const handleBlur = () => {
   isFocused.value = false
   emit('blur')
   stopWritingTimer()
+}
+
+// 智能回车处理
+const handleSmartEnter = () => {
+  const selection = window.getSelection()
+  if (!selection || !editorRef.value) {
+    insertTextAtCursor('\n　　')
+    return
+  }
+
+  try {
+    const range = selection.getRangeAt(0)
+
+    // 获取光标位置信息
+    const preRange = range.cloneRange()
+    preRange.selectNodeContents(editorRef.value)
+    preRange.setEnd(range.startContainer, range.startOffset)
+    const cursorPos = preRange.toString().length
+
+    // 获取当前行信息
+    const beforeCursor = content.value.substring(0, cursorPos)
+    const afterCursor = content.value.substring(cursorPos)
+
+    const currentLineStart = beforeCursor.lastIndexOf('\n') + 1
+    const currentLineEnd = afterCursor.indexOf('\n')
+    const currentLineEndPos = currentLineEnd === -1 ? content.value.length : cursorPos + currentLineEnd
+
+    const currentLine = content.value.substring(currentLineStart, currentLineEndPos)
+    const beforeCurrentLine = beforeCursor.substring(currentLineStart)
+    const afterCurrentLine = afterCursor.substring(0, currentLineEnd === -1 ? afterCursor.length : currentLineEnd)
+
+    // 判断不同情况并插入相应内容
+    const insertion = getSmartInsertionText(currentLine, beforeCurrentLine, afterCurrentLine, cursorPos - currentLineStart)
+
+    insertTextAtCursor(insertion)
+
+  } catch (error) {
+    console.warn('Smart enter failed:', error)
+    insertTextAtCursor('\n　　')
+  }
+}
+
+// 获取智能插入文本
+const getSmartInsertionText = (
+  currentLine: string,
+  beforeCurrentLine: string,
+  afterCurrentLine: string,
+  cursorInLine: number
+): string => {
+  const trimmedLine = currentLine.trim()
+
+  // 情况1: 空行 - 插入缩进段落
+  if (!trimmedLine) {
+    return '\n　　'
+  }
+
+  // 情况2: 标题行 - 插入双换行加缩进
+  if (novelFormatter.isTitle(trimmedLine)) {
+    return '\n\n　　'
+  }
+
+  // 情况3: 场景分隔线 - 插入双换行加缩进
+  if (novelFormatter.isSceneBreak(trimmedLine)) {
+    return '\n\n　　'
+  }
+
+  // 情况4: 对话行处理
+  if (novelFormatter.isDialogue(trimmedLine)) {
+    return handleDialogueEnter(currentLine, beforeCurrentLine, afterCurrentLine, cursorInLine)
+  }
+
+  // 情况5: 普通段落
+  return handleParagraphEnter(currentLine, beforeCurrentLine, afterCurrentLine, cursorInLine)
+}
+
+// 处理对话行的回车
+const handleDialogueEnter = (
+  currentLine: string,
+  beforeCurrentLine: string,
+  afterCurrentLine: string,
+  cursorInLine: number
+): string => {
+  const trimmedLine = currentLine.trim()
+
+  // 检查是否在引号内
+  const beforeCursor = beforeCurrentLine
+  const afterCursor = afterCurrentLine
+
+  // 统计光标前的引号数量
+  const beforeQuotes = (beforeCursor.match(/"/g) || []).length
+  const afterQuotes = (afterCursor.match(/"/g) || []).length
+
+  // 如果在引号内（引号数量为奇数）
+  if (beforeQuotes % 2 === 1) {
+    // 在对话内换行，只插入换行符
+    return '\n'
+  }
+
+  // 如果在引号外或引号后
+  if (trimmedLine.endsWith('"') || trimmedLine.endsWith('"')) {
+    // 对话结束后，可能开始新对话或转为叙述
+    if (cursorInLine >= currentLine.length - 2) {
+      // 光标在行尾，开始新的叙述段落
+      return '\n　　'
+    }
+  }
+
+  // 默认开始新对话
+  return '\n　　"'
+}
+
+// 处理普通段落的回车
+const handleParagraphEnter = (
+  currentLine: string,
+  beforeCurrentLine: string,
+  afterCurrentLine: string,
+  cursorInLine: number
+): string => {
+  const trimmedLine = currentLine.trim()
+
+  // 如果光标在行首
+  if (cursorInLine === 0 || beforeCurrentLine.trim() === '') {
+    return '\n　　'
+  }
+
+  // 如果光标在行尾
+  if (cursorInLine >= currentLine.length - 1 || afterCurrentLine.trim() === '') {
+    return '\n　　'
+  }
+
+  // 如果在行中间，分割段落
+  return '\n　　'
 }
 
 // 文本插入功能
@@ -367,22 +518,8 @@ const insertTextAtCursor = (text: string) => {
 }
 
 const insertParagraph = () => {
-  const selection = window.getSelection()
-  if (!selection) return
-  
-  const range = selection.getRangeAt(0)
-  const cursorPos = range.startOffset
-  
-  const result = novelFormatter.smartParagraphBreak(content.value, cursorPos)
-  content.value = result.newText
-  
-  // 更新编辑器内容
-  if (editorRef.value) {
-    editorRef.value.innerText = result.newText
-  }
-  
-  emit('update:modelValue', content.value)
-  emit('change', content.value)
+  // 工具栏按钮点击时，直接调用智能回车处理
+  handleSmartEnter()
 }
 
 const insertDialogue = () => {
@@ -461,11 +598,53 @@ const updateCursorPosition = () => {
   const preRange = range.cloneRange()
   preRange.selectNodeContents(editorRef.value)
   preRange.setEnd(range.startContainer, range.startOffset)
-  
+
   const text = preRange.toString()
   const lines = text.split('\n')
   currentLine.value = lines.length
   currentColumn.value = lines[lines.length - 1].length + 1
+}
+
+// 设置光标位置
+const setCursorPosition = (position: number) => {
+  if (!editorRef.value) return
+
+  try {
+    const walker = document.createTreeWalker(
+      editorRef.value,
+      NodeFilter.SHOW_TEXT,
+      null
+    )
+
+    let node
+    let currentPos = 0
+
+    while (node = walker.nextNode()) {
+      const nodeLength = node.textContent?.length || 0
+      if (currentPos + nodeLength >= position) {
+        const range = document.createRange()
+        const selection = window.getSelection()
+
+        range.setStart(node, Math.max(0, position - currentPos))
+        range.collapse(true)
+
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+        return
+      }
+      currentPos += nodeLength
+    }
+
+    // 如果位置超出范围，设置到末尾
+    const range = document.createRange()
+    const selection = window.getSelection()
+    range.selectNodeContents(editorRef.value)
+    range.collapse(false)
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  } catch (error) {
+    console.warn('Failed to set cursor position:', error)
+  }
 }
 
 // 写作时间统计

@@ -19,7 +19,7 @@ class StatusWorkflowService {
       chapter: [
         { from: 'planning', to: 'outlined', conditions: [{ type: 'outline_exists' }], autoTrigger: true },
         { from: 'outlined', to: 'writing', conditions: [{ type: 'content_started' }], autoTrigger: true },
-        { from: 'writing', to: 'reviewing', conditions: [{ type: 'word_count_target', value: 0.8 }], autoTrigger: false },
+        { from: 'writing', to: 'reviewing', conditions: [{ type: 'content_exists' }], autoTrigger: false },
         { from: 'reviewing', to: 'editing', conditions: [{ type: 'consistency_check_passed' }], autoTrigger: false },
         { from: 'editing', to: 'completed', conditions: [{ type: 'manual_trigger' }], autoTrigger: false }
       ]
@@ -78,21 +78,33 @@ class StatusWorkflowService {
 
       if (!entity) return { canTransition: false, reason: 'Entity not found' }
 
+      // 手动修改状态时，只验证目标状态是否有效，不检查工作流转换规则
+      if (triggeredBy === 'manual') {
+        const validStatuses = entityType === 'novel' ? this.novelStatuses : this.chapterStatuses
+        if (!validStatuses.includes(toStatus)) {
+          return { canTransition: false, reason: 'Invalid target status' }
+        }
+        if (entity.status === toStatus) {
+          return { canTransition: false, reason: 'Target status is same as current status' }
+        }
+        return { canTransition: true }
+      }
+
       const workflow = await this.getWorkflow(
-        entityType === 'novel' ? entityId : entity.novelId, 
+        entityType === 'novel' ? entityId : entity.novelId,
         entityType
       )
-      
+
       const currentStatus = entity.status
-      
+
       // 确保 workflow.transitions 是数组
       if (!Array.isArray(workflow.transitions)) {
         console.warn(`Workflow transitions is not an array for ${entityType} ${entityId}:`, workflow.transitions)
         return { canTransition: false, reason: 'Invalid workflow configuration' }
       }
-      
+
       const transition = workflow.transitions.find(t => t && t.from === currentStatus && t.to === toStatus)
-      
+
       if (!transition) {
         return { canTransition: false, reason: 'Invalid transition' }
       }
@@ -158,16 +170,13 @@ class StatusWorkflowService {
           passed: entity.content && entity.content.trim().length > 0,
           reason: '需要开始写作内容'
         }
-      
-      case 'word_count_target':
-        const targetWordCount = entity.novel?.targetWordCount || 3000
-        const currentWordCount = entity.wordCount || 0
-        const threshold = condition.value || 0.8
+
+      case 'content_exists':
         return {
-          passed: currentWordCount >= (targetWordCount * threshold),
-          reason: `字数需要达到目标的${Math.round(threshold * 100)}%`
+          passed: entity.content && entity.content.trim().length > 0,
+          reason: '需要有正文内容'
         }
-      
+
       case 'consistency_check_passed':
         const highSeverityIssues = await prisma.consistencyCheck.count({
           where: { 
