@@ -187,6 +187,57 @@
 
     --color-heading: var(--vt-c-text-dark-1);
     --color-text: var(--vt-c-text-dark-2);
+
+    /* 主题变量 - 暗色模式 */
+    --theme-bg-base: #141414;
+    --theme-bg-container: #1f1f1f;
+    --theme-bg-elevated: #262626;
+    --theme-border: #434343;
+    --theme-text: rgba(255, 255, 255, 0.85);
+    --theme-text-secondary: rgba(255, 255, 255, 0.65);
+
+    /* 选中状态主题变量 */
+    --theme-selected-bg: #111b26;
+    --theme-selected-border: #165996;
+    --theme-selected-hover-bg: #0e1419;
+
+    /* 图标背景主题变量 */
+    --theme-icon-bg: #111b26;
+    --theme-icon-text: #4096ff;
+
+    /* 编辑器主题变量 */
+    --theme-editor-bg: #1f1f1f;
+    --theme-editor-text: #d9d9d9;
+    --theme-editor-toolbar: #262626;
+    --theme-editor-border: #434343;
+    --theme-editor-preview: #141414;
+    --theme-chapter-avatar: #4096ff;
+    --theme-warning-text: #ff7875;
+
+    /* 编辑器内容样式变量 */
+    --theme-editor-focus-bg: #262626;
+    --theme-editor-placeholder: #8c8c8c;
+    --theme-editor-dialogue: #91caff;
+    --theme-editor-scene: #bfbfbf;
+    --theme-editor-thought: #b37feb;
+    --theme-editor-active-btn: #4096ff;
+    --theme-editor-secondary-text: #a6a6a6;
+    --theme-editor-unsaved: #ff7875;
+
+    /* 一致性检查主题变量 */
+    --theme-consistency-panel-bg: #262626;
+    --theme-consistency-hover: rgba(255, 255, 255, 0.04);
+    --theme-consistency-success: #73d13d;
+    --theme-consistency-high-bg: #2a1215;
+    --theme-consistency-high-border: #58181c;
+    --theme-consistency-high-text: #ff7875;
+    --theme-consistency-medium-bg: #2b2611;
+    --theme-consistency-medium-border: #614700;
+    --theme-consistency-medium-text: #ffc53d;
+    --theme-consistency-low-bg: #162312;
+    --theme-consistency-low-border: #274916;
+    --theme-consistency-low-text: #73d13d;
+    --theme-consistency-link: #4096ff;
   }
 }
 

@@ -169,7 +169,7 @@
               <a-textarea
                 v-model:value="outlineMarkdown"
                 :rows="15"
-                placeholder="在这里编写章节大纲...&#10;&#10;支持Markdown语法，例如：&#10;## 开场设定&#10;- 时间：深夜&#10;- 地点：废弃工厂&#10;- 主角：李明（紧张、好奇）&#10;&#10;## 关键情节&#10;1. 发现神秘线索&#10;2. 遭遇未知危险&#10;3. 勉强脱险，获得重要信息"
+                placeholder="在这里编写章节内容大纲...&#10;&#10;支持Markdown语法，例如：&#10;## 章节开头&#10;- 时间地点设定&#10;- 人物状态描述&#10;&#10;## 内容发展&#10;1. **开端** - 情况引入&#10;2. **发展** - 矛盾展开&#10;3. **转折** - 意外变化&#10;4. **结尾** - 解决冲突"
                 class="font-mono"
               />
             </div>
@@ -273,6 +273,11 @@
                       <a-menu-item key="3000">
                         <ContainerOutlined />
                         长篇续写 (~3000字)
+                      </a-menu-item>
+                      <a-menu-divider />
+                      <a-menu-item key="custom">
+                        <SettingOutlined />
+                        自定义长度
                       </a-menu-item>
                     </a-menu>
                   </template>
@@ -776,6 +781,63 @@
         </div>
       </div>
     </a-modal>
+
+    <!-- 自定义长度模态框 -->
+    <a-modal
+      v-model:open="showCustomLengthModal"
+      title="自定义生成长度"
+      @ok="handleCustomLengthSubmit"
+      @cancel="showCustomLengthModal = false"
+    >
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium theme-text-primary mb-2">
+            目标字数
+          </label>
+          <a-input-number
+            v-model:value="customLength"
+            :min="100"
+            :max="10000"
+            :step="100"
+            style="width: 100%"
+            placeholder="请输入要生成的字数"
+          />
+          <div class="text-xs theme-text-secondary mt-1">
+            建议范围：100-10000字
+            <span v-if="contentWordCount > 0" class="ml-2">
+              • 当前：{{ contentWordCount }}字 / 目标：{{ targetWordCount }}字
+            </span>
+          </div>
+        </div>
+
+        <div class="theme-bg-elevated p-3 rounded">
+          <div class="text-sm theme-text-primary mb-2">快速设置：</div>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <a-button size="small" @click="customLength = 500" class="text-xs">
+              短篇 (500字)
+            </a-button>
+            <a-button size="small" @click="customLength = 1000" class="text-xs">
+              中篇 (1000字)
+            </a-button>
+            <a-button size="small" @click="customLength = 2000" class="text-xs">
+              标准 (2000字)
+            </a-button>
+            <a-button size="small" @click="customLength = 3000" class="text-xs">
+              长篇 (3000字)
+            </a-button>
+          </div>
+          <a-button
+            size="small"
+            type="primary"
+            @click="customLength = suggestCustomLength"
+            class="text-xs w-full"
+            v-if="contentWordCount > 0 && targetWordCount > contentWordCount"
+          >
+            智能建议 ({{ suggestCustomLength }}字)
+          </a-button>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -874,6 +936,10 @@ const isOutlinePreviewMode = ref(false)
 const contentText = ref('')
 const contentEditor = ref()
 const generatingContent = ref(false)
+
+// 自定义长度输入相关状态
+const showCustomLengthModal = ref(false)
+const customLength = ref(2000)
 
 // 全屏状态
 const isFullscreen = ref(false)
@@ -1203,10 +1269,10 @@ const generateOutline = async () => {
   if (!chapter.value) return null
 
   try {
-    // 构建章节大纲生成参数
+    // 构建单章节大纲生成参数
     const chapterCharacters = chapter.value.characters || []
     const chapterSettings = chapter.value.settings || []
-    
+
     // 获取角色和设定的详细信息
     const characterDetails = chapterCharacters.map(cc => {
       const char = availableCharacters.value.find(c => c.id === cc.characterId)
@@ -1217,7 +1283,7 @@ const generateOutline = async () => {
         background: char.background
       } : { name: '未知角色', description: '' }
     })
-    
+
     const settingDetails = chapterSettings.map(cs => {
       const setting = availableSettings.value.find(s => s.id === cs.settingId)
       return setting ? {
@@ -1226,21 +1292,22 @@ const generateOutline = async () => {
         description: setting.description
       } : { name: '未知设定', type: '', description: '' }
     })
-    
+
     const params = {
       novelId: chapter.value.novelId,
-      type: 'chapter' as const,
-      length: 'standard' as const,
-      coreIdea: `为第${chapter.value.chapterNumber}章"${chapter.value.title}"生成详细大纲`,
-      description: chapter.value.outline || '基于现有章节信息生成详细的章节大纲',
+      chapterId: chapter.value.id,
+      chapterNumber: chapter.value.chapterNumber,
+      chapterTitle: chapter.value.title,
+      existingOutline: chapter.value.outline || '',
       characters: characterDetails,
-      settings: settingDetails
+      settings: settingDetails,
+      targetWords: targetWordCount.value
     }
 
-    const outlineData = await aiService.generateOutline(params)
-    return outlineData.chapters[0] // 返回第一个（也是唯一一个）章节的大纲
+    const outlineData = await aiService.generateChapterOutline(params)
+    return outlineData
   } catch (error) {
-    console.error('Generate outline error:', error)
+    console.error('Generate chapter outline error:', error)
     throw error
   }
 }
@@ -1252,20 +1319,59 @@ const requestAIOutline = async () => {
     message.loading({ content: '正在生成AI大纲...', key: 'ai-outline', duration: 0 })
     const outline = await generateOutline()
     if (outline) {
-      // 将AI生成的大纲应用到章节的outline字段
-      const newOutlineContent = `# ${outline.title}\n\n## 章节概述\n${outline.summary}\n\n## 关键情节点\n${outline.plotPoints.map((point, index) => `${index + 1}. **${point.type}**: ${point.description}`).join('\n')}\n\n## 涉及角色\n${outline.characters.map(char => `- ${char}`).join('\n')}\n\n## 相关设定\n${outline.settings.map(setting => `- ${setting}`).join('\n')}\n\n## 章节目标\n${outline.chapterGoals?.map(goal => `- ${goal}`).join('\n') || ''}\n\n## 情感基调\n${outline.emotionalTone}\n\n## 预估字数\n${outline.estimatedWords} 字`
-      
+      // 将AI生成的章节大纲应用到章节的outline字段
+      let newOutlineContent = `# ${outline.title}\n\n## 章节概述\n${outline.summary}\n\n## 内容结构\n`
+
+      // 添加内容结构段落
+      outline.contentStructure.forEach((section, index) => {
+        newOutlineContent += `### ${index + 1}. ${section.title}\n${section.description}`
+        if (section.estimatedWords > 0) {
+          newOutlineContent += ` (约${section.estimatedWords}字)`
+        }
+        newOutlineContent += '\n\n'
+      })
+
+      // 添加章节重点
+      if (outline.keyPoints && outline.keyPoints.length > 0) {
+        newOutlineContent += `## 章节重点\n${outline.keyPoints.map(point => `- ${point}`).join('\n')}\n\n`
+      }
+
+      // 添加情感基调
+      if (outline.emotionalTone) {
+        newOutlineContent += `## 情感基调\n${outline.emotionalTone}\n\n`
+      }
+
+      // 添加字数目标
+      newOutlineContent += `## 字数目标\n约 ${outline.targetWords} 字`
+
       // 更新章节大纲
       await updateChapter('outline', newOutlineContent)
-      
+
       // 更新本地markdown内容
       setOutlineMarkdown(newOutlineContent)
-      
-      message.success({ content: 'AI大纲生成完成！', key: 'ai-outline' })
+
+      // 自动设置情节要点
+      if (outline.plotPoints && outline.plotPoints.length > 0) {
+        // 清空现有情节要点
+        chapter.value.plotPoints = []
+
+        // 添加新的情节要点
+        outline.plotPoints.forEach(plotPoint => {
+          addPlotPoint({
+            type: plotPoint.type,
+            description: plotPoint.description
+          })
+        })
+
+        // 保存更新后的章节数据
+        await saveChapter()
+      }
+
+      message.success({ content: 'AI章节大纲生成完成！已自动设置情节要点', key: 'ai-outline' })
     }
   } catch (err) {
-    console.error('AI outline generation failed:', err)
-    message.error({ content: 'AI大纲生成失败', key: 'ai-outline' })
+    console.error('AI chapter outline generation failed:', err)
+    message.error({ content: 'AI章节大纲生成失败', key: 'ai-outline' })
   }
 }
 
@@ -1388,8 +1494,48 @@ const handleContentChange = (value: string) => {
 
 // AI生成正文功能
 const handleAIGenerateLength = async ({ key }: { key: string }) => {
-  const targetLength = parseInt(key)
-  await generateAIContent(targetLength)
+  if (key === 'custom') {
+    // 打开自定义长度模态框，使用智能建议
+    openCustomLengthModal()
+  } else {
+    const targetLength = parseInt(key)
+    await generateAIContent(targetLength)
+  }
+}
+
+// 处理自定义长度提交
+const handleCustomLengthSubmit = async () => {
+  if (customLength.value < 100 || customLength.value > 10000) {
+    message.error('字数必须在100-10000之间')
+    return
+  }
+
+  showCustomLengthModal.value = false
+  await generateAIContent(customLength.value)
+}
+
+// 智能建议自定义长度（基于目标字数和当前字数）
+const suggestCustomLength = computed(() => {
+  const target = targetWordCount.value
+  const current = contentWordCount.value
+  const remaining = target - current
+
+  if (remaining > 0) {
+    // 如果还需要更多字数，建议剩余字数或合理范围
+    if (remaining <= 10000) {
+      return Math.max(100, Math.min(remaining, 3000))
+    }
+    return 3000
+  } else {
+    // 如果已经超过目标，建议基础长度
+    return 1000
+  }
+})
+
+// 打开自定义长度模态框时设置智能建议
+const openCustomLengthModal = () => {
+  customLength.value = suggestCustomLength.value
+  showCustomLengthModal.value = true
 }
 
 const generateAIContent = async (targetLength: number = 2000) => {

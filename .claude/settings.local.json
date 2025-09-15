@@ -25,7 +25,8 @@
       "Bash(kill:*)",
       "Bash(xargs kill:*)",
       "Bash(awk:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(PORT=3002 npm run dev)"
     ],
     "deny": [],
     "ask": []

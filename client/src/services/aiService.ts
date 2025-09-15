@@ -29,6 +29,44 @@ export interface OutlineData {
   chapters: ChapterData[]
 }
 
+// 单章节大纲生成参数
+export interface ChapterOutlineParams {
+  novelId: string
+  chapterId: string
+  chapterNumber: number
+  chapterTitle: string
+  existingOutline?: string
+  characters?: any[]
+  settings?: any[]
+  targetWords?: number
+  previousChapterSummary?: string
+  nextChapterPlan?: string
+}
+
+// 内容段落结构
+export interface ContentSection {
+  title: string
+  description: string
+  estimatedWords: number
+}
+
+// 单章节大纲数据
+export interface ChapterOutlineData {
+  title: string
+  summary: string
+  contentStructure: ContentSection[]
+  targetWords: number
+  keyPoints: string[]
+  emotionalTone: string
+  plotPoints: PlotPointData[]
+}
+
+// 情节要点数据
+export interface PlotPointData {
+  type: 'conflict' | 'discovery' | 'emotion' | 'action' | 'dialogue'
+  description: string
+}
+
 export interface ChapterData {
   title: string
   type: string
@@ -124,6 +162,307 @@ class AIService {
     }
 
     return this.parseOutlineResponse(content, type, length)
+  }
+
+  // 生成单章节内容大纲
+  async generateChapterOutline(params: ChapterOutlineParams): Promise<ChapterOutlineData> {
+    const {
+      novelId,
+      chapterId,
+      chapterNumber,
+      chapterTitle,
+      existingOutline = '',
+      characters = [],
+      settings = [],
+      targetWords = 2000,
+      previousChapterSummary = '',
+      nextChapterPlan = ''
+    } = params
+
+    const prompt = this.buildChapterOutlinePrompt({
+      chapterNumber,
+      chapterTitle,
+      existingOutline,
+      characters,
+      settings,
+      targetWords,
+      previousChapterSummary,
+      nextChapterPlan
+    })
+
+    const response = await this.chat(novelId, prompt, {
+      characters,
+      settings,
+      chapterOutlineGeneration: true
+    }, {
+      type: 'creative',
+      taskType: 'creative'
+    })
+
+    console.log('章节大纲AI响应:', response)
+
+    // 处理响应格式
+    let content = ''
+    if (typeof response === 'string') {
+      content = response
+    } else if (response && typeof response === 'object') {
+      content = response.content || response.message || response.data || (response as any).text || ''
+      if (typeof content !== 'string') {
+        content = JSON.stringify(response)
+      }
+    }
+
+    return this.parseChapterOutlineResponse(content, chapterNumber, chapterTitle, targetWords)
+  }
+
+  // 构建章节大纲生成提示词
+  buildChapterOutlinePrompt(params: any): string {
+    const {
+      chapterNumber,
+      chapterTitle,
+      existingOutline,
+      characters,
+      settings,
+      targetWords,
+      previousChapterSummary,
+      nextChapterPlan
+    } = params
+
+    let prompt = `请为第${chapterNumber}章"${chapterTitle}"生成一个详细的内容大纲。
+
+**章节信息：**
+- 章节：第${chapterNumber}章
+- 标题：${chapterTitle}
+- 目标字数：约${targetWords}字
+
+**任务要求：**
+请生成一个专注于本章节内容结构的大纲，包括：
+1. 章节概述（100-200字）
+2. 内容结构（分成4-6个主要段落，每段说明具体内容和预估字数）
+3. 章节重点（3-5个关键情节或要点）
+4. 情感基调描述
+5. 情节要点（3-6个具体的情节要点，分类为：冲突、发现、情感、行动、对话）
+
+**生成格式要求：**
+请严格按照以下JSON格式返回：
+{
+  "title": "第${chapterNumber}章：${chapterTitle}",
+  "summary": "章节概述内容",
+  "contentStructure": [
+    {
+      "title": "开头部分",
+      "description": "具体描述这一段的内容",
+      "estimatedWords": 300
+    },
+    {
+      "title": "发展部分",
+      "description": "具体描述这一段的内容",
+      "estimatedWords": 500
+    }
+  ],
+  "targetWords": ${targetWords},
+  "keyPoints": ["重点1", "重点2", "重点3"],
+  "emotionalTone": "情感基调描述",
+  "plotPoints": [
+    {
+      "type": "conflict",
+      "description": "具体的冲突情节描述"
+    },
+    {
+      "type": "discovery",
+      "description": "具体的发现情节描述"
+    }
+  ]
+}
+
+**情节要点类型说明：**
+- conflict: 冲突情节（人物间矛盾、内心挣扎、外部阻碍等）
+- discovery: 发现情节（新信息、重要线索、真相揭示等）
+- emotion: 情感情节（情感变化、关系发展、心理转折等）
+- action: 行动情节（具体行为、事件发生、情况变化等）
+- dialogue: 对话情节（重要对话、信息交换、关系确认等）`
+
+    if (existingOutline) {
+      prompt += `\n\n**现有大纲：**\n${existingOutline}`
+    }
+
+    if (previousChapterSummary) {
+      prompt += `\n\n**上一章概要：**\n${previousChapterSummary}`
+    }
+
+    if (nextChapterPlan) {
+      prompt += `\n\n**下一章计划：**\n${nextChapterPlan}`
+    }
+
+    if (characters.length > 0) {
+      prompt += `\n\n**相关角色：**\n`
+      characters.forEach((char: any) => {
+        prompt += `- ${char.name}：${char.description || '暂无描述'}\n`
+      })
+    }
+
+    if (settings.length > 0) {
+      prompt += `\n\n**相关设定：**\n`
+      settings.forEach((setting: any) => {
+        prompt += `- ${setting.name}：${setting.description || '暂无描述'}\n`
+      })
+    }
+
+    prompt += `\n\n请确保：
+1. 内容结构合理，有明确的开头、发展、高潮、结尾
+2. 每个段落的字数分配合理，总和接近目标字数
+3. 情节紧凑，有足够的冲突和转折
+4. 符合角色设定和世界观背景`
+
+    return prompt
+  }
+
+  // 解析章节大纲响应
+  parseChapterOutlineResponse(content: string, chapterNumber: number, chapterTitle: string, targetWords: number): ChapterOutlineData {
+    try {
+      // 尝试解析JSON格式
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0])
+        return {
+          title: parsed.title || `第${chapterNumber}章：${chapterTitle}`,
+          summary: parsed.summary || '暂无概述',
+          contentStructure: parsed.contentStructure || [],
+          targetWords: parsed.targetWords || targetWords,
+          keyPoints: parsed.keyPoints || [],
+          emotionalTone: parsed.emotionalTone || '平稳',
+          plotPoints: parsed.plotPoints || []
+        }
+      }
+    } catch (error) {
+      console.log('JSON解析失败，使用文本解析')
+    }
+
+    // 文本格式解析备用方案
+    const lines = content.split('\n').filter(line => line.trim())
+
+    return {
+      title: `第${chapterNumber}章：${chapterTitle}`,
+      summary: this.extractSummaryFromText(content),
+      contentStructure: this.extractContentStructureFromText(content, targetWords),
+      targetWords,
+      keyPoints: this.extractKeyPointsFromText(content),
+      emotionalTone: this.extractEmotionalToneFromText(content),
+      plotPoints: this.extractPlotPointsFromText(content)
+    }
+  }
+
+  // 从文本中提取概述
+  private extractSummaryFromText(content: string): string {
+    const summaryMatch = content.match(/概述[：:]\s*(.+?)(?=\n\n|\n[#*-]|$)/s)
+    return summaryMatch ? summaryMatch[1].trim() : '本章将推进主要情节发展。'
+  }
+
+  // 从文本中提取内容结构
+  private extractContentStructureFromText(content: string, targetWords: number): ContentSection[] {
+    const sections: ContentSection[] = []
+    const sectionMatches = content.match(/\d+\.\s*\*\*(.+?)\*\*[：:]?\s*(.+?)(?=\n\d+\.|$)/gs)
+
+    if (sectionMatches && sectionMatches.length > 0) {
+      const wordsPerSection = Math.floor(targetWords / sectionMatches.length)
+      sectionMatches.forEach((match, index) => {
+        const titleMatch = match.match(/\*\*(.+?)\*\*/)
+        const descMatch = match.match(/\*\*.*?\*\*[：:]?\s*(.+)/)
+
+        sections.push({
+          title: titleMatch ? titleMatch[1] : `第${index + 1}部分`,
+          description: descMatch ? descMatch[1].trim() : '内容描述',
+          estimatedWords: wordsPerSection
+        })
+      })
+    } else {
+      // 默认结构
+      const defaultWords = Math.floor(targetWords / 4)
+      sections.push(
+        { title: '开头', description: '设置场景，引入情节', estimatedWords: defaultWords },
+        { title: '发展', description: '推进故事，展开冲突', estimatedWords: defaultWords },
+        { title: '高潮', description: '情节达到顶点', estimatedWords: defaultWords },
+        { title: '结尾', description: '解决冲突，为下章铺垫', estimatedWords: defaultWords }
+      )
+    }
+
+    return sections
+  }
+
+  // 从文本中提取关键要点
+  private extractKeyPointsFromText(content: string): string[] {
+    const pointsMatch = content.match(/[要重]点[：:]?\s*(.+?)(?=\n\n|\n[#*]|$)/s)
+    if (pointsMatch) {
+      return pointsMatch[1].split(/[,，\n]/).map(p => p.trim()).filter(p => p.length > 0)
+    }
+    return ['推进主线剧情', '角色关系发展', '设置悬念']
+  }
+
+  // 从文本中提取情感基调
+  private extractEmotionalToneFromText(content: string): string {
+    const toneMatch = content.match(/[情感][基]?调[：:]?\s*(.+?)(?=\n|$)/)
+    return toneMatch ? toneMatch[1].trim() : '平稳推进'
+  }
+
+  // 从文本中提取情节要点
+  private extractPlotPointsFromText(content: string): PlotPointData[] {
+    const plotPoints: PlotPointData[] = []
+
+    // 尝试匹配类似 "- conflict: 描述" 的格式
+    const plotPointMatches = content.match(/[-*]\s*(conflict|discovery|emotion|action|dialogue)[：:]?\s*(.+?)(?=\n|$)/gi)
+
+    if (plotPointMatches) {
+      plotPointMatches.forEach(match => {
+        const typeMatch = match.match(/(conflict|discovery|emotion|action|dialogue)/i)
+        const descMatch = match.match(/[：:]\s*(.+)$/)
+
+        if (typeMatch && descMatch) {
+          plotPoints.push({
+            type: typeMatch[1].toLowerCase() as PlotPointData['type'],
+            description: descMatch[1].trim()
+          })
+        }
+      })
+    }
+
+    // 如果没有找到，尝试从内容结构中推断
+    if (plotPoints.length === 0) {
+      const conflictKeywords = ['冲突', '矛盾', '对抗', '争执', '阻碍']
+      const discoveryKeywords = ['发现', '揭示', '线索', '秘密', '真相']
+      const emotionKeywords = ['情感', '心情', '感受', '关系', '爱情']
+      const actionKeywords = ['行动', '动作', '事件', '发生', '进行']
+      const dialogueKeywords = ['对话', '交谈', '讨论', '说话', '表达']
+
+      const sections = content.split(/\n/).filter(line => line.trim())
+
+      sections.forEach(section => {
+        const lowerSection = section.toLowerCase()
+
+        if (conflictKeywords.some(keyword => lowerSection.includes(keyword))) {
+          plotPoints.push({ type: 'conflict', description: section.trim() })
+        } else if (discoveryKeywords.some(keyword => lowerSection.includes(keyword))) {
+          plotPoints.push({ type: 'discovery', description: section.trim() })
+        } else if (emotionKeywords.some(keyword => lowerSection.includes(keyword))) {
+          plotPoints.push({ type: 'emotion', description: section.trim() })
+        } else if (actionKeywords.some(keyword => lowerSection.includes(keyword))) {
+          plotPoints.push({ type: 'action', description: section.trim() })
+        } else if (dialogueKeywords.some(keyword => lowerSection.includes(keyword))) {
+          plotPoints.push({ type: 'dialogue', description: section.trim() })
+        }
+      })
+    }
+
+    // 如果还是没有，提供默认的情节要点
+    if (plotPoints.length === 0) {
+      plotPoints.push(
+        { type: 'action', description: '章节开始，设置场景和人物状态' },
+        { type: 'conflict', description: '引入主要矛盾或问题' },
+        { type: 'discovery', description: '揭示重要信息或线索' },
+        { type: 'emotion', description: '角色情感发展或变化' }
+      )
+    }
+
+    return plotPoints.slice(0, 6) // 限制最多6个情节要点
   }
 
   // 构建大纲生成提示词

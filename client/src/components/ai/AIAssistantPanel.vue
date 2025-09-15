@@ -56,7 +56,7 @@
             <span class="tab-text">检查</span>
           </template>
         </a-tab-pane>
-        <a-tab-pane key="outline" tab="大纲生成">
+        <a-tab-pane v-if="false" key="outline" tab="大纲生成">
           <template #tab>
             <BulbOutlined />
             <span class="tab-text">大纲</span>

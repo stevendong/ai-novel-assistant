@@ -1,55 +1,62 @@
 /* 小说Markdown样式 */
 .markdown-novel {
   line-height: 1.8;
-  color: #2c3e50;
+  color: var(--theme-text);
   font-size: 16px;
   max-width: none;
+  transition: color 0.3s ease;
 }
 
 .markdown-novel h1 {
   font-size: 2.2em;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--theme-text);
   margin: 2em 0 1em 0;
   padding-bottom: 0.3em;
-  border-bottom: 2px solid #e1e8ed;
+  border-bottom: 2px solid var(--theme-border);
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .markdown-novel h2 {
   font-size: 1.8em;
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--theme-text);
   margin: 1.8em 0 1em 0;
   padding-bottom: 0.2em;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--theme-border);
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .markdown-novel h3 {
   font-size: 1.5em;
   font-weight: 600;
-  color: #34495e;
+  color: var(--theme-text);
   margin: 1.5em 0 0.8em 0;
+  transition: color 0.3s ease;
 }
 
 .markdown-novel h4 {
   font-size: 1.3em;
   font-weight: 600;
-  color: #34495e;
+  color: var(--theme-text);
   margin: 1.3em 0 0.6em 0;
+  transition: color 0.3s ease;
 }
 
 .markdown-novel h5 {
   font-size: 1.1em;
   font-weight: 600;
-  color: #34495e;
+  color: var(--theme-text);
   margin: 1.1em 0 0.5em 0;
+  transition: color 0.3s ease;
 }
 
 .markdown-novel h6 {
   font-size: 1em;
   font-weight: 600;
-  color: #34495e;
+  color: var(--theme-text);
   margin: 1em 0 0.5em 0;
+  transition: color 0.3s ease;
 }
 
 .markdown-novel p {
@@ -76,10 +83,11 @@
 .markdown-novel blockquote {
   margin: 1.5em 0;
   padding: 1em 2em;
-  background: #f8f9fa;
-  border-left: 4px solid #3498db;
-  color: #555;
+  background: var(--theme-bg-elevated);
+  border-left: 4px solid var(--theme-icon-text);
+  color: var(--theme-text-secondary);
   font-style: italic;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .markdown-novel blockquote p {
@@ -88,21 +96,23 @@
 }
 
 .markdown-novel code {
-  background: #f1f2f6;
+  background: var(--theme-bg-elevated);
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 0.9em;
-  color: #e74c3c;
+  color: var(--theme-icon-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .markdown-novel pre {
-  background: #f8f9fa;
+  background: var(--theme-bg-elevated);
   padding: 1em;
   border-radius: 6px;
   overflow-x: auto;
   margin: 1.5em 0;
-  border: 1px solid #e1e8ed;
+  border: 1px solid var(--theme-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .markdown-novel pre code {
@@ -113,23 +123,27 @@
 
 .markdown-novel strong {
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--theme-text);
+  transition: color 0.3s ease;
 }
 
 .markdown-novel em {
   font-style: italic;
-  color: #34495e;
+  color: var(--theme-text-secondary);
+  transition: color 0.3s ease;
 }
 
 .markdown-novel a {
-  color: #3498db;
+  color: var(--theme-icon-text);
   text-decoration: none;
-  border-bottom: 1px dotted #3498db;
+  border-bottom: 1px dotted var(--theme-icon-text);
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .markdown-novel a:hover {
-  color: #2980b9;
-  border-bottom-color: #2980b9;
+  color: var(--theme-icon-text);
+  border-bottom-color: var(--theme-icon-text);
+  opacity: 0.8;
 }
 
 .markdown-novel table {
@@ -143,24 +157,28 @@
 .markdown-novel td {
   padding: 0.8em 1em;
   text-align: left;
-  border-bottom: 1px solid #e1e8ed;
+  border-bottom: 1px solid var(--theme-border);
+  transition: border-color 0.3s ease;
 }
 
 .markdown-novel th {
-  background: #f8f9fa;
+  background: var(--theme-bg-elevated);
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--theme-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .markdown-novel tr:hover {
-  background: #f8f9fa;
+  background: var(--theme-bg-elevated);
+  transition: background-color 0.3s ease;
 }
 
 .markdown-novel hr {
   border: none;
   height: 1px;
-  background: linear-gradient(to right, transparent, #e1e8ed, transparent);
+  background: linear-gradient(to right, transparent, var(--theme-border), transparent);
   margin: 2em 0;
+  transition: background 0.3s ease;
 }
 
 .markdown-novel img {
@@ -174,9 +192,10 @@
 /* 对话样式 */
 .markdown-novel .dialogue {
   font-style: italic;
-  color: #16a085;
+  color: var(--theme-editor-dialogue);
   position: relative;
   padding-left: 1em;
+  transition: color 0.3s ease;
 }
 
 .markdown-novel .dialogue::before {
@@ -184,35 +203,40 @@
   position: absolute;
   left: 0;
   font-size: 1.2em;
-  color: #3498db;
+  color: var(--theme-icon-text);
+  transition: color 0.3s ease;
 }
 
 .markdown-novel .dialogue::after {
   content: '"';
   font-size: 1.2em;
-  color: #3498db;
+  color: var(--theme-icon-text);
+  transition: color 0.3s ease;
 }
 
 /* 场景描述样式 */
 .markdown-novel .scene-description {
-  background: #ecf0f1;
+  background: var(--theme-bg-elevated);
   padding: 1em 1.5em;
   margin: 1.5em 0;
   border-radius: 6px;
-  border-left: 4px solid #95a5a6;
+  border-left: 4px solid var(--theme-text-secondary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* 人物动作样式 */
 .markdown-novel .action {
-  color: #8e44ad;
+  color: var(--theme-editor-thought);
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 /* 内心独白样式 */
 .markdown-novel .thought {
   font-style: italic;
-  color: #34495e;
+  color: var(--theme-text-secondary);
   opacity: 0.8;
+  transition: color 0.3s ease;
 }
 
 /* 小说专用类 */
@@ -221,14 +245,16 @@
   font-size: 2.5em;
   font-weight: 700;
   margin: 2em 0;
-  color: #2c3e50;
+  color: var(--theme-text);
+  transition: color 0.3s ease;
 }
 
 .markdown-novel .scene-break {
   text-align: center;
   margin: 3em 0;
   font-size: 1.5em;
-  color: #bdc3c7;
+  color: var(--theme-text-secondary);
+  transition: color 0.3s ease;
 }
 
 .markdown-novel .scene-break::before {
