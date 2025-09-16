@@ -1,4 +1,5 @@
 import type { Novel, NovelStatistics, ChapterProgress, WritingGoals, ProjectOverviewStats } from '@/types'
+import { api } from '@/utils/api'
 
 const API_BASE = '/api'
 
@@ -44,11 +45,13 @@ export interface NovelAnalysisResponse {
 class NovelService {
   // 获取所有小说项目
   async getNovels(): Promise<Novel[]> {
-    const response = await fetch(`${API_BASE}/novels`)
-    if (!response.ok) {
+    try {
+      const response = await api.get(`${API_BASE}/novels`)
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch novels:', error)
       throw new Error('Failed to fetch novels')
     }
-    return await response.json()
   }
 
   // 获取项目概览统计数据

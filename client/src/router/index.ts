@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import MainLayout from '@/components/layout/MainLayout.vue'
+import Login from '@/views/Login.vue'
 import ProjectManagement from '@/components/novel/ProjectManagement.vue'
 import CharacterManagement from '@/components/character/CharacterManagement.vue'
 import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
@@ -11,8 +13,19 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/login',
+      name: 'login',
+      component: Login,
+      meta: {
+        requiresGuest: true
+      }
+    },
+    {
       path: '/',
       component: MainLayout,
+      meta: {
+        requiresAuth: true
+      },
       children: [
         {
           path: '',
@@ -76,6 +89,26 @@ const router = createRouter({
       ]
     }
   ],
+})
+
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+
+  authStore.init()
+
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresGuest = to.matched.some(record => record.meta.requiresGuest)
+
+  if (requiresAuth && !authStore.isAuthenticated) {
+    next({
+      path: '/login',
+      query: { redirect: to.fullPath }
+    })
+  } else if (requiresGuest && authStore.isAuthenticated) {
+    next('/')
+  } else {
+    next()
+  }
 })
 
 export default router

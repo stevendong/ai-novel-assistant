@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { countValidWords } = require('../utils/textUtils');
+const { requireAuth, requireOwnership } = require('../middleware/auth');
 const prisma = new PrismaClient();
 
 const router = express.Router();
@@ -8,7 +9,7 @@ const router = express.Router();
 // 章节路由 - 添加分页查询支持
 
 // 获取小说的所有章节（分页查询）
-router.get('/novel/:novelId/paginated', async (req, res) => {
+router.get('/novel/:novelId/paginated', requireAuth, async (req, res) => {
   try {
     const { novelId } = req.params;
     const {

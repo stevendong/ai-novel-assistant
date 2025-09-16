@@ -135,39 +135,7 @@
             </a-space>
 
             <!-- User Menu -->
-            <a-dropdown 
-              placement="bottomRight" 
-              :trigger="hoverTrigger"
-              :mouseEnterDelay="0.1"
-              :mouseLeaveDelay="0.15"
-            >
-              <a-space class="user-menu" style="cursor: pointer;">
-                <a-avatar size="default" class="user-avatar">
-                  <template #icon>
-                    <UserOutlined />
-                  </template>
-                </a-avatar>
-                <span class="username">用户名</span>
-                <DownOutlined class="dropdown-icon" />
-              </a-space>
-              <template #overlay>
-                <a-menu class="user-dropdown-menu">
-                  <a-menu-item key="profile">
-                    <UserOutlined />
-                    <span>个人资料</span>
-                  </a-menu-item>
-                  <a-menu-item key="preferences">
-                    <SettingOutlined />
-                    <span>偏好设置</span>
-                  </a-menu-item>
-                  <a-menu-divider />
-                  <a-menu-item key="logout" class="logout-item">
-                    <LogoutOutlined />
-                    <span>退出登录</span>
-                  </a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
+            <UserMenu />
           </a-space>
         </div>
       </div>
@@ -296,6 +264,7 @@ import type { Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import LanguageToggle from './LanguageToggle.vue'
+import UserMenu from '@/components/UserMenu.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 import { useProjectStore } from '@/stores/project'
 import { useThemeStore } from '@/stores/theme'

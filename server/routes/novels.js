@@ -1,11 +1,12 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { requireAuth, requireOwnership } = require('../middleware/auth');
 
+const prisma = new PrismaClient();
 const router = express.Router();
 
 // 获取所有小说项目（合并了统计功能）
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     // 如果请求包含 stats=true 参数，返回统计数据
     if (req.query.stats === 'true') {
@@ -17,14 +18,17 @@ router.get('/', async (req, res) => {
         totalWords,
         totalChapters
       ] = await Promise.all([
-        prisma.novel.count(),
-        prisma.novel.count({ where: { status: 'draft' } }),
-        prisma.novel.count({ where: { status: 'writing' } }),
-        prisma.novel.count({ where: { status: 'completed' } }),
+        prisma.novel.count({ where: { userId: req.user.id } }),
+        prisma.novel.count({ where: { userId: req.user.id, status: 'draft' } }),
+        prisma.novel.count({ where: { userId: req.user.id, status: 'writing' } }),
+        prisma.novel.count({ where: { userId: req.user.id, status: 'completed' } }),
         prisma.novel.aggregate({
+          where: { userId: req.user.id },
           _sum: { wordCount: true }
         }),
-        prisma.chapter.count()
+        prisma.chapter.count({
+          where: { novel: { userId: req.user.id } }
+        })
       ]);
 
       return res.json({
@@ -43,6 +47,7 @@ router.get('/', async (req, res) => {
 
     // 否则返回项目列表
     const novels = await prisma.novel.findMany({
+      where: { userId: req.user.id },
       include: {
         _count: {
           select: {
@@ -62,7 +67,7 @@ router.get('/', async (req, res) => {
 });
 
 // 获取单个小说详情
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, requireOwnership('novel'), async (req, res) => {
   try {
     const { id } = req.params;
     const novel = await prisma.novel.findUnique({
@@ -101,10 +106,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // 创建新小说
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const { title, description, genre, rating } = req.body;
-    
+
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
     }
@@ -115,6 +120,7 @@ router.post('/', async (req, res) => {
         description,
         genre,
         rating: rating || 'PG',
+        userId: req.user.id,
         aiSettings: {
           create: {
             rating: rating || 'PG',
@@ -137,7 +143,7 @@ router.post('/', async (req, res) => {
 });
 
 // 更新小说信息
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireOwnership('novel'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, genre, rating, status } = req.body;
@@ -165,7 +171,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // 删除小说
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, requireOwnership('novel'), async (req, res) => {
   try {
     const { id } = req.params;
     

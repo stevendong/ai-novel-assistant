@@ -10,9 +10,28 @@ datasource db {
   url      = "file:./novels.db"
 }
 
+// 用户模型
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String   // bcrypt hashed
+  nickname  String?  // 显示名称
+  avatar    String?  // 头像URL
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联的小说
+  novels    Novel[]
+  sessions  UserSession[]
+}
+
 // 小说基本信息
 model Novel {
   id          String   @id @default(cuid())
+  userId      String   // 作者用户ID
   title       String
   description String?
   genre       String?
@@ -24,6 +43,7 @@ model Novel {
   updatedAt   DateTime @updatedAt
   
   // 关联数据
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   characters  Character[]
   settings    WorldSetting[]
   chapters    Chapter[]
@@ -31,6 +51,8 @@ model Novel {
   statistics  NovelStatistics[]
   goals       WritingGoal[]
   workflows   WorkflowConfig[]
+
+  @@index([userId])
 }
 
 // 角色信息
@@ -218,4 +240,22 @@ model WorkflowConfig {
   
   @@unique([novelId, entityType])
   @@index([novelId])
+}
+
+// 用户会话管理
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String
+  sessionToken String   @unique
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  lastUsed     DateTime @default(now())
+  userAgent    String?
+  ipAddress    String?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionToken])
 }

@@ -12,6 +12,7 @@ const { ensurePortAvailable } = require('./utils/portManager');
 const logger = require('./utils/logger');
 
 // 导入路由
+const authRoutes = require('./routes/auth');
 const novelRoutes = require('./routes/novels');
 const characterRoutes = require('./routes/characters');
 const settingRoutes = require('./routes/settings');
@@ -30,7 +31,7 @@ const PORT = process.env.PORT || 3001;
 // 中间件
 app.use(helmet());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+  origin: process.env.NODE_ENV === 'development' ? true : process.env.ALLOWED_ORIGINS?.split(','),
   credentials: true
 }));
 
@@ -44,6 +45,7 @@ app.use(logger.createRequestLogger());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API路由
+app.use('/api/auth', authRoutes);
 app.use('/api/novels', novelRoutes);
 app.use('/api/characters', characterRoutes);
 app.use('/api/settings', settingRoutes);
