@@ -85,6 +85,20 @@
   --theme-consistency-low-border: #b7eb8f;
   --theme-consistency-low-text: #52c41a;
   --theme-consistency-link: #1890ff;
+
+  /* AI增强结果主题变量 */
+  --theme-ai-enhance-bg: #eff6ff;
+  --theme-ai-enhance-border: #bfdbfe;
+  --theme-ai-enhance-title: #1e40af;
+  --theme-ai-enhance-text: #1d4ed8;
+  --theme-ai-fields-bg: #f0fdf4;
+  --theme-ai-fields-border: #bbf7d0;
+  --theme-ai-fields-title: #166534;
+  --theme-ai-fields-text: #15803d;
+  --theme-ai-suggestion-bg: #fefce8;
+  --theme-ai-suggestion-border: #fde68a;
+  --theme-ai-suggestion-title: #a16207;
+  --theme-ai-suggestion-text: #ca8a04;
 }
 
 /* 主题响应式工具类 */
@@ -176,6 +190,67 @@
   transition: color 0.3s ease;
 }
 
+/* AI增强结果主题响应式工具类 */
+.theme-ai-enhance-bg {
+  background-color: var(--theme-ai-enhance-bg);
+  transition: background-color 0.3s ease;
+}
+
+.theme-ai-enhance-border {
+  border-color: var(--theme-ai-enhance-border);
+  transition: border-color 0.3s ease;
+}
+
+.theme-ai-enhance-title {
+  color: var(--theme-ai-enhance-title);
+  transition: color 0.3s ease;
+}
+
+.theme-ai-enhance-text {
+  color: var(--theme-ai-enhance-text);
+  transition: color 0.3s ease;
+}
+
+.theme-ai-fields-bg {
+  background-color: var(--theme-ai-fields-bg);
+  transition: background-color 0.3s ease;
+}
+
+.theme-ai-fields-border {
+  border-color: var(--theme-ai-fields-border);
+  transition: border-color 0.3s ease;
+}
+
+.theme-ai-fields-title {
+  color: var(--theme-ai-fields-title);
+  transition: color 0.3s ease;
+}
+
+.theme-ai-fields-text {
+  color: var(--theme-ai-fields-text);
+  transition: color 0.3s ease;
+}
+
+.theme-ai-suggestion-bg {
+  background-color: var(--theme-ai-suggestion-bg);
+  transition: background-color 0.3s ease;
+}
+
+.theme-ai-suggestion-border {
+  border-color: var(--theme-ai-suggestion-border);
+  transition: border-color 0.3s ease;
+}
+
+.theme-ai-suggestion-title {
+  color: var(--theme-ai-suggestion-title);
+  transition: color 0.3s ease;
+}
+
+.theme-ai-suggestion-text {
+  color: var(--theme-ai-suggestion-text);
+  transition: color 0.3s ease;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --color-background: var(--vt-c-black);
@@ -238,6 +313,20 @@
     --theme-consistency-low-border: #274916;
     --theme-consistency-low-text: #73d13d;
     --theme-consistency-link: #4096ff;
+
+    /* AI增强结果主题变量 - 暗色模式 */
+    --theme-ai-enhance-bg: #0f172a;
+    --theme-ai-enhance-border: #334155;
+    --theme-ai-enhance-title: #93c5fd;
+    --theme-ai-enhance-text: #bfdbfe;
+    --theme-ai-fields-bg: #0f172a;
+    --theme-ai-fields-border: #22543d;
+    --theme-ai-fields-title: #6ee7b7;
+    --theme-ai-fields-text: #a7f3d0;
+    --theme-ai-suggestion-bg: #1c1917;
+    --theme-ai-suggestion-border: #a16207;
+    --theme-ai-suggestion-title: #fbbf24;
+    --theme-ai-suggestion-text: #fde68a;
   }
 }
 

@@ -102,20 +102,24 @@ export const settingService = {
     }
   },
 
-  async enhance(id: string, expandAspects?: string[], plotRelevance?: string): Promise<any> {
+  async enhance(id: string, expandAspects?: string[], plotRelevance?: string, expansionType?: string): Promise<any> {
     try {
       const response = await fetch(`${API_BASE}/${id}/enhance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ expandAspects, plotRelevance })
+        body: JSON.stringify({
+          expandAspects: expandAspects || [],
+          plotRelevance,
+          expansionType: expansionType || 'comprehensive'
+        })
       })
-      
+
       if (!response.ok) {
         throw new Error(`Failed to enhance setting: ${response.statusText}`)
       }
-      
+
       return await response.json()
     } catch (error) {
       console.error('Error enhancing setting:', error)
@@ -123,23 +127,149 @@ export const settingService = {
     }
   },
 
-  async expand(id: string, focusAreas?: string[]): Promise<any> {
+  async expand(id: string, focusAreas?: string[], detailLevel?: string): Promise<any> {
     try {
       const response = await fetch(`${API_BASE}/${id}/expand`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ focusAreas })
+        body: JSON.stringify({
+          focusAreas: focusAreas || [],
+          detailLevel: detailLevel || 'standard'
+        })
       })
-      
+
       if (!response.ok) {
         throw new Error(`Failed to expand setting: ${response.statusText}`)
       }
-      
+
       return await response.json()
     } catch (error) {
       console.error('Error expanding setting:', error)
+      throw error
+    }
+  },
+
+  async getSuggestions(id: string, suggestionType?: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/${id}/suggestions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ suggestionType: suggestionType || 'general' })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to get suggestions: ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error getting suggestions:', error)
+      throw error
+    }
+  },
+
+  async checkConsistency(id: string, scope?: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/${id}/consistency-check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ scope: scope || 'setting' })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to check consistency: ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error checking consistency:', error)
+      throw error
+    }
+  },
+
+  async applyEnhancement(id: string, enhancementData: {
+    enhancedDescription?: string
+    detailsFields?: Record<string, any>
+    applyDescription?: boolean
+    applyFields?: string[]
+  }): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/${id}/apply-enhancement`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(enhancementData)
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to apply enhancement: ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error applying enhancement:', error)
+      throw error
+    }
+  },
+
+  async batchGenerate(novelId: string, options: {
+    settingTypes?: string[]
+    generationMode?: string
+    customPrompts?: Record<string, string>
+    count?: Record<string, number>
+  } = {}): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/batch-generate/${novelId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          settingTypes: options.settingTypes || ['worldview', 'location', 'rule', 'culture'],
+          generationMode: options.generationMode || 'comprehensive',
+          customPrompts: options.customPrompts || {},
+          count: options.count || { worldview: 1, location: 2, rule: 1, culture: 1 }
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to batch generate settings: ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error batch generating settings:', error)
+      throw error
+    }
+  },
+
+  async applyBatch(novelId: string, batchData: {
+    generatedSettings: Record<string, any[]>
+    selectedSettings: Array<{ type: string; index: number }>
+  }): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE}/apply-batch/${novelId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(batchData)
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to apply batch settings: ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Error applying batch settings:', error)
       throw error
     }
   }
