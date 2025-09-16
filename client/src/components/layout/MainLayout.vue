@@ -38,7 +38,6 @@
                 v-model:value="currentProjectId"
                 @change="handleProjectChange"
                 :placeholder="$t('project.selectProject')"
-                size="middle"
                 :loading="projectStore.loading"
                 class="project-select"
                 :disabled="projectStore.projects.length === 0"
@@ -89,12 +88,13 @@
               <a-tooltip title="AI助手">
                 <a-button
                   type="text"
-                  class="header-action-btn"
+                  class="header-action-btn ai-assistant-btn"
                   :class="{ 'active': !aiPanelCollapsed }"
                   @click="toggleAIPanel"
+                  data-button-type="ai-assistant"
                 >
                   <template #icon>
-                    <RobotOutlined />
+                    <RobotOutlined data-icon="robot" />
                   </template>
                 </a-button>
               </a-tooltip>
@@ -102,9 +102,13 @@
               <!-- Notifications -->
               <a-tooltip title="通知">
                 <a-badge count="3" size="small">
-                  <a-button type="text" class="header-action-btn">
+                  <a-button 
+                    type="text" 
+                    class="header-action-btn notification-btn"
+                    data-button-type="notification"
+                  >
                     <template #icon>
-                      <BellOutlined />
+                      <BellOutlined data-icon="bell" />
                     </template>
                   </a-button>
                 </a-badge>
@@ -114,20 +118,29 @@
               <ThemeToggle />
 
               <!-- Language Toggle -->
-              <LanguageToggle />
+              <LanguageToggle class="language-toggle-btn" />
 
               <!-- Help -->
               <a-tooltip title="帮助">
-                <a-button type="text" class="header-action-btn">
+                <a-button 
+                  type="text" 
+                  class="header-action-btn help-btn"
+                  data-button-type="help"
+                >
                   <template #icon>
-                    <QuestionCircleOutlined />
+                    <QuestionCircleOutlined data-icon="help" />
                   </template>
                 </a-button>
               </a-tooltip>
             </a-space>
 
             <!-- User Menu -->
-            <a-dropdown placement="bottomRight" :trigger="['click']">
+            <a-dropdown 
+              placement="bottomRight" 
+              :trigger="hoverTrigger"
+              :mouseEnterDelay="0.1"
+              :mouseLeaveDelay="0.15"
+            >
               <a-space class="user-menu" style="cursor: pointer;">
                 <a-avatar size="default" class="user-avatar">
                   <template #icon>
@@ -306,6 +319,18 @@ const addChapterForm = ref({
 
 // 计算属性
 const currentProjectId = computed(() => projectStore.currentProjectId)
+
+// 响应式触发方式：桌面端hover，移动端click
+const hoverTrigger = computed(() => {
+  // 检测是否为移动设备或小屏幕
+  if (typeof window !== 'undefined') {
+    const isMobile = window.innerWidth <= 768 || 
+                    ('ontouchstart' in window) || 
+                    (navigator.maxTouchPoints > 0)
+    return isMobile ? ['click'] : ['hover']
+  }
+  return ['hover'] // 默认使用hover
+})
 
 const projectStatus = computed(() => {
   if (!projectStore.currentProject) return '未选择'
@@ -500,14 +525,72 @@ const formatDate = (dateString: string) => {
 .menu-toggle-btn {
   color: var(--theme-text-secondary);
   font-size: 18px;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.2s;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-toggle-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(24, 144, 255, 0.05) 0%, 
+    rgba(24, 144, 255, 0.12) 50%, 
+    rgba(24, 144, 255, 0.05) 100%);
+  border-radius: 8px;
+  opacity: 0;
+  transform: scale(0.8) rotate(-5deg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
 }
 
 .menu-toggle-btn:hover {
   color: #1890ff;
   background-color: rgba(24, 144, 255, 0.1);
+  border-color: rgba(24, 144, 255, 0.2);
+  transform: translateY(-1px) rotate(2deg);
+  box-shadow: 
+    0 4px 12px rgba(24, 144, 255, 0.18),
+    0 2px 4px rgba(24, 144, 255, 0.12);
+}
+
+.menu-toggle-btn:hover::before {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.menu-toggle-btn:active {
+  transform: translateY(0px) scale(0.95);
+  transition-duration: 0.1s;
+}
+
+.menu-toggle-btn:focus-visible {
+  outline: 2px solid rgba(24, 144, 255, 0.4);
+  outline-offset: 2px;
+}
+
+/* 汉堡菜单图标动画 */
+.menu-toggle-btn :deep(.anticon) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+.menu-toggle-btn:hover :deep(.anticon) {
+  transform: scale(1.15) rotate(10deg);
+  filter: drop-shadow(0 2px 4px rgba(24, 144, 255, 0.25));
+}
+
+/* 暗黑模式适配 */
+.dark .menu-toggle-btn:hover {
+  background-color: rgba(64, 150, 255, 0.12);
+  border-color: rgba(64, 150, 255, 0.25);
+  box-shadow: 
+    0 4px 12px rgba(64, 150, 255, 0.2),
+    0 2px 4px rgba(64, 150, 255, 0.15);
 }
 
 /* Logo Section */
@@ -629,32 +712,504 @@ const formatDate = (dateString: string) => {
   font-size: 16px;
   width: 36px;
   height: 36px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  border: 1px solid transparent;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* 增加按钮的视觉层次感 */
+.header-action-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(24, 144, 255, 0.05) 0%, 
+    rgba(24, 144, 255, 0.1) 50%, 
+    rgba(24, 144, 255, 0.05) 100%);
+  border-radius: 8px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
 }
 
 .header-action-btn:hover {
   color: #1890ff;
-  background-color: rgba(24, 144, 255, 0.1);
+  background-color: rgba(24, 144, 255, 0.08);
+  border-color: rgba(24, 144, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px rgba(24, 144, 255, 0.15),
+    0 2px 4px rgba(24, 144, 255, 0.1);
+}
+
+.header-action-btn:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.header-action-btn:active {
+  transform: translateY(0px) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+.header-action-btn:focus-visible {
+  outline: 2px solid rgba(24, 144, 255, 0.4);
+  outline-offset: 2px;
 }
 
 .header-action-btn.active {
   color: #1890ff;
-  background-color: rgba(24, 144, 255, 0.1);
+  background-color: rgba(24, 144, 255, 0.12);
+  border-color: rgba(24, 144, 255, 0.3);
+  box-shadow: 
+    inset 0 2px 4px rgba(24, 144, 255, 0.1),
+    0 2px 8px rgba(24, 144, 255, 0.12);
+}
+
+.header-action-btn.active::before {
+  opacity: 0.7;
+  transform: scale(1);
+}
+
+/* 图标动画增强 */
+.header-action-btn :deep(.anticon) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+.header-action-btn:hover :deep(.anticon) {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 2px 4px rgba(24, 144, 255, 0.2));
+}
+
+.header-action-btn.active :deep(.anticon) {
+  transform: scale(1.05);
+}
+
+/* AI助手按钮特殊样式 */
+.ai-assistant-btn,
+.header-action-btn[data-button-type="ai-assistant"] {
+  background: linear-gradient(135deg, 
+    rgba(138, 43, 226, 0.05) 0%, 
+    rgba(106, 13, 173, 0.08) 100%);
+  border: 1px solid rgba(138, 43, 226, 0.1);
+}
+
+.ai-assistant-btn:hover,
+.header-action-btn[data-button-type="ai-assistant"]:hover {
+  color: #8a2be2;
+  background: linear-gradient(135deg, 
+    rgba(138, 43, 226, 0.12) 0%, 
+    rgba(106, 13, 173, 0.15) 100%);
+  border-color: rgba(138, 43, 226, 0.25);
+  box-shadow: 
+    0 4px 12px rgba(138, 43, 226, 0.2),
+    0 2px 4px rgba(138, 43, 226, 0.15);
+}
+
+.ai-assistant-btn.active,
+.header-action-btn[data-button-type="ai-assistant"].active {
+  color: #8a2be2;
+  background: linear-gradient(135deg, 
+    rgba(138, 43, 226, 0.15) 0%, 
+    rgba(106, 13, 173, 0.2) 100%);
+  border-color: rgba(138, 43, 226, 0.35);
+  box-shadow: 
+    inset 0 2px 4px rgba(138, 43, 226, 0.15),
+    0 2px 8px rgba(138, 43, 226, 0.2);
+}
+
+.ai-assistant-btn :deep(.anticon),
+.header-action-btn[data-button-type="ai-assistant"] :deep(.anticon) {
+  filter: drop-shadow(0 0 2px rgba(138, 43, 226, 0.3));
+}
+
+/* 通知按钮特殊样式 */
+.notification-btn,
+.header-action-btn[data-button-type="notification"] {
+  position: relative;
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 107, 0.05) 0%, 
+    rgba(255, 77, 79, 0.08) 100%);
+  border: 1px solid rgba(255, 107, 107, 0.1);
+}
+
+.notification-btn:hover,
+.header-action-btn[data-button-type="notification"]:hover {
+  color: #ff6b6b;
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 107, 0.12) 0%, 
+    rgba(255, 77, 79, 0.15) 100%);
+  border-color: rgba(255, 107, 107, 0.25);
+  box-shadow: 
+    0 4px 12px rgba(255, 107, 107, 0.2),
+    0 2px 4px rgba(255, 107, 107, 0.15);
+}
+
+.notification-btn :deep(.anticon),
+.header-action-btn[data-button-type="notification"] :deep(.anticon) {
+  animation: bellRing 2s ease-in-out infinite;
+  transform-origin: 50% 10%;
+}
+
+@keyframes bellRing {
+  0%, 50%, 100% {
+    transform: rotate(0deg);
+  }
+  10%, 30% {
+    transform: rotate(10deg);
+  }
+  20% {
+    transform: rotate(-10deg);
+  }
+}
+
+.notification-btn:hover :deep(.anticon),
+.header-action-btn[data-button-type="notification"]:hover :deep(.anticon) {
+  animation-duration: 0.5s;
+  filter: drop-shadow(0 0 4px rgba(255, 107, 107, 0.4));
+}
+
+/* 帮助按钮特殊样式 */
+.help-btn,
+.header-action-btn[data-button-type="help"] {
+  background: linear-gradient(135deg, 
+    rgba(52, 211, 153, 0.05) 0%, 
+    rgba(16, 185, 129, 0.08) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.1);
+}
+
+.help-btn:hover,
+.header-action-btn[data-button-type="help"]:hover {
+  color: #10b981;
+  background: linear-gradient(135deg, 
+    rgba(52, 211, 153, 0.12) 0%, 
+    rgba(16, 185, 129, 0.15) 100%);
+  border-color: rgba(52, 211, 153, 0.25);
+  box-shadow: 
+    0 4px 12px rgba(52, 211, 153, 0.2),
+    0 2px 4px rgba(52, 211, 153, 0.15);
+}
+
+.help-btn :deep(.anticon),
+.header-action-btn[data-button-type="help"] :deep(.anticon) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.help-btn:hover :deep(.anticon),
+.header-action-btn[data-button-type="help"]:hover :deep(.anticon) {
+  transform: scale(1.1) rotate(10deg);
+  filter: drop-shadow(0 0 4px rgba(52, 211, 153, 0.4));
+}
+
+/* 细节优化 */
+.header {
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(24, 144, 255, 0.3) 50%, 
+    transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.header:hover::before {
+  opacity: 1;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .header-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .header-action-btn:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.12);
+  }
+
+  .menu-toggle-btn {
+    padding: 6px;
+    font-size: 16px;
+  }
+
+  .user-menu {
+    padding: 6px 12px;
+  }
+
+  .status-bar {
+    padding: 0 16px;
+    font-size: 11px;
+  }
+
+  .status-left,
+  .status-right {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 0 12px;
+  }
+
+  .header-action-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+
+  .status-bar {
+    height: 44px;
+    padding: 0 12px;
+  }
+
+  .status-left,
+  .status-right {
+    gap: 8px;
+  }
+
+  .status-left span,
+  .status-right span {
+    font-size: 11px;
+  }
+}
+
+/* 暗黑模式适配 */
+.dark .header-action-btn {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .header-action-btn:hover {
+  background-color: rgba(64, 150, 255, 0.12);
+  border-color: rgba(64, 150, 255, 0.25);
+  box-shadow: 
+    0 4px 12px rgba(64, 150, 255, 0.2),
+    0 2px 4px rgba(64, 150, 255, 0.15);
+}
+
+.dark .header-action-btn.active {
+  background-color: rgba(64, 150, 255, 0.18);
+  border-color: rgba(64, 150, 255, 0.35);
+}
+
+/* 暗黑模式下特殊按钮样式 */
+.dark .ai-assistant-btn,
+.dark .header-action-btn[data-button-type="ai-assistant"] {
+  background: linear-gradient(135deg, 
+    rgba(168, 85, 247, 0.08) 0%, 
+    rgba(147, 51, 234, 0.12) 100%);
+  border-color: rgba(168, 85, 247, 0.15);
+}
+
+.dark .ai-assistant-btn:hover,
+.dark .header-action-btn[data-button-type="ai-assistant"]:hover {
+  color: #a855f7;
+  background: linear-gradient(135deg, 
+    rgba(168, 85, 247, 0.15) 0%, 
+    rgba(147, 51, 234, 0.2) 100%);
+  border-color: rgba(168, 85, 247, 0.3);
+  box-shadow: 
+    0 4px 12px rgba(168, 85, 247, 0.25),
+    0 2px 4px rgba(168, 85, 247, 0.2);
+}
+
+.dark .ai-assistant-btn.active,
+.dark .header-action-btn[data-button-type="ai-assistant"].active {
+  color: #a855f7;
+  background: linear-gradient(135deg, 
+    rgba(168, 85, 247, 0.2) 0%, 
+    rgba(147, 51, 234, 0.25) 100%);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.dark .notification-btn,
+.dark .header-action-btn[data-button-type="notification"] {
+  background: linear-gradient(135deg, 
+    rgba(239, 68, 68, 0.08) 0%, 
+    rgba(220, 38, 38, 0.12) 100%);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.dark .notification-btn:hover,
+.dark .header-action-btn[data-button-type="notification"]:hover {
+  color: #ef4444;
+  background: linear-gradient(135deg, 
+    rgba(239, 68, 68, 0.15) 0%, 
+    rgba(220, 38, 38, 0.2) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 
+    0 4px 12px rgba(239, 68, 68, 0.25),
+    0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.dark .help-btn,
+.dark .header-action-btn[data-button-type="help"] {
+  background: linear-gradient(135deg, 
+    rgba(34, 197, 94, 0.08) 0%, 
+    rgba(22, 163, 74, 0.12) 100%);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+
+.dark .help-btn:hover,
+.dark .header-action-btn[data-button-type="help"]:hover {
+  color: #22c55e;
+  background: linear-gradient(135deg, 
+    rgba(34, 197, 94, 0.15) 0%, 
+    rgba(22, 163, 74, 0.2) 100%);
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 
+    0 4px 12px rgba(34, 197, 94, 0.25),
+    0 2px 4px rgba(34, 197, 94, 0.2);
+}
+
+/* 高对比度模式适配 */
+@media (prefers-contrast: high) {
+  .header-action-btn {
+    border: 2px solid currentColor;
+  }
+
+  .menu-toggle-btn {
+    border: 2px solid currentColor;
+  }
+
+  .user-menu {
+    border: 2px solid var(--theme-border);
+  }
+}
+
+/* 减少动画偏好适配 */
+@media (prefers-reduced-motion: reduce) {
+  .header-action-btn,
+  .header-action-btn::before,
+  .header-action-btn :deep(.anticon),
+  .menu-toggle-btn,
+  .menu-toggle-btn::before,
+  .menu-toggle-btn :deep(.anticon),
+  .user-menu,
+  .user-menu::before,
+  .user-avatar,
+  .dropdown-icon,
+  .project-select,
+  .project-option,
+  .user-dropdown-menu :deep(.ant-dropdown-menu-item) {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .header-action-btn:hover,
+  .menu-toggle-btn:hover {
+    transform: none;
+  }
+
+  .notification-btn :deep(.anticon),
+  .header-action-btn[data-button-type="notification"] :deep(.anticon) {
+    animation: none !important;
+  }
 }
 
 
 /* User Menu */
 .user-menu {
-  padding: 0 12px;
-  transition: all 0.2s;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-menu::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(24, 144, 255, 0.03) 0%, 
+    rgba(24, 144, 255, 0.08) 50%, 
+    rgba(24, 144, 255, 0.03) 100%);
+  border-radius: 8px;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
 }
 
 .user-menu:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(24, 144, 255, 0.08);
+  border-color: rgba(24, 144, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 6px 16px rgba(24, 144, 255, 0.15),
+    0 2px 6px rgba(24, 144, 255, 0.1);
+}
+
+/* 悬停状态指示 */
+.user-menu:hover .username {
+  color: #1890ff;
+  transform: translateX(2px);
+}
+
+.user-menu:hover .dropdown-icon {
+  color: #1890ff;
+  transform: rotate(180deg) scale(1.1);
+}
+
+.user-menu:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.user-menu:active {
+  transform: translateY(0px) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+/* 用户头像动画 */
+.user-avatar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-menu:hover .user-avatar {
+  transform: scale(1.05) rotate(-5deg);
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.2);
+}
+
+/* 下拉图标动画 */
+.dropdown-icon {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-menu:hover .dropdown-icon {
+  transform: rotate(180deg) scale(1.1);
+  color: #1890ff;
+}
+
+/* 暗黑模式适配 */
+.dark .user-menu:hover {
+  background-color: rgba(64, 150, 255, 0.08);
+  border-color: rgba(64, 150, 255, 0.18);
+  box-shadow: 
+    0 4px 12px rgba(64, 150, 255, 0.12),
+    0 2px 4px rgba(64, 150, 255, 0.1);
 }
 
 .user-avatar {
@@ -677,16 +1232,107 @@ const formatDate = (dateString: string) => {
 
 /* User Dropdown Menu */
 .user-dropdown-menu {
-  min-width: 160px;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
+  border-radius: 12px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--theme-border);
+  background: var(--theme-bg-container);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  animation: dropdownSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top right;
+}
+
+/* 悬停触发的动画优化 */
+.user-dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    rgba(24, 144, 255, 0.6) 0%, 
+    rgba(114, 46, 209, 0.6) 50%, 
+    rgba(24, 144, 255, 0.6) 100%);
+  border-radius: 12px 12px 0 0;
+  opacity: 0.8;
+}
+
+@keyframes dropdownSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
+
+/* 暗黑模式下下拉菜单 */
+.dark .user-dropdown-menu {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.4), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .user-dropdown-menu::before {
+  background: linear-gradient(90deg, 
+    rgba(96, 165, 250, 0.6) 0%, 
+    rgba(168, 85, 247, 0.6) 50%, 
+    rgba(96, 165, 250, 0.6) 100%);
+}
+
+.dark .user-menu:hover {
+  background-color: rgba(64, 150, 255, 0.08);
+  border-color: rgba(64, 150, 255, 0.2);
+  box-shadow: 
+    0 6px 16px rgba(64, 150, 255, 0.18),
+    0 2px 6px rgba(64, 150, 255, 0.12);
+}
+
+.dark .user-menu:hover .username {
+  color: #60a5fa;
+}
+
+.dark .user-menu:hover .dropdown-icon {
+  color: #60a5fa;
 }
 
 .user-dropdown-menu :deep(.ant-dropdown-menu-item) {
-  padding: 8px 16px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  border-radius: 8px;
+  margin: 4px 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+}
+
+.user-dropdown-menu :deep(.ant-dropdown-menu-item):hover {
+  background-color: rgba(24, 144, 255, 0.08);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+}
+
+.user-dropdown-menu :deep(.ant-dropdown-menu-item) .anticon {
+  font-size: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.user-dropdown-menu :deep(.ant-dropdown-menu-item):hover .anticon {
+  transform: scale(1.1);
+  color: #1890ff;
+}
+
+.user-dropdown-menu :deep(.ant-menu-item-divider) {
+  margin: 8px 0;
+  background-color: var(--theme-border);
 }
 
 .logout-item {
@@ -695,6 +1341,22 @@ const formatDate = (dateString: string) => {
 
 .logout-item:hover {
   background-color: rgba(255, 77, 79, 0.1) !important;
+  color: #ff4d4f !important;
+}
+
+.logout-item:hover .anticon {
+  color: #ff4d4f !important;
+  transform: scale(1.1) rotate(10deg);
+}
+
+/* 暗黑模式下下拉菜单项 */
+.dark .user-dropdown-menu :deep(.ant-dropdown-menu-item):hover {
+  background-color: rgba(64, 150, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(64, 150, 255, 0.12);
+}
+
+.dark .user-dropdown-menu :deep(.ant-dropdown-menu-item):hover .anticon {
+  color: #4096ff;
 }
 
 /* Main Content */
@@ -791,12 +1453,39 @@ const formatDate = (dateString: string) => {
   font-size: 12px;
   color: var(--theme-text-secondary);
   transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .status-left,
 .status-right {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.status-left span,
+.status-right span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.status-left span:hover,
+.status-right span:hover {
+  color: var(--theme-text);
+}
+
+/* AI状态指示器 */
+.status-right .ant-badge {
+  margin-right: 4px;
+}
+
+/* 暗黑模式下状态栏 */
+.dark .status-bar {
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive Design */
@@ -811,6 +1500,17 @@ const formatDate = (dateString: string) => {
 
   .project-select {
     width: 160px !important;
+  }
+  
+  /* 移动设备上保持点击交互 */
+  .user-menu:hover {
+    transform: none;
+  }
+  
+  .user-menu:hover .username,
+  .user-menu:hover .dropdown-icon {
+    transform: none;
+    color: inherit;
   }
 }
 

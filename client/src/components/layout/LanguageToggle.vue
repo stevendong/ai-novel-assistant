@@ -1,19 +1,33 @@
 <template>
   <a-dropdown :trigger="['click']" placement="bottomRight">
-    <a-button type="text" class="language-toggle-btn">
+    <a-button
+      type="text"
+      class="header-action-btn language-toggle-btn"
+      data-button-type="language"
+    >
       <template #icon>
-        <GlobalOutlined />
+        <GlobalOutlined data-icon="language" />
       </template>
-      {{ getCurrentLanguageLabel() }}
+      <span class="language-label">{{ getCurrentLanguageLabel() }}</span>
     </a-button>
 
     <template #overlay>
-      <a-menu @click="handleLanguageChange" :selected-keys="[currentLanguage]">
+      <a-menu
+        @click="handleLanguageChange"
+        :selected-keys="[currentLanguage]"
+        class="language-dropdown-menu"
+      >
         <a-menu-item key="zh">
-          <span>{{ $t('language.chinese') }}</span>
+          <div class="language-option">
+            <span class="language-flag">🇨🇳</span>
+            <span>{{ $t('language.chinese') }}</span>
+          </div>
         </a-menu-item>
         <a-menu-item key="en">
-          <span>{{ $t('language.english') }}</span>
+          <div class="language-option">
+            <span class="language-flag">🇺🇸</span>
+            <span>{{ $t('language.english') }}</span>
+          </div>
         </a-menu-item>
       </a-menu>
     </template>
@@ -41,23 +55,178 @@ const handleLanguageChange = ({ key }: { key: string }) => {
 </script>
 
 <style scoped>
+/* 语言切换按钮 */
 .language-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: rgba(255, 255, 255, 0.85);
-  border: none;
-  height: 32px;
-  padding: 0 8px;
+  min-width: 60px !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.05) 0%,
+    rgba(37, 99, 235, 0.08) 100%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.1) !important;
 }
 
 .language-toggle-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
+  color: #3b82f6 !important;
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.12) 0%,
+    rgba(37, 99, 235, 0.15) 100%) !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+  box-shadow:
+    0 4px 12px rgba(59, 130, 246, 0.2),
+    0 2px 4px rgba(59, 130, 246, 0.15) !important;
 }
 
-.language-toggle-btn:focus {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
+.language-label {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.language-toggle-btn:hover .language-label {
+  transform: scale(1.05);
+}
+
+/* 语言图标动画 */
+.language-toggle-btn :deep(.anticon) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.language-toggle-btn:hover :deep(.anticon) {
+  transform: scale(1.1) rotate(10deg);
+  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+}
+
+/* 语言下拉菜单 */
+.language-dropdown-menu {
+  min-width: 160px;
+  border-radius: 12px;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--theme-border);
+  background: var(--theme-bg-container);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  animation: languageDropdownSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes languageDropdownSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
+
+.language-dropdown-menu :deep(.ant-menu-item) {
+  padding: 12px 16px;
+  margin: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.language-dropdown-menu :deep(.ant-menu-item):hover {
+  background-color: rgba(59, 130, 246, 0.08);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.language-dropdown-menu :deep(.ant-menu-item-selected) {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.language-dropdown-menu :deep(.ant-menu-item-selected):hover {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.language-flag {
+  font-size: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.language-dropdown-menu :deep(.ant-menu-item):hover .language-flag {
+  transform: scale(1.1);
+}
+
+/* 暗黑模式适配 */
+.dark .language-toggle-btn {
+  background: linear-gradient(135deg,
+    rgba(96, 165, 250, 0.08) 0%,
+    rgba(59, 130, 246, 0.12) 100%) !important;
+  border-color: rgba(96, 165, 250, 0.15) !important;
+}
+
+.dark .language-toggle-btn:hover {
+  color: #60a5fa !important;
+  background: linear-gradient(135deg,
+    rgba(96, 165, 250, 0.15) 0%,
+    rgba(59, 130, 246, 0.2) 100%) !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+  box-shadow:
+    0 4px 12px rgba(96, 165, 250, 0.25),
+    0 2px 4px rgba(96, 165, 250, 0.2) !important;
+}
+
+.dark .language-dropdown-menu {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.4),
+    0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .language-dropdown-menu :deep(.ant-menu-item):hover {
+  background-color: rgba(96, 165, 250, 0.1);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.12);
+}
+
+.dark .language-dropdown-menu :deep(.ant-menu-item-selected) {
+  background-color: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
+.dark .language-dropdown-menu :deep(.ant-menu-item-selected):hover {
+  background-color: rgba(96, 165, 250, 0.2);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .language-toggle-btn {
+    min-width: 32px !important;
+  }
+
+  .language-label {
+    display: none;
+  }
+}
+
+/* 减少动画偏好适配 */
+@media (prefers-reduced-motion: reduce) {
+  .language-toggle-btn,
+  .language-toggle-btn :deep(.anticon),
+  .language-label,
+  .language-flag,
+  .language-dropdown-menu :deep(.ant-menu-item) {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .language-toggle-btn:hover,
+  .language-dropdown-menu :deep(.ant-menu-item):hover {
+    transform: none !important;
+  }
 }
 </style>

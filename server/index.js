@@ -7,8 +7,9 @@ require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// 导入端口管理工具
+// 导入端口管理工具和日志工具
 const { ensurePortAvailable } = require('./utils/portManager');
+const logger = require('./utils/logger');
 
 // 导入路由
 const novelRoutes = require('./routes/novels');
@@ -32,8 +33,12 @@ app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
   credentials: true
 }));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// 添加请求日志中间件（在body parser之后）
+app.use(logger.createRequestLogger());
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -56,12 +61,22 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+
 // 错误处理中间件
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
+  logger.error('Unhandled error:', {
+    requestId: req.requestId,
+    method: req.method,
+    url: req.url,
+    error: err.message,
+    stack: err.stack,
+    timestamp: new Date().toISOString()
+  });
+
+  res.status(500).json({
     error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong!'
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong!',
+    requestId: req.requestId
   });
 });
 
@@ -72,7 +87,7 @@ app.use('*', (req, res) => {
 
 // 优雅关闭
 process.on('SIGINT', async () => {
-  console.log('Shutting down server...');
+  logger.info('Shutting down server...');
   await prisma.$disconnect();
   process.exit(0);
 });
@@ -89,22 +104,26 @@ async function startServer() {
     });
 
     if (!portResult.success) {
-      console.error(`❌ 无法启动服务器: ${portResult.message}`);
+      logger.error(`❌ 无法启动服务器: ${portResult.message}`);
       process.exit(1);
     }
 
     // 启动服务器
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-      
+      logger.info(`🚀 Server running on http://localhost:${PORT}`);
+      logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
+      logger.info(`📝 Log level: ${logger.level}`);
+
       if (portResult.killedProcesses && portResult.killedProcesses.length > 0) {
-        console.log(`🔧 已自动处理 ${portResult.killedProcesses.length} 个占用端口的进程`);
+        logger.info(`🔧 已自动处理 ${portResult.killedProcesses.length} 个占用端口的进程`);
       }
     });
 
   } catch (error) {
-    console.error('❌ 服务器启动失败:', error);
+    logger.error('❌ 服务器启动失败:', {
+      error: error.message,
+      stack: error.stack
+    });
     process.exit(1);
   }
 }

@@ -1,11 +1,12 @@
 const OpenAI = require('openai');
 const { aiConfig, validateConfig } = require('../config/aiConfig');
-const { 
-  withRetry, 
-  buildRequestParams, 
-  normalizeResponse, 
+const {
+  withRetry,
+  buildRequestParams,
+  normalizeResponse,
   validateResponse
 } = require('../utils/aiHelpers');
+const logger = require('../utils/logger');
 
 class AIService {
   constructor() {
@@ -91,7 +92,8 @@ class AIService {
 
   async openaiChat(provider, messages, options) {
     const taskType = options.taskType || 'default';
-    
+    const startTime = Date.now();
+
     const requestFn = async () => {
       const params = buildRequestParams('openai', taskType, {
         model: options.model || provider.models.chat,
@@ -100,17 +102,23 @@ class AIService {
         ...options.additionalParams
       });
 
-      const response = await provider.client.chat.completions.create({
+      const requestData = {
         messages: messages,
         ...params
-      });
+      };
+
+      const response = await provider.client.chat.completions.create(requestData);
+
+      // Log successful API call
+      const duration = Date.now() - startTime;
+      logger.logApiCall('openai', '/chat/completions', requestData, response, duration);
 
       return normalizeResponse(response, 'openai');
     };
 
     try {
       const result = await withRetry(requestFn, 'openai');
-      
+
       return {
         content: result.content,
         usage: result.usage,
@@ -119,17 +127,43 @@ class AIService {
         finishReason: result.finishReason
       };
     } catch (error) {
-      console.error('OpenAI API Error:', error);
+      // Log failed API call
+      const duration = Date.now() - startTime;
+      const requestData = {
+        model: options.model || provider.models.chat,
+        messages: messages,
+        temperature: options.temperature,
+        max_tokens: options.maxTokens
+      };
+      logger.logApiCall('openai', '/chat/completions', requestData, null, duration, error);
+
+      logger.error('OpenAI API Error:', {
+        error: error.message,
+        stack: error.stack,
+        model: options.model || provider.models.chat,
+        messageCount: messages.length
+      });
       throw new Error(`OpenAI API Error: ${error.message}`);
     }
   }
 
   async claudeChat(provider, messages, options) {
+    const startTime = Date.now();
+
     try {
       // Convert OpenAI format messages to Claude format
       const systemMessage = messages.find(m => m.role === 'system')?.content || '';
       const userMessages = messages.filter(m => m.role !== 'system');
-      
+
+      const requestData = {
+        model: options.model || provider.models.chat,
+        system: systemMessage,
+        messages: userMessages,
+        max_tokens: options.maxTokens || 2000,
+        temperature: options.temperature || 0.7,
+        ...options.additionalParams
+      };
+
       const response = await fetch(`${provider.config.baseURL}/v1/messages`, {
         method: 'POST',
         headers: {
@@ -137,29 +171,36 @@ class AIService {
           'x-api-key': provider.config.apiKey,
           'anthropic-version': '2023-06-01'
         },
-        body: JSON.stringify({
-          model: options.model || provider.models.chat,
-          system: systemMessage,
-          messages: userMessages,
-          max_tokens: options.maxTokens || 2000,
-          temperature: options.temperature || 0.7,
-          ...options.additionalParams
-        })
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
-        throw new Error(`Claude API Error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        const duration = Date.now() - startTime;
+        const error = new Error(`Claude API Error: ${response.status} ${response.statusText} - ${errorText}`);
+        logger.logApiCall('claude', '/v1/messages', requestData, null, duration, error);
+        throw error;
       }
 
       const data = await response.json();
-      
+
+      // Log successful API call
+      const duration = Date.now() - startTime;
+      logger.logApiCall('claude', '/v1/messages', requestData, data, duration);
+
       return {
         content: data.content[0].text,
         usage: data.usage,
         provider: 'claude'
       };
     } catch (error) {
-      console.error('Claude API Error:', error);
+      const duration = Date.now() - startTime;
+      logger.error('Claude API Error:', {
+        error: error.message,
+        stack: error.stack,
+        model: options.model || provider.models.chat,
+        messageCount: messages.length
+      });
       throw new Error(`Claude API Error: ${error.message}`);
     }
   }
@@ -260,6 +301,8 @@ class AIService {
   }
 
   async checkConsistency(novelData, scope = 'full') {
+    const startTime = Date.now();
+
     const systemPrompt = `你是一个专业的小说一致性检查助手。请仔细检查以下内容中的一致性问题：
 
 检查重点：
@@ -277,13 +320,27 @@ class AIService {
       { role: 'user', content: this.formatNovelDataForConsistency(novelData) }
     ];
 
-    const response = await this.chat(messages, {
-      temperature: 0.3 // Lower temperature for consistency checking
-    });
-
     try {
-      return JSON.parse(response.content);
+      const response = await this.chat(messages, {
+        temperature: 0.3 // Lower temperature for consistency checking
+      });
+
+      const result = JSON.parse(response.content);
+
+      // Log consistency check
+      const duration = Date.now() - startTime;
+      logger.logConsistencyCheck(novelData.id, scope, result.issues || [], duration);
+
+      return result;
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('Consistency check failed:', {
+        novelId: novelData.id,
+        scope,
+        error: error.message,
+        duration: `${duration}ms`
+      });
+
       // Fallback if JSON parsing fails
       return {
         issues: [{
