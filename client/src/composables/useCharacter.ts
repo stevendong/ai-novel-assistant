@@ -1,14 +1,16 @@
 import { ref, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import type { Character } from '@/types'
-import { 
-  characterService, 
-  type CharacterCreateData, 
+import {
+  characterService,
+  type CharacterCreateData,
   type CharacterUpdateData,
   type CharacterEnhanceRequest,
   type CharacterEnhanceResponse,
   type CharacterDevelopRequest,
-  type CharacterDevelopResponse
+  type CharacterDevelopResponse,
+  type CharacterGenerateRequest,
+  type CharacterGenerateResponse
 } from '@/services/characterService'
 import { useProjectStore } from '@/stores/project'
 
@@ -162,7 +164,7 @@ export function useCharacter() {
   
   // AI发展角色弧线
   const developCharacter = async (
-    id: string, 
+    id: string,
     request: CharacterDevelopRequest
   ): Promise<CharacterDevelopResponse | null> => {
     try {
@@ -176,6 +178,30 @@ export function useCharacter() {
       return null
     } finally {
       developing.value = false
+    }
+  }
+
+  // AI生成新角色
+  const generateCharacter = async (
+    request: Omit<CharacterGenerateRequest, 'novelId'>
+  ): Promise<CharacterGenerateResponse | null> => {
+    const currentProject = projectStore.currentProject
+    if (!currentProject) {
+      message.error('请先选择项目')
+      return null
+    }
+
+    try {
+      const result = await characterService.generateCharacter({
+        ...request,
+        novelId: currentProject.id
+      })
+      message.success('AI角色生成成功')
+      return result
+    } catch (error) {
+      console.error('Failed to generate character:', error)
+      message.error('AI生成角色失败')
+      return null
     }
   }
   
@@ -215,11 +241,11 @@ export function useCharacter() {
     loading,
     enhancing,
     developing,
-    
+
     // 计算属性
     characterCount,
     hasCharacters,
-    
+
     // 方法
     loadCharacters,
     getCharacter,
@@ -228,6 +254,7 @@ export function useCharacter() {
     deleteCharacter,
     enhanceCharacter,
     developCharacter,
+    generateCharacter,
     findCharacterByName,
     findCharacterById,
     searchCharacters,

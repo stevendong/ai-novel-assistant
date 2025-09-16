@@ -25,6 +25,11 @@ export interface Character {
   appearance?: string
   personality?: string
   background?: string
+  age?: string
+  identity?: string
+  values?: string
+  fears?: string
+  skills?: string
   relationships: Record<string, any>
   isLocked: boolean
   chapterRefs?: any[]

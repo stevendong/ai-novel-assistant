@@ -6,18 +6,28 @@ export interface CharacterCreateData {
   novelId: string
   name: string
   description?: string
+  age?: string
+  identity?: string
   appearance?: string
   personality?: string
+  values?: string
+  fears?: string
   background?: string
+  skills?: string
   relationships?: Record<string, any>
 }
 
 export interface CharacterUpdateData {
   name?: string
   description?: string
+  age?: string
+  identity?: string
   appearance?: string
   personality?: string
+  values?: string
+  fears?: string
   background?: string
+  skills?: string
   relationships?: Record<string, any>
   isLocked?: boolean
 }
@@ -54,6 +64,33 @@ export interface CharacterDevelopResponse {
     event: string
     impact: string
   }>
+}
+
+export interface CharacterGenerateRequest {
+  novelId: string
+  prompt: string
+  baseInfo?: {
+    name?: string
+    description?: string
+  }
+}
+
+export interface CharacterGenerateResponse {
+  character: {
+    name?: string
+    age?: string
+    identity?: string
+    description: string
+    appearance: string
+    personality: string
+    values: string
+    fears: string
+    background: string
+    skills: string
+  }
+  reasoning?: string
+  fallback?: boolean
+  message?: string
 }
 
 class CharacterService {
@@ -155,11 +192,28 @@ class CharacterService {
       },
       body: JSON.stringify(request),
     })
-    
+
     if (!response.ok) {
       throw new Error('Failed to develop character')
     }
-    
+
+    return await response.json()
+  }
+
+  // AI生成新角色
+  async generateCharacter(request: CharacterGenerateRequest): Promise<CharacterGenerateResponse> {
+    const response = await fetch(`${API_BASE}/characters/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to generate character')
+    }
+
     return await response.json()
   }
 

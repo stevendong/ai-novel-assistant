@@ -39,14 +39,19 @@ model Character {
   novelId      String
   name         String
   description  String?
+  age          String? // 年龄
+  identity     String? // 身份/职业
   appearance   String?
   personality  String?
+  values       String? // 核心价值观
+  fears        String? // 恐惧与弱点
   background   String?
+  skills       String? // 技能与能力
   relationships String? // 关系网络 JSON字符串
   isLocked     Boolean @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+
   novel        Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
   chapterRefs  ChapterCharacter[]
 

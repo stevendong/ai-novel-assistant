@@ -38,7 +38,7 @@ const router = createRouter({
         },
         {
           path: '/worldsettings',
-          name: 'worldsettings',
+          name: 'worldSettings',
           component: WorldSettingManagement,
           meta: {
             title: '世界设定',
