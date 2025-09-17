@@ -1,4 +1,5 @@
 import type { ConsistencyCheck } from '@/types'
+import { api, type ApiResponse } from '@/utils/api'
 
 interface ConsistencyStats {
   totalIssues: number
@@ -66,26 +67,18 @@ export class ConsistencyService {
     if (filters?.severity) params.append('severity', filters.severity)
     if (filters?.resolved !== undefined) params.append('resolved', filters.resolved.toString())
 
-    const response = await fetch(
+    const response = await api.get(
       `${this.baseURL}/chapters/${chapterId}?${params.toString()}`
     )
-    
-    if (!response.ok) {
-      throw new Error('获取章节一致性检查结果失败')
-    }
-    
-    return response.json()
+
+    return response.data
   }
 
   // 获取小说的一致性检查概览
   async getNovelOverview(novelId: string): Promise<ConsistencyOverview> {
-    const response = await fetch(`${this.baseURL}/novels/${novelId}/overview`)
-    
-    if (!response.ok) {
-      throw new Error('获取小说一致性检查概览失败')
-    }
-    
-    return response.json()
+    const response = await api.get(`${this.baseURL}/novels/${novelId}/overview`)
+
+    return response.data
   }
 
   // 执行单个章节的一致性检查
@@ -95,19 +88,9 @@ export class ConsistencyService {
       'character', 'setting', 'timeline', 'logic'
     ]
   ): Promise<CheckResult> {
-    const response = await fetch(`${this.baseURL}/chapters/${chapterId}/check`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ types })
-    })
-    
-    if (!response.ok) {
-      throw new Error('章节一致性检查失败')
-    }
-    
-    return response.json()
+    const response = await api.post(`${this.baseURL}/chapters/${chapterId}/check`, { types })
+
+    return response.data
   }
 
   // 批量检查多个章节
@@ -118,78 +101,38 @@ export class ConsistencyService {
       types?: Array<'character' | 'setting' | 'timeline' | 'logic'>
     }
   ): Promise<BatchCheckResult> {
-    const response = await fetch(`${this.baseURL}/novels/${novelId}/batch-check`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        chapterIds: options?.chapterIds,
-        types: options?.types || ['character', 'setting', 'timeline', 'logic']
-      })
+    const response = await api.post(`${this.baseURL}/novels/${novelId}/batch-check`, {
+      chapterIds: options?.chapterIds,
+      types: options?.types || ['character', 'setting', 'timeline', 'logic']
     })
-    
-    if (!response.ok) {
-      throw new Error('批量一致性检查失败')
-    }
-    
-    return response.json()
+
+    return response.data
   }
 
   // 标记问题为已解决
   async resolveIssue(issueId: string, resolved: boolean = true): Promise<ConsistencyCheck> {
-    const response = await fetch(`${this.baseURL}/issues/${issueId}/resolve`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ resolved })
-    })
-    
-    if (!response.ok) {
-      throw new Error('更新问题状态失败')
-    }
-    
-    return response.json()
+    const response = await api.patch(`${this.baseURL}/issues/${issueId}/resolve`, { resolved })
+
+    return response.data
   }
 
   // 批量标记问题为已解决
   async batchResolveIssues(issueIds: string[], resolved: boolean = true): Promise<{ success: boolean; updatedCount: number }> {
-    const response = await fetch(`${this.baseURL}/issues/batch-resolve`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ issueIds, resolved })
-    })
-    
-    if (!response.ok) {
-      throw new Error('批量更新问题状态失败')
-    }
-    
-    return response.json()
+    const response = await api.patch(`${this.baseURL}/issues/batch-resolve`, { issueIds, resolved })
+
+    return response.data
   }
 
   // 删除一致性检查问题
   async deleteIssue(issueId: string): Promise<void> {
-    const response = await fetch(`${this.baseURL}/issues/${issueId}`, {
-      method: 'DELETE'
-    })
-    
-    if (!response.ok) {
-      throw new Error('删除一致性检查问题失败')
-    }
+    await api.delete(`${this.baseURL}/issues/${issueId}`)
   }
 
   // 获取问题详情和相关上下文
   async getIssueDetails(issueId: string): Promise<{ issue: ConsistencyCheck; context: IssueContext }> {
-    const response = await fetch(`${this.baseURL}/issues/${issueId}/details`)
-    
-    if (!response.ok) {
-      throw new Error('获取问题详情失败')
-    }
-    
-    return response.json()
+    const response = await api.get(`${this.baseURL}/issues/${issueId}/details`)
+
+    return response.data
   }
 
   // 获取严重程度对应的颜色

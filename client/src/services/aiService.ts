@@ -1,3 +1,5 @@
+import { api, type ApiResponse } from '@/utils/api'
+
 const API_BASE = '/api'
 
 export interface AIResponse {
@@ -89,26 +91,16 @@ export interface PlotPoint {
 class AIService {
   // 通用AI对话
   async chat(novelId: string, message: string, context = {}, options = {}): Promise<AIResponse> {
-    const response = await fetch(`${API_BASE}/ai/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        novelId,
-        message,
-        context,
-        type: (options as any).type || 'general',
-        provider: (options as any).provider,
-        model: (options as any).model
-      })
+    const response = await api.post(`${API_BASE}/ai/chat`, {
+      novelId,
+      message,
+      context,
+      type: (options as any).type || 'general',
+      provider: (options as any).provider,
+      model: (options as any).model
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // AI大纲生成
@@ -155,7 +147,7 @@ class AIService {
       content = response
     } else if (response && typeof response === 'object') {
       // 尝试不同的可能属性名
-      content = response.content || response.message || response.data || response.text || ''
+      content = response.content || response.message || response.data || (response as any).text || ''
       if (typeof content !== 'string') {
         content = JSON.stringify(response)
       }
@@ -666,85 +658,47 @@ ${description}
 
   // 应用大纲到小说
   async applyOutline(novelId: string, outlineData: OutlineData): Promise<any> {
-    const response = await fetch(`${API_BASE}/ai/outline/apply`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        novelId,
-        outline: outlineData
-      })
+    const response = await api.post(`${API_BASE}/ai/outline/apply`, {
+      novelId,
+      outline: outlineData
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // 保存大纲草稿
   async saveOutlineDraft(novelId: string, outlineData: OutlineData): Promise<any> {
-    const response = await fetch(`${API_BASE}/ai/outline/draft`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        novelId,
-        outline: outlineData
-      })
+    const response = await api.post(`${API_BASE}/ai/outline/draft`, {
+      novelId,
+      outline: outlineData
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // 创建可分享的大纲链接
   async createShareableOutline(outlineData: OutlineData): Promise<string> {
-    const response = await fetch(`${API_BASE}/ai/outline/share`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        outline: outlineData
-      })
+    const response = await api.post(`${API_BASE}/ai/outline/share`, {
+      outline: outlineData
     })
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const result = await response.json()
+    const result = response.data
     return result.shareUrl
   }
 
   // 获取角色列表
   async getCharacters(novelId: string): Promise<any[]> {
-    const response = await fetch(`${API_BASE}/characters?novelId=${novelId}`)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
+    const response = await api.get(`${API_BASE}/characters?novelId=${novelId}`)
 
-    const result = await response.json()
+    const result = response.data
     return result.data || []
   }
 
   // 获取世界设定列表  
   async getWorldSettings(novelId: string): Promise<any[]> {
-    const response = await fetch(`${API_BASE}/settings?novelId=${novelId}`)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
+    const response = await api.get(`${API_BASE}/settings?novelId=${novelId}`)
 
-    const result = await response.json()
+    const result = response.data
     return result.data || []
   }
 

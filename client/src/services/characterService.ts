@@ -1,4 +1,5 @@
 import type { Character } from '@/types'
+import { api, type ApiResponse } from '@/utils/api'
 
 const API_BASE = '/api'
 
@@ -96,11 +97,8 @@ export interface CharacterGenerateResponse {
 class CharacterService {
   // 获取小说的所有角色
   async getCharactersByNovel(novelId: string): Promise<Character[]> {
-    const response = await fetch(`${API_BASE}/characters/novel/${novelId}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch characters')
-    }
-    const characters = await response.json()
+    const response = await api.get(`${API_BASE}/characters/novel/${novelId}`)
+    const characters = response.data
     
     // 解析relationships字段
     return characters.map((character: any) => this.parseCharacterData(character))
@@ -108,113 +106,54 @@ class CharacterService {
 
   // 获取单个角色详情
   async getCharacter(id: string): Promise<Character> {
-    const response = await fetch(`${API_BASE}/characters/${id}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch character')
-    }
-    const character = await response.json()
+    const response = await api.get(`${API_BASE}/characters/${id}`)
+    const character = response.data
     return this.parseCharacterData(character)
   }
 
   // 创建新角色
   async createCharacter(data: CharacterCreateData): Promise<Character> {
-    const response = await fetch(`${API_BASE}/characters`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...data,
-        relationships: data.relationships || {}
-      }),
+    const response = await api.post(`${API_BASE}/characters`, {
+      ...data,
+      relationships: data.relationships || {}
     })
-    
-    if (!response.ok) {
-      throw new Error('Failed to create character')
-    }
-    
-    const character = await response.json()
+
+    const character = response.data
     return this.parseCharacterData(character)
   }
 
   // 更新角色
   async updateCharacter(id: string, data: CharacterUpdateData): Promise<Character> {
-    const response = await fetch(`${API_BASE}/characters/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to update character')
-    }
-    
-    const character = await response.json()
+    const response = await api.put(`${API_BASE}/characters/${id}`, data)
+
+    const character = response.data
     return this.parseCharacterData(character)
   }
 
   // 删除角色
   async deleteCharacter(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/characters/${id}`, {
-      method: 'DELETE',
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to delete character')
-    }
+    await api.delete(`${API_BASE}/characters/${id}`)
   }
 
   // AI完善角色
   async enhanceCharacter(id: string, request: CharacterEnhanceRequest): Promise<CharacterEnhanceResponse> {
-    const response = await fetch(`${API_BASE}/characters/${id}/enhance`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to enhance character')
-    }
-    
-    return await response.json()
+    const response = await api.post(`${API_BASE}/characters/${id}/enhance`, request)
+
+    return response.data
   }
 
   // AI发展角色弧线
   async developCharacter(id: string, request: CharacterDevelopRequest): Promise<CharacterDevelopResponse> {
-    const response = await fetch(`${API_BASE}/characters/${id}/develop`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
+    const response = await api.post(`${API_BASE}/characters/${id}/develop`, request)
 
-    if (!response.ok) {
-      throw new Error('Failed to develop character')
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // AI生成新角色
   async generateCharacter(request: CharacterGenerateRequest): Promise<CharacterGenerateResponse> {
-    const response = await fetch(`${API_BASE}/characters/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
+    const response = await api.post(`${API_BASE}/characters/generate`, request)
 
-    if (!response.ok) {
-      throw new Error('Failed to generate character')
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // 解析角色数据（处理relationships字段）

@@ -1,4 +1,5 @@
 import type { NovelStatistics } from '@/types'
+import { api, type ApiResponse } from '@/utils/api'
 
 const API_BASE = '/api'
 
@@ -62,11 +63,8 @@ export const statisticsService = {
       if (endDate) params.append('endDate', endDate)
       if (params.toString()) url += `?${params.toString()}`
 
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch statistics: ${response.statusText}`)
-      }
-      return await response.json()
+      const response = await api.get(url)
+      return response.data
     } catch (error) {
       console.error('Error fetching statistics:', error)
       throw error
@@ -76,11 +74,8 @@ export const statisticsService = {
   // 获取统计汇总数据
   async getStatisticsSummary(novelId: string, days = 30): Promise<StatisticsSummary> {
     try {
-      const response = await fetch(`${API_BASE}/statistics/novel/${novelId}/summary?days=${days}`)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch statistics summary: ${response.statusText}`)
-      }
-      return await response.json()
+      const response = await api.get(`${API_BASE}/statistics/novel/${novelId}/summary?days=${days}`)
+      return response.data
     } catch (error) {
       console.error('Error fetching statistics summary:', error)
       throw error
@@ -90,11 +85,8 @@ export const statisticsService = {
   // 获取单条统计记录
   async getStatistic(id: string): Promise<StatisticRecord> {
     try {
-      const response = await fetch(`${API_BASE}/statistics/${id}`)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch statistic: ${response.statusText}`)
-      }
-      return await response.json()
+      const response = await api.get(`${API_BASE}/statistics/${id}`)
+      return response.data
     } catch (error) {
       console.error('Error fetching statistic:', error)
       throw error
@@ -104,19 +96,8 @@ export const statisticsService = {
   // 创建或更新统计数据
   async createOrUpdateStatistic(data: CreateStatisticData): Promise<StatisticRecord> {
     try {
-      const response = await fetch(`${API_BASE}/statistics`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to create/update statistic: ${response.statusText}`)
-      }
-      
-      return await response.json()
+      const response = await api.post(`${API_BASE}/statistics`, data)
+      return response.data
     } catch (error) {
       console.error('Error creating/updating statistic:', error)
       throw error
@@ -126,19 +107,8 @@ export const statisticsService = {
   // 更新统计数据
   async updateStatistic(id: string, data: UpdateStatisticData): Promise<StatisticRecord> {
     try {
-      const response = await fetch(`${API_BASE}/statistics/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to update statistic: ${response.statusText}`)
-      }
-      
-      return await response.json()
+      const response = await api.put(`${API_BASE}/statistics/${id}`, data)
+      return response.data
     } catch (error) {
       console.error('Error updating statistic:', error)
       throw error
@@ -148,13 +118,7 @@ export const statisticsService = {
   // 删除统计数据
   async deleteStatistic(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/statistics/${id}`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to delete statistic: ${response.statusText}`)
-      }
+      await api.delete(`${API_BASE}/statistics/${id}`)
     } catch (error) {
       console.error('Error deleting statistic:', error)
       throw error
@@ -164,19 +128,8 @@ export const statisticsService = {
   // 批量创建统计数据
   async createBatchStatistics(statistics: CreateStatisticData[]): Promise<{ message: string, count: number }> {
     try {
-      const response = await fetch(`${API_BASE}/statistics/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ statistics })
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to create batch statistics: ${response.statusText}`)
-      }
-      
-      return await response.json()
+      const response = await api.post(`${API_BASE}/statistics/batch`, { statistics })
+      return response.data
     } catch (error) {
       console.error('Error creating batch statistics:', error)
       throw error

@@ -1,3 +1,5 @@
+import { api, type ApiResponse } from '@/utils/api'
+
 const API_BASE = '/api'
 
 export interface WritingGoal {
@@ -39,11 +41,8 @@ export const goalsService = {
       if (period) params.append('period', period)
       if (params.toString()) url += `?${params.toString()}`
 
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch goals: ${response.statusText}`)
-      }
-      return await response.json()
+      const response = await api.get(url)
+      return response.data
     } catch (error) {
       console.error('Error fetching goals:', error)
       throw error
@@ -53,11 +52,8 @@ export const goalsService = {
   // 获取当前活跃的写作目标
   async getActiveGoals(novelId: string): Promise<WritingGoal[]> {
     try {
-      const response = await fetch(`${API_BASE}/goals/novel/${novelId}/active`)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch active goals: ${response.statusText}`)
-      }
-      return await response.json()
+      const response = await api.get(`${API_BASE}/goals/novel/${novelId}/active`)
+      return response.data
     } catch (error) {
       console.error('Error fetching active goals:', error)
       throw error
@@ -67,11 +63,8 @@ export const goalsService = {
   // 获取单个写作目标
   async getGoal(id: string): Promise<WritingGoal> {
     try {
-      const response = await fetch(`${API_BASE}/goals/${id}`)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch goal: ${response.statusText}`)
-      }
-      return await response.json()
+      const response = await api.get(`${API_BASE}/goals/${id}`)
+      return response.data
     } catch (error) {
       console.error('Error fetching goal:', error)
       throw error
@@ -81,19 +74,8 @@ export const goalsService = {
   // 创建或更新写作目标
   async createOrUpdateGoal(data: CreateGoalData): Promise<WritingGoal> {
     try {
-      const response = await fetch(`${API_BASE}/goals`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to create/update goal: ${response.statusText}`)
-      }
-      
-      return await response.json()
+      const response = await api.post(`${API_BASE}/goals`, data)
+      return response.data
     } catch (error) {
       console.error('Error creating/updating goal:', error)
       throw error
@@ -103,19 +85,8 @@ export const goalsService = {
   // 更新写作目标
   async updateGoal(id: string, data: UpdateGoalData): Promise<WritingGoal> {
     try {
-      const response = await fetch(`${API_BASE}/goals/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to update goal: ${response.statusText}`)
-      }
-      
-      return await response.json()
+      const response = await api.put(`${API_BASE}/goals/${id}`, data)
+      return response.data
     } catch (error) {
       console.error('Error updating goal:', error)
       throw error
@@ -125,19 +96,8 @@ export const goalsService = {
   // 更新目标完成进度
   async updateGoalProgress(id: string, progress: GoalProgress): Promise<WritingGoal> {
     try {
-      const response = await fetch(`${API_BASE}/goals/${id}/progress`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(progress)
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to update goal progress: ${response.statusText}`)
-      }
-      
-      return await response.json()
+      const response = await api.patch(`${API_BASE}/goals/${id}/progress`, progress)
+      return response.data
     } catch (error) {
       console.error('Error updating goal progress:', error)
       throw error
@@ -147,13 +107,7 @@ export const goalsService = {
   // 删除写作目标
   async deleteGoal(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/goals/${id}`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to delete goal: ${response.statusText}`)
-      }
+      await api.delete(`${API_BASE}/goals/${id}`)
     } catch (error) {
       console.error('Error deleting goal:', error)
       throw error
@@ -163,19 +117,8 @@ export const goalsService = {
   // 批量更新目标进度
   async updateNovelProgress(novelId: string, wordCount: number, date: string): Promise<{ message: string, updatedGoals: number, wordCount: number }> {
     try {
-      const response = await fetch(`${API_BASE}/goals/novel/${novelId}/update-progress`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ wordCount, date })
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to update novel progress: ${response.statusText}`)
-      }
-      
-      return await response.json()
+      const response = await api.patch(`${API_BASE}/goals/novel/${novelId}/update-progress`, { wordCount, date })
+      return response.data
     } catch (error) {
       console.error('Error updating novel progress:', error)
       throw error

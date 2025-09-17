@@ -1,4 +1,5 @@
 import type { StatusTransition, StatusHistory, WorkflowConfig } from '@/types'
+import { api, type ApiResponse } from '@/utils/api'
 
 const API_BASE = '/api'
 
@@ -42,11 +43,8 @@ export interface AutoAdvanceResult {
 class WorkflowService {
   // 获取可用的状态流转选项
   async getAvailableTransitions(entityType: 'novel' | 'chapter', entityId: string): Promise<StatusTransition[]> {
-    const response = await fetch(`${API_BASE}/workflow/${entityType}/${entityId}/transitions`)
-    if (!response.ok) {
-      throw new Error('Failed to get available transitions')
-    }
-    return await response.json()
+    const response = await api.get(`${API_BASE}/workflow/${entityType}/${entityId}/transitions`)
+    return response.data
   }
 
   // 执行状态流转
@@ -57,20 +55,9 @@ class WorkflowService {
     reason?: string,
     triggeredBy: 'user' | 'manual' = 'user'
   ): Promise<TransitionResult> {
-    const response = await fetch(`${API_BASE}/workflow/${entityType}/${entityId}/transition`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ toStatus, reason, triggeredBy }),
-    })
+    const response = await api.post(`${API_BASE}/workflow/${entityType}/${entityId}/transition`, { toStatus, reason, triggeredBy })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to transition status')
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // 检查是否可以流转到指定状态
@@ -79,11 +66,8 @@ class WorkflowService {
     entityId: string,
     toStatus: string
   ): Promise<CanTransitionResult> {
-    const response = await fetch(`${API_BASE}/workflow/${entityType}/${entityId}/can-transition/${toStatus}`)
-    if (!response.ok) {
-      throw new Error('Failed to check transition')
-    }
-    return await response.json()
+    const response = await api.get(`${API_BASE}/workflow/${entityType}/${entityId}/can-transition/${toStatus}`)
+    return response.data
   }
 
   // 获取状态变更历史
@@ -92,20 +76,14 @@ class WorkflowService {
     entityId: string,
     limit: number = 10
   ): Promise<StatusHistory[]> {
-    const response = await fetch(`${API_BASE}/workflow/${entityType}/${entityId}/history?limit=${limit}`)
-    if (!response.ok) {
-      throw new Error('Failed to get status history')
-    }
-    return await response.json()
+    const response = await api.get(`${API_BASE}/workflow/${entityType}/${entityId}/history?limit=${limit}`)
+    return response.data
   }
 
   // 获取工作流配置
   async getWorkflowConfig(novelId: string, entityType: 'novel' | 'chapter'): Promise<WorkflowConfig> {
-    const response = await fetch(`${API_BASE}/workflow/config/${novelId}/${entityType}`)
-    if (!response.ok) {
-      throw new Error('Failed to get workflow config')
-    }
-    return await response.json()
+    const response = await api.get(`${API_BASE}/workflow/config/${novelId}/${entityType}`)
+    return response.data
   }
 
   // 批量推进状态
@@ -114,32 +92,16 @@ class WorkflowService {
     fromStatus: string,
     toStatus: string
   ): Promise<BatchAdvanceResult> {
-    const response = await fetch(`${API_BASE}/workflow/novels/${novelId}/chapters/batch-advance`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ fromStatus, toStatus }),
-    })
+    const response = await api.post(`${API_BASE}/workflow/novels/${novelId}/chapters/batch-advance`, { fromStatus, toStatus })
 
-    if (!response.ok) {
-      throw new Error('Failed to perform batch advance')
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // 自动推进所有可以自动流转的状态
   async autoAdvance(novelId: string): Promise<AutoAdvanceResult> {
-    const response = await fetch(`${API_BASE}/workflow/novels/${novelId}/auto-advance`, {
-      method: 'POST',
-    })
+    const response = await api.post(`${API_BASE}/workflow/novels/${novelId}/auto-advance`)
 
-    if (!response.ok) {
-      throw new Error('Failed to perform auto advance')
-    }
-
-    return await response.json()
+    return response.data
   }
 
   // 获取状态显示文本

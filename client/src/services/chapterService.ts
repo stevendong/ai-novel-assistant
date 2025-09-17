@@ -1,4 +1,5 @@
 import type { Chapter, PlotPoint, Illustration, ChapterCharacter, ChapterSetting } from '@/types'
+import { api, type ApiResponse } from '@/utils/api'
 
 const API_BASE = '/api'
 
@@ -71,11 +72,8 @@ export interface ChapterListResponse {
 class ChapterService {
   // 获取小说的所有章节
   async getChaptersByNovel(novelId: string): Promise<Chapter[]> {
-    const response = await fetch(`${API_BASE}/chapters/novel/${novelId}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch chapters')
-    }
-    const chapters = await response.json()
+    const response = await api.get(`${API_BASE}/chapters/novel/${novelId}`)
+    const chapters = response.data
     
     // 解析JSON字符串字段
     return chapters.map((chapter: any) => this.parseChapterData(chapter))
@@ -107,12 +105,8 @@ class ChapterService {
     if (search) {
       params.append('search', search)
     }
-    const response = await fetch(`${API_BASE}/chapters/novel/${novelId}/paginated?${params}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch chapters')
-    }
-    
-    const result = await response.json()
+    const response = await api.get(`${API_BASE}/chapters/novel/${novelId}/paginated?${params}`)
+    const result = response.data
     
     return {
       ...result,
@@ -122,32 +116,19 @@ class ChapterService {
 
   // 获取单个章节详情
   async getChapter(id: string): Promise<Chapter> {
-    const response = await fetch(`${API_BASE}/chapters/${id}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch chapter')
-    }
-    const chapter = await response.json()
+    const response = await api.get(`${API_BASE}/chapters/${id}`)
+    const chapter = response.data
     return this.parseChapterData(chapter)
   }
 
   // 创建新章节
   async createChapter(data: ChapterCreateData): Promise<Chapter> {
-    const response = await fetch(`${API_BASE}/chapters`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...data,
-        plotPoints: data.plotPoints ? JSON.stringify(data.plotPoints) : null
-      }),
+    const response = await api.post(`${API_BASE}/chapters`, {
+      ...data,
+      plotPoints: data.plotPoints ? JSON.stringify(data.plotPoints) : null
     })
-    
-    if (!response.ok) {
-      throw new Error('Failed to create chapter')
-    }
-    
-    const chapter = await response.json()
+
+    const chapter = response.data
     return this.parseChapterData(chapter)
   }
 
@@ -159,138 +140,60 @@ class ChapterService {
       illustrations: data.illustrations ? JSON.stringify(data.illustrations) : undefined,
     }
     
-    const response = await fetch(`${API_BASE}/chapters/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to update chapter')
-    }
-    
-    const chapter = await response.json()
+    const response = await api.put(`${API_BASE}/chapters/${id}`, payload)
+
+    const chapter = response.data
     return this.parseChapterData(chapter)
   }
 
   // 删除章节
   async deleteChapter(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/chapters/${id}`, {
-      method: 'DELETE',
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to delete chapter')
-    }
+    await api.delete(`${API_BASE}/chapters/${id}`)
   }
 
   // AI生成章节大纲
   async generateOutline(chapterId: string, request: AIOutlineRequest): Promise<AIOutlineResponse> {
-    const response = await fetch(`${API_BASE}/chapters/${chapterId}/generate-outline`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to generate outline')
-    }
-    
-    return await response.json()
+    const response = await api.post(`${API_BASE}/chapters/${chapterId}/generate-outline`, request)
+
+    return response.data
   }
 
   // 添加角色到章节
   async addCharacterToChapter(chapterId: string, characterId: string, role: string = 'mentioned'): Promise<ChapterCharacter> {
-    const response = await fetch(`${API_BASE}/chapters/${chapterId}/characters`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ characterId, role }),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to add character to chapter')
-    }
-    
-    return await response.json()
+    const response = await api.post(`${API_BASE}/chapters/${chapterId}/characters`, { characterId, role })
+
+    return response.data
   }
 
   // 更新章节角色关系
   async updateCharacterRole(chapterId: string, characterId: string, role: string): Promise<ChapterCharacter> {
-    const response = await fetch(`${API_BASE}/chapters/${chapterId}/characters/${characterId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ role }),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to update character role')
-    }
-    
-    return await response.json()
+    const response = await api.put(`${API_BASE}/chapters/${chapterId}/characters/${characterId}`, { role })
+
+    return response.data
   }
 
   // 从章节中移除角色
   async removeCharacterFromChapter(chapterId: string, characterId: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/chapters/${chapterId}/characters/${characterId}`, {
-      method: 'DELETE',
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to remove character from chapter')
-    }
+    await api.delete(`${API_BASE}/chapters/${chapterId}/characters/${characterId}`)
   }
 
   // 添加设定到章节
   async addSettingToChapter(chapterId: string, settingId: string, usage: string = ''): Promise<ChapterSetting> {
-    const response = await fetch(`${API_BASE}/chapters/${chapterId}/settings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ settingId, usage }),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to add setting to chapter')
-    }
-    
-    return await response.json()
+    const response = await api.post(`${API_BASE}/chapters/${chapterId}/settings`, { settingId, usage })
+
+    return response.data
   }
 
   // 更新章节设定使用说明
   async updateSettingUsage(chapterId: string, settingId: string, usage: string): Promise<ChapterSetting> {
-    const response = await fetch(`${API_BASE}/chapters/${chapterId}/settings/${settingId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ usage }),
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to update setting usage')
-    }
-    
-    return await response.json()
+    const response = await api.put(`${API_BASE}/chapters/${chapterId}/settings/${settingId}`, { usage })
+
+    return response.data
   }
 
   // 从章节中移除设定
   async removeSettingFromChapter(chapterId: string, settingId: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/chapters/${chapterId}/settings/${settingId}`, {
-      method: 'DELETE',
-    })
-    
-    if (!response.ok) {
-      throw new Error('Failed to remove setting from chapter')
-    }
+    await api.delete(`${API_BASE}/chapters/${chapterId}/settings/${settingId}`)
   }
 
   // 解析章节数据（处理JSON字符串字段）

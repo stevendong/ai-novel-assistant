@@ -1,5 +1,5 @@
 import type { Novel, NovelStatistics, ChapterProgress, WritingGoals, ProjectOverviewStats } from '@/types'
-import { api } from '@/utils/api'
+import { api, type ApiResponse } from '@/utils/api'
 
 const API_BASE = '/api'
 
@@ -56,113 +56,100 @@ class NovelService {
 
   // 获取项目概览统计数据
   async getProjectStats(): Promise<ProjectOverviewStats> {
-    const response = await fetch(`${API_BASE}/novels?stats=true`)
-    if (!response.ok) {
+    try {
+      const response = await api.get(`${API_BASE}/novels?stats=true`)
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch project statistics:', error)
       throw new Error('Failed to fetch project statistics')
     }
-    return await response.json()
   }
 
   // 获取单个小说详情
   async getNovel(id: string): Promise<Novel> {
-    const response = await fetch(`${API_BASE}/novels/${id}`)
-    if (!response.ok) {
+    try {
+      const response = await api.get(`${API_BASE}/novels/${id}`)
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch novel:', error)
       throw new Error('Failed to fetch novel')
     }
-    return await response.json()
   }
 
   // 获取小说统计信息
   async getNovelStatistics(id: string): Promise<NovelStatistics> {
-    const response = await fetch(`${API_BASE}/novels/${id}/statistics`)
-    if (!response.ok) {
+    try {
+      const response = await api.get(`${API_BASE}/novels/${id}/statistics`)
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch novel statistics:', error)
       throw new Error('Failed to fetch novel statistics')
     }
-    return await response.json()
   }
 
   // 获取章节进度详情
   async getChapterProgress(id: string): Promise<ChapterProgress[]> {
-    const response = await fetch(`${API_BASE}/novels/${id}/progress`)
-    if (!response.ok) {
+    try {
+      const response = await api.get(`${API_BASE}/novels/${id}/progress`)
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch chapter progress:', error)
       throw new Error('Failed to fetch chapter progress')
     }
-    return await response.json()
   }
 
   // 获取写作目标
   async getWritingGoals(id: string): Promise<WritingGoals> {
-    const response = await fetch(`${API_BASE}/novels/${id}/goals`)
-    if (!response.ok) {
+    try {
+      const response = await api.get(`${API_BASE}/novels/${id}/goals`)
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch writing goals:', error)
       throw new Error('Failed to fetch writing goals')
     }
-    return await response.json()
   }
 
   // 创建新小说
   async createNovel(data: NovelCreateData): Promise<Novel> {
-    const response = await fetch(`${API_BASE}/novels`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to create novel')
+    try {
+      const response = await api.post(`${API_BASE}/novels`, data)
+      return response.data
+    } catch (error: any) {
+      console.error('Failed to create novel:', error)
+      throw new Error(error.response?.data?.error || 'Failed to create novel')
     }
-    
-    return await response.json()
   }
 
   // 更新小说信息
   async updateNovel(id: string, data: NovelUpdateData): Promise<Novel> {
-    const response = await fetch(`${API_BASE}/novels/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to update novel')
+    try {
+      const response = await api.put(`${API_BASE}/novels/${id}`, data)
+      return response.data
+    } catch (error: any) {
+      console.error('Failed to update novel:', error)
+      throw new Error(error.response?.data?.error || 'Failed to update novel')
     }
-    
-    return await response.json()
   }
 
   // 删除小说
   async deleteNovel(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE}/novels/${id}`, {
-      method: 'DELETE',
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to delete novel')
+    try {
+      await api.delete(`${API_BASE}/novels/${id}`)
+    } catch (error: any) {
+      console.error('Failed to delete novel:', error)
+      throw new Error(error.response?.data?.error || 'Failed to delete novel')
     }
   }
 
   // AI分析概要生成初始结构
   async analyzeSummary(id: string, request: NovelAnalysisRequest): Promise<NovelAnalysisResponse> {
-    const response = await fetch(`${API_BASE}/novels/${id}/analyze-summary`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to analyze summary')
+    try {
+      const response = await api.post(`${API_BASE}/novels/${id}/analyze-summary`, request)
+      return response.data
+    } catch (error: any) {
+      console.error('Failed to analyze summary:', error)
+      throw new Error(error.response?.data?.error || 'Failed to analyze summary')
     }
-    
-    return await response.json()
   }
 
   // 复制小说项目
@@ -185,18 +172,18 @@ class NovelService {
     // Note: This endpoint doesn't exist yet - placeholder for future implementation
     const formData = new FormData()
     formData.append('file', file)
-    
-    const response = await fetch(`${API_BASE}/novels/import`, {
-      method: 'POST',
-      body: formData,
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Failed to import novel')
+
+    try {
+      const response = await api.post(`${API_BASE}/novels/import`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      return response.data
+    } catch (error: any) {
+      console.error('Failed to import novel:', error)
+      throw new Error(error.response?.data?.error || 'Failed to import novel')
     }
-    
-    return await response.json()
   }
 
   // 格式化日期
