@@ -161,7 +161,7 @@
               title="进行中项目"
               :value="inProgressProjects"
               :prefix="h(EditOutlined)"
-              value-style="color: #3f8600"
+              :value-style="{ color: '#3f8600' }"
             />
           </a-card>
         </a-col>
@@ -171,7 +171,7 @@
               title="已完成项目"
               :value="completedProjects"
               :prefix="h(CheckCircleOutlined)"
-              value-style="color: #cf1322"
+              :value-style="{ color: '#cf1322' }"
             />
           </a-card>
         </a-col>

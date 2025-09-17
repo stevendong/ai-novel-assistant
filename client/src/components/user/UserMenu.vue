@@ -1,27 +1,17 @@
 <template>
   <div class="user-menu-wrapper">
-    <!-- 认证模式切换器 -->
-    <div class="auth-switcher-container">
-      <AuthModeSwitcher size="small" />
-    </div>
-
-    <!-- Clerk User Button (现代化) -->
-    <div v-if="authStore.currentAuthMode === 'clerk'" class="clerk-user-button">
-      <UserButton />
-    </div>
-
-    <!-- 传统用户菜单 (向后兼容) -->
-    <a-dropdown v-else :trigger="['click']" placement="bottomRight">
+    <!-- 用户菜单 -->
+    <a-dropdown v-if="authStore.isAuthenticated && authStore.user" :trigger="['click']" placement="bottomRight">
       <a-button type="text" size="large" class="user-menu-trigger">
         <template v-if="authStore.user?.avatar">
           <a-avatar :src="authStore.user.avatar" :size="32" />
         </template>
         <template v-else>
           <a-avatar :size="32" style="background-color: #87d068">
-            {{ getInitials(authStore.user?.displayName) }}
+            {{ getInitials(authStore.user?.nickname || authStore.user?.username) }}
           </a-avatar>
         </template>
-        <span class="username">{{ authStore.user?.displayName }}</span>
+        <span class="username">{{ authStore.user?.nickname || authStore.user?.username || '用户' }}</span>
         <DownOutlined />
       </a-button>
 
@@ -36,10 +26,6 @@
           </a-menu-item>
           <a-menu-item key="help" :icon="h(QuestionCircleOutlined)">
             帮助
-          </a-menu-item>
-          <a-menu-divider />
-          <a-menu-item key="switch-auth" :icon="h(SwapOutlined)">
-            切换认证方式
           </a-menu-item>
           <a-menu-divider />
           <a-menu-item key="logout" :icon="h(LogoutOutlined)" class="logout-item">
@@ -183,15 +169,12 @@ import {
   SettingOutlined,
   QuestionCircleOutlined,
   LogoutOutlined,
-  DownOutlined,
-  SwapOutlined
+  DownOutlined
 } from '@ant-design/icons-vue'
-import { UserButton } from '@clerk/vue'
-import { useUnifiedAuthStore } from '@/stores/unifiedAuth'
-import AuthModeSwitcher from '@/components/auth/AuthModeSwitcher.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
-const authStore = useUnifiedAuthStore()
+const authStore = useAuthStore()
 
 const profileModalVisible = ref(false)
 const settingsModalVisible = ref(false)
@@ -199,7 +182,7 @@ const logoutAllModalVisible = ref(false)
 const deleteAccountModalVisible = ref(false)
 const deleteAccountPassword = ref('')
 
-const profileForm = Form.useForm()
+// const profileForm = Form.useForm()
 const profileData = reactive({
   username: '',
   email: '',
@@ -223,9 +206,6 @@ const handleMenuClick = ({ key }) => {
     case 'help':
       showHelp()
       break
-    case 'switch-auth':
-      showAuthSwitcher()
-      break
     case 'logout':
       handleLogout()
       break
@@ -233,17 +213,11 @@ const handleMenuClick = ({ key }) => {
 }
 
 const showProfile = () => {
-  // 对于 Clerk 模式，使用内置的用户资料页面
-  if (authStore.currentAuthMode === 'clerk') {
-    authStore.openUserProfile()
-    return
-  }
-
-  // 对于传统模式，显示自定义的用户资料页面
+  // 显示用户资料页面
   Object.assign(profileData, {
     username: authStore.user?.username || '',
     email: authStore.user?.email || '',
-    nickname: authStore.user?.displayName || '',
+    nickname: authStore.user?.nickname || '',
     avatar: authStore.user?.avatar || ''
   })
   profileModalVisible.value = true
@@ -292,16 +266,12 @@ const handleLogout = () => {
     okText: '确认',
     cancelText: '取消',
     onOk: async () => {
-      const result = await authStore.signOut()
+      const result = await authStore.logout()
       if (result.success) {
         router.push('/login')
       }
     }
   })
-}
-
-const showAuthSwitcher = () => {
-  message.info('您可以通过页面右上角的认证方式切换器来切换登录方式')
 }
 
 const showLogoutAllModal = () => {
@@ -341,26 +311,17 @@ const cancelDeleteAccount = () => {
 
 // 生命周期
 onMounted(async () => {
-  // 确保统一认证 store 已初始化
-  if (!authStore.isInitialized) {
+  try {
+    // 确保认证 store 已初始化
     await authStore.init()
+  } catch (error) {
+    console.error('Failed to initialize auth store:', error)
   }
 })
 </script>
 
 <style scoped>
 .user-menu-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.auth-switcher-container {
-  display: flex;
-  align-items: center;
-}
-
-.clerk-user-button {
   display: flex;
   align-items: center;
 }

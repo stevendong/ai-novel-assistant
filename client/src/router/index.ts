@@ -1,17 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useUnifiedAuthStore } from '@/stores/unifiedAuth'
-import { authConfig } from '@/config/authConfig'
+import { useAuthStore } from '@/stores/auth'
 import MainLayout from '@/components/layout/MainLayout.vue'
 import Login from '@/views/Login.vue'
-import ClerkSignIn from '@/components/auth/ClerkSignIn.vue'
-import ClerkSignUp from '@/components/auth/ClerkSignUp.vue'
 import ProjectManagement from '@/components/novel/ProjectManagement.vue'
 import CharacterManagement from '@/components/character/CharacterManagement.vue'
 import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
 import ChapterEditor from '@/components/chapter/ChapterEditor.vue'
 import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
-import AuthDevTools from '@/views/AuthDevTools.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,22 +15,6 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: ClerkSignIn,
-      meta: {
-        requiresGuest: true
-      }
-    },
-    {
-      path: '/signup',
-      name: 'signup',
-      component: ClerkSignUp,
-      meta: {
-        requiresGuest: true
-      }
-    },
-    {
-      path: '/legacy-login',
-      name: 'legacy-login',
       component: Login,
       meta: {
         requiresGuest: true
@@ -105,37 +85,24 @@ const router = createRouter({
             title: '进度统计',
             icon: 'BarChartOutlined'
           }
-        },
-        // 开发工具（仅开发环境）
-        ...(import.meta.env.DEV ? [{
-          path: '/dev/auth',
-          name: 'auth-dev-tools',
-          component: AuthDevTools,
-          meta: {
-            title: '认证开发工具',
-            icon: 'ToolOutlined',
-            hidden: true
-          }
-        }] : [])
+        }
       ]
     }
   ],
 })
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useUnifiedAuthStore()
+  const authStore = useAuthStore()
 
-  // 等待统一认证系统初始化
+  // 初始化认证状态
   await authStore.init()
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresGuest = to.matched.some(record => record.meta.requiresGuest)
 
   if (requiresAuth && !authStore.isAuthenticated) {
-    // 使用配置的登录路由
-    const loginRoute = authConfig.getLoginRoute()
     next({
-      path: loginRoute,
+      path: '/login',
       query: { redirect: to.fullPath }
     })
   } else if (requiresGuest && authStore.isAuthenticated) {
