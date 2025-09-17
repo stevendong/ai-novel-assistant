@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useClerkAuthStore } from '@/stores/clerkAuth'
+import { useUnifiedAuthStore } from '@/stores/unifiedAuth'
+import { authConfig } from '@/config/authConfig'
 import MainLayout from '@/components/layout/MainLayout.vue'
 import Login from '@/views/Login.vue'
 import ClerkSignIn from '@/components/auth/ClerkSignIn.vue'
@@ -10,6 +11,7 @@ import WorldSettingManagement from '@/components/worldsetting/WorldSettingManage
 import ChapterEditor from '@/components/chapter/ChapterEditor.vue'
 import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
+import AuthDevTools from '@/views/AuthDevTools.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -103,24 +105,37 @@ const router = createRouter({
             title: '进度统计',
             icon: 'BarChartOutlined'
           }
-        }
+        },
+        // 开发工具（仅开发环境）
+        ...(import.meta.env.DEV ? [{
+          path: '/dev/auth',
+          name: 'auth-dev-tools',
+          component: AuthDevTools,
+          meta: {
+            title: '认证开发工具',
+            icon: 'ToolOutlined',
+            hidden: true
+          }
+        }] : [])
       ]
     }
   ],
 })
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useClerkAuthStore()
+  const authStore = useUnifiedAuthStore()
 
-  // 等待 Clerk 初始化
+  // 等待统一认证系统初始化
   await authStore.init()
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresGuest = to.matched.some(record => record.meta.requiresGuest)
 
   if (requiresAuth && !authStore.isAuthenticated) {
+    // 使用配置的登录路由
+    const loginRoute = authConfig.getLoginRoute()
     next({
-      path: '/login',
+      path: loginRoute,
       query: { redirect: to.fullPath }
     })
   } else if (requiresGuest && authStore.isAuthenticated) {

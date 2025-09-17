@@ -173,20 +173,49 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key_here
 
 ### Authentication System
 
-The project supports two authentication systems:
+The project features a **unified authentication system** that supports seamless switching between two authentication methods:
 
-1. **Clerk Authentication (Recommended)**:
-   - Modern, secure authentication service
-   - Built-in social login, email verification, user management
-   - Automatic token management and security
-   - Enable by setting `VITE_CLERK_PUBLISHABLE_KEY` in client/.env
+1. **Clerk Authentication (Modern)**:
+   - Third-party authentication service with advanced features
+   - Built-in social login (Google, GitHub, etc.)
+   - Automatic email verification and user management
+   - Professional user profile management
+   - Enhanced security and compliance
 
-2. **Legacy Authentication (Fallback)**:
-   - Custom JWT-based authentication
+2. **Legacy Authentication (Traditional)**:
+   - Custom JWT-based authentication system
    - Traditional email/password login
-   - Used when Clerk is not configured
+   - Full control over authentication flow
+   - Custom user profile management
 
-The system automatically detects which authentication method to use based on environment configuration.
+### Authentication Features
+
+- **Dynamic Switching**: Users can switch between authentication modes at runtime
+- **Auto-Detection**: System automatically selects the best available authentication method
+- **Unified Interface**: Single API for all authentication operations regardless of mode
+- **Persistent Preferences**: User's authentication mode choice is remembered
+- **Development Tools**: Built-in debugging and testing tools for development
+
+### Configuration
+
+Enable Clerk authentication by setting the publishable key:
+```bash
+# Enable Clerk mode
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_key_here
+
+# Optional configurations
+VITE_ALLOW_AUTH_MODE_SWITCH=true
+VITE_ENABLE_SOCIAL_LOGIN=true
+VITE_ENABLE_EMAIL_VERIFICATION=true
+```
+
+### Development Tools
+
+In development mode, access `/dev/auth` for:
+- Real-time authentication status monitoring
+- One-click mode switching
+- System diagnostics and debugging
+- Configuration testing and validation
 
 ### Known Issues
 

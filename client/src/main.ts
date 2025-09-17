@@ -27,9 +27,9 @@ app.use(router)
 app.use(Antd)
 app.use(i18n)
 
-// 初始化认证 store - 使用 Clerk
-import { useClerkAuthStore } from './stores/clerkAuth'
-const authStore = useClerkAuthStore()
+// 初始化统一认证 store
+import { useUnifiedAuthStore } from './stores/unifiedAuth'
+const authStore = useUnifiedAuthStore()
 authStore.init()
 
 app.mount('#app')
