@@ -94,25 +94,25 @@
                   data-button-type="ai-assistant"
                 >
                   <template #icon>
-                    <RobotOutlined data-icon="robot" />
+                    <AIStarIcon />
                   </template>
                 </a-button>
               </a-tooltip>
 
               <!-- Notifications -->
-              <a-tooltip title="通知">
-                <a-badge count="3" size="small">
-                  <a-button 
-                    type="text" 
-                    class="header-action-btn notification-btn"
-                    data-button-type="notification"
-                  >
-                    <template #icon>
-                      <BellOutlined data-icon="bell" />
-                    </template>
-                  </a-button>
-                </a-badge>
-              </a-tooltip>
+<!--              <a-tooltip title="通知">-->
+<!--                <a-badge count="3" size="small">-->
+<!--                  <a-button -->
+<!--                    type="text" -->
+<!--                    class="header-action-btn notification-btn"-->
+<!--                    data-button-type="notification"-->
+<!--                  >-->
+<!--                    <template #icon>-->
+<!--                      <BellOutlined data-icon="bell" />-->
+<!--                    </template>-->
+<!--                  </a-button>-->
+<!--                </a-badge>-->
+<!--              </a-tooltip>-->
 
               <!-- Theme Toggle -->
               <ThemeToggle />
@@ -121,17 +121,17 @@
               <LanguageToggle class="language-toggle-btn" />
 
               <!-- Help -->
-              <a-tooltip title="帮助">
-                <a-button 
-                  type="text" 
-                  class="header-action-btn help-btn"
-                  data-button-type="help"
-                >
-                  <template #icon>
-                    <QuestionCircleOutlined data-icon="help" />
-                  </template>
-                </a-button>
-              </a-tooltip>
+<!--              <a-tooltip title="帮助">-->
+<!--                <a-button -->
+<!--                  type="text" -->
+<!--                  class="header-action-btn help-btn"-->
+<!--                  data-button-type="help"-->
+<!--                >-->
+<!--                  <template #icon>-->
+<!--                    <QuestionCircleOutlined data-icon="help" />-->
+<!--                  </template>-->
+<!--                </a-button>-->
+<!--              </a-tooltip>-->
             </a-space>
 
             <!-- User Menu -->
@@ -253,7 +253,6 @@ import {
   QuestionCircleOutlined,
   UserOutlined,
   LogoutOutlined,
-  RobotOutlined,
   BellOutlined,
   DownOutlined,
   CloseOutlined,
@@ -266,6 +265,7 @@ import ThemeToggle from './ThemeToggle.vue'
 import LanguageToggle from './LanguageToggle.vue'
 import UserMenu from '@/components/user/UserMenu.vue'
 import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
+import AIStarIcon from '@/components/icons/AIStarIcon.vue'
 import { useProjectStore } from '@/stores/project'
 import { useThemeStore } from '@/stores/theme'
 import { countValidWords, formatWordCount } from '@/utils/textUtils'
@@ -293,8 +293,8 @@ const currentProjectId = computed(() => projectStore.currentProjectId)
 const hoverTrigger = computed(() => {
   // 检测是否为移动设备或小屏幕
   if (typeof window !== 'undefined') {
-    const isMobile = window.innerWidth <= 768 || 
-                    ('ontouchstart' in window) || 
+    const isMobile = window.innerWidth <= 768 ||
+                    ('ontouchstart' in window) ||
                     (navigator.maxTouchPoints > 0)
     return isMobile ? ['click'] : ['hover']
   }
@@ -314,7 +314,7 @@ const projectStatus = computed(() => {
 // 计算总字数
 const wordCount = computed(() => {
   if (!chapters.value || chapters.value.length === 0) return 0
-  
+
   const totalWords = chapters.value.reduce((total, chapter) => {
     if (chapter.content) {
       return total + countValidWords(chapter.content, {
@@ -324,7 +324,7 @@ const wordCount = computed(() => {
     }
     return total
   }, 0)
-  
+
   return formatWordCount(totalWords)
 })
 const aiStatus = ref<'connected' | 'disconnected'>('disconnected')
@@ -506,9 +506,9 @@ const formatDate = (dateString: string) => {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, 
-    rgba(24, 144, 255, 0.05) 0%, 
-    rgba(24, 144, 255, 0.12) 50%, 
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.05) 0%,
+    rgba(24, 144, 255, 0.12) 50%,
     rgba(24, 144, 255, 0.05) 100%);
   border-radius: 8px;
   opacity: 0;
@@ -522,7 +522,7 @@ const formatDate = (dateString: string) => {
   background-color: rgba(24, 144, 255, 0.1);
   border-color: rgba(24, 144, 255, 0.2);
   transform: translateY(-1px) rotate(2deg);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(24, 144, 255, 0.18),
     0 2px 4px rgba(24, 144, 255, 0.12);
 }
@@ -557,7 +557,7 @@ const formatDate = (dateString: string) => {
 .dark .menu-toggle-btn:hover {
   background-color: rgba(64, 150, 255, 0.12);
   border-color: rgba(64, 150, 255, 0.25);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(64, 150, 255, 0.2),
     0 2px 4px rgba(64, 150, 255, 0.15);
 }
@@ -697,9 +697,9 @@ const formatDate = (dateString: string) => {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, 
-    rgba(24, 144, 255, 0.05) 0%, 
-    rgba(24, 144, 255, 0.1) 50%, 
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.05) 0%,
+    rgba(24, 144, 255, 0.1) 50%,
     rgba(24, 144, 255, 0.05) 100%);
   border-radius: 8px;
   opacity: 0;
@@ -713,7 +713,7 @@ const formatDate = (dateString: string) => {
   background-color: rgba(24, 144, 255, 0.08);
   border-color: rgba(24, 144, 255, 0.2);
   transform: translateY(-1px);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(24, 144, 255, 0.15),
     0 2px 4px rgba(24, 144, 255, 0.1);
 }
@@ -737,7 +737,7 @@ const formatDate = (dateString: string) => {
   color: #1890ff;
   background-color: rgba(24, 144, 255, 0.12);
   border-color: rgba(24, 144, 255, 0.3);
-  box-shadow: 
+  box-shadow:
     inset 0 2px 4px rgba(24, 144, 255, 0.1),
     0 2px 8px rgba(24, 144, 255, 0.12);
 }
@@ -765,8 +765,8 @@ const formatDate = (dateString: string) => {
 /* AI助手按钮特殊样式 */
 .ai-assistant-btn,
 .header-action-btn[data-button-type="ai-assistant"] {
-  background: linear-gradient(135deg, 
-    rgba(138, 43, 226, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(138, 43, 226, 0.05) 0%,
     rgba(106, 13, 173, 0.08) 100%);
   border: 1px solid rgba(138, 43, 226, 0.1);
 }
@@ -774,11 +774,11 @@ const formatDate = (dateString: string) => {
 .ai-assistant-btn:hover,
 .header-action-btn[data-button-type="ai-assistant"]:hover {
   color: #8a2be2;
-  background: linear-gradient(135deg, 
-    rgba(138, 43, 226, 0.12) 0%, 
+  background: linear-gradient(135deg,
+    rgba(138, 43, 226, 0.12) 0%,
     rgba(106, 13, 173, 0.15) 100%);
   border-color: rgba(138, 43, 226, 0.25);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(138, 43, 226, 0.2),
     0 2px 4px rgba(138, 43, 226, 0.15);
 }
@@ -786,11 +786,11 @@ const formatDate = (dateString: string) => {
 .ai-assistant-btn.active,
 .header-action-btn[data-button-type="ai-assistant"].active {
   color: #8a2be2;
-  background: linear-gradient(135deg, 
-    rgba(138, 43, 226, 0.15) 0%, 
+  background: linear-gradient(135deg,
+    rgba(138, 43, 226, 0.15) 0%,
     rgba(106, 13, 173, 0.2) 100%);
   border-color: rgba(138, 43, 226, 0.35);
-  box-shadow: 
+  box-shadow:
     inset 0 2px 4px rgba(138, 43, 226, 0.15),
     0 2px 8px rgba(138, 43, 226, 0.2);
 }
@@ -804,8 +804,8 @@ const formatDate = (dateString: string) => {
 .notification-btn,
 .header-action-btn[data-button-type="notification"] {
   position: relative;
-  background: linear-gradient(135deg, 
-    rgba(255, 107, 107, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(255, 107, 107, 0.05) 0%,
     rgba(255, 77, 79, 0.08) 100%);
   border: 1px solid rgba(255, 107, 107, 0.1);
 }
@@ -813,11 +813,11 @@ const formatDate = (dateString: string) => {
 .notification-btn:hover,
 .header-action-btn[data-button-type="notification"]:hover {
   color: #ff6b6b;
-  background: linear-gradient(135deg, 
-    rgba(255, 107, 107, 0.12) 0%, 
+  background: linear-gradient(135deg,
+    rgba(255, 107, 107, 0.12) 0%,
     rgba(255, 77, 79, 0.15) 100%);
   border-color: rgba(255, 107, 107, 0.25);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(255, 107, 107, 0.2),
     0 2px 4px rgba(255, 107, 107, 0.15);
 }
@@ -849,8 +849,8 @@ const formatDate = (dateString: string) => {
 /* 帮助按钮特殊样式 */
 .help-btn,
 .header-action-btn[data-button-type="help"] {
-  background: linear-gradient(135deg, 
-    rgba(52, 211, 153, 0.05) 0%, 
+  background: linear-gradient(135deg,
+    rgba(52, 211, 153, 0.05) 0%,
     rgba(16, 185, 129, 0.08) 100%);
   border: 1px solid rgba(52, 211, 153, 0.1);
 }
@@ -858,11 +858,11 @@ const formatDate = (dateString: string) => {
 .help-btn:hover,
 .header-action-btn[data-button-type="help"]:hover {
   color: #10b981;
-  background: linear-gradient(135deg, 
-    rgba(52, 211, 153, 0.12) 0%, 
+  background: linear-gradient(135deg,
+    rgba(52, 211, 153, 0.12) 0%,
     rgba(16, 185, 129, 0.15) 100%);
   border-color: rgba(52, 211, 153, 0.25);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(52, 211, 153, 0.2),
     0 2px 4px rgba(52, 211, 153, 0.15);
 }
@@ -891,9 +891,9 @@ const formatDate = (dateString: string) => {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(24, 144, 255, 0.3) 50%, 
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(24, 144, 255, 0.3) 50%,
     transparent 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -910,7 +910,7 @@ const formatDate = (dateString: string) => {
     height: 32px;
     font-size: 14px;
   }
-  
+
   .header-action-btn:hover {
     transform: none;
     box-shadow: 0 2px 8px rgba(24, 144, 255, 0.12);
@@ -971,7 +971,7 @@ const formatDate = (dateString: string) => {
 .dark .header-action-btn:hover {
   background-color: rgba(64, 150, 255, 0.12);
   border-color: rgba(64, 150, 255, 0.25);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(64, 150, 255, 0.2),
     0 2px 4px rgba(64, 150, 255, 0.15);
 }
@@ -984,8 +984,8 @@ const formatDate = (dateString: string) => {
 /* 暗黑模式下特殊按钮样式 */
 .dark .ai-assistant-btn,
 .dark .header-action-btn[data-button-type="ai-assistant"] {
-  background: linear-gradient(135deg, 
-    rgba(168, 85, 247, 0.08) 0%, 
+  background: linear-gradient(135deg,
+    rgba(168, 85, 247, 0.08) 0%,
     rgba(147, 51, 234, 0.12) 100%);
   border-color: rgba(168, 85, 247, 0.15);
 }
@@ -993,11 +993,11 @@ const formatDate = (dateString: string) => {
 .dark .ai-assistant-btn:hover,
 .dark .header-action-btn[data-button-type="ai-assistant"]:hover {
   color: #a855f7;
-  background: linear-gradient(135deg, 
-    rgba(168, 85, 247, 0.15) 0%, 
+  background: linear-gradient(135deg,
+    rgba(168, 85, 247, 0.15) 0%,
     rgba(147, 51, 234, 0.2) 100%);
   border-color: rgba(168, 85, 247, 0.3);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(168, 85, 247, 0.25),
     0 2px 4px rgba(168, 85, 247, 0.2);
 }
@@ -1005,16 +1005,16 @@ const formatDate = (dateString: string) => {
 .dark .ai-assistant-btn.active,
 .dark .header-action-btn[data-button-type="ai-assistant"].active {
   color: #a855f7;
-  background: linear-gradient(135deg, 
-    rgba(168, 85, 247, 0.2) 0%, 
+  background: linear-gradient(135deg,
+    rgba(168, 85, 247, 0.2) 0%,
     rgba(147, 51, 234, 0.25) 100%);
   border-color: rgba(168, 85, 247, 0.4);
 }
 
 .dark .notification-btn,
 .dark .header-action-btn[data-button-type="notification"] {
-  background: linear-gradient(135deg, 
-    rgba(239, 68, 68, 0.08) 0%, 
+  background: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.08) 0%,
     rgba(220, 38, 38, 0.12) 100%);
   border-color: rgba(239, 68, 68, 0.15);
 }
@@ -1022,19 +1022,19 @@ const formatDate = (dateString: string) => {
 .dark .notification-btn:hover,
 .dark .header-action-btn[data-button-type="notification"]:hover {
   color: #ef4444;
-  background: linear-gradient(135deg, 
-    rgba(239, 68, 68, 0.15) 0%, 
+  background: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.15) 0%,
     rgba(220, 38, 38, 0.2) 100%);
   border-color: rgba(239, 68, 68, 0.3);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(239, 68, 68, 0.25),
     0 2px 4px rgba(239, 68, 68, 0.2);
 }
 
 .dark .help-btn,
 .dark .header-action-btn[data-button-type="help"] {
-  background: linear-gradient(135deg, 
-    rgba(34, 197, 94, 0.08) 0%, 
+  background: linear-gradient(135deg,
+    rgba(34, 197, 94, 0.08) 0%,
     rgba(22, 163, 74, 0.12) 100%);
   border-color: rgba(34, 197, 94, 0.15);
 }
@@ -1042,11 +1042,11 @@ const formatDate = (dateString: string) => {
 .dark .help-btn:hover,
 .dark .header-action-btn[data-button-type="help"]:hover {
   color: #22c55e;
-  background: linear-gradient(135deg, 
-    rgba(34, 197, 94, 0.15) 0%, 
+  background: linear-gradient(135deg,
+    rgba(34, 197, 94, 0.15) 0%,
     rgba(22, 163, 74, 0.2) 100%);
   border-color: rgba(34, 197, 94, 0.3);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(34, 197, 94, 0.25),
     0 2px 4px rgba(34, 197, 94, 0.2);
 }
@@ -1111,9 +1111,9 @@ const formatDate = (dateString: string) => {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, 
-    rgba(24, 144, 255, 0.03) 0%, 
-    rgba(24, 144, 255, 0.08) 50%, 
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.03) 0%,
+    rgba(24, 144, 255, 0.08) 50%,
     rgba(24, 144, 255, 0.03) 100%);
   border-radius: 8px;
   opacity: 0;
@@ -1126,7 +1126,7 @@ const formatDate = (dateString: string) => {
   background-color: rgba(24, 144, 255, 0.08);
   border-color: rgba(24, 144, 255, 0.2);
   transform: translateY(-1px);
-  box-shadow: 
+  box-shadow:
     0 6px 16px rgba(24, 144, 255, 0.15),
     0 2px 6px rgba(24, 144, 255, 0.1);
 }
@@ -1176,7 +1176,7 @@ const formatDate = (dateString: string) => {
 .dark .user-menu:hover {
   background-color: rgba(64, 150, 255, 0.08);
   border-color: rgba(64, 150, 255, 0.18);
-  box-shadow: 
+  box-shadow:
     0 4px 12px rgba(64, 150, 255, 0.12),
     0 2px 4px rgba(64, 150, 255, 0.1);
 }
@@ -1203,8 +1203,8 @@ const formatDate = (dateString: string) => {
 .user-dropdown-menu {
   min-width: 200px;
   border-radius: 12px;
-  box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border: 1px solid var(--theme-border);
   background: var(--theme-bg-container);
@@ -1222,9 +1222,9 @@ const formatDate = (dateString: string) => {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, 
-    rgba(24, 144, 255, 0.6) 0%, 
-    rgba(114, 46, 209, 0.6) 50%, 
+  background: linear-gradient(90deg,
+    rgba(24, 144, 255, 0.6) 0%,
+    rgba(114, 46, 209, 0.6) 50%,
     rgba(24, 144, 255, 0.6) 100%);
   border-radius: 12px 12px 0 0;
   opacity: 0.8;
@@ -1243,23 +1243,23 @@ const formatDate = (dateString: string) => {
 
 /* 暗黑模式下下拉菜单 */
 .dark .user-dropdown-menu {
-  box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.4), 
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.4),
     0 10px 10px -5px rgba(0, 0, 0, 0.2);
   border-color: rgba(255, 255, 255, 0.1);
 }
 
 .dark .user-dropdown-menu::before {
-  background: linear-gradient(90deg, 
-    rgba(96, 165, 250, 0.6) 0%, 
-    rgba(168, 85, 247, 0.6) 50%, 
+  background: linear-gradient(90deg,
+    rgba(96, 165, 250, 0.6) 0%,
+    rgba(168, 85, 247, 0.6) 50%,
     rgba(96, 165, 250, 0.6) 100%);
 }
 
 .dark .user-menu:hover {
   background-color: rgba(64, 150, 255, 0.08);
   border-color: rgba(64, 150, 255, 0.2);
-  box-shadow: 
+  box-shadow:
     0 6px 16px rgba(64, 150, 255, 0.18),
     0 2px 6px rgba(64, 150, 255, 0.12);
 }
@@ -1470,12 +1470,12 @@ const formatDate = (dateString: string) => {
   .project-select {
     width: 160px !important;
   }
-  
+
   /* 移动设备上保持点击交互 */
   .user-menu:hover {
     transform: none;
   }
-  
+
   .user-menu:hover .username,
   .user-menu:hover .dropdown-icon {
     transform: none;

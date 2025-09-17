@@ -342,7 +342,7 @@ onMounted(async () => {
 
 .username {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--theme-text);
 }
 
 :deep(.logout-item) {

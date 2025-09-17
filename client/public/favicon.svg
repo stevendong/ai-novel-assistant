@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+
+  <!-- 书本主体 - 为小尺寸优化 -->
+  <g transform="translate(16, 16)">
+    <path d="M-10 -6 L-10 6 Q-10 8 -8 8 L8 8 Q10 8 10 6 L10 -6 Q10 -8 8 -8 L-8 -8 Q-10 -8 -10 -6 Z"
+          fill="#1890ff"
+          stroke="#096dd9"
+          stroke-width="1"/>
+
+    <!-- 书脊线 -->
+    <line x1="0" y1="-6" x2="0" y2="6" stroke="#ffffff" stroke-width="1.5"/>
+  </g>
+
+  <!-- 四角星 - 简化版本 -->
+  <g transform="translate(26, 6)">
+    <path d="M0 -3 L1 -1 L3 0 L1 1 L0 3 L-1 1 L-3 0 L-1 -1 Z"
+          fill="#faad14"/>
+  </g>
+
+</svg>
