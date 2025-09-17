@@ -1,7 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useClerkAuthStore } from '@/stores/clerkAuth'
 import MainLayout from '@/components/layout/MainLayout.vue'
 import Login from '@/views/Login.vue'
+import ClerkSignIn from '@/components/auth/ClerkSignIn.vue'
+import ClerkSignUp from '@/components/auth/ClerkSignUp.vue'
 import ProjectManagement from '@/components/novel/ProjectManagement.vue'
 import CharacterManagement from '@/components/character/CharacterManagement.vue'
 import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
@@ -15,6 +17,22 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
+      component: ClerkSignIn,
+      meta: {
+        requiresGuest: true
+      }
+    },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: ClerkSignUp,
+      meta: {
+        requiresGuest: true
+      }
+    },
+    {
+      path: '/legacy-login',
+      name: 'legacy-login',
       component: Login,
       meta: {
         requiresGuest: true
@@ -92,9 +110,10 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
+  const authStore = useClerkAuthStore()
 
-  authStore.init()
+  // 等待 Clerk 初始化
+  await authStore.init()
 
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresGuest = to.matched.some(record => record.meta.requiresGuest)

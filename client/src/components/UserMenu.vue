@@ -1,37 +1,45 @@
 <template>
-  <a-dropdown :trigger="['click']" placement="bottomRight">
-    <a-button type="text" size="large" class="user-menu-trigger">
-      <template v-if="authStore.user?.avatar">
-        <a-avatar :src="authStore.user.avatar" :size="32" />
-      </template>
-      <template v-else>
-        <a-avatar :size="32" style="background-color: #87d068">
-          {{ getInitials(authStore.user?.nickname || authStore.user?.username) }}
-        </a-avatar>
-      </template>
-      <span class="username">{{ authStore.user?.nickname || authStore.user?.username }}</span>
-      <DownOutlined />
-    </a-button>
+  <div class="user-menu-wrapper">
+    <!-- Clerk User Button (现代化) -->
+    <div v-if="useClerk" class="clerk-user-button">
+      <UserButton />
+    </div>
 
-    <template #overlay>
-      <a-menu @click="handleMenuClick">
-        <a-menu-item key="profile" :icon="h(UserOutlined)">
-          个人资料
-        </a-menu-item>
-        <a-menu-divider />
-        <a-menu-item key="settings" :icon="h(SettingOutlined)">
-          设置
-        </a-menu-item>
-        <a-menu-item key="help" :icon="h(QuestionCircleOutlined)">
-          帮助
-        </a-menu-item>
-        <a-menu-divider />
-        <a-menu-item key="logout" :icon="h(LogoutOutlined)" class="logout-item">
-          退出登录
-        </a-menu-item>
-      </a-menu>
-    </template>
-  </a-dropdown>
+    <!-- 传统用户菜单 (向后兼容) -->
+    <a-dropdown v-else :trigger="['click']" placement="bottomRight">
+      <a-button type="text" size="large" class="user-menu-trigger">
+        <template v-if="authStore.currentUser?.avatar">
+          <a-avatar :src="authStore.currentUser.avatar" :size="32" />
+        </template>
+        <template v-else>
+          <a-avatar :size="32" style="background-color: #87d068">
+            {{ getInitials(authStore.currentUser?.displayName) }}
+          </a-avatar>
+        </template>
+        <span class="username">{{ authStore.currentUser?.displayName }}</span>
+        <DownOutlined />
+      </a-button>
+
+      <template #overlay>
+        <a-menu @click="handleMenuClick">
+          <a-menu-item key="profile" :icon="h(UserOutlined)">
+            个人资料
+          </a-menu-item>
+          <a-menu-divider />
+          <a-menu-item key="settings" :icon="h(SettingOutlined)">
+            设置
+          </a-menu-item>
+          <a-menu-item key="help" :icon="h(QuestionCircleOutlined)">
+            帮助
+          </a-menu-item>
+          <a-menu-divider />
+          <a-menu-item key="logout" :icon="h(LogoutOutlined)" class="logout-item">
+            退出登录
+          </a-menu-item>
+        </a-menu>
+      </template>
+    </a-dropdown>
+  </div>
 
   <!-- Profile Modal -->
   <a-modal
@@ -158,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, h, nextTick } from 'vue'
+import { ref, reactive, h, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Form, message, Modal } from 'ant-design-vue'
 import {
@@ -168,10 +176,17 @@ import {
   LogoutOutlined,
   DownOutlined
 } from '@ant-design/icons-vue'
+import { UserButton } from '@clerk/vue'
+import { useClerkAuthStore } from '@/stores/clerkAuth'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
-const authStore = useAuthStore()
+
+// 检测是否使用 Clerk (基于环境变量或存储状态)
+const useClerk = ref(!!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+
+// 根据配置使用相应的 auth store
+const authStore = useClerk.value ? useClerkAuthStore() : useAuthStore()
 
 const profileModalVisible = ref(false)
 const settingsModalVisible = ref(false)

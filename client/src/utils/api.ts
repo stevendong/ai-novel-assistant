@@ -33,7 +33,7 @@ class ApiClient {
 
   constructor(baseURL?: string, timeout?: number) {
     this.baseURL = baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
-    this.timeout = timeout || 10000
+    this.timeout = timeout || 1000 * 60 * 10
 
     this.axiosInstance = axios.create({
       baseURL: this.baseURL,
@@ -51,11 +51,26 @@ class ApiClient {
   private setupInterceptors(): void {
     // 请求拦截器
     this.axiosInstance.interceptors.request.use(
-      (config) => {
-        // 从localStorage获取token并添加到请求头
-        const token = localStorage.getItem('sessionToken')
-        if (token && !(config as RequestConfig).skipAuth) {
-          config.headers.Authorization = `Bearer ${token}`
+      async (config) => {
+        // 优先使用手动设置的 token，否则尝试从 Clerk 获取
+        if (!(config as RequestConfig).skipAuth && !config.headers.Authorization) {
+          // 先检查是否有手动设置的 token（兼容旧系统）
+          const legacyToken = localStorage.getItem('sessionToken')
+          if (legacyToken) {
+            config.headers.Authorization = `Bearer ${legacyToken}`
+          } else {
+            // 尝试从 Clerk 获取 token
+            try {
+              const { getToken } = await import('@clerk/vue')
+              const clerkToken = await getToken()
+              if (clerkToken) {
+                config.headers.Authorization = `Bearer ${clerkToken}`
+              }
+            } catch (error) {
+              // Clerk 未初始化或获取 token 失败，继续请求
+              console.debug('Could not get Clerk token:', error)
+            }
+          }
         }
         return config
       },
@@ -68,11 +83,12 @@ class ApiClient {
       async (error: AxiosError<ApiErrorResponse>) => {
         const originalRequest = error.config as RequestConfig
 
-        // 处理401错误 - 尝试刷新token
+        // 处理401错误 - 对于 Clerk 集成
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true
 
           try {
+            // 先尝试旧的刷新逻辑（向后兼容）
             const refreshToken = localStorage.getItem('refreshToken')
             if (refreshToken) {
               const response = await this.refreshToken(refreshToken)
@@ -85,13 +101,40 @@ class ApiClient {
                 originalRequest.headers.Authorization = `Bearer ${response.data.session.sessionToken}`
                 return this.axiosInstance(originalRequest)
               }
+            } else {
+              // 尝试从 Clerk 获取新的 token
+              try {
+                const { getToken } = await import('@clerk/vue')
+                const clerkToken = await getToken()
+                if (clerkToken) {
+                  // 重新发送原始请求
+                  originalRequest.headers = originalRequest.headers || {}
+                  originalRequest.headers.Authorization = `Bearer ${clerkToken}`
+                  return this.axiosInstance(originalRequest)
+                }
+              } catch (clerkError) {
+                console.debug('Could not refresh Clerk token:', clerkError)
+              }
             }
           } catch (refreshError) {
-            // 刷新失败，清除认证信息并跳转到登录页
-            this.clearAuth()
-            window.location.href = '/login'
-            return Promise.reject(refreshError)
+            console.error('Token refresh failed:', refreshError)
           }
+
+          // 如果所有刷新尝试都失败，清除认证并重定向
+          this.clearAuth()
+          // 对于 Clerk，让用户重新登录
+          try {
+            const { useClerk } = await import('@clerk/vue')
+            const clerk = useClerk()
+            if (clerk.value) {
+              await clerk.value.redirectToSignIn()
+            } else {
+              window.location.href = '/login'
+            }
+          } catch {
+            window.location.href = '/login'
+          }
+          return Promise.reject(error)
         }
 
         // 统一错误处理

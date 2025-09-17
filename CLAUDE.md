@@ -143,6 +143,15 @@ OPENAI_API_KEY=your_openai_api_key_here
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
+**Client Environment Variables** (client/.env)
+```bash
+# API Configuration
+VITE_API_BASE_URL=http://localhost:3001
+
+# Clerk Authentication (optional - for modern auth system)
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key_here
+```
+
 **CSS Configuration** (client/src/assets/main.css)
 ```css
 @import './base.css';
@@ -159,8 +168,25 @@ ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 - AI features require OpenAI API key configuration
 - Frontend uses composition API style for all Vue components
 - Backend follows Express.js patterns with route separation
-- never never never change vite dev server port and sever port config 
+- never never never change vite dev server port and sever port config
 - 如果要启动服务测试服务直接用配置的端口上的服务检查就好了，服务都有自动重启机制，不要额外启动服务端口
+
+### Authentication System
+
+The project supports two authentication systems:
+
+1. **Clerk Authentication (Recommended)**:
+   - Modern, secure authentication service
+   - Built-in social login, email verification, user management
+   - Automatic token management and security
+   - Enable by setting `VITE_CLERK_PUBLISHABLE_KEY` in client/.env
+
+2. **Legacy Authentication (Fallback)**:
+   - Custom JWT-based authentication
+   - Traditional email/password login
+   - Used when Clerk is not configured
+
+The system automatically detects which authentication method to use based on environment configuration.
 
 ### Known Issues
 
