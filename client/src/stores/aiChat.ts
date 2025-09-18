@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+import { apiClient } from '@/utils/api'
 
 export interface ChatMessage {
   id: string
@@ -47,7 +45,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const sessionCount = computed(() => sessions.value.length)
 
   // Actions
-  const createNewSession = (novelId: string | null = null, mode: 'chat' | 'enhance' | 'check' = 'chat') => {
+  const createNewSession = async (novelId: string | null = null, mode: 'chat' | 'enhance' | 'check' = 'chat') => {
     const session: ConversationSession = {
       id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       novelId,
@@ -69,35 +67,49 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
     currentSession.value = session
     sessions.value.unshift(session)
+
+    // Save to database if autoSave is enabled
+    if (settings.value.autoSave) {
+      try {
+        await createSessionInDatabase(session)
+      } catch (error) {
+        console.warn('Failed to save new session to database:', error)
+      }
+    }
+
     return session
   }
 
-  const switchSession = (sessionId: string) => {
+  const switchSession = async (sessionId: string) => {
     const session = sessions.value.find(s => s.id === sessionId)
     if (session) {
       currentSession.value = session
+      // Load messages if not already loaded
+      if (session.messages.length === 0) {
+        session.messages = await loadSessionMessages(sessionId)
+      }
       return true
     }
     return false
   }
 
-  const updateSessionMode = (mode: 'chat' | 'enhance' | 'check') => {
+  const updateSessionMode = async (mode: 'chat' | 'enhance' | 'check') => {
     if (currentSession.value) {
       currentSession.value.mode = mode
       currentSession.value.updatedAt = new Date()
 
       // Add mode switch message
-      addMessage('assistant', getModeDescription(mode))
+      await addMessage('assistant', getModeDescription(mode))
 
       if (settings.value.autoSave) {
-        saveSession()
+        await saveSession()
       }
     }
   }
 
-  const addMessage = (role: 'user' | 'assistant', content: string, actions?: Array<{ key: string; label: string }>, metadata?: any) => {
+  const addMessage = async (role: 'user' | 'assistant', content: string, actions?: Array<{ key: string; label: string }>, metadata?: any) => {
     if (!currentSession.value) {
-      createNewSession()
+      await createNewSession()
     }
 
     const message: ChatMessage = {
@@ -126,7 +138,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
 
     if (settings.value.autoSave) {
-      saveSession()
+      await saveSession()
     }
 
     return message
@@ -136,7 +148,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
     if (!userMessage.trim()) return null
 
     // Add user message
-    addMessage('user', userMessage)
+    await addMessage('user', userMessage)
     isTyping.value = true
 
     try {
@@ -145,21 +157,18 @@ export const useAIChatStore = defineStore('aiChat', () => {
       isTyping.value = false
 
       // Add AI response
-      const aiMessage = addMessage('assistant', response.content, response.actions, {
+      return await addMessage('assistant', response.content, response.actions, {
         type: response.type,
         suggestions: response.suggestions,
         questions: response.questions,
         followUps: response.followUps
       })
-
-      return aiMessage
     } catch (error) {
       isTyping.value = false
       console.error('AI API Error:', error)
 
       // Add fallback message
-      const fallbackMessage = addMessage('assistant', '抱歉，AI服务暂时不可用。请稍后再试。')
-      return fallbackMessage
+      return await addMessage('assistant', '抱歉，AI服务暂时不可用。请稍后再试。')
     }
   }
 
@@ -177,7 +186,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
       }
     }
 
-    const response = await axios.post(`${API_BASE_URL}/api/ai/chat`, requestPayload)
+    const response = await apiClient.post(`/api/ai/chat`, requestPayload)
 
     return {
       content: response.data.message || response.data.content,
@@ -240,93 +249,86 @@ export const useAIChatStore = defineStore('aiChat', () => {
     return undefined
   }
 
-  const clearCurrentSession = () => {
+  const clearCurrentSession = async () => {
     if (currentSession.value) {
       currentSession.value.messages = [currentSession.value.messages[0]] // Keep welcome message
       currentSession.value.updatedAt = new Date()
       if (settings.value.autoSave) {
-        saveSession()
+        await saveSession()
       }
     }
   }
 
-  const deleteSession = (sessionId: string) => {
+  const deleteSession = async (sessionId: string) => {
     const index = sessions.value.findIndex(s => s.id === sessionId)
     if (index !== -1) {
       sessions.value.splice(index, 1)
+
+      // Delete from database
+      try {
+        await deleteSessionFromDatabase(sessionId)
+      } catch (error) {
+        console.warn('Failed to delete session from database:', error)
+      }
 
       // If we deleted the current session, create a new one or switch to another
       if (currentSession.value?.id === sessionId) {
         if (sessions.value.length > 0) {
           currentSession.value = sessions.value[0]
+          // Load messages for the new current session
+          if (currentSession.value.messages.length === 0) {
+            currentSession.value.messages = await loadSessionMessages(currentSession.value.id)
+          }
         } else {
-          createNewSession()
+          await createNewSession()
         }
       }
-
-      saveAllSessions()
     }
   }
 
-  const saveSession = () => {
+  const saveSession = async () => {
     if (currentSession.value && settings.value.autoSave) {
       try {
-        const sessionData = JSON.stringify(currentSession.value)
-        localStorage.setItem(`ai_session_${currentSession.value.id}`, sessionData)
+        // Save to database instead of localStorage
+        await saveSessionToDatabase(currentSession.value)
       } catch (error) {
         console.warn('Failed to save session:', error)
       }
     }
   }
 
-  const saveAllSessions = () => {
+  const saveAllSessions = async () => {
     try {
-      const sessionList = sessions.value.map(s => s.id)
-      localStorage.setItem('ai_session_list', JSON.stringify(sessionList))
-
-      sessions.value.forEach(session => {
-        const sessionData = JSON.stringify(session)
-        localStorage.setItem(`ai_session_${session.id}`, sessionData)
-      })
+      // Save all sessions to database
+      await Promise.all(sessions.value.map(session => saveSessionToDatabase(session)))
     } catch (error) {
       console.warn('Failed to save sessions:', error)
     }
   }
 
-  const loadSessions = () => {
+  const loadSessions = async () => {
     try {
-      const sessionListStr = localStorage.getItem('ai_session_list')
-      if (sessionListStr) {
-        const sessionList = JSON.parse(sessionListStr)
-        const loadedSessions: ConversationSession[] = []
+      // Load sessions from database
+      const loadedSessions = await loadSessionsFromDatabase()
+      sessions.value = loadedSessions.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
 
-        for (const sessionId of sessionList) {
-          const sessionData = localStorage.getItem(`ai_session_${sessionId}`)
-          if (sessionData) {
-            const session = JSON.parse(sessionData)
-            // Convert date strings back to Date objects
-            session.createdAt = new Date(session.createdAt)
-            session.updatedAt = new Date(session.updatedAt)
-            session.messages.forEach((msg: ChatMessage) => {
-              msg.timestamp = new Date(msg.timestamp)
-            })
-            loadedSessions.push(session)
-          }
-        }
-
-        sessions.value = loadedSessions.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
-
-        if (sessions.value.length > 0) {
-          currentSession.value = sessions.value[0]
+      if (sessions.value.length > 0) {
+        currentSession.value = sessions.value[0]
+        // Load messages for the current session
+        if (currentSession.value.messages.length === 0) {
+          currentSession.value.messages = await loadSessionMessages(currentSession.value.id)
         }
       }
     } catch (error) {
       console.warn('Failed to load sessions:', error)
+      // Fall back to creating a new session if loading fails
+      await createNewSession()
+      return
     }
 
     // Create initial session if none exist
     if (sessions.value.length === 0) {
-      createNewSession()
+      await createNewSession()
     }
   }
 
@@ -354,8 +356,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
   }
 
   // Helper functions
-  const generateSessionTitle = (mode: string) => {
-    const titles = {
+  const generateSessionTitle = (mode: 'chat' | 'enhance' | 'check') => {
+    const titles: Record<'chat' | 'enhance' | 'check', string> = {
       chat: '智能对话',
       enhance: '内容完善',
       check: '质量检查'
@@ -363,8 +365,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
     return `${titles[mode]} - ${new Date().toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
   }
 
-  const getWelcomeMessage = (mode: string) => {
-    const messages = {
+  const getWelcomeMessage = (mode: 'chat' | 'enhance' | 'check') => {
+    const messages: Record<'chat' | 'enhance' | 'check', string> = {
       chat: '你好！我是你的AI创作助手。我可以帮你完善角色设定、扩展世界观、生成章节大纲，还能进行一致性检查。有什么我可以帮助你的吗？',
       enhance: '欢迎来到内容完善模式！我专注于帮你完善角色设定、扩展世界观设定，以及优化情节内容。请告诉我你想要完善什么内容。',
       check: '欢迎来到质量检查模式！我专注于检查内容的一致性、逻辑性和连贯性。请提供需要检查的内容或告诉我要检查什么。'
@@ -372,8 +374,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
     return messages[mode] || messages.chat
   }
 
-  const getModeDescription = (mode: string) => {
-    const descriptions = {
+  const getModeDescription = (mode: 'chat' | 'enhance' | 'check') => {
+    const descriptions: Record<'chat' | 'enhance' | 'check', string> = {
       chat: '切换到对话模式。你可以与我自由对话，寻求创作建议。',
       enhance: '切换到完善模式。我将帮你完善角色、设定和情节。',
       check: '切换到检查模式。我将检查作品的一致性和逻辑性。'
@@ -381,9 +383,135 @@ export const useAIChatStore = defineStore('aiChat', () => {
     return descriptions[mode] || descriptions.chat
   }
 
+  // Database API functions
+  const saveSessionToDatabase = async (session: ConversationSession) => {
+    try {
+      // Check if session exists in database
+      const existingSession = await apiClient.get(`/api/conversations/${session.id}`)
+
+      if (existingSession.data) {
+        // Update existing session
+        await apiClient.put(`/api/conversations/${session.id}`, {
+          title: session.title,
+          mode: session.mode,
+          settings: session
+        })
+
+        // Add any new messages
+        const existingMessages = existingSession.data.messages
+        const newMessages = session.messages.filter(msg =>
+          !existingMessages.some((existing: any) => existing.id === msg.id)
+        )
+
+        for (const message of newMessages) {
+          await apiClient.post(`/api/conversations/${session.id}/messages`, {
+            role: message.role,
+            content: message.content,
+            messageType: message.metadata?.type,
+            metadata: message.metadata,
+            actions: message.actions
+          })
+        }
+      } else {
+        throw new Error('Session not found')
+      }
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        // Session doesn't exist, create it
+        await createSessionInDatabase(session)
+      } else {
+        throw error
+      }
+    }
+  }
+
+  const createSessionInDatabase = async (session: ConversationSession) => {
+    try {
+      const response = await apiClient.post(`/api/conversations`, {
+        novelId: session.novelId,
+        mode: session.mode,
+        title: session.title,
+        settings: session
+      })
+
+      const createdSession = response.data
+
+      // Add all messages except the welcome message (which is created automatically)
+      const messagesToAdd = session.messages.filter(msg => msg.role !== 'assistant' || !msg.actions?.some(a => a.key === 'help'))
+
+      for (const message of messagesToAdd) {
+        await apiClient.post(`/api/conversations/${createdSession.id}/messages`, {
+          role: message.role,
+          content: message.content,
+          messageType: message.metadata?.type,
+          metadata: message.metadata,
+          actions: message.actions
+        })
+      }
+
+      return createdSession
+    } catch (error) {
+      console.error('Failed to create session in database:', error)
+      throw error
+    }
+  }
+
+  const loadSessionsFromDatabase = async (): Promise<ConversationSession[]> => {
+    try {
+      const response = await apiClient.get(`/api/conversations`)
+      const conversations = response.data.conversations
+
+      return conversations.map((conv: any): ConversationSession => ({
+        id: conv.id,
+        novelId: conv.novelId,
+        mode: conv.mode,
+        title: conv.title,
+        messages: [], // Messages will be loaded on demand
+        createdAt: new Date(conv.createdAt),
+        updatedAt: new Date(conv.updatedAt)
+      }))
+    } catch (error) {
+      console.error('Failed to load sessions from database:', error)
+      return []
+    }
+  }
+
+  const loadSessionMessages = async (sessionId: string): Promise<ChatMessage[]> => {
+    try {
+      const response = await apiClient.get(`/api/conversations/${sessionId}`)
+      const conversation = response.data
+
+      return conversation.messages.map((msg: any): ChatMessage => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: new Date(msg.timestamp),
+        actions: msg.actions,
+        metadata: msg.metadata
+      }))
+    } catch (error) {
+      console.error('Failed to load session messages:', error)
+      return []
+    }
+  }
+
+  const deleteSessionFromDatabase = async (sessionId: string) => {
+    try {
+      await apiClient.delete(`/api/conversations/${sessionId}`)
+    } catch (error) {
+      console.error('Failed to delete session from database:', error)
+      throw error
+    }
+  }
+
   // Initialize
-  loadSettings()
-  loadSessions()
+  const initializeStore = async () => {
+    loadSettings()
+    await loadSessions()
+  }
+
+  // Call initialization
+  initializeStore()
 
   return {
     // State

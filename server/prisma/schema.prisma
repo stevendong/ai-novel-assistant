@@ -25,8 +25,9 @@ model User {
   updatedAt DateTime @updatedAt
 
   // 关联的小说
-  novels    Novel[]
-  sessions  UserSession[]
+  novels       Novel[]
+  sessions     UserSession[]
+  conversations AIConversation[]
 }
 
 // 小说基本信息
@@ -49,9 +50,10 @@ model Novel {
   settings    WorldSetting[]
   chapters    Chapter[]
   aiSettings  AIConstraint?
-  statistics  NovelStatistics[]
-  goals       WritingGoal[]
-  workflows   WorkflowConfig[]
+  statistics    NovelStatistics[]
+  goals         WritingGoal[]
+  workflows     WorkflowConfig[]
+  conversations AIConversation[]
 
   @@index([userId])
 }
@@ -259,4 +261,42 @@ model UserSession {
 
   @@index([userId])
   @@index([sessionToken])
+}
+
+// AI对话会话
+model AIConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  novelId   String?
+  mode      String   @default("chat") // chat, enhance, check
+  title     String
+  settings  String?  // JSON格式的会话设置
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  novel     Novel?   @relation(fields: [novelId], references: [id], onDelete: SetNull)
+  messages  AIMessage[]
+
+  @@index([userId])
+  @@index([novelId])
+  @@index([userId, updatedAt])
+}
+
+// AI对话消息
+model AIMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // user, assistant
+  content        String
+  messageType    String?  // general, character, worldbuilding, outline, enhancement, consistency
+  metadata       String?  // JSON格式的元数据（建议、跟进问题等）
+  actions        String?  // JSON格式的可执行操作
+  createdAt      DateTime @default(now())
+
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
 }

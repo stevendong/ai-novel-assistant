@@ -6,28 +6,57 @@
         <a-badge :status="aiStatus === 'online' ? 'success' : 'error'" />
         <span class="status-text">AI创作助手</span>
       </div>
-      <a-dropdown :trigger="['click']" placement="bottomRight">
-        <a-button type="text" size="small" class="settings-btn">
-          <SettingOutlined />
-        </a-button>
-        <template #overlay>
-          <a-menu>
-            <a-menu-item key="model">
-              <RobotOutlined />
-              <span>切换模型</span>
-            </a-menu-item>
-            <a-menu-item key="settings">
-              <SettingOutlined />
-              <span>AI设置</span>
-            </a-menu-item>
-            <a-menu-divider />
-            <a-menu-item key="clear" @click="clearConversation">
-              <DeleteOutlined />
-              <span>清空对话</span>
-            </a-menu-item>
-          </a-menu>
-        </template>
-      </a-dropdown>
+      <div class="status-actions">
+        <!-- 会话历史下拉 -->
+        <a-dropdown :trigger="['click']" placement="bottomRight" v-if="chatStore.sessions.length > 0">
+          <a-button type="text" size="small" class="history-btn">
+            <HistoryOutlined />
+            <span class="btn-text">历史会话</span>
+          </a-button>
+          <template #overlay>
+            <a-menu @click="handleSessionClick" style="max-height: 300px; overflow-y: auto;">
+              <a-menu-item v-for="session in chatStore.sessions" :key="session.id">
+                <div class="session-item">
+                  <div class="session-title">{{ session.title }}</div>
+                  <div class="session-meta">
+                    <span class="session-mode">{{ getModeLabel(session.mode) }}</span>
+                    <span class="session-time">{{ formatSessionTime(session.updatedAt) }}</span>
+                  </div>
+                </div>
+              </a-menu-item>
+              <a-menu-divider v-if="chatStore.sessions.length > 0" />
+              <a-menu-item key="new">
+                <PlusOutlined />
+                <span>新建对话</span>
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+        
+        <!-- 设置下拉 -->
+        <a-dropdown :trigger="['click']" placement="bottomRight">
+          <a-button type="text" size="small" class="settings-btn">
+            <SettingOutlined />
+          </a-button>
+          <template #overlay>
+            <a-menu>
+              <a-menu-item key="model">
+                <RobotOutlined />
+                <span>切换模型</span>
+              </a-menu-item>
+              <a-menu-item key="settings">
+                <SettingOutlined />
+                <span>AI设置</span>
+              </a-menu-item>
+              <a-menu-divider />
+              <a-menu-item key="clear" @click="clearConversation">
+                <DeleteOutlined />
+                <span>清空对话</span>
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </div>
     </div>
 
     <!-- Mode Tabs -->
@@ -144,7 +173,20 @@
                 </div>
                 <div class="message-content">
                   <div class="message-text">
+                    <!-- 使用打字机效果或普通渲染 -->
+                    <TypewriterText
+                      v-if="shouldUseTypewriter(message)"
+                      :content="message.content"
+                      :speed="typewriterSettings.speed"
+                      :show-cursor="typewriterSettings.showCursor"
+                      :enable-highlight="true"
+                      :enable-tables="true"
+                      :enable-task-lists="true"
+                      @complete="onTypewriterComplete(message.id)"
+                      @typing="onTypewriterTyping"
+                    />
                     <MarkdownRenderer
+                      v-else
                       :content="message.content"
                       :enable-highlight="true"
                       :enable-tables="true"
@@ -334,13 +376,17 @@ import {
   TeamOutlined,
   GlobalOutlined,
   ExclamationCircleOutlined,
-  CopyOutlined
+  CopyOutlined,
+  HistoryOutlined,
+  PlusOutlined
 } from '@ant-design/icons-vue'
 import OutlineGenerator from './OutlineGenerator.vue'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
+import TypewriterText from '@/components/common/TypewriterText.vue'
 import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
 import type { ChatMessage } from '@/stores/aiChat'
+import { apiClient } from '@/utils/api'
 
 // Stores
 const projectStore = useProjectStore()
@@ -351,12 +397,40 @@ const chatStore = useAIChatStore()
 
 
 // Reactive state
-const currentMode = ref('chat')
+const currentMode = ref<'chat' | 'enhance' | 'check' | 'outline'>('chat')
 const inputMessage = ref('')
 const loadingAction = ref<string | null>(null)
 const showScrollButton = ref(false)
 const messagesContainer = ref<HTMLElement>()
 const inputRef = ref()
+
+// 打字机效果设置
+const typewriterSettings = ref({
+  enabled: true,
+  speed: 30,
+  showCursor: true
+})
+const typingMessageId = ref<string | null>(null)
+
+// 判断是否应该使用打字机效果
+const shouldUseTypewriter = (message: ChatMessage) => {
+  // 只对最新的AI消息使用打字机效果
+  const messages = chatStore.currentMessages
+  const lastMessage = messages[messages.length - 1]
+  return message.role === 'assistant' && 
+         message.id === lastMessage?.id &&
+         typingMessageId.value !== message.id
+}
+
+// 打字机完成回调
+const onTypewriterComplete = (messageId: string) => {
+  typingMessageId.value = messageId
+}
+
+// 打字机输入中回调
+const onTypewriterTyping = () => {
+  // 可以在这里添加其他逻辑，如自动滚动等
+}
 
 // Use store state
 const aiStatus = computed(() => chatStore.aiStatus)
@@ -406,9 +480,17 @@ const currentModeActions = computed(() => {
 const currentProject = computed(() => projectStore.currentProject)
 
 // Initialize chat session when project changes
-watch(currentProject, (newProject) => {
-  if (newProject && (!chatStore.currentSession || chatStore.currentSession.novelId !== newProject.id)) {
-    chatStore.createNewSession(newProject.id, currentMode.value)
+watch(currentProject, async (newProject) => {
+  if (newProject) {
+    // 首先检查是否有该项目的现有会话
+    const existingSession = chatStore.sessions.find(s => s.novelId === newProject.id && s.mode === currentMode.value)
+    if (existingSession) {
+      // 使用现有会话
+      await chatStore.switchSession(existingSession.id)
+    } else if (!chatStore.currentSession || chatStore.currentSession.novelId !== newProject.id) {
+      // 只有在没有现有会话且当前会话不匹配时才创建新会话
+      await chatStore.createNewSession(newProject.id, currentMode.value)
+    }
   }
 }, { immediate: true })
 
@@ -463,9 +545,12 @@ const handleInput = () => {
   // Auto-resize and other input handling
 }
 
-const switchMode = (mode: string) => {
-  currentMode.value = mode as 'chat' | 'enhance' | 'check'
-  chatStore.updateSessionMode(currentMode.value)
+const switchMode = async (mode: string) => {
+  const typedMode = mode as 'chat' | 'enhance' | 'check' | 'outline'
+  currentMode.value = typedMode
+  if (typedMode !== 'outline') {
+    await chatStore.updateSessionMode(typedMode as 'chat' | 'enhance' | 'check')
+  }
 }
 
 const performQuickAction = async (actionKey: string) => {
@@ -474,13 +559,13 @@ const performQuickAction = async (actionKey: string) => {
   try {
     switch (actionKey) {
       case 'help':
-        addMessage('assistant', '我可以帮助你：\n• 完善角色设定和背景\n• 扩展世界观和设定\n• 生成章节大纲\n• 检查内容一致性\n• 提供创作建议\n\n你可以直接向我提问，比如"帮我完善主角的性格"或"检查这个章节的逻辑"。')
+        await addMessage('assistant', '我可以帮助你：\n• 完善角色设定和背景\n• 扩展世界观和设定\n• 生成章节大纲\n• 检查内容一致性\n• 提供创作建议\n\n你可以直接向我提问，比如"帮我完善主角的性格"或"检查这个章节的逻辑"。')
         break
       case 'examples':
-        addMessage('assistant', '以下是一些使用示例：\n\n**角色完善**\n"请帮我分析李明这个角色的性格特点"\n\n**设定扩展**\n"这个魔法体系还需要补充什么设定？"\n\n**一致性检查**\n"检查第三章是否有时间线问题"\n\n**创作建议**\n"给我一些关于紧张氛围营造的建议"')
+        await addMessage('assistant', '以下是一些使用示例：\n\n**角色完善**\n"请帮我分析李明这个角色的性格特点"\n\n**设定扩展**\n"这个魔法体系还需要补充什么设定？"\n\n**一致性检查**\n"检查第三章是否有时间线问题"\n\n**创作建议**\n"给我一些关于紧张氛围营造的建议"')
         break
       case 'enhance-character':
-        addMessage('assistant', '我来分析当前选中的角色。请告诉我你希望重点完善哪个方面：\n• 性格特征和心理动机\n• 外貌描述和行为习惯\n• 背景故事和成长经历\n• 人际关系和社交模式\n• 角色发展弧线和成长轨迹')
+        await addMessage('assistant', '我来分析当前选中的角色。请告诉我你希望重点完善哪个方面：\n• 性格特征和心理动机\n• 外貌描述和行为习惯\n• 背景故事和成长经历\n• 人际关系和社交模式\n• 角色发展弧线和成长轨迹')
         break
       case 'check-consistency':
         await performConsistencyCheck()
@@ -506,8 +591,8 @@ const sendMessage = async () => {
   })
 }
 
-const addMessage = (role: 'user' | 'assistant', content: string, actions?: Array<{ key: string; label: string }>) => {
-  chatStore.addMessage(role, content, actions)
+const addMessage = async (role: 'user' | 'assistant', content: string, actions?: Array<{ key: string; label: string }>) => {
+  await chatStore.addMessage(role, content, actions)
 
   // Auto scroll to bottom
   nextTick(() => {
@@ -584,15 +669,11 @@ const performConsistencyCheck = async () => {
     return
   }
 
-  isTyping.value = true
-
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/ai/consistency/check`, {
+    const response = await apiClient.post(`/api/ai/consistency/check`, {
       novelId: currentProject.value.id,
       scope: 'full'
     })
-
-    isTyping.value = false
 
     const result = response.data
     let message = '**一致性检查完成！**\n\n'
@@ -610,7 +691,7 @@ const performConsistencyCheck = async () => {
 
       if (result.issues?.length > 0) {
         message += '\n**主要问题：**\n'
-        result.issues.slice(0, 3).forEach((issue, index) => {
+        result.issues.slice(0, 3).forEach((issue: any) => {
           const icon = issue.severity === 'high' ? '🔴' : issue.severity === 'medium' ? '🟡' : '🟢'
           message += `${icon} ${issue.issue}\n`
         })
@@ -628,18 +709,17 @@ const performConsistencyCheck = async () => {
       { key: 'detailed-analysis', label: '详细分析' }
     ]
 
-    addMessage('assistant', message, actions)
+    await addMessage('assistant', message, actions)
 
   } catch (error) {
-    isTyping.value = false
     console.error('一致性检查失败:', error)
-    addMessage('assistant', '抱歉，一致性检查服务暂时不可用。请稍后再试。')
+    await addMessage('assistant', '抱歉，一致性检查服务暂时不可用。请稍后再试。')
   }
 }
 
 // 清空对话历史
-const clearConversation = () => {
-  chatStore.clearCurrentSession()
+const clearConversation = async () => {
+  await chatStore.clearCurrentSession()
 }
 
 // 复制消息
@@ -700,11 +780,56 @@ const performMessageAction = (actionKey: string, message: ChatMessage) => {
   }
 }
 
+// 处理会话点击
+const handleSessionClick = async ({ key }: { key: string }) => {
+  if (key === 'new') {
+    // 创建新会话
+    await chatStore.createNewSession(currentProject.value?.id, currentMode.value)
+  } else {
+    // 切换到选中的会话
+    await chatStore.switchSession(key)
+  }
+  
+  // 自动滚动到底部
+  nextTick(() => {
+    scrollToBottom()
+  })
+}
+
+// 获取模式标签
+const getModeLabel = (mode: string) => {
+  const labels: Record<string, string> = {
+    chat: '对话',
+    enhance: '完善',
+    check: '检查'
+  }
+  return labels[mode] || mode
+}
+
+// 格式化会话时间
+const formatSessionTime = (date: Date) => {
+  const now = new Date()
+  const diff = now.getTime() - new Date(date).getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+  
+  if (days > 0) {
+    return `${days}天前`
+  } else if (hours > 0) {
+    return `${hours}小时前`
+  } else if (minutes > 0) {
+    return `${minutes}分钟前`
+  } else {
+    return '刚刚'
+  }
+}
+
 
 // Handle outline application
-const handleOutlineApplied = (result: any) => {
+const handleOutlineApplied = async (result: any) => {
   console.log('Outline applied successfully:', result)
-  addMessage('assistant', `**大纲应用成功！**\n\n已成功创建 ${result.createdChapters} 个章节，预计总字数 ${result.estimatedWords} 字。\n\n你可以在章节列表中查看和编辑这些章节。`)
+  await addMessage('assistant', `**大纲应用成功！**\n\n已成功创建 ${result.createdChapters} 个章节，预计总字数 ${result.estimatedWords} 字。\n\n你可以在章节列表中查看和编辑这些章节。`)
 
   // Switch back to chat mode after successful application
   setTimeout(() => {
@@ -718,10 +843,19 @@ watch(currentMode, () => {
 })
 
 // Initialize
-onMounted(() => {
-  // Ensure we have a chat session
+onMounted(async () => {
+  // 等待store初始化完成
+  await chatStore.loadSessions()
+  
+  // 检查是否有活跃会话，如果没有且有历史会话，使用第一个历史会话
   if (!chatStore.hasActiveSession) {
-    chatStore.createNewSession(currentProject.value?.id, currentMode.value)
+    if (chatStore.sessions.length > 0) {
+      // 使用最新的会话
+      await chatStore.switchSession(chatStore.sessions[0].id)
+    } else {
+      // 只有在完全没有会话时才创建新会话
+      await chatStore.createNewSession(currentProject.value?.id, currentMode.value)
+    }
   }
 
   // Auto-scroll to bottom on mount
@@ -763,6 +897,27 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-btn {
+  color: var(--theme-text-secondary);
+  padding: 4px 8px;
+}
+
+.history-btn:hover {
+  color: var(--theme-text);
+  background-color: var(--theme-bg-elevated);
+}
+
+.btn-text {
+  margin-left: 4px;
+  font-size: 12px;
+}
+
 .settings-btn {
   color: var(--theme-text-secondary);
   padding: 4px;
@@ -771,6 +926,40 @@ onMounted(() => {
 .settings-btn:hover {
   color: var(--theme-text-secondary);
   background-color: var(--theme-bg-elevated);
+}
+
+.session-item {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  max-width: 280px;
+}
+
+.session-title {
+  font-size: 13px;
+  color: var(--theme-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--theme-text-secondary);
+}
+
+.session-mode {
+  padding: 0 4px;
+  background: var(--theme-bg-elevated);
+  border-radius: 2px;
+}
+
+.session-time {
+  opacity: 0.7;
 }
 
 /* Mode Tabs */
