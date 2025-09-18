@@ -58,6 +58,14 @@
         </a-avatar>
         <div class="avatar-actions">
           <a-button size="small" @click="changeAvatar">更换头像</a-button>
+          <a-button
+            v-if="profileData.avatar || authStore.user?.avatar"
+            size="small"
+            danger
+            @click="deleteAvatar"
+          >
+            删除头像
+          </a-button>
         </div>
       </div>
 
@@ -252,7 +260,114 @@ const cancelProfileEdit = () => {
 }
 
 const changeAvatar = () => {
-  message.info('头像上传功能开发中...')
+  // 创建文件输入元素
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/jpeg,image/jpg,image/png,image/webp'
+  input.style.display = 'none'
+
+  input.onchange = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // 验证文件大小 (2MB)
+    const maxSize = 2 * 1024 * 1024
+    if (file.size > maxSize) {
+      message.error('文件大小超过限制，最大支持 2MB')
+      return
+    }
+
+    // 验证文件类型
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      message.error('不支持的文件类型，仅支持 JPEG、PNG、WebP 格式')
+      return
+    }
+
+    try {
+      const result = await uploadAvatar(file)
+      if (result.success) {
+        // 更新本地数据
+        profileData.avatar = result.data.uploadInfo.url
+        message.success('头像上传成功')
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error)
+      message.error('头像上传失败')
+    }
+  }
+
+  document.body.appendChild(input)
+  input.click()
+  document.body.removeChild(input)
+}
+
+// 头像上传函数
+const uploadAvatar = async (file) => {
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/upload/avatar`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Authorization': `Bearer ${authStore.sessionToken}`
+    }
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.message || '上传失败')
+  }
+
+  // 更新 authStore 中的用户信息
+  if (result.data && result.data.user) {
+    authStore.updateUserInfo(result.data.user)
+  }
+
+  return result
+}
+
+// 删除头像函数
+const deleteAvatar = () => {
+  Modal.confirm({
+    title: '确认删除头像',
+    content: '您确定要删除当前头像吗？',
+    okText: '确认',
+    cancelText: '取消',
+    okType: 'danger',
+    onOk: async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/upload/avatar`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authStore.sessionToken}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.message || '删除失败')
+        }
+
+        if (result.success) {
+          // 更新本地数据
+          profileData.avatar = null
+          // 更新 authStore 中的用户信息
+          if (result.data && result.data.user) {
+            authStore.updateUserInfo(result.data.user)
+          }
+          message.success('头像删除成功')
+        }
+      } catch (error) {
+        console.error('Avatar delete error:', error)
+        message.error('头像删除失败')
+      }
+    }
+  })
 }
 
 const showHelp = () => {

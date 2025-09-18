@@ -24,6 +24,7 @@ const statisticsRoutes = require('./routes/statistics');
 const goalsRoutes = require('./routes/goals');
 const workflowRoutes = require('./routes/workflow');
 const consistencyRoutes = require('./routes/consistency');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -57,6 +58,7 @@ app.use('/api/statistics', statisticsRoutes);
 app.use('/api/goals', goalsRoutes);
 app.use('/api/workflow', workflowRoutes);
 app.use('/api/consistency', consistencyRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

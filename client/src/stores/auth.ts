@@ -210,6 +210,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 更新用户信息（用于头像上传等场景）
+  const updateUserInfo = (updatedUser: User): void => {
+    user.value = updatedUser
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+  }
+
   // 获取用户资料
   const fetchProfile = async (): Promise<{ success: boolean; data?: { user: User }; error?: string }> => {
     if (!sessionToken.value) return { success: false, error: 'Not authenticated' }
@@ -315,6 +321,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     refreshSession,
     updateProfile,
+    updateUserInfo,
     fetchProfile,
     deleteAccount,
     logoutAllSessions,
