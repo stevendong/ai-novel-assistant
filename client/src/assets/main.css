@@ -1,5 +1,6 @@
 @import './base.css';
 @import './utilities.css';
+@import 'highlight.js/styles/github.css';
 
 #app {
   height: 100vh;

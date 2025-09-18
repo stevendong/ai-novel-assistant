@@ -21,7 +21,7 @@
               <span>AI设置</span>
             </a-menu-item>
             <a-menu-divider />
-            <a-menu-item key="clear">
+            <a-menu-item key="clear" @click="clearConversation">
               <DeleteOutlined />
               <span>清空对话</span>
             </a-menu-item>
@@ -144,10 +144,42 @@
                 </div>
                 <div class="message-content">
                   <div class="message-text">
-                    <div class="markdown-content" v-html="formatMessage(message.content)"></div>
+                    <MarkdownRenderer
+                      :content="message.content"
+                      :enable-highlight="true"
+                      :enable-tables="true"
+                      :enable-task-lists="true"
+                    />
                   </div>
                   <div class="message-meta">
                     <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                    <div class="message-operations">
+                      <!-- 复制按钮 -->
+                      <a-tooltip title="复制消息">
+                        <a-button
+                          type="text"
+                          size="small"
+                          class="operation-btn"
+                          @click="copyMessage(message.content)"
+                        >
+                          <CopyOutlined />
+                        </a-button>
+                      </a-tooltip>
+
+                      <!-- 重新生成按钮（仅AI消息） -->
+                      <a-tooltip title="重新生成" v-if="message.role === 'assistant'">
+                        <a-button
+                          type="text"
+                          size="small"
+                          class="operation-btn"
+                          @click="regenerateMessage(message)"
+                        >
+                          <ReloadOutlined />
+                        </a-button>
+                      </a-tooltip>
+                    </div>
+
+                    <!-- 原有的操作按钮 -->
                     <div class="message-actions" v-if="message.actions">
                       <a-button
                         v-for="action in message.actions"
@@ -159,6 +191,38 @@
                       >
                         {{ action.label }}
                       </a-button>
+                    </div>
+
+                    <!-- 建议和跟进问题 -->
+                    <div class="message-suggestions" v-if="message.metadata?.suggestions?.length">
+                      <div class="suggestion-label">💡 建议：</div>
+                      <div class="suggestion-list">
+                        <a-tag
+                          v-for="(suggestion, index) in message.metadata.suggestions.slice(0, 3)"
+                          :key="index"
+                          color="blue"
+                          class="suggestion-tag"
+                          @click="applySuggestion(suggestion)"
+                        >
+                          {{ suggestion }}
+                        </a-tag>
+                      </div>
+                    </div>
+
+                    <div class="message-followups" v-if="message.metadata?.followUps?.length">
+                      <div class="followup-label">🤔 相关问题：</div>
+                      <div class="followup-list">
+                        <a-button
+                          v-for="(followUp, index) in message.metadata.followUps.slice(0, 2)"
+                          :key="index"
+                          type="text"
+                          size="small"
+                          class="followup-btn"
+                          @click="askFollowUp(followUp)"
+                        >
+                          {{ followUp }}
+                        </a-button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -269,46 +333,35 @@ import {
   FileTextOutlined,
   TeamOutlined,
   GlobalOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  CopyOutlined
 } from '@ant-design/icons-vue'
 import OutlineGenerator from './OutlineGenerator.vue'
+import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
 import { useProjectStore } from '@/stores/project'
+import { useAIChatStore } from '@/stores/aiChat'
+import type { ChatMessage } from '@/stores/aiChat'
 
-// Project store
+// Stores
 const projectStore = useProjectStore()
+const chatStore = useAIChatStore()
 
-interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-  actions?: Array<{ key: string; label: string }>
-}
+// Use interface from store
+// interface Message is now imported as ChatMessage
 
 
 // Reactive state
-const aiStatus = ref<'online' | 'offline'>('online')
 const currentMode = ref('chat')
 const inputMessage = ref('')
-const isTyping = ref(false)
 const loadingAction = ref<string | null>(null)
 const showScrollButton = ref(false)
 const messagesContainer = ref<HTMLElement>()
 const inputRef = ref()
 
-// Messages data
-const messages = ref<Message[]>([
-  {
-    id: '1',
-    role: 'assistant',
-    content: '你好！我是你的AI创作助手。我可以帮你完善角色设定、扩展世界观、生成章节大纲，还能进行一致性检查。有什么我可以帮助你的吗？',
-    timestamp: new Date(),
-    actions: [
-      { key: 'help', label: '查看帮助' },
-      { key: 'examples', label: '查看示例' }
-    ]
-  }
-])
+// Use store state
+const aiStatus = computed(() => chatStore.aiStatus)
+const isTyping = computed(() => chatStore.isTyping)
+const messages = computed(() => chatStore.currentMessages)
 
 // Mode configurations
 const modeConfigs = {
@@ -351,6 +404,13 @@ const currentModeActions = computed(() => {
 
 // Current project from store
 const currentProject = computed(() => projectStore.currentProject)
+
+// Initialize chat session when project changes
+watch(currentProject, (newProject) => {
+  if (newProject && (!chatStore.currentSession || chatStore.currentSession.novelId !== newProject.id)) {
+    chatStore.createNewSession(newProject.id, currentMode.value)
+  }
+}, { immediate: true })
 
 
 // Methods
@@ -404,15 +464,8 @@ const handleInput = () => {
 }
 
 const switchMode = (mode: string) => {
-  currentMode.value = mode
-
-  const modeTexts = {
-    chat: '切换到对话模式。你可以与我自由对话，寻求创作建议。',
-    enhance: '切换到完善模式。我将帮你完善角色、设定和情节。',
-    check: '切换到检查模式。我将检查作品的一致性和逻辑性。'
-  }
-
-  addMessage('assistant', modeTexts[mode as keyof typeof modeTexts] || '模式已切换')
+  currentMode.value = mode as 'chat' | 'enhance' | 'check'
+  chatStore.updateSessionMode(currentMode.value)
 }
 
 const performQuickAction = async (actionKey: string) => {
@@ -430,14 +483,7 @@ const performQuickAction = async (actionKey: string) => {
         addMessage('assistant', '我来分析当前选中的角色。请告诉我你希望重点完善哪个方面：\n• 性格特征和心理动机\n• 外貌描述和行为习惯\n• 背景故事和成长经历\n• 人际关系和社交模式\n• 角色发展弧线和成长轨迹')
         break
       case 'check-consistency':
-        isTyping.value = true
-        setTimeout(() => {
-          isTyping.value = false
-          addMessage('assistant', '**一致性检查完成！**\n\n✅ **角色性格**：总体一致\n⚠️ **时间线**：第2章与第5章之间有3天时间差异\n❌ **世界设定**：魔法规则在第4章有矛盾\n✅ **情节逻辑**：连贯性良好\n\n**建议**：优先修复时间线和魔法规则问题。', [
-            { key: 'fix-timeline', label: '修复时间线' },
-            { key: 'fix-magic', label: '修复魔法规则' }
-          ])
-        }, 2000)
+        await performConsistencyCheck()
         break
     }
   } finally {
@@ -449,27 +495,10 @@ const sendMessage = async () => {
   if (!inputMessage.value.trim() || inputMessage.value.length > 2000) return
 
   const userMessage = inputMessage.value
-  addMessage('user', userMessage)
   inputMessage.value = ''
 
-  // Simulate AI thinking
-  isTyping.value = true
-
-  setTimeout(() => {
-    isTyping.value = false
-    const response = generateAIResponse(userMessage)
-    addMessage('assistant', response, getResponseActions(userMessage))
-  }, 1500 + Math.random() * 1000)
-}
-
-const addMessage = (role: 'user' | 'assistant', content: string, actions?: Array<{ key: string; label: string }>) => {
-  messages.value.push({
-    id: Date.now().toString(),
-    role,
-    content,
-    timestamp: new Date(),
-    actions
-  })
+  // Send message through store
+  await chatStore.sendMessage(userMessage, currentProject.value?.id)
 
   // Auto scroll to bottom
   nextTick(() => {
@@ -477,22 +506,41 @@ const addMessage = (role: 'user' | 'assistant', content: string, actions?: Array
   })
 }
 
-const formatMessage = (content: string) => {
-  // Simple markdown-like formatting
-  return content
-    .replace(/\n/g, '<br>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/^• (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+const addMessage = (role: 'user' | 'assistant', content: string, actions?: Array<{ key: string; label: string }>) => {
+  chatStore.addMessage(role, content, actions)
+
+  // Auto scroll to bottom
+  nextTick(() => {
+    scrollToBottom()
+  })
 }
+
+// formatMessage函数已被MarkdownRenderer组件替代
 
 const formatTime = (timestamp: Date) => {
   return timestamp.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// Message type detection (moved to store, kept here for quick actions)
+const getMessageType = (message: string) => {
+  const lowerMessage = message.toLowerCase()
+
+  if (currentMode.value === 'enhance') {
+    return 'enhancement'
+  } else if (currentMode.value === 'check') {
+    return 'consistency'
+  } else if (lowerMessage.includes('大纲') || lowerMessage.includes('章节')) {
+    return 'outline'
+  } else if (lowerMessage.includes('角色') || lowerMessage.includes('人物')) {
+    return 'character'
+  } else if (lowerMessage.includes('设定') || lowerMessage.includes('世界')) {
+    return 'worldbuilding'
+  } else {
+    return 'general'
+  }
 }
 
 const generateAIResponse = (userMessage: string): string => {
@@ -529,8 +577,127 @@ const getResponseActions = (userMessage: string): Array<{ key: string; label: st
   return undefined
 }
 
-const performMessageAction = (actionKey: string, message: Message) => {
-  console.log('Perform action:', actionKey, 'for message:', message)
+// 执行一致性检查
+const performConsistencyCheck = async () => {
+  if (!currentProject.value) {
+    addMessage('assistant', '请先选择一个小说项目才能进行一致性检查。')
+    return
+  }
+
+  isTyping.value = true
+
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/ai/consistency/check`, {
+      novelId: currentProject.value.id,
+      scope: 'full'
+    })
+
+    isTyping.value = false
+
+    const result = response.data
+    let message = '**一致性检查完成！**\n\n'
+
+    if (result.totalIssues === 0) {
+      message += '🎉 **恭喜！** 未发现明显的一致性问题。\n\n你的故事在角色、设定和情节方面都保持了良好的连贯性。'
+    } else {
+      message += `发现 ${result.totalIssues} 个需要注意的问题：\n\n`
+
+      if (result.summary) {
+        if (result.summary.high > 0) message += `🔴 **严重问题**: ${result.summary.high} 个\n`
+        if (result.summary.medium > 0) message += `🟡 **中等问题**: ${result.summary.medium} 个\n`
+        if (result.summary.low > 0) message += `🟢 **轻微问题**: ${result.summary.low} 个\n`
+      }
+
+      if (result.issues?.length > 0) {
+        message += '\n**主要问题：**\n'
+        result.issues.slice(0, 3).forEach((issue, index) => {
+          const icon = issue.severity === 'high' ? '🔴' : issue.severity === 'medium' ? '🟡' : '🟢'
+          message += `${icon} ${issue.issue}\n`
+        })
+
+        if (result.issues.length > 3) {
+          message += `\n还有 ${result.issues.length - 3} 个其他问题...`
+        }
+      }
+    }
+
+    const actions = result.totalIssues > 0 ? [
+      { key: 'view-all-issues', label: '查看所有问题' },
+      { key: 'fix-priority', label: '优先修复' }
+    ] : [
+      { key: 'detailed-analysis', label: '详细分析' }
+    ]
+
+    addMessage('assistant', message, actions)
+
+  } catch (error) {
+    isTyping.value = false
+    console.error('一致性检查失败:', error)
+    addMessage('assistant', '抱歉，一致性检查服务暂时不可用。请稍后再试。')
+  }
+}
+
+// 清空对话历史
+const clearConversation = () => {
+  chatStore.clearCurrentSession()
+}
+
+// 复制消息
+const copyMessage = async (content: string) => {
+  try {
+    await navigator.clipboard.writeText(content)
+    // 可以添加成功提示
+  } catch (error) {
+    console.error('复制失败:', error)
+  }
+}
+
+// 重新生成消息
+const regenerateMessage = async (message: ChatMessage) => {
+  if (!chatStore.currentSession || message.role !== 'assistant') return
+
+  // 找到该消息的前一条用户消息
+  const messages = chatStore.currentMessages
+  const messageIndex = messages.findIndex(m => m.id === message.id)
+  if (messageIndex <= 0) return
+
+  const userMessage = messages[messageIndex - 1]
+  if (userMessage.role !== 'user') return
+
+  // 重新发送用户消息
+  await chatStore.sendMessage(userMessage.content, currentProject.value?.id)
+}
+
+// 应用建议
+const applySuggestion = (suggestion: string) => {
+  inputMessage.value = `请详细展开这个建议：${suggestion}`
+  sendMessage()
+}
+
+// 询问跟进问题
+const askFollowUp = (question: string) => {
+  inputMessage.value = question
+  sendMessage()
+}
+
+const performMessageAction = (actionKey: string, message: ChatMessage) => {
+  const actionMessages = {
+    'view-all-issues': '请显示所有的一致性问题详情',
+    'fix-priority': '请为我优先修复最严重的一致性问题',
+    'detailed-analysis': '请对我的小说进行更详细的分析',
+    'analyze-character': '请深度分析我提到的角色',
+    'suggest-traits': '请为这个角色提供更多性格特征建议',
+    'expand-setting': '请详细扩展我提到的世界设定',
+    'check-logic': '请检查这个设定的逻辑合理性'
+  }
+
+  const messageText = actionMessages[actionKey as keyof typeof actionMessages]
+  if (messageText) {
+    inputMessage.value = messageText
+    sendMessage()
+  } else {
+    console.log('Perform action:', actionKey, 'for message:', message)
+  }
 }
 
 
@@ -552,6 +719,11 @@ watch(currentMode, () => {
 
 // Initialize
 onMounted(() => {
+  // Ensure we have a chat session
+  if (!chatStore.hasActiveSession) {
+    chatStore.createNewSession(currentProject.value?.id, currentMode.value)
+  }
+
   // Auto-scroll to bottom on mount
   nextTick(() => {
     scrollToBottom(false)
@@ -840,15 +1012,32 @@ onMounted(() => {
 }
 
 .message-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-top: 8px;
+}
+
+.message-operations {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.operation-btn {
+  font-size: 12px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 4px;
+  color: var(--theme-text-secondary);
+}
+
+.operation-btn:hover {
+  color: var(--theme-text);
+  background-color: var(--theme-bg-elevated);
 }
 
 .message-actions {
   display: flex;
   gap: 4px;
+  margin: 4px 0;
 }
 
 .action-btn-small {
@@ -856,6 +1045,75 @@ onMounted(() => {
   height: 20px;
   padding: 0 6px;
   border-radius: 4px;
+}
+
+.message-suggestions {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--theme-bg-elevated);
+  border-radius: 6px;
+  border: 1px solid var(--theme-border);
+}
+
+.suggestion-label {
+  font-size: 11px;
+  color: var(--theme-text-secondary);
+  margin-bottom: 4px;
+}
+
+.suggestion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.suggestion-tag {
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.suggestion-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.3);
+}
+
+.message-followups {
+  margin-top: 6px;
+  padding: 6px;
+  background: rgba(24, 144, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(24, 144, 255, 0.2);
+}
+
+.followup-label {
+  font-size: 11px;
+  color: var(--theme-text-secondary);
+  margin-bottom: 4px;
+}
+
+.followup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.followup-btn {
+  font-size: 11px;
+  height: auto;
+  padding: 4px 8px;
+  text-align: left;
+  justify-content: flex-start;
+  color: #1890ff;
+  background: transparent;
+  border-radius: 4px;
+}
+
+.followup-btn:hover {
+  background: rgba(24, 144, 255, 0.1);
+  color: #1890ff;
 }
 
 /* Typing Indicator */

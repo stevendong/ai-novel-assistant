@@ -259,45 +259,194 @@ class AIService {
     return basePrompt;
   }
 
-  parseResponse(content, type) {
-    // Basic response structure
+  parseResponse(content, type, novelContext = null) {
+    // Enhanced response structure
     const result = {
       message: content,
       suggestions: [],
       questions: [],
-      actions: []
+      actions: [],
+      metadata: {
+        type,
+        timestamp: new Date().toISOString(),
+        wordCount: content.length,
+        hasStructuredContent: false
+      }
     };
 
-    // Try to extract structured information from the response
-    if (content.includes('建议：') || content.includes('建议:')) {
-      const suggestions = this.extractBulletPoints(content, ['建议：', '建议:']);
-      result.suggestions = suggestions;
+    // Extract structured information with multiple patterns
+    const suggestionMarkers = ['建议：', '建议:', '💡', '✅', '推荐：', '推荐:'];
+    const questionMarkers = ['问题：', '问题:', '❓', '🤔', '需要考虑：', '需要考虑:'];
+    const actionMarkers = ['下一步：', '下一步:', '🎯', '⚡', '行动建议：', '行动建议:'];
+
+    result.suggestions = this.extractBulletPoints(content, suggestionMarkers);
+    result.questions = this.extractBulletPoints(content, questionMarkers);
+    result.actions = this.extractBulletPoints(content, actionMarkers);
+
+    // Detect if response has structured content
+    result.metadata.hasStructuredContent =
+      result.suggestions.length > 0 ||
+      result.questions.length > 0 ||
+      result.actions.length > 0 ||
+      content.includes('**') ||
+      content.includes('•') ||
+      content.includes('1.') ||
+      content.includes('##');
+
+    // Add type-specific parsing
+    switch (type) {
+      case 'consistency':
+        result.issues = this.extractConsistencyIssues(content);
+        break;
+      case 'character':
+        result.characterTraits = this.extractCharacterTraits(content);
+        break;
+      case 'worldbuilding':
+        result.worldElements = this.extractWorldElements(content);
+        break;
+      case 'outline':
+        result.plotPoints = this.extractPlotPoints(content);
+        break;
     }
 
-    if (content.includes('问题：') || content.includes('问题:')) {
-      const questions = this.extractBulletPoints(content, ['问题：', '问题:']);
-      result.questions = questions;
-    }
+    // Generate follow-up suggestions based on content
+    result.followUps = this.generateFollowUps(content, type, novelContext);
 
     return result;
   }
 
+  extractConsistencyIssues(content) {
+    const issues = [];
+    const issuePatterns = [
+      /❌\s*(.+)/g,
+      /⚠️\s*(.+)/g,
+      /🔴\s*(.+)/g,
+      /问题[：:]\s*(.+)/g
+    ];
+
+    for (const pattern of issuePatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        issues.push(match[1].trim());
+      }
+    }
+
+    return issues;
+  }
+
+  extractCharacterTraits(content) {
+    const traits = [];
+    const traitPatterns = [
+      /性格[：:]\s*(.+)/g,
+      /特征[：:]\s*(.+)/g,
+      /特点[：:]\s*(.+)/g
+    ];
+
+    for (const pattern of traitPatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        traits.push(match[1].trim());
+      }
+    }
+
+    return traits;
+  }
+
+  extractWorldElements(content) {
+    const elements = [];
+    const elementPatterns = [
+      /🏛️\s*(.+)/g,
+      /🌍\s*(.+)/g,
+      /设定[：:]\s*(.+)/g
+    ];
+
+    for (const pattern of elementPatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        elements.push(match[1].trim());
+      }
+    }
+
+    return elements;
+  }
+
+  extractPlotPoints(content) {
+    const points = [];
+    const pointPatterns = [
+      /📊\s*(.+)/g,
+      /情节[：:]\s*(.+)/g,
+      /第\d+章[：:]\s*(.+)/g
+    ];
+
+    for (const pattern of pointPatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        points.push(match[1].trim());
+      }
+    }
+
+    return points;
+  }
+
+  generateFollowUps(content, type, novelContext) {
+    const followUps = [];
+
+    // Generate context-aware follow-up questions
+    if (type === 'character' && content.includes('性格')) {
+      followUps.push('要不要继续完善这个角色的背景故事？');
+      followUps.push('需要为这个角色设计一些具体的对话风格吗？');
+    }
+
+    if (type === 'worldbuilding' && content.includes('设定')) {
+      followUps.push('需要进一步扩展这个世界的历史背景吗？');
+      followUps.push('要为这个设定添加一些具体的规则限制吗？');
+    }
+
+    if (type === 'consistency' && content.includes('问题')) {
+      followUps.push('要我帮你制定修复这些问题的具体方案吗？');
+      followUps.push('需要检查其他章节是否有类似问题吗？');
+    }
+
+    return followUps.slice(0, 3); // Limit to 3 follow-ups
+  }
+
   extractBulletPoints(text, markers) {
     const points = [];
+    const uniquePoints = new Set();
+
     for (const marker of markers) {
-      const index = text.indexOf(marker);
-      if (index !== -1) {
-        const section = text.substring(index + marker.length);
+      const regex = new RegExp(`${marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\s\\S]*?)(?=\\n\\n|\\n[^\\n•\\-\\d]|$)`, 'g');
+      let match;
+
+      while ((match = regex.exec(text)) !== null) {
+        const section = match[1];
         const lines = section.split('\n');
+
         for (const line of lines) {
           const trimmed = line.trim();
-          if (trimmed && (trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.match(/^\d+\./))) {
-            points.push(trimmed.replace(/^[-•\d\.\s]+/, ''));
+          const bulletPatterns = [
+            /^[-•✓✅]\s*(.+)$/,
+            /^\d+\.\s*(.+)$/,
+            /^[a-zA-Z]\)\s*(.+)$/,
+            /^[\u4e00-\u9fff]、\s*(.+)$/
+          ];
+
+          for (const pattern of bulletPatterns) {
+            const bulletMatch = trimmed.match(pattern);
+            if (bulletMatch && bulletMatch[1]) {
+              const point = bulletMatch[1].trim();
+              if (point.length > 5 && !uniquePoints.has(point)) {
+                uniquePoints.add(point);
+                points.push(point);
+              }
+              break;
+            }
           }
         }
       }
     }
-    return points;
+
+    return points.slice(0, 10); // Limit to avoid too many points
   }
 
   async checkConsistency(novelData, scope = 'full') {
@@ -322,10 +471,30 @@ class AIService {
 
     try {
       const response = await this.chat(messages, {
-        temperature: 0.3 // Lower temperature for consistency checking
+        temperature: 0.3, // Lower temperature for consistency checking
+        taskType: 'consistency'
       });
 
-      const result = JSON.parse(response.content);
+      let result;
+      try {
+        // Try to parse as JSON first
+        result = JSON.parse(response.content);
+      } catch (parseError) {
+        // If JSON parsing fails, try to extract structured info from text
+        result = this.parseConsistencyFromText(response.content);
+      }
+
+      // Ensure result has required structure
+      if (!result.issues) result.issues = [];
+      if (!result.summary) {
+        const issues = result.issues;
+        result.summary = {
+          total: issues.length,
+          high: issues.filter(i => i.severity === 'high').length,
+          medium: issues.filter(i => i.severity === 'medium').length,
+          low: issues.filter(i => i.severity === 'low').length
+        };
+      }
 
       // Log consistency check
       const duration = Date.now() - startTime;
@@ -341,17 +510,54 @@ class AIService {
         duration: `${duration}ms`
       });
 
-      // Fallback if JSON parsing fails
+      // Enhanced fallback response
       return {
         issues: [{
-          type: 'general',
+          type: 'system',
           severity: 'low',
-          issue: '无法解析一致性检查结果',
-          suggestion: '请手动检查内容一致性'
+          issue: 'AI一致性检查服务暂时不可用',
+          suggestion: '请稍后重试，或手动检查内容一致性。您可以重点关注角色行为、时间线和世界设定的连贯性。'
         }],
         summary: { total: 1, high: 0, medium: 0, low: 1 }
       };
     }
+  }
+
+  parseConsistencyFromText(content) {
+    const issues = [];
+    const lines = content.split('\n');
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // Look for issue indicators
+      if (trimmed.includes('❌') || trimmed.includes('问题') || trimmed.includes('矛盾')) {
+        issues.push({
+          type: 'consistency',
+          severity: 'medium',
+          issue: trimmed.replace(/[❌⚠️🔴]/g, '').trim(),
+          suggestion: '请检查并修正此一致性问题'
+        });
+      } else if (trimmed.includes('⚠️') || trimmed.includes('注意')) {
+        issues.push({
+          type: 'warning',
+          severity: 'low',
+          issue: trimmed.replace(/[❌⚠️🔴]/g, '').trim(),
+          suggestion: '建议进一步确认此处内容'
+        });
+      }
+    }
+
+    return {
+      issues,
+      summary: {
+        total: issues.length,
+        high: 0,
+        medium: issues.filter(i => i.severity === 'medium').length,
+        low: issues.filter(i => i.severity === 'low').length
+      },
+      rawContent: content
+    };
   }
 
   formatNovelDataForConsistency(novelData) {
@@ -374,7 +580,70 @@ class AIService {
       });
     }
 
-    return formatted;
+    return formatted.substring(0, 8000); // Limit context size to avoid token limits
+  }
+
+  // New method for enhanced conversation support
+  async generateConversationalResponse(novelContext, userMessage, conversationHistory = [], options = {}) {
+    const systemPrompt = this.buildConversationalPrompt(novelContext, options.mode);
+
+    const messages = [{ role: 'system', content: systemPrompt }];
+
+    // Add relevant conversation history
+    if (conversationHistory.length > 0) {
+      const recentHistory = conversationHistory.slice(-8); // Last 8 messages
+      messages.push(...recentHistory.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })));
+    }
+
+    messages.push({ role: 'user', content: userMessage });
+
+    const response = await this.chat(messages, {
+      temperature: 0.8, // Slightly higher for natural conversation
+      provider: options.provider,
+      model: options.model
+    });
+
+    return {
+      content: response.content,
+      suggestions: this.extractBulletPoints(response.content, ['建议：', '建议:', '💡']),
+      followUps: this.generateFollowUps(response.content, 'general', novelContext),
+      metadata: {
+        provider: response.provider,
+        model: response.model,
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
+
+  buildConversationalPrompt(novelContext, mode = 'chat') {
+    let prompt = '你是一个经验丰富的小说创作导师，具有深厚的文学功底和丰富的创作经验。请以友好、专业的态度与用户对话。';
+
+    if (mode === 'enhance') {
+      prompt += '当前专注于帮助用户完善创作内容，包括角色发展、情节设计和世界构建。';
+    } else if (mode === 'check') {
+      prompt += '当前专注于帮助用户进行质量检查，包括一致性分析和逻辑审核。';
+    } else {
+      prompt += '当前处于自由对话模式，可以讨论任何与创作相关的话题。';
+    }
+
+    if (novelContext) {
+      prompt += `\n\n当前讨论的小说：《${novelContext.title}》`;
+      if (novelContext.description) {
+        prompt += `\n简介：${novelContext.description.substring(0, 200)}...`;
+      }
+    }
+
+    prompt += `\n\n请注意：
+• 保持对话的连续性和上下文理解
+• 提供具体、可行的建议
+• 适时提出引导性问题
+• 鼓励用户的创作热情
+• 用温暖、专业的语调回应`;
+
+    return prompt;
   }
 }
 
