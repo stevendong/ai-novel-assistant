@@ -49,6 +49,137 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+// 流式AI对话接口
+router.post('/chat/stream', async (req, res) => {
+  try {
+    const { novelId, message, context, type, provider, model } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // 设置SSE响应头
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // 发送连接确认
+    res.write('data: {"type":"connected"}\n\n');
+
+    try {
+      // 获取小说上下文
+      let novelContext = null;
+      if (novelId) {
+        novelContext = await prisma.novel.findUnique({
+          where: { id: novelId },
+          include: {
+            characters: { take: 10 },
+            settings: { take: 10 },
+            chapters: { 
+              take: 5,
+              orderBy: { chapterNumber: 'desc' }
+            },
+            aiSettings: true
+          }
+        });
+      }
+
+      // 获取流式响应
+      const stream = await aiService.generateResponseStream(novelContext, message, type, {
+        provider,
+        model,
+        taskType: type,
+        temperature: undefined
+      });
+
+      // 处理流式响应
+      if (provider === 'openai' || !provider) {
+        // OpenAI streaming
+        for await (const chunk of stream) {
+          const choice = chunk.choices[0];
+          if (choice && choice.delta && choice.delta.content) {
+            const data = {
+              type: 'chunk',
+              content: choice.delta.content
+            };
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+          }
+          
+          if (choice && choice.finish_reason) {
+            const data = {
+              type: 'finish',
+              reason: choice.finish_reason
+            };
+            res.write(`data: ${JSON.stringify(data)}\n\n`);
+            break;
+          }
+        }
+      } else if (provider === 'claude') {
+        // Claude streaming
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6));
+                if (eventData.type === 'content_block_delta' && eventData.delta?.text) {
+                  const data = {
+                    type: 'chunk',
+                    content: eventData.delta.text
+                  };
+                  res.write(`data: ${JSON.stringify(data)}\n\n`);
+                } else if (eventData.type === 'message_stop') {
+                  const data = {
+                    type: 'finish',
+                    reason: 'stop'
+                  };
+                  res.write(`data: ${JSON.stringify(data)}\n\n`);
+                  break;
+                }
+              } catch (parseError) {
+                // Skip malformed JSON
+                continue;
+              }
+            }
+          }
+        }
+      }
+      
+      // 发送完成信号
+      res.write('data: {"type":"done"}\n\n');
+    } catch (streamError) {
+      console.error('Streaming error:', streamError);
+      const errorData = {
+        type: 'error',
+        message: process.env.NODE_ENV === 'development' ? streamError.message : 'AI service error'
+      };
+      res.write(`data: ${JSON.stringify(errorData)}\n\n`);
+    }
+    
+    res.end();
+  } catch (error) {
+    console.error('Error in streaming chat:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'AI streaming service error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Streaming service temporarily unavailable'
+      });
+    }
+  }
+});
+
 // 一致性检查
 router.post('/consistency/check', async (req, res) => {
   try {

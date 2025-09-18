@@ -9,6 +9,15 @@ export interface AIResponse {
   data?: string
 }
 
+export interface StreamChunk {
+  type: 'connected' | 'chunk' | 'finish' | 'done' | 'error'
+  content?: string
+  reason?: string
+  message?: string
+}
+
+export type StreamHandler = (chunk: StreamChunk) => void
+
 export interface OutlineGenerationParams {
   novelId: string
   type: 'full' | 'chapter' | 'arc'
@@ -101,6 +110,70 @@ class AIService {
     })
 
     return response.data
+  }
+
+  // 流式AI对话
+  async chatStream(novelId: string, message: string, onStream: StreamHandler, context = {}, options = {}): Promise<void> {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/ai/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify({
+          novelId,
+          message,
+          context,
+          type: (options as any).type || 'general',
+          provider: (options as any).provider,
+          model: (options as any).model
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is empty')
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.trim() === '') continue
+          
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+              onStream(data as StreamChunk)
+              
+              // 如果收到完成或错误信号，停止处理
+              if (data.type === 'done' || data.type === 'error') {
+                return
+              }
+            } catch (error) {
+              console.error('Failed to parse SSE data:', error)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Stream error:', error)
+      onStream({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Unknown streaming error'
+      })
+    }
   }
 
   // AI大纲生成

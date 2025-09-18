@@ -90,6 +90,22 @@ class AIService {
     throw new Error(`Unsupported provider type: ${provider.type}`);
   }
 
+  async chatStream(messages, options = {}) {
+    const provider = options.provider ? this.providers.get(options.provider) : this.getDefaultProvider();
+    
+    if (!provider) {
+      throw new Error('No AI provider available');
+    }
+
+    if (provider.type === 'openai') {
+      return await this.openaiChatStream(provider, messages, options);
+    } else if (provider.type === 'claude') {
+      return await this.claudeChatStream(provider, messages, options);
+    }
+    
+    throw new Error(`Unsupported provider type: ${provider.type}`);
+  }
+
   async openaiChat(provider, messages, options) {
     const taskType = options.taskType || 'default';
     const startTime = Date.now();
@@ -205,6 +221,82 @@ class AIService {
     }
   }
 
+  async openaiChatStream(provider, messages, options) {
+    const taskType = options.taskType || 'default';
+
+    const params = buildRequestParams('openai', taskType, {
+      model: options.model || provider.models.chat,
+      temperature: options.temperature,
+      maxTokens: options.maxTokens,
+      stream: true, // Enable streaming
+      ...options.additionalParams
+    });
+
+    const requestData = {
+      messages: messages,
+      ...params
+    };
+
+    try {
+      const stream = await provider.client.chat.completions.create(requestData);
+      return stream;
+    } catch (error) {
+      logger.error('OpenAI Stream Error:', {
+        error: error.message,
+        stack: error.stack,
+        model: options.model || provider.models.chat,
+        messageCount: messages.length
+      });
+      throw new Error(`OpenAI Stream Error: ${error.message}`);
+    }
+  }
+
+  async claudeChatStream(provider, messages, options) {
+    const startTime = Date.now();
+
+    try {
+      // Convert OpenAI format messages to Claude format
+      const systemMessage = messages.find(m => m.role === 'system')?.content || '';
+      const userMessages = messages.filter(m => m.role !== 'system');
+
+      const requestData = {
+        model: options.model || provider.models.chat,
+        system: systemMessage,
+        messages: userMessages,
+        max_tokens: options.maxTokens || 2000,
+        temperature: options.temperature || 0.7,
+        stream: true, // Enable streaming
+        ...options.additionalParams
+      };
+
+      const response = await fetch(`${provider.config.baseURL}/v1/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': provider.config.apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const error = new Error(`Claude Stream Error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw error;
+      }
+
+      return response.body;
+    } catch (error) {
+      logger.error('Claude Stream Error:', {
+        error: error.message,
+        stack: error.stack,
+        model: options.model || provider.models.chat,
+        messageCount: messages.length
+      });
+      throw new Error(`Claude Stream Error: ${error.message}`);
+    }
+  }
+
   // Novel-specific AI methods
   async generateResponse(novelContext, userMessage, type = 'general', options = {}) {
     const systemPrompt = this.buildSystemPrompt(novelContext, type);
@@ -221,6 +313,23 @@ class AIService {
     });
 
     return this.parseResponse(response.content, type);
+  }
+
+  async generateResponseStream(novelContext, userMessage, type = 'general', options = {}) {
+    const systemPrompt = this.buildSystemPrompt(novelContext, type);
+    
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ];
+
+    const stream = await this.chatStream(messages, {
+      temperature: options.temperature || (type === 'creative' ? 0.9 : 0.7),
+      provider: options.provider,
+      model: options.model
+    });
+
+    return stream;
   }
 
   buildSystemPrompt(novelContext, type) {

@@ -37,18 +37,16 @@
                       @click="handleSessionClick({ key: session.id })"
                     >
                       <template #actions>
-                        <a-tooltip title="删除会话">
-                          <a-button
-                            type="text"
-                            size="small"
-                            class="session-action-btn"
-                            @click.stop="handleDeleteSession(session.id)"
-                            :loading="deletingSessionId === session.id"
-                            danger
-                          >
-                            <DeleteOutlined />
-                          </a-button>
-                        </a-tooltip>
+                        <a-button
+                          type="text"
+                          size="small"
+                          class="session-action-btn"
+                          :loading="deletingSessionId === session.id"
+                          danger
+                          @click.stop="handleDeleteSession(session.id)"
+                        >
+                          <DeleteOutlined />
+                        </a-button>
                       </template>
 
                       <a-list-item-meta>
@@ -95,7 +93,7 @@
             </div>
           </template>
         </a-dropdown>
-        
+
         <!-- 设置下拉 -->
         <a-dropdown :trigger="['click']" placement="bottomRight">
           <a-button type="text" size="small" class="settings-btn">
@@ -123,56 +121,56 @@
     </div>
 
     <!-- Mode Tabs -->
-    <div class="mode-tabs">
-      <a-tabs
-        v-model:activeKey="currentMode"
-        size="small"
-        @change="switchMode"
-        class="custom-tabs"
-      >
-        <a-tab-pane key="chat" tab="智能对话">
-          <template #tab>
-            <MessageOutlined />
-            <span class="tab-text">对话</span>
-          </template>
-        </a-tab-pane>
-        <a-tab-pane key="enhance" tab="内容完善">
-          <template #tab>
-            <EditOutlined />
-            <span class="tab-text">完善</span>
-          </template>
-        </a-tab-pane>
-        <a-tab-pane key="check" tab="质量检查">
-          <template #tab>
-            <CheckCircleOutlined />
-            <span class="tab-text">检查</span>
-          </template>
-        </a-tab-pane>
-        <a-tab-pane v-if="false" key="outline" tab="大纲生成">
-          <template #tab>
-            <BulbOutlined />
-            <span class="tab-text">大纲</span>
-          </template>
-        </a-tab-pane>
-      </a-tabs>
-    </div>
+<!--    <div class="mode-tabs">-->
+<!--      <a-tabs-->
+<!--        v-model:activeKey="currentMode"-->
+<!--        size="small"-->
+<!--        @change="switchMode"-->
+<!--        class="custom-tabs"-->
+<!--      >-->
+<!--        <a-tab-pane key="chat" tab="智能对话">-->
+<!--          <template #tab>-->
+<!--            <MessageOutlined />-->
+<!--            <span class="tab-text">对话</span>-->
+<!--          </template>-->
+<!--        </a-tab-pane>-->
+<!--        <a-tab-pane key="enhance" tab="内容完善">-->
+<!--          <template #tab>-->
+<!--            <EditOutlined />-->
+<!--            <span class="tab-text">完善</span>-->
+<!--          </template>-->
+<!--        </a-tab-pane>-->
+<!--        <a-tab-pane key="check" tab="质量检查">-->
+<!--          <template #tab>-->
+<!--            <CheckCircleOutlined />-->
+<!--            <span class="tab-text">检查</span>-->
+<!--          </template>-->
+<!--        </a-tab-pane>-->
+<!--        <a-tab-pane v-if="false" key="outline" tab="大纲生成">-->
+<!--          <template #tab>-->
+<!--            <BulbOutlined />-->
+<!--            <span class="tab-text">大纲</span>-->
+<!--          </template>-->
+<!--        </a-tab-pane>-->
+<!--      </a-tabs>-->
+<!--    </div>-->
 
     <!-- Quick Actions -->
-    <div class="quick-actions" v-if="currentModeActions.length > 0">
-      <div class="actions-grid">
-        <a-button
-          v-for="action in currentModeActions"
-          :key="action.key"
-          size="small"
-          class="action-btn"
-          :loading="action.key === loadingAction"
-          @click="performQuickAction(action.key)"
-        >
-          <component :is="action.icon" />
-          <span>{{ action.label }}</span>
-        </a-button>
-      </div>
-    </div>
+<!--    <div class="quick-actions" v-if="currentModeActions.length > 0">-->
+<!--      <div class="actions-grid">-->
+<!--        <a-button-->
+<!--          v-for="action in currentModeActions"-->
+<!--          :key="action.key"-->
+<!--          size="small"-->
+<!--          class="action-btn"-->
+<!--          :loading="action.key === loadingAction"-->
+<!--          @click="performQuickAction(action.key)"-->
+<!--        >-->
+<!--          <component :is="action.icon" />-->
+<!--          <span>{{ action.label }}</span>-->
+<!--        </a-button>-->
+<!--      </div>-->
+<!--    </div>-->
 
     <!-- Content Container -->
     <div class="content-container">
@@ -253,9 +251,32 @@
                 </div>
                 <div class="message-content">
                   <div class="message-text">
-                    <!-- 使用打字机效果或普通渲染 -->
+                    <!-- 流式传输指示器 -->
+                    <div v-if="message.metadata?.streaming" class="streaming-indicator">
+                      <div class="streaming-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                      <span class="streaming-text">正在接收...</span>
+                    </div>
+
+                    <!-- 流式消息使用StreamTypewriter -->
+                    <StreamTypewriter
+                      v-if="message.metadata?.streaming"
+                      :content="message.content"
+                      :is-streaming="message.metadata?.streaming"
+                      :enable-highlight="true"
+                      :enable-tables="true"
+                      :enable-task-lists="true"
+                      :show-cursor="true"
+                      :max-delay="30"
+                      @complete="onStreamComplete(message.id)"
+                      @content-update="onStreamContentUpdate"
+                    />
+                    <!-- 新创建的非流式AI消息使用打字机效果 -->
                     <TypewriterText
-                      v-if="shouldUseTypewriter(message)"
+                      v-else-if="shouldUseTypewriter(message)"
                       :content="message.content"
                       :speed="typewriterSettings.speed"
                       :show-cursor="typewriterSettings.showCursor"
@@ -265,12 +286,14 @@
                       @complete="onTypewriterComplete(message.id)"
                       @typing="onTypewriterTyping"
                     />
+                    <!-- 历史消息直接渲染 -->
                     <MarkdownRenderer
                       v-else
                       :content="message.content"
                       :enable-highlight="true"
                       :enable-tables="true"
                       :enable-task-lists="true"
+                      class="message-markdown"
                     />
                   </div>
                   <div class="message-meta">
@@ -481,6 +504,7 @@ import {
 import OutlineGenerator from './OutlineGenerator.vue'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
 import TypewriterText from '@/components/common/TypewriterText.vue'
+import StreamTypewriter from '@/components/common/StreamTypewriter.vue'
 import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
 import type { ChatMessage } from '@/stores/aiChat'
@@ -512,13 +536,21 @@ const typingMessageId = ref<string | null>(null)
 const newlyCreatedMessageId = ref<string | null>(null)
 const deletingSessionId = ref<string | null>(null)
 const deletingMessageId = ref<string | null>(null)
+const isInitializing = ref(false)
+const hasInitialized = ref(false)
 
 // 判断是否应该使用打字机效果
 const shouldUseTypewriter = (message: ChatMessage) => {
-  // 只对新创建的AI消息使用打字机效果，历史消息不使用
+  // 流式传输的消息使用StreamTypewriter，不使用传统打字机
+  if (message.metadata?.streaming) {
+    return false
+  }
+
+  // 只对新创建的非流式AI消息使用打字机效果，历史消息不使用
   return message.role === 'assistant' &&
          message.id === newlyCreatedMessageId.value &&
-         typingMessageId.value !== message.id
+         typingMessageId.value !== message.id &&
+         !message.metadata?.streaming
 }
 
 // 打字机完成回调
@@ -529,6 +561,20 @@ const onTypewriterComplete = (messageId: string) => {
 // 打字机输入中回调
 const onTypewriterTyping = () => {
   // 可以在这里添加其他逻辑，如自动滚动等
+}
+
+// 流式打字机完成回调
+const onStreamComplete = (messageId: string) => {
+  console.log('Stream typewriter completed for message:', messageId)
+  // 可以在这里添加完成后的逻辑
+}
+
+// 流式打字机内容更新回调
+const onStreamContentUpdate = (content: string) => {
+  // 流式内容更新时自动滚动
+  nextTick(() => {
+    scrollToBottom()
+  })
 }
 
 // Use store state
@@ -580,20 +626,46 @@ const currentProject = computed(() => projectStore.currentProject)
 
 // Initialize chat session when project changes
 watch(currentProject, async (newProject) => {
-  if (newProject) {
+  if (!newProject || isInitializing.value) {
+    return
+  }
+
+  isInitializing.value = true
+
+  try {
+    console.log('Project changed, initializing session for:', newProject.title)
+
+    // 等待sessions加载完成
+    if (!hasInitialized.value) {
+      await chatStore.loadSessions()
+      hasInitialized.value = true
+    }
+
     // 首先检查是否有该项目的现有会话
     const existingSession = chatStore.sessions.find(s => s.novelId === newProject.id && s.mode === currentMode.value)
     if (existingSession) {
+      console.log('Found existing session for current mode:', existingSession.title)
       // 使用现有会话
       await chatStore.switchSession(existingSession.id)
     } else if (!chatStore.currentSession || chatStore.currentSession.novelId !== newProject.id) {
-      // 只有在没有现有会话且当前会话不匹配时才创建新会话
-      await chatStore.createNewSession(newProject.id, currentMode.value)
+      // 检查是否有任何该项目的会话（不限于当前模式）
+      const anyProjectSession = chatStore.sessions.find(s => s.novelId === newProject.id)
+      if (anyProjectSession) {
+        console.log('Found existing session for project:', anyProjectSession.title)
+        // 使用该项目的任意一个现有会话
+        await chatStore.switchSession(anyProjectSession.id)
+      } else {
+        console.log('No existing session found, creating new session')
+        // 只有在该项目完全没有会话时才创建新会话
+        await chatStore.createNewSession(newProject.id, currentMode.value as 'chat' | 'enhance' | 'check')
+      }
     }
 
     // 清除新创建消息ID，避免历史消息使用打字机效果
     newlyCreatedMessageId.value = null
     typingMessageId.value = null
+  } finally {
+    isInitializing.value = false
   }
 }, { immediate: true })
 
@@ -652,7 +724,7 @@ const switchMode = async (mode: string) => {
   const typedMode = mode as 'chat' | 'enhance' | 'check' | 'outline'
   currentMode.value = typedMode
   if (typedMode !== 'outline') {
-    await chatStore.updateSessionMode(typedMode as 'chat' | 'enhance' | 'check')
+    await chatStore.updateSessionMode(typedMode)
   }
 }
 
@@ -685,12 +757,13 @@ const sendMessage = async () => {
   const userMessage = inputMessage.value
   inputMessage.value = ''
 
-  // Send message through store
-  const response = await chatStore.sendMessage(userMessage, currentProject.value?.id)
+  // Send message through store with streaming enabled
+  const response = await chatStore.sendMessage(userMessage, currentProject.value?.id, true)
 
   // 设置新创建的消息ID用于打字机效果
   if (response) {
     newlyCreatedMessageId.value = response.id
+    // 流式消息的滚动现在由StreamTypewriter的content-update事件处理
   }
 
   // Auto scroll to bottom
@@ -897,7 +970,7 @@ const performMessageAction = (actionKey: string, message: ChatMessage) => {
 const handleSessionClick = async ({ key }: { key: string }) => {
   if (key === 'new') {
     // 创建新会话
-    await chatStore.createNewSession(currentProject.value?.id, currentMode.value)
+    await chatStore.createNewSession(currentProject.value?.id, currentMode.value as 'chat' | 'enhance' | 'check')
   } else {
     // 切换到选中的会话
     await chatStore.switchSession(key)
@@ -914,93 +987,50 @@ const handleSessionClick = async ({ key }: { key: string }) => {
 }
 
 // 删除会话
-const handleDeleteSession = (sessionId: string) => {
-  Modal.confirm({
-    title: '确认删除',
-    content: '确定要删除这个会话吗？删除后可以在回收站中恢复。',
-    okText: '删除',
-    okType: 'danger',
-    cancelText: '取消',
-    maskClosable: false,
-    keyboard: false,
-    onOk: () => {
-      return new Promise(async (resolve, reject) => {
-        try {
-          deletingSessionId.value = sessionId
+const handleDeleteSession = async (sessionId: string) => {
+  try {
+    deletingSessionId.value = sessionId
 
-          // 调用store的删除方法
-          await chatStore.deleteSession(sessionId)
+    // 调用store的删除方法
+    await chatStore.deleteSession(sessionId)
 
-          deletingSessionId.value = null
-          console.log('Session deleted successfully')
-          resolve(true)
-        } catch (error) {
-          deletingSessionId.value = null
-          console.error('Failed to delete session:', error)
-          reject(error)
-        }
-      })
-    },
-    onCancel: () => {
-      deletingSessionId.value = null
-      console.log('Delete cancelled')
-    }
-  })
+    deletingSessionId.value = null
+    console.log('Session deleted successfully')
+  } catch (error) {
+    deletingSessionId.value = null
+    console.error('Failed to delete session:', error)
+  }
 }
 
 // 删除单条消息
-const handleDeleteMessage = (messageId: string) => {
+const handleDeleteMessage = async (messageId: string) => {
   // 检查是否是欢迎消息
   const message = chatStore.currentSession?.messages.find(m => m.id === messageId)
   if (message?.metadata?.messageType === 'welcome' ||
       (message && message.actions && message.actions.some(a => a.key === 'help'))) {
-    Modal.warning({
-      title: '无法删除',
-      content: '欢迎消息不能被删除。',
-      okText: '确定'
-    })
     return
   }
 
-  Modal.confirm({
-    title: '确认删除',
-    content: '确定要删除这条消息吗？此操作不可撤销。',
-    okText: '删除',
-    okType: 'danger',
-    cancelText: '取消',
-    maskClosable: false,
-    keyboard: false,
-    onOk: () => {
-      return new Promise(async (resolve, reject) => {
-        try {
-          deletingMessageId.value = messageId
+  try {
+    deletingMessageId.value = messageId
 
-          // 调用API删除消息
-          if (chatStore.currentSession) {
-            await apiClient.delete(`/api/conversations/${chatStore.currentSession.id}/messages/${messageId}`)
+    // 调用API删除消息
+    if (chatStore.currentSession) {
+      await apiClient.delete(`/api/conversations/${chatStore.currentSession.id}/messages/${messageId}`)
 
-            // 从本地删除消息
-            const messageIndex = chatStore.currentSession.messages.findIndex(m => m.id === messageId)
-            if (messageIndex !== -1) {
-              chatStore.currentSession.messages.splice(messageIndex, 1)
-            }
-          }
-
-          deletingMessageId.value = null
-          console.log('Message deleted successfully')
-          resolve(true)
-        } catch (error) {
-          deletingMessageId.value = null
-          console.error('Failed to delete message:', error)
-          reject(error)
-        }
-      })
-    },
-    onCancel: () => {
-      deletingMessageId.value = null
-      console.log('Delete cancelled')
+      // 从本地删除消息
+      const messageIndex = chatStore.currentSession.messages.findIndex(m => m.id === messageId)
+      if (messageIndex !== -1) {
+        chatStore.currentSession.messages.splice(messageIndex, 1)
+      }
     }
-  })
+
+    deletingMessageId.value = null
+    console.log('Message deleted successfully')
+  } catch (error) {
+    deletingMessageId.value = null
+    console.error('Failed to delete message:', error)
+  }
 }
 
 // 获取模式标签
@@ -1040,7 +1070,7 @@ const formatSessionTime = (date: Date) => {
   const minutes = Math.floor(diff / 60000)
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
-  
+
   if (days > 0) {
     return `${days}天前`
   } else if (hours > 0) {
@@ -1071,17 +1101,21 @@ watch(currentMode, () => {
 
 // Initialize
 onMounted(async () => {
-  // 等待store初始化完成
-  await chatStore.loadSessions()
+  console.log('AIAssistantPanel mounted')
 
-  // 检查是否有活跃会话，如果没有且有历史会话，使用第一个历史会话
-  if (!chatStore.hasActiveSession) {
-    if (chatStore.sessions.length > 0) {
-      // 使用最新的会话
+  // 如果项目已经加载，watch会处理初始化
+  // 如果项目还未加载，等待watch的immediate触发
+  if (currentProject.value && !hasInitialized.value) {
+    console.log('Project already loaded, wait for watch to handle initialization')
+  } else if (!currentProject.value && !hasInitialized.value) {
+    console.log('No project loaded yet, initializing sessions')
+    // 项目还未加载，先加载sessions，避免重复
+    await chatStore.loadSessions()
+    hasInitialized.value = true
+
+    // 如果有历史会话但没有活跃会话，使用第一个
+    if (!chatStore.hasActiveSession && chatStore.sessions.length > 0) {
       await chatStore.switchSession(chatStore.sessions[0].id)
-    } else {
-      // 只有在完全没有会话时才创建新会话
-      await chatStore.createNewSession(currentProject.value?.id, currentMode.value)
     }
   }
 
@@ -1760,6 +1794,54 @@ onMounted(async () => {
   color: var(--theme-text-secondary);
 }
 
+/* Streaming Indicator */
+.streaming-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(24, 144, 255, 0.2);
+}
+
+.streaming-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.streaming-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #1890ff;
+  animation: streaming 1.2s ease-in-out infinite;
+}
+
+.streaming-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.streaming-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.streaming-text {
+  font-size: 11px;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.message-markdown.streaming {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.message-markdown.streaming:empty {
+  opacity: 0.5;
+}
+
 /* Scroll to Bottom */
 .scroll-to-bottom {
   position: absolute;
@@ -1860,6 +1942,17 @@ onMounted(async () => {
   }
   30% {
     transform: translateY(-10px);
+  }
+}
+
+@keyframes streaming {
+  0%, 60%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  30% {
+    transform: scale(1.2);
+    opacity: 1;
   }
 }
 

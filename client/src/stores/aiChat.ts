@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiClient } from '@/utils/api'
+import { aiService } from '@/services/aiService'
+import type { StreamChunk } from '@/services/aiService'
 
 export interface ChatMessage {
   id: string
@@ -13,6 +15,9 @@ export interface ChatMessage {
     suggestions?: string[]
     questions?: string[]
     followUps?: string[]
+    streaming?: boolean
+    error?: boolean
+    messageType?: string
   }
 }
 
@@ -144,7 +149,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
     return message
   }
 
-  const sendMessage = async (userMessage: string, novelId?: string) => {
+  const sendMessage = async (userMessage: string, novelId?: string, useStream: boolean = true) => {
     if (!userMessage.trim()) return null
 
     // Add user message
@@ -152,23 +157,131 @@ export const useAIChatStore = defineStore('aiChat', () => {
     isTyping.value = true
 
     try {
-      const response = await callAIAPI(userMessage, novelId || currentSession.value?.novelId)
+      if (useStream) {
+        return await sendMessageStream(userMessage, novelId || currentSession.value?.novelId)
+      } else {
+        const response = await callAIAPI(userMessage, novelId || currentSession.value?.novelId)
 
-      isTyping.value = false
+        isTyping.value = false
 
-      // Add AI response
-      return await addMessage('assistant', response.content, response.actions, {
-        type: response.type,
-        suggestions: response.suggestions,
-        questions: response.questions,
-        followUps: response.followUps
-      })
+        // Add AI response
+        return await addMessage('assistant', response.content, response.actions, {
+          type: response.type,
+          suggestions: response.suggestions,
+          questions: response.questions,
+          followUps: response.followUps
+        })
+      }
     } catch (error) {
       isTyping.value = false
       console.error('AI API Error:', error)
 
       // Add fallback message
       return await addMessage('assistant', '抱歉，AI服务暂时不可用。请稍后再试。')
+    }
+  }
+
+  const sendMessageStream = async (userMessage: string, novelId?: string | null) => {
+    if (!currentSession.value) {
+      await createNewSession()
+    }
+
+    // Create empty assistant message that will be populated by streaming
+    const assistantMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      metadata: {
+        streaming: true,
+        type: getMessageType(userMessage, currentSession.value?.mode || 'chat')
+      }
+    }
+
+    currentSession.value!.messages.push(assistantMessage)
+    currentSession.value!.updatedAt = new Date()
+
+    let accumulatedContent = ''
+    let hasError = false
+
+    const handleStream = (chunk: StreamChunk) => {
+      switch (chunk.type) {
+        case 'connected':
+          console.log('Stream connected')
+          break
+
+        case 'chunk':
+          if (chunk.content) {
+            accumulatedContent += chunk.content
+            // Update the assistant message content in real-time
+            if (assistantMessage) {
+              assistantMessage.content = accumulatedContent
+              // Trigger reactivity update if needed
+              currentSession.value!.updatedAt = new Date()
+            }
+          }
+          break
+
+        case 'finish':
+        case 'done':
+          isTyping.value = false
+          if (assistantMessage && assistantMessage.metadata) {
+            assistantMessage.metadata.streaming = false
+            // Add final message actions and metadata
+            assistantMessage.actions = getResponseActions(userMessage)
+          }
+          break
+
+        case 'error':
+          isTyping.value = false
+          hasError = true
+          if (assistantMessage) {
+            assistantMessage.content = chunk.message || '抱歉，流式传输过程中出现错误。'
+            if (assistantMessage.metadata) {
+              assistantMessage.metadata.streaming = false
+              assistantMessage.metadata.error = true
+            }
+          }
+          break
+      }
+    }
+
+    try {
+      await aiService.chatStream(
+        novelId || currentSession.value?.novelId || '',
+        userMessage,
+        handleStream,
+        {
+          mode: currentSession.value?.mode || 'chat',
+          conversationHistory: getConversationHistory(),
+          sessionId: currentSession.value?.id
+        },
+        {
+          type: getMessageType(userMessage, currentSession.value?.mode || 'chat'),
+          provider: settings.value.provider,
+          model: settings.value.model
+        }
+      )
+
+      // Save session if auto-save is enabled and no error occurred
+      if (settings.value.autoSave && !hasError) {
+        await saveSession()
+      }
+
+      return assistantMessage
+    } catch (error) {
+      isTyping.value = false
+      console.error('Streaming error:', error)
+
+      if (assistantMessage) {
+        assistantMessage.content = '抱歉，流式传输失败。请稍后再试。'
+        if (assistantMessage.metadata) {
+          assistantMessage.metadata.streaming = false
+          assistantMessage.metadata.error = true
+        }
+      }
+
+      return assistantMessage
     }
   }
 
@@ -321,15 +434,12 @@ export const useAIChatStore = defineStore('aiChat', () => {
       }
     } catch (error) {
       console.warn('Failed to load sessions:', error)
-      // Fall back to creating a new session if loading fails
-      await createNewSession()
+      // Don't create a new session automatically on load failure
       return
     }
 
-    // Create initial session if none exist
-    if (sessions.value.length === 0) {
-      await createNewSession()
-    }
+    // Don't automatically create a session if none exist
+    // Let the UI components decide when to create sessions
   }
 
   const updateSettings = (newSettings: Partial<typeof settings.value>) => {
