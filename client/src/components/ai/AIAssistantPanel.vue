@@ -270,22 +270,24 @@
                       :enable-tables="true"
                       :enable-task-lists="true"
                       :show-cursor="true"
-                      :max-delay="30"
+                      :max-delay="100"
+                      :min-delay="30"
+                      :adaptive-speed="true"
                       @complete="onStreamComplete(message.id)"
                       @content-update="onStreamContentUpdate"
                     />
                     <!-- 新创建的非流式AI消息使用打字机效果 -->
-                    <TypewriterText
-                      v-else-if="shouldUseTypewriter(message)"
-                      :content="message.content"
-                      :speed="typewriterSettings.speed"
-                      :show-cursor="typewriterSettings.showCursor"
-                      :enable-highlight="true"
-                      :enable-tables="true"
-                      :enable-task-lists="true"
-                      @complete="onTypewriterComplete(message.id)"
-                      @typing="onTypewriterTyping"
-                    />
+<!--                    <TypewriterText-->
+<!--                      v-else-if="shouldUseTypewriter(message)"-->
+<!--                      :content="message.content"-->
+<!--                      :speed="typewriterSettings.speed"-->
+<!--                      :show-cursor="typewriterSettings.showCursor"-->
+<!--                      :enable-highlight="true"-->
+<!--                      :enable-tables="true"-->
+<!--                      :enable-task-lists="true"-->
+<!--                      @complete="onTypewriterComplete(message.id)"-->
+<!--                      @typing="onTypewriterTyping"-->
+<!--                    />-->
                     <!-- 历史消息直接渲染 -->
                     <MarkdownRenderer
                       v-else
@@ -389,25 +391,25 @@
             </div>
 
             <!-- Typing Indicator -->
-            <div v-if="isTyping" class="message-item assistant-message">
-              <div class="assistant-message-bubble">
-                <div class="message-avatar">
-                  <a-avatar size="small" class="ai-avatar typing">
-                    <RobotOutlined />
-                  </a-avatar>
-                </div>
-                <div class="message-content">
-                  <div class="typing-indicator">
-                    <div class="typing-dots">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                    <span class="typing-text">AI正在思考...</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+<!--            <div v-if="isTyping" class="message-item assistant-message">-->
+<!--              <div class="assistant-message-bubble">-->
+<!--                <div class="message-avatar">-->
+<!--                  <a-avatar size="small" class="ai-avatar typing">-->
+<!--                    <RobotOutlined />-->
+<!--                  </a-avatar>-->
+<!--                </div>-->
+<!--                <div class="message-content">-->
+<!--                  <div class="typing-indicator">-->
+<!--                    <div class="typing-dots">-->
+<!--                      <span></span>-->
+<!--                      <span></span>-->
+<!--                      <span></span>-->
+<!--                    </div>-->
+<!--                    <span class="typing-text">AI正在思考...</span>-->
+<!--                  </div>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--            </div>-->
           </div>
 
           <!-- Scroll to Bottom Button -->

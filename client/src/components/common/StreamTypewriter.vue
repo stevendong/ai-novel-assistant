@@ -27,6 +27,8 @@ interface Props {
   showCursor?: boolean
   showPersistentCursor?: boolean
   maxDelay?: number // 最大延迟时间（毫秒），防止内容更新过快
+  minDelay?: number // 最小延迟时间（毫秒），确保打字机效果
+  adaptiveSpeed?: boolean // 自适应速度，根据流式数据速度调整
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,7 +38,9 @@ const props = withDefaults(defineProps<Props>(), {
   enableTaskLists: true,
   showCursor: true,
   showPersistentCursor: false,
-  maxDelay: 50 // 最大50ms延迟，确保用户能看到流式效果
+  maxDelay: 100, // 最大100ms延迟
+  minDelay: 16, // 最小16ms，保持60fps
+  adaptiveSpeed: true // 默认启用自适应速度
 })
 
 const emit = defineEmits<{
@@ -50,35 +54,79 @@ const lastContent = ref('')
 const pendingContent = ref('')
 const updateTimer = ref<number | null>(null)
 const lastUpdateTime = ref(0)
+const contentUpdateHistory = ref<Array<{ time: number; length: number }>>([])
+const avgUpdateSpeed = ref(50) // 平均更新间隔（毫秒）
 
 // 更新显示内容的函数
 const updateDisplayedContent = () => {
   if (pendingContent.value !== displayedContent.value) {
+    console.log('StreamTypewriter: Updating displayed content', {
+      from: displayedContent.value.length,
+      to: pendingContent.value.length,
+      preview: pendingContent.value.substring(displayedContent.value.length, displayedContent.value.length + 20)
+    })
     displayedContent.value = pendingContent.value
     emit('contentUpdate', displayedContent.value)
   }
   updateTimer.value = null
 }
 
+// 计算自适应延迟
+const calculateAdaptiveDelay = (newContent: string): number => {
+  if (!props.adaptiveSpeed || !props.isStreaming) {
+    return props.minDelay
+  }
+
+  const now = Date.now()
+  const timeSinceLastUpdate = now - lastUpdateTime.value
+
+  // 如果这是第一次更新，使用默认延迟
+  if (lastUpdateTime.value === 0) {
+    return props.minDelay
+  }
+
+  // 计算内容增量
+  const contentDiff = newContent.length - displayedContent.value.length
+
+  // 如果内容变化很小或时间间隔很短，使用较小的延迟以跟上速度
+  if (contentDiff <= 5 || timeSinceLastUpdate < 50) {
+    return props.minDelay
+  }
+
+  // 根据时间间隔调整延迟：时间间隔越长，说明数据流越慢，延迟可以稍大
+  let adaptiveDelay = Math.min(timeSinceLastUpdate * 0.2, props.maxDelay)
+  adaptiveDelay = Math.max(adaptiveDelay, props.minDelay)
+
+  return adaptiveDelay
+}
+
 // 处理内容变化
 const handleContentChange = (newContent: string) => {
-  const now = Date.now()
   pendingContent.value = newContent
   isStreaming.value = props.isStreaming
 
+  console.log('StreamTypewriter: Content change', {
+    newLength: newContent.length,
+    currentLength: displayedContent.value.length,
+    isStreaming: props.isStreaming
+  })
+
   // 如果内容没有变化，不需要更新
   if (newContent === displayedContent.value) {
+    console.log('StreamTypewriter: No content change, skipping')
     return
   }
 
-  // 如果正在流式传输，应用适当的延迟来创建平滑的打字效果
-  if (props.isStreaming) {
-    const timeSinceLastUpdate = now - lastUpdateTime.value
-    const delay = Math.max(0, Math.min(props.maxDelay, props.maxDelay - timeSinceLastUpdate))
+  // 清除之前的定时器
+  if (updateTimer.value) {
+    clearTimeout(updateTimer.value)
+  }
 
-    if (updateTimer.value) {
-      clearTimeout(updateTimer.value)
-    }
+  // 如果正在流式传输，应用固定延迟以确保打字效果可见
+  if (props.isStreaming) {
+    const delay = 50 // 固定50ms延迟，确保打字效果可见
+
+    console.log('StreamTypewriter: Applying delay', delay, 'ms')
 
     updateTimer.value = window.setTimeout(() => {
       updateDisplayedContent()
@@ -86,9 +134,7 @@ const handleContentChange = (newContent: string) => {
     }, delay)
   } else {
     // 流式传输完成，立即显示完整内容
-    if (updateTimer.value) {
-      clearTimeout(updateTimer.value)
-    }
+    console.log('StreamTypewriter: Streaming complete, immediate update')
     updateDisplayedContent()
     emit('complete')
   }
