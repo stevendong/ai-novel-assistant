@@ -14,22 +14,85 @@
             <span class="btn-text">历史会话</span>
           </a-button>
           <template #overlay>
-            <a-menu @click="handleSessionClick" style="max-height: 300px; overflow-y: auto;">
-              <a-menu-item v-for="session in chatStore.sessions" :key="session.id">
-                <div class="session-item">
-                  <div class="session-title">{{ session.title }}</div>
-                  <div class="session-meta">
-                    <span class="session-mode">{{ getModeLabel(session.mode) }}</span>
-                    <span class="session-time">{{ formatSessionTime(session.updatedAt) }}</span>
-                  </div>
+            <div class="session-dropdown-container">
+              <!-- 头部 -->
+              <div class="session-dropdown-header">
+                <div class="header-title">
+                  <HistoryOutlined />
+                  <span>历史会话</span>
                 </div>
-              </a-menu-item>
-              <a-menu-divider v-if="chatStore.sessions.length > 0" />
-              <a-menu-item key="new">
-                <PlusOutlined />
-                <span>新建对话</span>
-              </a-menu-item>
-            </a-menu>
+                <div class="header-count">{{ chatStore.sessions.length }} 个会话</div>
+              </div>
+
+              <!-- 会话列表 -->
+              <div class="session-dropdown-content">
+                <a-list
+                  :data-source="chatStore.sessions"
+                  :locale="{ emptyText: '暂无会话' }"
+                  size="small"
+                >
+                  <template #renderItem="{ item: session }">
+                    <a-list-item
+                      class="session-list-item"
+                      @click="handleSessionClick({ key: session.id })"
+                    >
+                      <template #actions>
+                        <a-tooltip title="删除会话">
+                          <a-button
+                            type="text"
+                            size="small"
+                            class="session-action-btn"
+                            @click.stop="handleDeleteSession(session.id)"
+                            :loading="deletingSessionId === session.id"
+                            danger
+                          >
+                            <DeleteOutlined />
+                          </a-button>
+                        </a-tooltip>
+                      </template>
+
+                      <a-list-item-meta>
+                        <template #title>
+                          <div class="session-item-title">
+                            {{ session.title }}
+                          </div>
+                        </template>
+                        <template #description>
+                          <div class="session-item-meta">
+                            <a-tag :color="getModeColor(session.mode)" size="small">
+                              {{ getModeLabel(session.mode) }}
+                            </a-tag>
+                            <span class="session-time">
+                              <ClockCircleOutlined />
+                              {{ formatSessionTime(session.updatedAt) }}
+                            </span>
+                          </div>
+                        </template>
+                        <template #avatar>
+                          <a-avatar size="small" :style="{ backgroundColor: getModeColor(session.mode) }">
+                            <component :is="getModeIcon(session.mode)" />
+                          </a-avatar>
+                        </template>
+                      </a-list-item-meta>
+                    </a-list-item>
+                  </template>
+                </a-list>
+              </div>
+
+              <!-- 底部操作 -->
+              <div class="session-dropdown-footer">
+                <a-button
+                  type="primary"
+                  block
+                  size="small"
+                  @click="handleSessionClick({ key: 'new' })"
+                  class="new-session-btn"
+                >
+                  <PlusOutlined />
+                  新建对话
+                </a-button>
+              </div>
+            </div>
           </template>
         </a-dropdown>
         
@@ -155,7 +218,24 @@
               <div v-if="message.role === 'user'" class="user-message-bubble">
                 <div class="message-content">
                   <div class="message-text">{{ message.content }}</div>
-                  <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+                  <div class="message-meta user-message-meta">
+                    <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                    <div class="message-operations user-operations">
+                      <!-- 删除按钮 -->
+                      <a-tooltip title="删除消息">
+                        <a-button
+                          type="text"
+                          size="small"
+                          class="operation-btn delete-btn"
+                          @click="handleDeleteMessage(message.id)"
+                          :loading="deletingMessageId === message.id"
+                          danger
+                        >
+                          <DeleteOutlined />
+                        </a-button>
+                      </a-tooltip>
+                    </div>
+                  </div>
                 </div>
                 <div class="message-avatar">
                   <a-avatar size="small" class="user-avatar">
@@ -217,6 +297,20 @@
                           @click="regenerateMessage(message)"
                         >
                           <ReloadOutlined />
+                        </a-button>
+                      </a-tooltip>
+
+                      <!-- 删除按钮 -->
+                      <a-tooltip title="删除消息">
+                        <a-button
+                          type="text"
+                          size="small"
+                          class="operation-btn delete-btn"
+                          @click="handleDeleteMessage(message.id)"
+                          :loading="deletingMessageId === message.id"
+                          danger
+                        >
+                          <DeleteOutlined />
                         </a-button>
                       </a-tooltip>
                     </div>
@@ -357,6 +451,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { Modal } from 'ant-design-vue'
 import {
   RobotOutlined,
   UserOutlined,
@@ -378,7 +473,10 @@ import {
   ExclamationCircleOutlined,
   CopyOutlined,
   HistoryOutlined,
-  PlusOutlined
+  PlusOutlined,
+  ClockCircleOutlined,
+  WechatOutlined,
+  SearchOutlined
 } from '@ant-design/icons-vue'
 import OutlineGenerator from './OutlineGenerator.vue'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
@@ -411,14 +509,15 @@ const typewriterSettings = ref({
   showCursor: true
 })
 const typingMessageId = ref<string | null>(null)
+const newlyCreatedMessageId = ref<string | null>(null)
+const deletingSessionId = ref<string | null>(null)
+const deletingMessageId = ref<string | null>(null)
 
 // 判断是否应该使用打字机效果
 const shouldUseTypewriter = (message: ChatMessage) => {
-  // 只对最新的AI消息使用打字机效果
-  const messages = chatStore.currentMessages
-  const lastMessage = messages[messages.length - 1]
-  return message.role === 'assistant' && 
-         message.id === lastMessage?.id &&
+  // 只对新创建的AI消息使用打字机效果，历史消息不使用
+  return message.role === 'assistant' &&
+         message.id === newlyCreatedMessageId.value &&
          typingMessageId.value !== message.id
 }
 
@@ -491,6 +590,10 @@ watch(currentProject, async (newProject) => {
       // 只有在没有现有会话且当前会话不匹配时才创建新会话
       await chatStore.createNewSession(newProject.id, currentMode.value)
     }
+
+    // 清除新创建消息ID，避免历史消息使用打字机效果
+    newlyCreatedMessageId.value = null
+    typingMessageId.value = null
   }
 }, { immediate: true })
 
@@ -583,7 +686,12 @@ const sendMessage = async () => {
   inputMessage.value = ''
 
   // Send message through store
-  await chatStore.sendMessage(userMessage, currentProject.value?.id)
+  const response = await chatStore.sendMessage(userMessage, currentProject.value?.id)
+
+  // 设置新创建的消息ID用于打字机效果
+  if (response) {
+    newlyCreatedMessageId.value = response.id
+  }
 
   // Auto scroll to bottom
   nextTick(() => {
@@ -592,7 +700,12 @@ const sendMessage = async () => {
 }
 
 const addMessage = async (role: 'user' | 'assistant', content: string, actions?: Array<{ key: string; label: string }>) => {
-  await chatStore.addMessage(role, content, actions)
+  const message = await chatStore.addMessage(role, content, actions)
+
+  // 如果是AI消息，设置新创建的消息ID用于打字机效果
+  if (role === 'assistant' && message) {
+    newlyCreatedMessageId.value = message.id
+  }
 
   // Auto scroll to bottom
   nextTick(() => {
@@ -789,10 +902,104 @@ const handleSessionClick = async ({ key }: { key: string }) => {
     // 切换到选中的会话
     await chatStore.switchSession(key)
   }
-  
+
+  // 清除新创建消息ID，避免历史消息使用打字机效果
+  newlyCreatedMessageId.value = null
+  typingMessageId.value = null
+
   // 自动滚动到底部
   nextTick(() => {
     scrollToBottom()
+  })
+}
+
+// 删除会话
+const handleDeleteSession = (sessionId: string) => {
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定要删除这个会话吗？删除后可以在回收站中恢复。',
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    maskClosable: false,
+    keyboard: false,
+    onOk: () => {
+      return new Promise(async (resolve, reject) => {
+        try {
+          deletingSessionId.value = sessionId
+
+          // 调用store的删除方法
+          await chatStore.deleteSession(sessionId)
+
+          deletingSessionId.value = null
+          console.log('Session deleted successfully')
+          resolve(true)
+        } catch (error) {
+          deletingSessionId.value = null
+          console.error('Failed to delete session:', error)
+          reject(error)
+        }
+      })
+    },
+    onCancel: () => {
+      deletingSessionId.value = null
+      console.log('Delete cancelled')
+    }
+  })
+}
+
+// 删除单条消息
+const handleDeleteMessage = (messageId: string) => {
+  // 检查是否是欢迎消息
+  const message = chatStore.currentSession?.messages.find(m => m.id === messageId)
+  if (message?.metadata?.messageType === 'welcome' ||
+      (message && message.actions && message.actions.some(a => a.key === 'help'))) {
+    Modal.warning({
+      title: '无法删除',
+      content: '欢迎消息不能被删除。',
+      okText: '确定'
+    })
+    return
+  }
+
+  Modal.confirm({
+    title: '确认删除',
+    content: '确定要删除这条消息吗？此操作不可撤销。',
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    maskClosable: false,
+    keyboard: false,
+    onOk: () => {
+      return new Promise(async (resolve, reject) => {
+        try {
+          deletingMessageId.value = messageId
+
+          // 调用API删除消息
+          if (chatStore.currentSession) {
+            await apiClient.delete(`/api/conversations/${chatStore.currentSession.id}/messages/${messageId}`)
+
+            // 从本地删除消息
+            const messageIndex = chatStore.currentSession.messages.findIndex(m => m.id === messageId)
+            if (messageIndex !== -1) {
+              chatStore.currentSession.messages.splice(messageIndex, 1)
+            }
+          }
+
+          deletingMessageId.value = null
+          console.log('Message deleted successfully')
+          resolve(true)
+        } catch (error) {
+          deletingMessageId.value = null
+          console.error('Failed to delete message:', error)
+          reject(error)
+        }
+      })
+    },
+    onCancel: () => {
+      deletingMessageId.value = null
+      console.log('Delete cancelled')
+    }
   })
 }
 
@@ -804,6 +1011,26 @@ const getModeLabel = (mode: string) => {
     check: '检查'
   }
   return labels[mode] || mode
+}
+
+// 获取模式颜色
+const getModeColor = (mode: string) => {
+  const colors: Record<string, string> = {
+    chat: '#1890ff',
+    enhance: '#52c41a',
+    check: '#faad14'
+  }
+  return colors[mode] || '#1890ff'
+}
+
+// 获取模式图标
+const getModeIcon = (mode: string) => {
+  const icons: Record<string, any> = {
+    chat: WechatOutlined,
+    enhance: EditOutlined,
+    check: SearchOutlined
+  }
+  return icons[mode] || WechatOutlined
 }
 
 // 格式化会话时间
@@ -846,7 +1073,7 @@ watch(currentMode, () => {
 onMounted(async () => {
   // 等待store初始化完成
   await chatStore.loadSessions()
-  
+
   // 检查是否有活跃会话，如果没有且有历史会话，使用第一个历史会话
   if (!chatStore.hasActiveSession) {
     if (chatStore.sessions.length > 0) {
@@ -857,6 +1084,10 @@ onMounted(async () => {
       await chatStore.createNewSession(currentProject.value?.id, currentMode.value)
     }
   }
+
+  // 清除新创建消息ID，确保初始加载的历史消息不使用打字机效果
+  newlyCreatedMessageId.value = null
+  typingMessageId.value = null
 
   // Auto-scroll to bottom on mount
   nextTick(() => {
@@ -960,6 +1191,167 @@ onMounted(async () => {
 
 .session-time {
   opacity: 0.7;
+}
+
+/* Ant Design风格的会话下拉容器 */
+.session-dropdown-container {
+  background: var(--theme-bg-container);
+  border-radius: 8px;
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  padding: 0;
+  min-width: 380px;
+  max-width: 400px;
+  max-height: 500px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+/* 头部样式 */
+.session-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-bg-elevated);
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--theme-text);
+  font-size: 14px;
+}
+
+.header-count {
+  color: var(--theme-text-secondary);
+  font-size: 12px;
+  background: var(--theme-bg-container);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--theme-border);
+}
+
+/* 内容区域 */
+.session-dropdown-content {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+/* 会话列表项样式 */
+.session-list-item {
+  border-radius: 6px;
+  margin: 2px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.session-list-item:hover {
+  background-color: var(--theme-bg-elevated);
+  border-color: var(--theme-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.session-list-item :deep(.ant-list-item-meta) {
+  align-items: center;
+}
+
+.session-list-item :deep(.ant-list-item-meta-avatar) {
+  margin-right: 12px;
+}
+
+.session-item-title {
+  color: var(--theme-text);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.session-time {
+  color: var(--theme-text-secondary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.session-action-btn {
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-list-item:hover .session-action-btn {
+  opacity: 1;
+}
+
+.session-action-btn:hover {
+  background-color: rgba(255, 77, 79, 0.1);
+  color: #ff4d4f;
+}
+
+/* 底部操作区域 */
+.session-dropdown-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--theme-border);
+  background: var(--theme-bg-elevated);
+}
+
+.new-session-btn {
+  height: 32px;
+  border-radius: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.new-session-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.2);
+}
+
+/* 滚动条样式 */
+.session-dropdown-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.session-dropdown-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.session-dropdown-content::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 2px;
+}
+
+.session-dropdown-content::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-text-secondary);
 }
 
 /* Mode Tabs */
@@ -1200,6 +1592,25 @@ onMounted(async () => {
   margin-top: 4px;
 }
 
+/* 用户消息元数据样式 */
+.user-message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.user-message-bubble:hover .user-message-meta {
+  opacity: 1;
+}
+
+.user-operations {
+  display: flex;
+  gap: 4px;
+}
+
 .message-meta {
   margin-top: 8px;
 }
@@ -1221,6 +1632,17 @@ onMounted(async () => {
 .operation-btn:hover {
   color: var(--theme-text);
   background-color: var(--theme-bg-elevated);
+}
+
+.delete-btn {
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 77, 79, 0.1) !important;
+  color: #ff4d4f !important;
 }
 
 .message-actions {

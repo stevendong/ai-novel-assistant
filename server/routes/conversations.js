@@ -328,6 +328,60 @@ router.post('/:conversationId/messages', requireAuth, async (req, res) => {
   }
 });
 
+// 删除单条消息
+router.delete('/:conversationId/messages/:messageId', requireAuth, async (req, res) => {
+  try {
+    const { conversationId, messageId } = req.params;
+    const userId = req.user.id;
+
+    // 验证对话权限
+    const conversation = await prisma.aIConversation.findFirst({
+      where: {
+        id: conversationId,
+        userId,
+        isActive: true
+      }
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ error: '对话不存在' });
+    }
+
+    // 验证消息是否属于该对话
+    const message = await prisma.aIMessage.findFirst({
+      where: {
+        id: messageId,
+        conversationId
+      }
+    });
+
+    if (!message) {
+      return res.status(404).json({ error: '消息不存在' });
+    }
+
+    // 不允许删除欢迎消息
+    if (message.messageType === 'welcome') {
+      return res.status(400).json({ error: '不能删除欢迎消息' });
+    }
+
+    // 删除消息
+    await prisma.aIMessage.delete({
+      where: { id: messageId }
+    });
+
+    // 更新对话的最后更新时间
+    await prisma.aIConversation.update({
+      where: { id: conversationId },
+      data: { updatedAt: new Date() }
+    });
+
+    res.json({ message: '消息已删除' });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ error: '删除消息失败' });
+  }
+});
+
 // 清空对话消息
 router.delete('/:conversationId/messages', requireAuth, async (req, res) => {
   try {

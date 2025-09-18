@@ -278,6 +278,48 @@ const collapsed = ref(false)
 const aiPanelCollapsed = ref(true)  // 默认关闭 AI 助手面板
 const selectedChapter = ref<Chapter | null>(null)
 
+// 从localStorage加载AI面板状态
+const loadAIPanelState = () => {
+  try {
+    const saved = localStorage.getItem('ai_panel_collapsed')
+    if (saved !== null) {
+      aiPanelCollapsed.value = JSON.parse(saved)
+    }
+  } catch (error) {
+    console.warn('Failed to load AI panel state:', error)
+  }
+}
+
+// 保存AI面板状态到localStorage
+const saveAIPanelState = () => {
+  try {
+    localStorage.setItem('ai_panel_collapsed', JSON.stringify(aiPanelCollapsed.value))
+  } catch (error) {
+    console.warn('Failed to save AI panel state:', error)
+  }
+}
+
+// 从localStorage加载侧边栏状态
+const loadSidebarState = () => {
+  try {
+    const saved = localStorage.getItem('sidebar_collapsed')
+    if (saved !== null) {
+      collapsed.value = JSON.parse(saved)
+    }
+  } catch (error) {
+    console.warn('Failed to load sidebar state:', error)
+  }
+}
+
+// 保存侧边栏状态到localStorage
+const saveSidebarState = () => {
+  try {
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(collapsed.value))
+  } catch (error) {
+    console.warn('Failed to save sidebar state:', error)
+  }
+}
+
 // 添加章节对话框状态
 const addChapterVisible = ref(false)
 const addChapterForm = ref({
@@ -331,6 +373,10 @@ const aiStatus = ref<'connected' | 'disconnected'>('disconnected')
 
 // 组件挂载时加载项目数据
 onMounted(async () => {
+  // 加载布局状态
+  loadAIPanelState()
+  loadSidebarState()
+
   await projectStore.loadProjects()
 })
 
@@ -367,10 +413,12 @@ const getProjectColor = (id: string) => {
 // Methods
 const toggleSidebar = () => {
   collapsed.value = !collapsed.value
+  saveSidebarState()
 }
 
 const toggleAIPanel = () => {
   aiPanelCollapsed.value = !aiPanelCollapsed.value
+  saveAIPanelState()
 }
 
 
