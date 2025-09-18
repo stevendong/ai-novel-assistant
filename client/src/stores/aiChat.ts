@@ -404,13 +404,18 @@ export const useAIChatStore = defineStore('aiChat', () => {
         )
 
         for (const message of newMessages) {
-          await apiClient.post(`/api/conversations/${session.id}/messages`, {
+          const response = await apiClient.post(`/api/conversations/${session.id}/messages`, {
             role: message.role,
             content: message.content,
             messageType: message.metadata?.type,
             metadata: message.metadata,
             actions: message.actions
           })
+
+          // Update local message with the server-returned ID
+          if (response.data && response.data.id) {
+            message.id = response.data.id
+          }
         }
       } else {
         throw new Error('Session not found')
@@ -440,13 +445,18 @@ export const useAIChatStore = defineStore('aiChat', () => {
       const messagesToAdd = session.messages.filter(msg => msg.role !== 'assistant' || !msg.actions?.some(a => a.key === 'help'))
 
       for (const message of messagesToAdd) {
-        await apiClient.post(`/api/conversations/${createdSession.id}/messages`, {
+        const response = await apiClient.post(`/api/conversations/${createdSession.id}/messages`, {
           role: message.role,
           content: message.content,
           messageType: message.metadata?.type,
           metadata: message.metadata,
           actions: message.actions
         })
+
+        // Update local message with the server-returned ID
+        if (response.data && response.data.id) {
+          message.id = response.data.id
+        }
       }
 
       return createdSession

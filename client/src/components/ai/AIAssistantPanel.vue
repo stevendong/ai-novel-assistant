@@ -415,12 +415,12 @@
               @input="handleInput"
             />
             <div class="input-actions">
-              <a-tooltip title="发送图片">
+              <a-tooltip v-if="false" title="发送图片">
                 <a-button type="text" size="small" class="input-action-btn">
                   <PictureOutlined />
                 </a-button>
               </a-tooltip>
-              <a-tooltip title="语音输入">
+              <a-tooltip v-if="false" title="语音输入">
                 <a-button type="text" size="small" class="input-action-btn">
                   <AudioOutlined />
                 </a-button>

@@ -16,7 +16,6 @@
         </div>
 
         <a-form
-          :form="form"
           @submit="handleSubmit"
           layout="vertical"
           class="login-form"
@@ -157,7 +156,6 @@ const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
 const isLogin = ref(true)
-const form = Form.useForm()
 
 const formData = reactive({
   username: '',
@@ -180,15 +178,22 @@ const toggleMode = () => {
   Object.keys(formData).forEach(key => {
     formData[key] = ''
   })
-
-  form.resetFields()
 }
 
 const handleSubmit = async (e) => {
   e.preventDefault()
 
   try {
-    await form.validate()
+    // Basic validation
+    if (!formData.identifier || !formData.password) {
+      message.error(t('auth.fillRequired'))
+      return
+    }
+
+    if (!isLogin.value && !formData.username) {
+      message.error(t('auth.enterUsername'))
+      return
+    }
 
     if (isLogin.value) {
       const result = await authStore.login({
@@ -218,7 +223,7 @@ const handleSubmit = async (e) => {
       }
     }
   } catch (error) {
-    console.error('Form validation failed:', error)
+    console.error('Form submission failed:', error)
   }
 }
 

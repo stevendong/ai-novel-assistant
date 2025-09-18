@@ -144,9 +144,9 @@ router.post('/login', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({
+      return res.status(400).json({
         error: 'Invalid Credentials',
-        message: 'Invalid email/username or password',
+        message: 'Invalid email/username',
       });
     }
 

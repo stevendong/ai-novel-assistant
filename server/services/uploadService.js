@@ -72,35 +72,6 @@ class UploadService {
     }
   }
 
-  /**
-   * 上传头像
-   * @param {Buffer} fileBuffer
-   * @param {string} fileName
-   * @param {string} contentType
-   * @param {string} userId
-   * @returns {Promise<{success: boolean, url: string, key: string, error?: string}>}
-   */
-  async uploadAvatar(fileBuffer, fileName, contentType, userId) {
-    // 验证文件类型
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(contentType)) {
-      return {
-        success: false,
-        error: '不支持的文件类型，仅支持 JPEG、PNG、WebP 格式'
-      };
-    }
-
-    // 验证文件大小 (2MB)
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    if (fileBuffer.length > maxSize) {
-      return {
-        success: false,
-        error: '文件大小超过限制，最大支持 2MB'
-      };
-    }
-
-    return await this.uploadFile(fileBuffer, fileName, contentType, `avatars/${userId}`);
-  }
 
   /**
    * 删除文件
