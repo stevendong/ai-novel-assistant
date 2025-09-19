@@ -110,9 +110,9 @@
                 <span>AI设置</span>
               </a-menu-item>
               <a-menu-divider />
-              <a-menu-item key="clear" @click="clearConversation">
+              <a-menu-item key="clear" @click="clearConversation" :disabled="isClearingConversation">
                 <DeleteOutlined />
-                <span>清空对话</span>
+                <span>{{ isClearingConversation ? '清空中...' : '清空对话' }}</span>
               </a-menu-item>
             </a-menu>
           </template>
@@ -540,6 +540,7 @@ const deletingSessionId = ref<string | null>(null)
 const deletingMessageId = ref<string | null>(null)
 const isInitializing = ref(false)
 const hasInitialized = ref(false)
+const isClearingConversation = ref(false)
 
 // 判断是否应该使用打字机效果
 const shouldUseTypewriter = (message: ChatMessage) => {
@@ -907,7 +908,44 @@ const performConsistencyCheck = async () => {
 
 // 清空对话历史
 const clearConversation = async () => {
-  await chatStore.clearCurrentSession()
+  if (!chatStore.currentSession || isClearingConversation.value) {
+    return
+  }
+
+  Modal.confirm({
+    title: '确认清空对话',
+    content: '此操作将删除当前对话中的所有消息记录（包括用户消息、AI回复和欢迎消息），且无法恢复。清空后将重新创建一个新的欢迎消息。是否继续？',
+    okText: '确认清空',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        isClearingConversation.value = true
+        await chatStore.clearCurrentSession()
+
+        // 显示成功提示
+        Modal.success({
+          title: '清空成功',
+          content: '对话历史已清空',
+          okText: '知道了'
+        })
+
+        // 自动滚动到底部以显示欢迎消息
+        nextTick(() => {
+          scrollToBottom()
+        })
+      } catch (error) {
+        console.error('清空对话失败:', error)
+        Modal.error({
+          title: '清空失败',
+          content: '清空对话时发生错误，请稍后重试',
+          okText: '知道了'
+        })
+      } finally {
+        isClearingConversation.value = false
+      }
+    }
+  })
 }
 
 // 复制消息

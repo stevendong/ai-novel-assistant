@@ -386,6 +386,7 @@ router.delete('/:conversationId/messages/:messageId', requireAuth, async (req, r
 router.delete('/:conversationId/messages', requireAuth, async (req, res) => {
   try {
     const { conversationId } = req.params;
+    const { keepWelcome = false } = req.query; // 新增参数，默认删除所有消息
     const userId = req.user.id;
 
     // 验证对话权限
@@ -401,13 +402,22 @@ router.delete('/:conversationId/messages', requireAuth, async (req, res) => {
       return res.status(404).json({ error: '对话不存在' });
     }
 
-    // 删除除了欢迎消息之外的所有消息
-    await prisma.aIMessage.deleteMany({
-      where: {
-        conversationId,
-        messageType: { not: 'welcome' }
-      }
-    });
+    if (keepWelcome === 'true') {
+      // 删除除了欢迎消息之外的所有消息
+      await prisma.aIMessage.deleteMany({
+        where: {
+          conversationId,
+          messageType: { not: 'welcome' }
+        }
+      });
+    } else {
+      // 删除所有消息（包括欢迎消息）
+      await prisma.aIMessage.deleteMany({
+        where: {
+          conversationId
+        }
+      });
+    }
 
     // 更新对话的最后更新时间
     await prisma.aIConversation.update({

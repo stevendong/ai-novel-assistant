@@ -363,12 +363,55 @@ export const useAIChatStore = defineStore('aiChat', () => {
   }
 
   const clearCurrentSession = async () => {
-    if (currentSession.value) {
-      currentSession.value.messages = [currentSession.value.messages[0]] // Keep welcome message
+    if (!currentSession.value) {
+      return
+    }
+
+    try {
+      // 调用服务器API删除所有消息（包括欢迎消息）
+      await apiClient.delete(`/api/conversations/${currentSession.value.id}/messages`)
+
+      // 清空当前会话的所有消息
+      currentSession.value.messages = []
+
+      // 创建新的欢迎消息
+      const newWelcomeMessage: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: getWelcomeMessage(currentSession.value.mode),
+        timestamp: new Date(),
+        metadata: { messageType: 'welcome' },
+        actions: [
+          { key: 'help', label: '查看帮助' },
+          { key: 'examples', label: '查看示例' }
+        ]
+      }
+
+      // 添加新的欢迎消息到服务器
+      const response = await apiClient.post(`/api/conversations/${currentSession.value.id}/messages`, {
+        role: newWelcomeMessage.role,
+        content: newWelcomeMessage.content,
+        messageType: 'welcome',
+        metadata: newWelcomeMessage.metadata,
+        actions: newWelcomeMessage.actions
+      })
+
+      // 使用服务器返回的消息ID
+      if (response.data) {
+        newWelcomeMessage.id = response.data.id
+      }
+
+      // 将新的欢迎消息添加到当前会话
+      currentSession.value.messages = [newWelcomeMessage]
+
       currentSession.value.updatedAt = new Date()
+
       if (settings.value.autoSave) {
         await saveSession()
       }
+    } catch (error) {
+      console.error('Failed to clear session:', error)
+      throw error
     }
   }
 
@@ -473,6 +516,10 @@ export const useAIChatStore = defineStore('aiChat', () => {
       check: '质量检查'
     }
     return `${titles[mode]} - ${new Date().toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+  }
+
+  const generateId = () => {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2)
   }
 
   const getWelcomeMessage = (mode: 'chat' | 'enhance' | 'check') => {
