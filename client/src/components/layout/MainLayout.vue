@@ -165,10 +165,15 @@
         <!-- Right Panel (AI Assistant) -->
         <div
           class="ai-panel"
-          :class="{ 'collapsed': aiPanelCollapsed }"
+          :class="{
+            'collapsed': aiPanelCollapsed,
+            'floating-mode': aiPanelFloating
+          }"
         >
           <div class="ai-panel-content">
-            <AIAssistantPanel />
+            <AIAssistantPanel
+              @floating-mode-change="handleFloatingModeChange"
+            />
           </div>
         </div>
       </a-layout-content>
@@ -276,6 +281,7 @@ const themeStore = useThemeStore()
 const { chapters, loading: chaptersLoading, loadChapters, createChapter } = useChapterList()
 const collapsed = ref(false)
 const aiPanelCollapsed = ref(true)  // 默认关闭 AI 助手面板
+const aiPanelFloating = ref(false)  // AI 助手面板浮动模式状态
 const selectedChapter = ref<Chapter | null>(null)
 
 // 从localStorage加载AI面板状态
@@ -418,6 +424,21 @@ const toggleSidebar = () => {
 
 const toggleAIPanel = () => {
   aiPanelCollapsed.value = !aiPanelCollapsed.value
+  saveAIPanelState()
+}
+
+// 处理浮动模式切换
+const handleFloatingModeChange = (isFloating: boolean) => {
+  aiPanelFloating.value = isFloating
+
+  // 当切换到浮动模式时，隐藏固定面板
+  if (isFloating) {
+    aiPanelCollapsed.value = true
+  } else {
+    // 从浮动模式切换回固定模式时，显示面板
+    aiPanelCollapsed.value = false
+  }
+
   saveAIPanelState()
 }
 
@@ -1415,6 +1436,14 @@ const formatDate = (dateString: string) => {
 }
 
 .ai-panel.collapsed {
+  width: 0;
+  overflow: hidden;
+  border-left: none;
+  box-shadow: none;
+}
+
+/* 浮动模式下隐藏固定面板 */
+.ai-panel.floating-mode {
   width: 0;
   overflow: hidden;
   border-left: none;

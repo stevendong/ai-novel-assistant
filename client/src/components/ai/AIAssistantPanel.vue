@@ -1,12 +1,82 @@
 <template>
-  <div class="ai-assistant-panel">
+  <div
+    class="ai-assistant-panel"
+    :class="{
+      'floating': isFloating,
+      'dragging': isDragging,
+      'resizing': isResizing
+    }"
+    :style="isFloating ? {
+      position: 'fixed',
+      left: floatingPosition.x + 'px',
+      top: floatingPosition.y + 'px',
+      width: floatingSize.width + 'px',
+      height: floatingSize.height + 'px',
+      zIndex: 1000,
+      borderRadius: '12px',
+      boxShadow: '0 12px 24px rgba(0, 0, 0, 0.15)',
+      overflow: 'hidden'
+    } : {}"
+  >
     <!-- AI Status Bar -->
-    <div class="status-bar">
-      <div class="status-info">
+    <div
+      class="status-bar"
+      :class="{ 'draggable-header': isFloating }"
+    >
+      <div
+        class="status-info"
+        @mousedown="isFloating ? startDrag($event) : null"
+      >
         <a-badge :status="aiStatus === 'online' ? 'success' : 'error'" />
         <span class="status-text">AI创作助手</span>
+        <span v-if="isFloating" class="floating-indicator">浮动模式</span>
       </div>
       <div class="status-actions">
+        <!-- 增强的浮动模式切换按钮 -->
+        <div class="float-mode-toggle">
+          <a-tooltip
+            :title="isFloating ? '切换到固定模式' : '切换到浮动模式'"
+            placement="bottom"
+          >
+            <div
+              class="float-toggle-container"
+              :class="{ 'floating-active': isFloating }"
+              @click="toggleFloatingMode"
+            >
+              <div class="toggle-icon-wrapper">
+                <transition name="icon-flip" mode="out-in">
+                  <component
+                    :is="isFloating ? 'PushpinFilled' : 'DragOutlined'"
+                    :key="isFloating ? 'pin' : 'drag'"
+                    class="toggle-icon"
+                  />
+                </transition>
+              </div>
+              <div class="toggle-indicator">
+                <div class="indicator-dot" :class="{ 'active': isFloating }"></div>
+              </div>
+            </div>
+          </a-tooltip>
+        </div>
+
+        <!-- 浮动模式窗口控制按钮 -->
+        <div v-if="isFloating" class="floating-controls">
+          <a-tooltip title="最小化">
+            <div class="control-btn minimize-btn" @click="minimizeWindow">
+              <div class="minimize-icon"></div>
+            </div>
+          </a-tooltip>
+
+          <a-tooltip title="最大化/还原">
+            <div
+              class="control-btn maximize-btn"
+              @click="toggleMaximize"
+            >
+              <component :is="isMaximized ? 'CompressOutlined' : 'ExpandOutlined'" />
+            </div>
+          </a-tooltip>
+        </div>
+
         <!-- 会话历史下拉 -->
         <a-dropdown :trigger="['click']" placement="bottomRight" v-if="chatStore.sessions.length > 0">
           <a-button type="text" size="small" class="history-btn">
@@ -474,6 +544,15 @@
     </div>
 
   </div>
+
+  <!-- 浮动模式调整大小手柄 -->
+  <div
+    v-if="isFloating"
+    class="resize-handle"
+    @mousedown="startResize($event)"
+  >
+    <div class="resize-icon">⋰</div>
+  </div>
 </div>
 </template>
 
@@ -504,7 +583,12 @@ import {
   PlusOutlined,
   ClockCircleOutlined,
   WechatOutlined,
-  SearchOutlined
+  SearchOutlined,
+  DragOutlined,
+  PushpinOutlined,
+  PushpinFilled,
+  ExpandOutlined,
+  CompressOutlined
 } from '@ant-design/icons-vue'
 import OutlineGenerator from './OutlineGenerator.vue'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
@@ -521,6 +605,11 @@ const chatStore = useAIChatStore()
 
 // Use interface from store
 // interface Message is now imported as ChatMessage
+
+// Define emits
+const emit = defineEmits<{
+  'floating-mode-change': [isFloating: boolean]
+}>()
 
 
 // Reactive state
@@ -544,6 +633,19 @@ const deletingMessageId = ref<string | null>(null)
 const isInitializing = ref(false)
 const hasInitialized = ref(false)
 const isClearingConversation = ref(false)
+
+// 浮动模式状态
+const isFloating = ref(false)
+const isMaximized = ref(false)
+const isMinimized = ref(false)
+const floatingPosition = ref({ x: 100, y: 100 })
+const floatingSize = ref({ width: 400, height: 600 })
+const originalSize = ref({ width: 400, height: 600 })
+const originalPosition = ref({ x: 100, y: 100 })
+const isDragging = ref(false)
+const isResizing = ref(false)
+const dragStart = ref({ x: 0, y: 0 })
+const resizeStart = ref({ x: 0, y: 0, width: 0, height: 0 })
 
 // 判断是否应该使用打字机效果
 const shouldUseTypewriter = (message: ChatMessage) => {
@@ -1131,6 +1233,258 @@ const formatSessionTime = (date: Date) => {
   }
 }
 
+// 增强的浮动模式相关方法
+const toggleFloatingMode = () => {
+  // 重置所有状态
+  isMaximized.value = false
+  isMinimized.value = false
+
+  isFloating.value = !isFloating.value
+
+  if (isFloating.value) {
+    // 进入浮动模式，确保窗口在可见区域
+    ensureWindowInBounds()
+  }
+
+  // 保存浮动模式状态
+  saveFloatingState()
+
+  // 触发父组件更新布局
+  emit('floating-mode-change', isFloating.value)
+
+  console.log('浮动模式切换:', isFloating.value ? '启用' : '禁用')
+}
+
+// 最小化窗口
+const minimizeWindow = () => {
+  isMinimized.value = !isMinimized.value
+  console.log('窗口最小化:', isMinimized.value)
+}
+
+// 最大化/还原窗口
+const toggleMaximize = () => {
+  if (!isMaximized.value) {
+    // 保存当前尺寸和位置
+    originalSize.value = { ...floatingSize.value }
+    originalPosition.value = { ...floatingPosition.value }
+
+    // 最大化到屏幕尺寸
+    floatingSize.value = {
+      width: window.innerWidth - 40,
+      height: window.innerHeight - 40
+    }
+    floatingPosition.value = { x: 20, y: 20 }
+    isMaximized.value = true
+  } else {
+    // 还原到原始尺寸
+    floatingSize.value = { ...originalSize.value }
+    floatingPosition.value = { ...originalPosition.value }
+    isMaximized.value = false
+  }
+
+  saveFloatingState()
+  console.log('窗口最大化:', isMaximized.value)
+}
+
+// 确保窗口在可见区域内
+const ensureWindowInBounds = () => {
+  const maxX = window.innerWidth - floatingSize.value.width
+  const maxY = window.innerHeight - floatingSize.value.height
+
+  floatingPosition.value.x = Math.max(0, Math.min(maxX, floatingPosition.value.x))
+  floatingPosition.value.y = Math.max(0, Math.min(maxY, floatingPosition.value.y))
+
+  // 确保最小尺寸
+  floatingSize.value.width = Math.max(320, floatingSize.value.width)
+  floatingSize.value.height = Math.max(400, floatingSize.value.height)
+}
+
+// 保存浮动状态
+const saveFloatingState = () => {
+  try {
+    localStorage.setItem('ai_panel_floating', JSON.stringify(isFloating.value))
+    localStorage.setItem('ai_panel_maximized', JSON.stringify(isMaximized.value))
+    localStorage.setItem('ai_panel_position', JSON.stringify(floatingPosition.value))
+    localStorage.setItem('ai_panel_size', JSON.stringify(floatingSize.value))
+    localStorage.setItem('ai_panel_original_size', JSON.stringify(originalSize.value))
+    localStorage.setItem('ai_panel_original_position', JSON.stringify(originalPosition.value))
+  } catch (error) {
+    console.warn('Failed to save floating state:', error)
+  }
+}
+
+// 改进的拖拽开始
+const startDrag = (e: MouseEvent) => {
+  if (!isFloating.value || isMaximized.value) return
+
+  // 防止在按钮上开始拖拽
+  const target = e.target as HTMLElement
+  if (target.closest('.float-toggle-container, .control-btn, .history-btn')) {
+    return
+  }
+
+  isDragging.value = true
+  dragStart.value = {
+    x: e.clientX - floatingPosition.value.x,
+    y: e.clientY - floatingPosition.value.y
+  }
+
+  document.addEventListener('mousemove', handleDrag)
+  document.addEventListener('mouseup', stopDrag)
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'move'
+  e.preventDefault()
+}
+
+// 改进的拖拽过程
+const handleDrag = (e: MouseEvent) => {
+  if (!isDragging.value) return
+
+  const newPosition = {
+    x: e.clientX - dragStart.value.x,
+    y: e.clientY - dragStart.value.y
+  }
+
+  // 磁性吸附到边缘
+  const snapThreshold = 20
+  const maxX = window.innerWidth - floatingSize.value.width
+  const maxY = window.innerHeight - floatingSize.value.height
+
+  // 左边缘吸附
+  if (newPosition.x < snapThreshold) {
+    newPosition.x = 0
+  }
+  // 右边缘吸附
+  else if (newPosition.x > maxX - snapThreshold) {
+    newPosition.x = maxX
+  }
+
+  // 顶部边缘吸附
+  if (newPosition.y < snapThreshold) {
+    newPosition.y = 0
+  }
+  // 底部边缘吸附
+  else if (newPosition.y > maxY - snapThreshold) {
+    newPosition.y = maxY
+  }
+
+  // 确保不超出边界
+  floatingPosition.value = {
+    x: Math.max(0, Math.min(maxX, newPosition.x)),
+    y: Math.max(0, Math.min(maxY, newPosition.y))
+  }
+}
+
+// 改进的停止拖拽
+const stopDrag = () => {
+  if (!isDragging.value) return
+
+  isDragging.value = false
+  document.removeEventListener('mousemove', handleDrag)
+  document.removeEventListener('mouseup', stopDrag)
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+
+  // 保存位置
+  saveFloatingState()
+}
+
+// 改进的调整大小开始
+const startResize = (e: MouseEvent) => {
+  if (!isFloating.value || isMaximized.value) return
+
+  isResizing.value = true
+  resizeStart.value = {
+    x: e.clientX,
+    y: e.clientY,
+    width: floatingSize.value.width,
+    height: floatingSize.value.height
+  }
+
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'nw-resize'
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+// 改进的调整大小过程
+const handleResize = (e: MouseEvent) => {
+  if (!isResizing.value) return
+
+  const deltaX = e.clientX - resizeStart.value.x
+  const deltaY = e.clientY - resizeStart.value.y
+
+  const newWidth = Math.max(320, Math.min(1200, resizeStart.value.width + deltaX))
+  const newHeight = Math.max(400, Math.min(900, resizeStart.value.height + deltaY))
+
+  // 确保不超出视窗边界
+  const maxWidth = window.innerWidth - floatingPosition.value.x - 20
+  const maxHeight = window.innerHeight - floatingPosition.value.y - 20
+
+  floatingSize.value = {
+    width: Math.min(newWidth, maxWidth),
+    height: Math.min(newHeight, maxHeight)
+  }
+}
+
+// 改进的停止调整大小
+const stopResize = () => {
+  if (!isResizing.value) return
+
+  isResizing.value = false
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+
+  // 保存大小
+  saveFloatingState()
+}
+
+// 加载浮动模式状态
+const loadFloatingState = () => {
+  try {
+    const floatingState = localStorage.getItem('ai_panel_floating')
+    if (floatingState !== null) {
+      isFloating.value = JSON.parse(floatingState)
+    }
+
+    const maximizedState = localStorage.getItem('ai_panel_maximized')
+    if (maximizedState !== null) {
+      isMaximized.value = JSON.parse(maximizedState)
+    }
+
+    const position = localStorage.getItem('ai_panel_position')
+    if (position) {
+      floatingPosition.value = JSON.parse(position)
+    }
+
+    const size = localStorage.getItem('ai_panel_size')
+    if (size) {
+      floatingSize.value = JSON.parse(size)
+    }
+
+    const originalSizeState = localStorage.getItem('ai_panel_original_size')
+    if (originalSizeState) {
+      originalSize.value = JSON.parse(originalSizeState)
+    }
+
+    const originalPositionState = localStorage.getItem('ai_panel_original_position')
+    if (originalPositionState) {
+      originalPosition.value = JSON.parse(originalPositionState)
+    }
+
+    // 确保窗口在可见区域内
+    if (isFloating.value) {
+      ensureWindowInBounds()
+    }
+  } catch (error) {
+    console.warn('Failed to load floating state:', error)
+  }
+}
+
 
 // Handle outline application
 const handleOutlineApplied = async (result: any) => {
@@ -1151,6 +1505,9 @@ watch(currentMode, () => {
 // Initialize
 onMounted(async () => {
   console.log('AIAssistantPanel mounted')
+
+  // 加载浮动模式状态
+  loadFloatingState()
 
   // 如果项目已经加载，watch会处理初始化
   // 如果项目还未加载，等待watch的immediate触发
@@ -1197,6 +1554,24 @@ onMounted(async () => {
   padding: 12px 16px;
   border-bottom: 1px solid var(--theme-border);
   background: var(--theme-bg-elevated);
+  transition: all 0.3s ease;
+}
+
+/* 浮动模式下的拖拽头部 */
+.status-bar.draggable-header {
+  cursor: move;
+  user-select: none;
+  background: linear-gradient(135deg,
+    var(--theme-bg-elevated) 0%,
+    rgba(24, 144, 255, 0.05) 100%);
+  border-bottom: 1px solid rgba(24, 144, 255, 0.1);
+}
+
+.status-bar.draggable-header:hover {
+  background: linear-gradient(135deg,
+    var(--theme-bg-elevated) 0%,
+    rgba(24, 144, 255, 0.08) 100%);
+  border-bottom-color: rgba(24, 144, 255, 0.2);
 }
 
 .status-info {
@@ -1240,6 +1615,151 @@ onMounted(async () => {
 .settings-btn:hover {
   color: var(--theme-text-secondary);
   background-color: var(--theme-bg-elevated);
+}
+
+/* 全新的浮动模式切换组件样式 */
+.float-mode-toggle {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.float-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.05) 0%,
+    rgba(24, 144, 255, 0.1) 100%);
+  border: 1px solid rgba(24, 144, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.float-toggle-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.1) 0%,
+    rgba(24, 144, 255, 0.2) 100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.float-toggle-container:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+  border-color: rgba(24, 144, 255, 0.3);
+}
+
+.float-toggle-container:hover::before {
+  opacity: 1;
+}
+
+.float-toggle-container.floating-active {
+  background: linear-gradient(135deg,
+    rgba(138, 43, 226, 0.1) 0%,
+    rgba(106, 13, 173, 0.15) 100%);
+  border-color: rgba(138, 43, 226, 0.2);
+  box-shadow: 0 2px 8px rgba(138, 43, 226, 0.15);
+}
+
+.float-toggle-container.floating-active::before {
+  background: linear-gradient(135deg,
+    rgba(138, 43, 226, 0.15) 0%,
+    rgba(106, 13, 173, 0.25) 100%);
+  opacity: 0.7;
+}
+
+.float-toggle-container.floating-active:hover {
+  border-color: rgba(138, 43, 226, 0.4);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.25);
+}
+
+.toggle-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+
+.toggle-icon {
+  font-size: 14px;
+  color: #1890ff;
+  transition: all 0.3s ease;
+}
+
+.floating-active .toggle-icon {
+  color: #8a2be2;
+}
+
+.toggle-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d9d9d9;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.indicator-dot.active {
+  background: #8a2be2;
+  box-shadow: 0 0 8px rgba(138, 43, 226, 0.4);
+}
+
+.indicator-dot.active::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: rgba(138, 43, 226, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* 图标切换动画 */
+.icon-flip-enter-active,
+.icon-flip-leave-active {
+  transition: all 0.3s ease;
+}
+
+.icon-flip-enter-from {
+  transform: rotateY(90deg) scale(0.8);
+  opacity: 0;
+}
+
+.icon-flip-leave-to {
+  transform: rotateY(-90deg) scale(0.8);
+  opacity: 0;
+}
+
+.icon-flip-enter-to,
+.icon-flip-leave-from {
+  transform: rotateY(0deg) scale(1);
+  opacity: 1;
 }
 
 .session-item {
@@ -2023,5 +2543,221 @@ onMounted(async () => {
   .welcome-message {
     padding: 24px 12px;
   }
+}
+
+/* 浮动模式样式 */
+.ai-assistant-panel.floating {
+  border: 1px solid var(--theme-border);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(20px);
+  position: relative;
+}
+
+.ai-assistant-panel.floating::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(24, 144, 255, 0.6) 25%,
+    rgba(114, 46, 209, 0.6) 50%,
+    rgba(24, 144, 255, 0.6) 75%,
+    transparent 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.ai-assistant-panel.dragging {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25) !important;
+  transform: scale(1.02);
+  transition: all 0.1s ease;
+}
+
+.ai-assistant-panel.resizing {
+  transition: none;
+}
+
+/* 调整大小手柄 */
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nw-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.1) 0%,
+    rgba(24, 144, 255, 0.2) 100%);
+  border-top-left-radius: 8px;
+  transition: all 0.3s ease;
+  opacity: 0.6;
+}
+
+.resize-handle:hover {
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.2) 0%,
+    rgba(24, 144, 255, 0.3) 100%);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.resize-icon {
+  font-size: 12px;
+  color: #1890ff;
+  font-weight: bold;
+  line-height: 1;
+  transform: rotate(45deg);
+  user-select: none;
+}
+
+/* 浮动模式下内容区域调整 */
+.ai-assistant-panel.floating .content-container {
+  height: calc(100% - 60px);
+}
+
+/* 暗黑模式适配 */
+.dark .ai-assistant-panel.floating {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .ai-assistant-panel.floating::before {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(96, 165, 250, 0.6) 25%,
+    rgba(168, 85, 247, 0.6) 50%,
+    rgba(96, 165, 250, 0.6) 75%,
+    transparent 100%);
+}
+
+.dark .ai-assistant-panel.dragging {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark .resize-handle {
+  background: linear-gradient(135deg,
+    rgba(96, 165, 250, 0.1) 0%,
+    rgba(96, 165, 250, 0.2) 100%);
+}
+
+.dark .resize-handle:hover {
+  background: linear-gradient(135deg,
+    rgba(96, 165, 250, 0.2) 0%,
+    rgba(96, 165, 250, 0.3) 100%);
+}
+
+.dark .resize-icon {
+  color: #60a5fa;
+}
+
+.dark .status-bar.draggable-header {
+  background: linear-gradient(135deg,
+    var(--theme-bg-elevated) 0%,
+    rgba(96, 165, 250, 0.05) 100%);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.1);
+}
+
+.dark .status-bar.draggable-header:hover {
+  background: linear-gradient(135deg,
+    var(--theme-bg-elevated) 0%,
+    rgba(96, 165, 250, 0.08) 100%);
+  border-bottom-color: rgba(96, 165, 250, 0.2);
+}
+
+/* 浮动模式指示器 */
+.floating-indicator {
+  font-size: 11px;
+  color: #8a2be2;
+  background: linear-gradient(135deg,
+    rgba(138, 43, 226, 0.1) 0%,
+    rgba(106, 13, 173, 0.15) 100%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-weight: 500;
+  animation: float-pulse 3s ease-in-out infinite;
+}
+
+@keyframes float-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+/* 浮动窗口控制按钮 */
+.floating-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.control-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.minimize-btn {
+  background: linear-gradient(135deg,
+    rgba(255, 193, 7, 0.1) 0%,
+    rgba(255, 235, 59, 0.15) 100%);
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.minimize-btn:hover {
+  background: linear-gradient(135deg,
+    rgba(255, 193, 7, 0.2) 0%,
+    rgba(255, 235, 59, 0.25) 100%);
+  border-color: rgba(255, 193, 7, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.minimize-icon {
+  width: 8px;
+  height: 2px;
+  background: #ffc107;
+  border-radius: 1px;
+}
+
+.maximize-btn {
+  background: linear-gradient(135deg,
+    rgba(76, 175, 80, 0.1) 0%,
+    rgba(129, 199, 132, 0.15) 100%);
+  border-color: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+  font-size: 12px;
+}
+
+.maximize-btn:hover {
+  background: linear-gradient(135deg,
+    rgba(76, 175, 80, 0.2) 0%,
+    rgba(129, 199, 132, 0.25) 100%);
+  border-color: rgba(76, 175, 80, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.dark .float-toggle-btn:hover {
+  color: #60a5fa;
+  background-color: rgba(96, 165, 250, 0.1);
 }
 </style>
