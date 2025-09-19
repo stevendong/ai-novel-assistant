@@ -22,171 +22,61 @@
     <div
       class="status-bar"
       :class="{ 'draggable-header': isFloating }"
+      @mousedown="isFloating ? startDrag($event) : null"
     >
-      <div
-        class="status-info"
-        @mousedown="isFloating ? startDrag($event) : null"
-      >
+      <div class="status-info">
         <a-badge :status="aiStatus === 'online' ? 'success' : 'error'" />
         <span class="status-text">AI创作助手</span>
         <span v-if="isFloating" class="floating-indicator">浮动模式</span>
       </div>
       <div class="status-actions">
-        <!-- 增强的浮动模式切换按钮 -->
-        <div class="float-mode-toggle">
-          <a-tooltip
-            :title="isFloating ? '切换到固定模式' : '切换到浮动模式'"
-            placement="bottom"
-          >
-            <div
-              class="float-toggle-container"
-              :class="{ 'floating-active': isFloating }"
-              @click="toggleFloatingMode"
+        <!-- 控制按钮区域 -->
+        <div class="control-section">
+          <!-- 浮动模式切换按钮 -->
+          <div class="float-mode-toggle">
+            <a-tooltip
+              :title="isFloating ? '切换到固定模式' : '切换到浮动模式'"
+              placement="bottom"
             >
-              <div class="toggle-icon-wrapper">
-                <transition name="icon-flip" mode="out-in">
-                  <component
-                    :is="isFloating ? 'PushpinFilled' : 'DragOutlined'"
-                    :key="isFloating ? 'pin' : 'drag'"
-                    class="toggle-icon"
-                  />
-                </transition>
-              </div>
-              <div class="toggle-indicator">
-                <div class="indicator-dot" :class="{ 'active': isFloating }"></div>
-              </div>
-            </div>
-          </a-tooltip>
-        </div>
-
-        <!-- 浮动模式窗口控制按钮 -->
-        <div v-if="isFloating" class="floating-controls">
-          <a-tooltip title="最小化">
-            <div class="control-btn minimize-btn" @click="minimizeWindow">
-              <div class="minimize-icon"></div>
-            </div>
-          </a-tooltip>
-
-          <a-tooltip title="最大化/还原">
-            <div
-              class="control-btn maximize-btn"
-              @click="toggleMaximize"
-            >
-              <component :is="isMaximized ? 'CompressOutlined' : 'ExpandOutlined'" />
-            </div>
-          </a-tooltip>
-        </div>
-
-        <!-- 会话历史下拉 -->
-        <a-dropdown :trigger="['click']" placement="bottomRight" v-if="chatStore.sessions.length > 0">
-          <a-button type="text" size="small" class="history-btn">
-            <HistoryOutlined />
-            <span class="btn-text">历史会话</span>
-          </a-button>
-          <template #overlay>
-            <div class="session-dropdown-container">
-              <!-- 头部 -->
-              <div class="session-dropdown-header">
-                <div class="header-title">
-                  <HistoryOutlined />
-                  <span>历史会话</span>
+              <div
+                class="float-toggle-container"
+                :class="{ 'floating-active': isFloating }"
+                @click="toggleFloatingMode"
+              >
+                <div class="toggle-icon-wrapper">
+                  <transition name="icon-flip" mode="out-in">
+                    <component
+                      :is="isFloating ? 'PushpinFilled' : 'DragOutlined'"
+                      :key="isFloating ? 'pin' : 'drag'"
+                      class="toggle-icon"
+                    />
+                  </transition>
                 </div>
-                <div class="header-count">{{ chatStore.sessions.length }} 个会话</div>
+                <div class="toggle-indicator">
+                  <div class="indicator-dot" :class="{ 'active': isFloating }"></div>
+                </div>
               </div>
+            </a-tooltip>
+          </div>
 
-              <!-- 会话列表 -->
-              <div class="session-dropdown-content">
-                <a-list
-                  :data-source="chatStore.sessions"
-                  :locale="{ emptyText: '暂无会话' }"
-                  size="small"
-                >
-                  <template #renderItem="{ item: session }">
-                    <a-list-item
-                      class="session-list-item"
-                      @click="handleSessionClick({ key: session.id })"
-                    >
-                      <template #actions>
-                        <a-button
-                          type="text"
-                          size="small"
-                          class="session-action-btn"
-                          :loading="deletingSessionId === session.id"
-                          danger
-                          @click.stop="handleDeleteSession(session.id)"
-                        >
-                          <DeleteOutlined />
-                        </a-button>
-                      </template>
-
-                      <a-list-item-meta>
-                        <template #title>
-                          <div class="session-item-title">
-                            {{ session.title }}
-                          </div>
-                        </template>
-                        <template #description>
-                          <div class="session-item-meta">
-                            <a-tag :color="getModeColor(session.mode)" size="small">
-                              {{ getModeLabel(session.mode) }}
-                            </a-tag>
-                            <span class="session-time">
-                              <ClockCircleOutlined />
-                              {{ formatSessionTime(session.updatedAt) }}
-                            </span>
-                          </div>
-                        </template>
-                        <template #avatar>
-                          <a-avatar size="small" :style="{ backgroundColor: getModeColor(session.mode) }">
-                            <component :is="getModeIcon(session.mode)" />
-                          </a-avatar>
-                        </template>
-                      </a-list-item-meta>
-                    </a-list-item>
-                  </template>
-                </a-list>
+          <!-- 浮动模式窗口控制按钮 -->
+          <div v-if="isFloating" class="floating-controls">
+            <a-tooltip title="最小化">
+              <div class="control-btn minimize-btn" @click="minimizeWindow">
+                <div class="minimize-icon"></div>
               </div>
+            </a-tooltip>
 
-              <!-- 底部操作 -->
-              <div class="session-dropdown-footer">
-                <a-button
-                  type="primary"
-                  block
-                  size="small"
-                  @click="handleSessionClick({ key: 'new' })"
-                  class="new-session-btn"
-                >
-                  <PlusOutlined />
-                  新建对话
-                </a-button>
+            <a-tooltip title="最大化/还原">
+              <div
+                class="control-btn maximize-btn"
+                @click="toggleMaximize"
+              >
+                <component :is="isMaximized ? 'CompressOutlined' : 'ExpandOutlined'" />
               </div>
-            </div>
-          </template>
-        </a-dropdown>
-
-        <!-- 设置下拉 -->
-        <a-dropdown :trigger="['click']" placement="bottomRight">
-          <a-button type="text" size="small" class="settings-btn">
-            <SettingOutlined />
-          </a-button>
-          <template #overlay>
-            <a-menu>
-              <a-menu-item key="model">
-                <RobotOutlined />
-                <span>切换模型</span>
-              </a-menu-item>
-              <a-menu-item key="settings">
-                <SettingOutlined />
-                <span>AI设置</span>
-              </a-menu-item>
-              <a-menu-divider />
-              <a-menu-item key="clear" @click="clearConversation" :disabled="isClearingConversation">
-                <DeleteOutlined />
-                <span>{{ isClearingConversation ? '清空中...' : '清空对话' }}</span>
-              </a-menu-item>
-            </a-menu>
-          </template>
-        </a-dropdown>
+            </a-tooltip>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -462,27 +352,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Typing Indicator -->
-<!--            <div v-if="isTyping" class="message-item assistant-message">-->
-<!--              <div class="assistant-message-bubble">-->
-<!--                <div class="message-avatar">-->
-<!--                  <a-avatar size="small" class="ai-avatar typing">-->
-<!--                    <RobotOutlined />-->
-<!--                  </a-avatar>-->
-<!--                </div>-->
-<!--                <div class="message-content">-->
-<!--                  <div class="typing-indicator">-->
-<!--                    <div class="typing-dots">-->
-<!--                      <span></span>-->
-<!--                      <span></span>-->
-<!--                      <span></span>-->
-<!--                    </div>-->
-<!--                    <span class="typing-text">AI正在思考...</span>-->
-<!--                  </div>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </div>-->
           </div>
 
           <!-- Scroll to Bottom Button -->
@@ -494,6 +363,107 @@
             <a-button type="primary" shape="circle" size="small">
               <DownOutlined />
             </a-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Toolbar -->
+      <div class="input-toolbar">
+        <div class="toolbar-left">
+          <!-- 历史消息按钮 -->
+          <div class="toolbar-button history-tool-button">
+            <a-dropdown :trigger="['click']" placement="topLeft">
+              <div class="button-wrapper">
+                <HistoryOutlined class="button-icon" />
+                <span class="button-label">历史消息</span>
+                <span class="session-count">{{ chatStore.sessions.length }}</span>
+              </div>
+              <template #overlay>
+                <div class="history-dropdown">
+                  <div class="dropdown-header">
+                    <span class="header-title">会话历史</span>
+                    <a-button type="text" size="small" @click="createNewSession" class="new-session-btn">
+                      <PlusOutlined />
+                      新建
+                    </a-button>
+                  </div>
+                  <a-list
+                    size="small"
+                    :data-source="chatStore.sessions"
+                    class="session-list"
+                    :locale="{ emptyText: '暂无历史会话' }"
+                  >
+                    <template #renderItem="{ item: session }">
+                      <a-list-item class="session-item-new">
+                        <a-button
+                          type="text"
+                          block
+                          class="session-button"
+                          :class="{ active: session.id === chatStore.currentSessionId }"
+                          @click="switchToSession(session.id)"
+                        >
+                          <div class="session-content">
+                            <div class="session-info">
+                              <span class="session-title-new">{{ session.title || '新对话' }}</span>
+                              <span class="session-time">{{ formatTime(session.updatedAt) }}</span>
+                            </div>
+                            <div class="session-meta-new">
+                              <a-tag size="small" :color="getModeColor(session.mode)" class="mode-tag">
+                                {{ getModeLabel(session.mode) }}
+                              </a-tag>
+                              <span class="message-count">{{ session.messages.length }}条</span>
+                            </div>
+                          </div>
+                        </a-button>
+                        <a-button
+                          type="text"
+                          size="small"
+                          danger
+                          class="delete-session-btn"
+                          @click="deleteSession(session.id)"
+                        >
+                          <DeleteOutlined />
+                        </a-button>
+                      </a-list-item>
+                    </template>
+                  </a-list>
+                </div>
+              </template>
+            </a-dropdown>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- 设置按钮 -->
+          <div class="toolbar-button settings-tool-button">
+            <a-dropdown :trigger="['click']" placement="topRight">
+              <div class="button-wrapper">
+                <SettingOutlined class="button-icon" />
+                <span class="button-label">设置</span>
+              </div>
+              <template #overlay>
+                <a-menu class="settings-dropdown">
+                  <a-menu-item key="model" class="settings-menu-item">
+                    <RobotOutlined />
+                    <span>切换模型</span>
+                  </a-menu-item>
+                  <a-menu-item key="preferences" class="settings-menu-item">
+                    <SettingOutlined />
+                    <span>AI偏好设置</span>
+                  </a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item
+                    key="clear"
+                    @click="clearConversation"
+                    :disabled="isClearingConversation"
+                    class="settings-menu-item danger-menu-item"
+                  >
+                    <DeleteOutlined />
+                    <span>{{ isClearingConversation ? '清空中...' : '清空当前对话' }}</span>
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
           </div>
         </div>
       </div>
@@ -592,7 +562,6 @@ import {
 } from '@ant-design/icons-vue'
 import OutlineGenerator from './OutlineGenerator.vue'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
-import TypewriterText from '@/components/common/TypewriterText.vue'
 import SyncTypewriter from '@/components/common/SyncTypewriter.vue'
 import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
@@ -1586,35 +1555,200 @@ onMounted(async () => {
   font-weight: 500;
 }
 
+/* 状态栏操作按钮区域 - 新布局设计 */
 .status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 会话管理区域 */
+.session-controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.history-btn {
-  color: var(--theme-text-secondary);
-  padding: 4px 8px;
+/* 控制按钮区域 */
+.control-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.history-btn:hover {
-  color: var(--theme-text);
-  background-color: var(--theme-bg-elevated);
+/* 通用按钮样式 */
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: 1px solid transparent;
+  position: relative;
 }
 
-.btn-text {
-  margin-left: 4px;
+.action-button:hover {
+  background: var(--theme-bg-elevated);
+  border-color: rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 历史记录按钮特殊样式 */
+.history-button {
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.08) 0%,
+    rgba(24, 144, 255, 0.12) 100%);
+  border-color: rgba(24, 144, 255, 0.2);
+  color: #1890ff;
+}
+
+.history-button:hover {
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.15) 0%,
+    rgba(24, 144, 255, 0.20) 100%);
+  border-color: rgba(24, 144, 255, 0.4);
+}
+
+/* 设置按钮特殊样式 */
+.settings-button {
+  background: linear-gradient(135deg,
+    rgba(82, 196, 26, 0.08) 0%,
+    rgba(82, 196, 26, 0.12) 100%);
+  border-color: rgba(82, 196, 26, 0.2);
+  color: #52c41a;
+}
+
+.settings-button:hover {
+  background: linear-gradient(135deg,
+    rgba(82, 196, 26, 0.15) 0%,
+    rgba(82, 196, 26, 0.20) 100%);
+  border-color: rgba(82, 196, 26, 0.4);
+}
+
+/* 按钮内容容器 */
+.button-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+/* 按钮图标 */
+.button-icon {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.action-button:hover .button-icon {
+  transform: scale(1.1);
+}
+
+/* 按钮徽章 */
+.button-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff4d4f;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 8px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮文本 */
+.button-text {
   font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.settings-btn {
-  color: var(--theme-text-secondary);
-  padding: 4px;
+/* 交互效果增强 */
+.action-button:active {
+  transform: translateY(0px) scale(0.98);
+  transition: transform 0.1s ease;
 }
 
-.settings-btn:hover {
-  color: var(--theme-text-secondary);
-  background-color: var(--theme-bg-elevated);
+.action-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 历史记录按钮动画效果 */
+.history-button:hover .button-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.history-button:active {
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.20) 0%,
+    rgba(24, 144, 255, 0.25) 100%);
+}
+
+/* 设置按钮动画效果 */
+.settings-button:hover .button-icon {
+  transform: scale(1.1) rotate(90deg);
+}
+
+.settings-button:active {
+  background: linear-gradient(135deg,
+    rgba(82, 196, 26, 0.20) 0%,
+    rgba(82, 196, 26, 0.25) 100%);
+}
+
+/* 徽章动画效果 */
+.button-badge {
+  animation: badge-pulse 2s infinite ease-in-out;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .status-actions {
+    gap: 8px;
+  }
+
+  .action-button {
+    min-width: 28px;
+    height: 28px;
+    padding: 4px 6px;
+  }
+
+  .button-icon {
+    font-size: 12px;
+  }
+
+  .button-badge {
+    font-size: 9px;
+    min-width: 14px;
+    height: 14px;
+    top: -5px;
+    right: -5px;
+  }
 }
 
 /* 全新的浮动模式切换组件样式 */
@@ -2422,8 +2556,13 @@ onMounted(async () => {
 /* Input Area */
 .input-area {
   flex-shrink: 0;
-  border-top: 1px solid var(--theme-border);
-  background: var(--theme-bg-container);
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(250, 250, 250, 0.98) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  backdrop-filter: blur(10px);
 }
 
 .input-container {
@@ -2759,5 +2898,336 @@ onMounted(async () => {
 .dark .float-toggle-btn:hover {
   color: #60a5fa;
   background-color: rgba(96, 165, 250, 0.1);
+}
+
+/* 新的输入工具栏样式 */
+.input-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(250, 250, 250, 0.98) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px 12px 0 0;
+  backdrop-filter: blur(10px);
+  margin-bottom: 1px;
+  transition: all 0.3s ease;
+}
+
+.input-toolbar:hover {
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(248, 248, 248, 1) 100%);
+  border-color: rgba(24, 144, 255, 0.2);
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 工具栏按钮样式 */
+.toolbar-button {
+  position: relative;
+  cursor: pointer;
+}
+
+.button-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.button-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%);
+  transition: left 0.5s ease;
+}
+
+.button-wrapper:hover::before {
+  left: 100%;
+}
+
+.button-wrapper:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.button-icon {
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.button-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--theme-text);
+  white-space: nowrap;
+}
+
+/* 历史按钮特殊样式 */
+.history-tool-button .button-wrapper {
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.08) 0%,
+    rgba(24, 144, 255, 0.15) 100%);
+  border-color: rgba(24, 144, 255, 0.2);
+  color: #1890ff;
+}
+
+.history-tool-button .button-wrapper:hover {
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.15) 0%,
+    rgba(24, 144, 255, 0.25) 100%);
+  border-color: rgba(24, 144, 255, 0.4);
+}
+
+.history-tool-button .button-icon {
+  color: #1890ff;
+}
+
+.session-count {
+  background: #ff4d4f;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(255, 77, 79, 0.3);
+  animation: pulse-count 2s infinite ease-in-out;
+}
+
+@keyframes pulse-count {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* 设置按钮特殊样式 */
+.settings-tool-button .button-wrapper {
+  background: linear-gradient(135deg,
+    rgba(82, 196, 26, 0.08) 0%,
+    rgba(82, 196, 26, 0.15) 100%);
+  border-color: rgba(82, 196, 26, 0.2);
+  color: #52c41a;
+}
+
+.settings-tool-button .button-wrapper:hover {
+  background: linear-gradient(135deg,
+    rgba(82, 196, 26, 0.15) 0%,
+    rgba(82, 196, 26, 0.25) 100%);
+  border-color: rgba(82, 196, 26, 0.4);
+}
+
+.settings-tool-button .button-icon {
+  color: #52c41a;
+}
+
+.settings-tool-button .button-wrapper:hover .button-icon {
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* 下拉菜单样式 */
+.history-dropdown {
+  min-width: 360px;
+  max-width: 400px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg,
+    rgba(24, 144, 255, 0.08) 0%,
+    rgba(24, 144, 255, 0.12) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.new-session-btn {
+  background: #1890ff;
+  border-color: #1890ff;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.new-session-btn:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+  transform: translateY(-1px);
+}
+
+.session-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.session-item-new {
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.session-item-new:hover {
+  background: rgba(24, 144, 255, 0.04);
+}
+
+.session-button {
+  width: 100%;
+  height: auto;
+  padding: 12px;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.session-button.active {
+  background: rgba(24, 144, 255, 0.1);
+  border-color: rgba(24, 144, 255, 0.3);
+}
+
+.session-button:hover {
+  background: rgba(24, 144, 255, 0.08);
+  border-color: rgba(24, 144, 255, 0.2);
+}
+
+.session-content {
+  width: 100%;
+}
+
+.session-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.session-title-new {
+  font-weight: 500;
+  color: var(--theme-text);
+  font-size: 14px;
+}
+
+.session-time {
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+}
+
+.session-meta-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-tag {
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.message-count {
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+}
+
+.delete-session-btn {
+  color: #ff4d4f;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.delete-session-btn:hover {
+  background: rgba(255, 77, 79, 0.1);
+  color: #ff4d4f;
+}
+
+/* 设置下拉菜单样式 */
+.settings-dropdown {
+  min-width: 200px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.settings-menu-item {
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  border-radius: 0;
+}
+
+.settings-menu-item:hover {
+  background: rgba(82, 196, 26, 0.08);
+  color: #52c41a;
+}
+
+.danger-menu-item:hover {
+  background: rgba(255, 77, 79, 0.08);
+  color: #ff4d4f;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .input-toolbar {
+    padding: 8px 12px;
+  }
+
+  .button-wrapper {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .button-label {
+    font-size: 13px;
+  }
+
+  .button-icon {
+    font-size: 14px;
+  }
+
+  .history-dropdown {
+    min-width: 280px;
+  }
 }
 </style>
