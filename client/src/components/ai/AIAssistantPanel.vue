@@ -261,8 +261,8 @@
                       <span class="streaming-text">正在接收...</span>
                     </div>
 
-                    <!-- 流式消息使用StreamTypewriter -->
-                    <StreamTypewriter
+                    <!-- 流式消息使用SyncTypewriter -->
+                    <SyncTypewriter
                       v-if="message.metadata?.streaming"
                       :content="message.content"
                       :is-streaming="message.metadata?.streaming"
@@ -270,11 +270,14 @@
                       :enable-tables="true"
                       :enable-task-lists="true"
                       :show-cursor="true"
-                      :max-delay="100"
-                      :min-delay="30"
-                      :adaptive-speed="true"
+                      :sync-mode="'smooth'"
+                      :buffer-size="3"
+                      :min-display-interval="25"
+                      :max-display-interval="120"
+                      :adaptive-typing="true"
                       @complete="onStreamComplete(message.id)"
                       @content-update="onStreamContentUpdate"
+                      @typing-speed-change="onTypingSpeedChange"
                     />
                     <!-- 新创建的非流式AI消息使用打字机效果 -->
 <!--                    <TypewriterText-->
@@ -506,7 +509,7 @@ import {
 import OutlineGenerator from './OutlineGenerator.vue'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
 import TypewriterText from '@/components/common/TypewriterText.vue'
-import StreamTypewriter from '@/components/common/StreamTypewriter.vue'
+import SyncTypewriter from '@/components/common/SyncTypewriter.vue'
 import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
 import type { ChatMessage } from '@/stores/aiChat'
@@ -578,6 +581,12 @@ const onStreamContentUpdate = (content: string) => {
   nextTick(() => {
     scrollToBottom()
   })
+}
+
+// 打字机速度变化回调
+const onTypingSpeedChange = (speed: number) => {
+  console.log('SyncTypewriter speed changed:', speed, 'ms')
+  // 可以在这里根据速度变化调整其他UI行为
 }
 
 // Use store state

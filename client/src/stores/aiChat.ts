@@ -214,10 +214,19 @@ export const useAIChatStore = defineStore('aiChat', () => {
           if (chunk.content) {
             accumulatedContent += chunk.content
             // Update the assistant message content in real-time
-            if (assistantMessage) {
-              assistantMessage.content = accumulatedContent
-              // Trigger reactivity update if needed
-              currentSession.value!.updatedAt = new Date()
+            if (assistantMessage && currentSession.value) {
+              // 使用Vue响应式更新：创建新的消息对象以触发响应性
+              const messageIndex = currentSession.value.messages.findIndex(m => m.id === assistantMessage.id)
+              if (messageIndex !== -1) {
+                // 创建新的消息对象来触发响应式更新
+                currentSession.value.messages[messageIndex] = {
+                  ...assistantMessage,
+                  content: accumulatedContent,
+                  timestamp: assistantMessage.timestamp
+                }
+                // 强制触发响应式更新
+                currentSession.value.updatedAt = new Date()
+              }
             }
           }
           break

@@ -1504,7 +1504,7 @@ onMounted(() => {
 }
 
 :global(.light) .activity-level-4 {
-  background-color: #216e39;
+  background-color: #FFFFFF;
 }
 
 .legend {
