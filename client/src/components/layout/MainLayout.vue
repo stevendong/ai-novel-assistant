@@ -577,7 +577,6 @@ const formatDate = (dateString: string) => {
 .menu-toggle-btn {
   color: var(--theme-text-secondary);
   font-size: 18px;
-  padding: 8px;
   border-radius: 8px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;

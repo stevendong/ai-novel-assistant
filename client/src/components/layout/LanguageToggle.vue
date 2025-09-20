@@ -1,5 +1,5 @@
 <template>
-  <a-dropdown :trigger="['click']" placement="bottomRight">
+  <a-dropdown placement="bottomRight">
     <a-button
       type="text"
       class="header-action-btn language-toggle-btn"
@@ -88,16 +88,6 @@ const handleLanguageChange = ({ key }: { key: string }) => {
   transform: scale(1.05);
 }
 
-/* 语言图标动画 */
-.language-toggle-btn :deep(.anticon) {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.language-toggle-btn:hover :deep(.anticon) {
-  transform: scale(1.1) rotate(10deg);
-  filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
-}
-
 /* 语言下拉菜单 */
 .language-dropdown-menu {
   min-width: 160px;
@@ -109,41 +99,6 @@ const handleLanguageChange = ({ key }: { key: string }) => {
   background: var(--theme-bg-container);
   backdrop-filter: blur(12px);
   overflow: hidden;
-  animation: languageDropdownSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes languageDropdownSlideIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0px) scale(1);
-  }
-}
-
-.language-dropdown-menu :deep(.ant-menu-item) {
-  padding: 12px 16px;
-  margin: 4px 8px;
-  border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.language-dropdown-menu :deep(.ant-menu-item):hover {
-  background-color: rgba(59, 130, 246, 0.08);
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-}
-
-.language-dropdown-menu :deep(.ant-menu-item-selected) {
-  background-color: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-.language-dropdown-menu :deep(.ant-menu-item-selected):hover {
-  background-color: rgba(59, 130, 246, 0.15);
 }
 
 .language-option {
@@ -156,10 +111,6 @@ const handleLanguageChange = ({ key }: { key: string }) => {
 .language-flag {
   font-size: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.language-dropdown-menu :deep(.ant-menu-item):hover .language-flag {
-  transform: scale(1.1);
 }
 
 /* 暗黑模式适配 */
