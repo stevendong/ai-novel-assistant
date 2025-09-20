@@ -173,6 +173,7 @@
           <div class="ai-panel-content">
             <AIAssistantPanel
               @floating-mode-change="handleFloatingModeChange"
+              @close-panel="handleCloseAIPanel"
             />
           </div>
         </div>
@@ -440,6 +441,19 @@ const handleFloatingModeChange = (isFloating: boolean) => {
   }
 
   saveAIPanelState()
+}
+
+// 处理关闭AI助手面板
+const handleCloseAIPanel = () => {
+  // 关闭AI助手面板
+  aiPanelCollapsed.value = true
+  // 重置浮动模式状态
+  aiPanelFloating.value = false
+
+  // 保存状态
+  saveAIPanelState()
+
+  console.log('AI助手面板已关闭')
 }
 
 

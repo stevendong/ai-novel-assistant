@@ -1215,6 +1215,11 @@ const updateCharacterRole = async (characterId: string, role: string) => {
 
   try {
     await chapterService.updateCharacterRole(chapter.value.id, characterId, role)
+    // 直接更新本地数据而不重新加载整个章节（性能优化）
+    const chapterCharacter = chapter.value.characters.find(cc => cc.characterId === characterId)
+    if (chapterCharacter) {
+      chapterCharacter.role = role
+    }
     message.success('角色关系更新成功')
   } catch (err) {
     message.error('角色关系更新失败')
@@ -1257,6 +1262,11 @@ const updateSettingUsage = async (settingId: string, usage: string) => {
 
   try {
     await chapterService.updateSettingUsage(chapter.value.id, settingId, usage)
+    // 直接更新本地数据而不重新加载整个章节（性能优化）
+    const chapterSetting = chapter.value.settings.find(cs => cs.settingId === settingId)
+    if (chapterSetting) {
+      chapterSetting.usage = usage
+    }
     message.success('设定用法更新成功')
   } catch (err) {
     message.error('设定用法更新失败')

@@ -4,14 +4,15 @@
     :class="{
       'floating': isFloating,
       'dragging': isDragging,
-      'resizing': isResizing
+      'resizing': isResizing,
+      'minimized': isFloating && isMinimized
     }"
     :style="isFloating ? {
       position: 'fixed',
       left: floatingPosition.x + 'px',
       top: floatingPosition.y + 'px',
-      width: floatingSize.width + 'px',
-      height: floatingSize.height + 'px',
+      width: isMinimized ? 'auto' : floatingSize.width + 'px',
+      height: isMinimized ? 'auto' : floatingSize.height + 'px',
       zIndex: 1000,
       borderRadius: '12px',
       boxShadow: '0 12px 24px rgba(0, 0, 0, 0.15)',
@@ -22,12 +23,14 @@
     <div
       class="status-bar"
       :class="{ 'draggable-header': isFloating }"
-      @mousedown="isFloating ? startDrag($event) : null"
+      @mousedown="isFloating ? startDragOrRestore($event) : null"
     >
       <div class="status-info">
         <a-badge :status="aiStatus === 'online' ? 'success' : 'error'" />
         <span class="status-text">AI创作助手</span>
-        <span v-if="isFloating" class="floating-indicator">浮动模式</span>
+        <span v-if="isFloating" class="floating-indicator">
+          {{ isMinimized ? '已最小化' : '浮动模式' }}
+        </span>
       </div>
       <div class="status-actions">
         <!-- 控制按钮区域 -->
@@ -46,7 +49,7 @@
                 <div class="toggle-icon-wrapper">
                   <transition name="icon-flip" mode="out-in">
                     <component
-                      :is="isFloating ? 'PushpinFilled' : 'DragOutlined'"
+                      :is="isFloating ? PushpinFilled : DragOutlined"
                       :key="isFloating ? 'pin' : 'drag'"
                       class="toggle-icon"
                     />
@@ -72,7 +75,13 @@
                 class="control-btn maximize-btn"
                 @click="toggleMaximize"
               >
-                <component :is="isMaximized ? 'CompressOutlined' : 'ExpandOutlined'" />
+                <component :is="isMaximized ? CompressOutlined : ExpandOutlined" />
+              </div>
+            </a-tooltip>
+
+            <a-tooltip title="关闭AI助手">
+              <div class="control-btn close-btn" @click="closeFloatingMode">
+                <component :is="CloseOutlined" />
               </div>
             </a-tooltip>
           </div>
@@ -81,7 +90,7 @@
     </div>
 
     <!-- Content Container -->
-    <div class="content-container">
+    <div v-if="!isMinimized" class="content-container">
 
       <!-- Outline Generation Mode -->
       <div v-if="currentMode === 'outline'" class="outline-mode">
@@ -454,7 +463,7 @@
 
   <!-- 浮动模式调整大小手柄 -->
   <div
-    v-if="isFloating"
+    v-if="isFloating && !isMinimized"
     class="resize-handle"
     @mousedown="startResize($event)"
   >
@@ -470,7 +479,6 @@ import {
   RobotOutlined,
   UserOutlined,
   SendOutlined,
-  MessageOutlined,
   EditOutlined,
   CheckCircleOutlined,
   BulbOutlined,
@@ -480,7 +488,6 @@ import {
   PictureOutlined,
   AudioOutlined,
   ReloadOutlined,
-  RightOutlined,
   FileTextOutlined,
   TeamOutlined,
   GlobalOutlined,
@@ -488,14 +495,11 @@ import {
   CopyOutlined,
   HistoryOutlined,
   PlusOutlined,
-  ClockCircleOutlined,
-  WechatOutlined,
-  SearchOutlined,
   DragOutlined,
-  PushpinOutlined,
   PushpinFilled,
   ExpandOutlined,
-  CompressOutlined
+  CompressOutlined,
+  CloseOutlined
 } from '@ant-design/icons-vue'
 import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
@@ -503,6 +507,7 @@ import type { ChatMessage } from '@/stores/aiChat'
 import { apiClient } from '@/utils/api'
 import SyncTypewriter from "@/components/common/SyncTypewriter.vue";
 import MarkdownRenderer from "@/components/common/MarkdownRenderer.vue";
+import OutlineGenerator from "@/components/ai/OutlineGenerator.vue";
 
 // Stores
 const projectStore = useProjectStore()
@@ -511,6 +516,7 @@ const chatStore = useAIChatStore()
 // Define emits
 const emit = defineEmits<{
   'floating-mode-change': [isFloating: boolean]
+  'close-panel': []
 }>()
 
 
@@ -942,12 +948,6 @@ const toggleFloatingMode = () => {
   console.log('浮动模式切换:', isFloating.value ? '启用' : '禁用')
 }
 
-// 最小化窗口
-const minimizeWindow = () => {
-  isMinimized.value = !isMinimized.value
-  console.log('窗口最小化:', isMinimized.value)
-}
-
 // 最大化/还原窗口
 const toggleMaximize = () => {
   if (!isMaximized.value) {
@@ -973,6 +973,32 @@ const toggleMaximize = () => {
   console.log('窗口最大化:', isMaximized.value)
 }
 
+// 最小化窗口
+const minimizeWindow = () => {
+  isMinimized.value = !isMinimized.value
+
+  // 保存状态
+  saveFloatingState()
+
+  console.log('窗口最小化:', isMinimized.value)
+}
+
+// 关闭AI助手模块
+const closeFloatingMode = () => {
+  // 重置所有浮动状态
+  isFloating.value = false
+  isMaximized.value = false
+  isMinimized.value = false
+
+  // 保存状态
+  saveFloatingState()
+
+  // 触发父组件关闭整个AI助手面板
+  emit('close-panel')
+
+  console.log('关闭AI助手模块')
+}
+
 // 确保窗口在可见区域内
 const ensureWindowInBounds = () => {
   const maxX = window.innerWidth - floatingSize.value.width
@@ -991,12 +1017,67 @@ const saveFloatingState = () => {
   try {
     localStorage.setItem('ai_panel_floating', JSON.stringify(isFloating.value))
     localStorage.setItem('ai_panel_maximized', JSON.stringify(isMaximized.value))
+    localStorage.setItem('ai_panel_minimized', JSON.stringify(isMinimized.value))
     localStorage.setItem('ai_panel_position', JSON.stringify(floatingPosition.value))
     localStorage.setItem('ai_panel_size', JSON.stringify(floatingSize.value))
     localStorage.setItem('ai_panel_original_size', JSON.stringify(originalSize.value))
     localStorage.setItem('ai_panel_original_position', JSON.stringify(originalPosition.value))
   } catch (error) {
     console.warn('Failed to save floating state:', error)
+  }
+}
+
+// 处理拖拽或恢复窗口
+const startDragOrRestore = (e: MouseEvent) => {
+  if (!isFloating.value || isMaximized.value) return
+
+  // 防止在按钮上开始拖拽
+  const target = e.target as HTMLElement
+  if (target.closest('.float-toggle-container, .control-btn, .history-btn')) {
+    return
+  }
+
+  // 如果是最小化状态，设置一个定时器来区分点击和拖拽
+  if (isMinimized.value) {
+    let dragTimer: number | null = null
+    let hasDragged = false
+
+    const startX = e.clientX
+    const startY = e.clientY
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = Math.abs(moveEvent.clientX - startX)
+      const deltaY = Math.abs(moveEvent.clientY - startY)
+
+      // 如果移动超过5像素，认为是拖拽
+      if (deltaX > 5 || deltaY > 5) {
+        hasDragged = true
+        if (dragTimer) {
+          clearTimeout(dragTimer)
+          dragTimer = null
+        }
+        // 开始拖拽
+        startDrag(e)
+        // 移除临时监听器
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+
+    const handleMouseUp = () => {
+      // 移除临时监听器
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    // 添加临时监听器
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    e.preventDefault()
+  } else {
+    // 非最小化状态直接开始拖拽
+    startDrag(e)
   }
 }
 
@@ -1032,10 +1113,14 @@ const handleDrag = (e: MouseEvent) => {
     y: e.clientY - dragStart.value.y
   }
 
+  // 获取当前窗口的实际尺寸（最小化时使用最小宽度）
+  const currentWidth = isMinimized.value ? 280 : floatingSize.value.width
+  const currentHeight = isMinimized.value ? 60 : floatingSize.value.height
+
   // 磁性吸附到边缘
   const snapThreshold = 20
-  const maxX = window.innerWidth - floatingSize.value.width
-  const maxY = window.innerHeight - floatingSize.value.height
+  const maxX = window.innerWidth - currentWidth
+  const maxY = window.innerHeight - currentHeight
 
   // 左边缘吸附
   if (newPosition.x < snapThreshold) {
@@ -1143,6 +1228,11 @@ const loadFloatingState = () => {
       isMaximized.value = JSON.parse(maximizedState)
     }
 
+    const minimizedState = localStorage.getItem('ai_panel_minimized')
+    if (minimizedState !== null) {
+      isMinimized.value = JSON.parse(minimizedState)
+    }
+
     const position = localStorage.getItem('ai_panel_position')
     if (position) {
       floatingPosition.value = JSON.parse(position)
@@ -1216,1373 +1306,4 @@ onMounted(async () => {
   })
 })
 </script>
-
-<style scoped>
-.ai-assistant-panel {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--theme-bg-container);
-  overflow: hidden;
-}
-
-/* Status Bar */
-.status-bar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--theme-border);
-  background: var(--theme-bg-elevated);
-  transition: all 0.3s ease;
-}
-
-/* 浮动模式下的拖拽头部 */
-.status-bar.draggable-header {
-  cursor: move;
-  user-select: none;
-  background: linear-gradient(135deg,
-    var(--theme-bg-elevated) 0%,
-    rgba(24, 144, 255, 0.05) 100%);
-  border-bottom: 1px solid rgba(24, 144, 255, 0.1);
-}
-
-.status-bar.draggable-header:hover {
-  background: linear-gradient(135deg,
-    var(--theme-bg-elevated) 0%,
-    rgba(24, 144, 255, 0.08) 100%);
-  border-bottom-color: rgba(24, 144, 255, 0.2);
-}
-
-.status-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-text {
-  font-size: 12px;
-  color: var(--theme-text-secondary);
-  font-weight: 500;
-}
-
-/* 状态栏操作按钮区域 - 新布局设计 */
-.status-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-/* 控制按钮区域 */
-.control-section {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* 按钮图标 */
-.button-icon {
-  font-size: 14px;
-  transition: transform 0.2s ease;
-}
-
-.action-button:hover .button-icon {
-  transform: scale(1.1);
-}
-
-/* 历史记录按钮动画效果 */
-.history-button:hover .button-icon {
-  transform: scale(1.1) rotate(5deg);
-}
-
-/* 设置按钮动画效果 */
-.settings-button:hover .button-icon {
-  transform: scale(1.1) rotate(90deg);
-}
-
-@keyframes badge-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.9;
-  }
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .status-actions {
-    gap: 8px;
-  }
-
-  .button-icon {
-    font-size: 12px;
-  }
-}
-
-/* 全新的浮动模式切换组件样式 */
-.float-mode-toggle {
-  display: flex;
-  align-items: center;
-  margin-right: 8px;
-}
-
-.float-toggle-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.05) 0%,
-    rgba(24, 144, 255, 0.1) 100%);
-  border: 1px solid rgba(24, 144, 255, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.float-toggle-container::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.1) 0%,
-    rgba(24, 144, 255, 0.2) 100%);
-  opacity: 0;
-  transition: all 0.3s ease;
-  z-index: -1;
-}
-
-.float-toggle-container:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
-  border-color: rgba(24, 144, 255, 0.3);
-}
-
-.float-toggle-container:hover::before {
-  opacity: 1;
-}
-
-.float-toggle-container.floating-active {
-  background: linear-gradient(135deg,
-    rgba(138, 43, 226, 0.1) 0%,
-    rgba(106, 13, 173, 0.15) 100%);
-  border-color: rgba(138, 43, 226, 0.2);
-  box-shadow: 0 2px 8px rgba(138, 43, 226, 0.15);
-}
-
-.float-toggle-container.floating-active::before {
-  background: linear-gradient(135deg,
-    rgba(138, 43, 226, 0.15) 0%,
-    rgba(106, 13, 173, 0.25) 100%);
-  opacity: 0.7;
-}
-
-.float-toggle-container.floating-active:hover {
-  border-color: rgba(138, 43, 226, 0.4);
-  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.25);
-}
-
-.toggle-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  position: relative;
-}
-
-.toggle-icon {
-  font-size: 14px;
-  color: #1890ff;
-  transition: all 0.3s ease;
-}
-
-.floating-active .toggle-icon {
-  color: #8a2be2;
-}
-
-.toggle-indicator {
-  display: flex;
-  align-items: center;
-}
-
-.indicator-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d9d9d9;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.indicator-dot.active {
-  background: #8a2be2;
-  box-shadow: 0 0 8px rgba(138, 43, 226, 0.4);
-}
-
-.indicator-dot.active::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  background: rgba(138, 43, 226, 0.3);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.3;
-  }
-  50% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-.session-time {
-  opacity: 0.7;
-}
-
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  color: var(--theme-text);
-  font-size: 14px;
-}
-
-.session-list-item :deep(.ant-list-item-meta) {
-  align-items: center;
-}
-
-.session-list-item :deep(.ant-list-item-meta-avatar) {
-  margin-right: 12px;
-}
-
-.session-time {
-  color: var(--theme-text-secondary);
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.new-session-btn {
-  height: 32px;
-  border-radius: 6px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.new-session-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.2);
-}
-
-.action-btn span {
-  font-size: 12px;
-}
-
-/* Content Container */
-.content-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: auto;
-}
-
-/* Chat Container */
-.chat-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Messages Area */
-.messages-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  position: relative;
-  scroll-behavior: smooth;
-}
-
-.messages-area::-webkit-scrollbar {
-  width: 6px;
-}
-
-.messages-area::-webkit-scrollbar-track {
-  background: var(--theme-bg-elevated);
-  border-radius: 3px;
-}
-
-.messages-area::-webkit-scrollbar-thumb {
-  background: var(--theme-border);
-  border-radius: 3px;
-}
-
-.messages-area::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-text-secondary);
-}
-
-.messages-wrapper {
-  position: relative;
-  min-height: 100%;
-}
-
-/* Welcome Message */
-.welcome-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 32px 16px;
-  margin-bottom: 24px;
-}
-
-.welcome-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1890ff, #722ed1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.welcome-icon :deep(.anticon) {
-  font-size: 28px;
-  color: #fff;
-}
-
-.welcome-content h3 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--theme-text);
-}
-
-.welcome-content p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--theme-text-secondary);
-  line-height: 1.5;
-}
-
-/* Message List */
-.message-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.message-item {
-  display: flex;
-  width: 100%;
-}
-
-/* User Message */
-.user-message-bubble {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin-left: auto;
-  max-width: 80%;
-}
-
-.user-message .message-content {
-  background: #1890ff;
-  color: #fff;
-  border-radius: 16px 16px 4px 16px;
-  padding: 12px 16px;
-  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
-}
-
-.user-avatar {
-  background: #1890ff;
-  flex-shrink: 0;
-}
-
-/* Assistant Message */
-.assistant-message-bubble {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  max-width: 80%;
-}
-
-.assistant-message .message-content {
-  background: var(--theme-bg-elevated);
-  color: var(--theme-text);
-  border-radius: 16px 16px 16px 4px;
-  padding: 12px 16px;
-  border: 1px solid var(--theme-border);
-}
-
-.ai-avatar {
-  background: linear-gradient(135deg, #1890ff, #722ed1);
-  flex-shrink: 0;
-}
-
-.ai-avatar.typing {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-/* Message Content */
-.message-text {
-  line-height: 1.6;
-  word-break: break-word;
-}
-
-.markdown-content :deep(strong) {
-  font-weight: 600;
-}
-
-.markdown-content :deep(em) {
-  font-style: italic;
-}
-
-.markdown-content :deep(code) {
-  background: var(--theme-bg-elevated);
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: 'Monaco', 'Menlo', monospace;
-  font-size: 0.9em;
-}
-
-.markdown-content :deep(ul) {
-  margin: 8px 0;
-  padding-left: 16px;
-}
-
-.markdown-content :deep(li) {
-  margin: 4px 0;
-}
-
-.message-time {
-  font-size: 11px;
-  opacity: 0.7;
-  margin-top: 4px;
-}
-
-/* 用户消息元数据样式 */
-.user-message-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.user-message-bubble:hover .user-message-meta {
-  opacity: 1;
-}
-
-.user-operations {
-  display: flex;
-  gap: 4px;
-}
-
-.message-meta {
-  margin-top: 8px;
-}
-
-.message-operations {
-  display: flex;
-  gap: 4px;
-  margin: 4px 0;
-}
-
-.operation-btn {
-  font-size: 12px;
-  height: 24px;
-  padding: 0 6px;
-  border-radius: 4px;
-  color: var(--theme-text-secondary);
-}
-
-.operation-btn:hover {
-  color: var(--theme-text);
-  background-color: var(--theme-bg-elevated);
-}
-
-.delete-btn {
-  opacity: 0.6;
-  transition: all 0.2s ease;
-}
-
-.delete-btn:hover {
-  opacity: 1;
-  background-color: rgba(255, 77, 79, 0.1) !important;
-  color: #ff4d4f !important;
-}
-
-.message-actions {
-  display: flex;
-  gap: 4px;
-  margin: 4px 0;
-}
-
-.action-btn-small {
-  font-size: 11px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 4px;
-}
-
-.message-suggestions {
-  margin-top: 8px;
-  padding: 8px;
-  background: var(--theme-bg-elevated);
-  border-radius: 6px;
-  border: 1px solid var(--theme-border);
-}
-
-.suggestion-label {
-  font-size: 11px;
-  color: var(--theme-text-secondary);
-  margin-bottom: 4px;
-}
-
-.suggestion-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.suggestion-tag {
-  cursor: pointer;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.suggestion-tag:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.3);
-}
-
-.message-followups {
-  margin-top: 6px;
-  padding: 6px;
-  background: rgba(24, 144, 255, 0.05);
-  border-radius: 6px;
-  border: 1px solid rgba(24, 144, 255, 0.2);
-}
-
-.followup-label {
-  font-size: 11px;
-  color: var(--theme-text-secondary);
-  margin-bottom: 4px;
-}
-
-.followup-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.followup-btn {
-  font-size: 11px;
-  height: auto;
-  padding: 4px 8px;
-  text-align: left;
-  justify-content: flex-start;
-  color: #1890ff;
-  background: transparent;
-  border-radius: 4px;
-}
-
-.followup-btn:hover {
-  background: rgba(24, 144, 255, 0.1);
-  color: #1890ff;
-}
-
-.typing-dots span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--theme-text-secondary);
-  animation: typing 1.4s ease-in-out infinite;
-}
-
-.typing-dots span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-dots span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-/* Streaming Indicator */
-.streaming-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  padding: 6px 12px;
-  background: rgba(24, 144, 255, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(24, 144, 255, 0.2);
-}
-
-.streaming-dots {
-  display: flex;
-  gap: 3px;
-}
-
-.streaming-dots span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #1890ff;
-  animation: streaming 1.2s ease-in-out infinite;
-}
-
-.streaming-dots span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.streaming-dots span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-.streaming-text {
-  font-size: 11px;
-  color: #1890ff;
-  font-weight: 500;
-}
-
-/* Input Area */
-.input-area {
-  flex-shrink: 0;
-  background: var(--theme-bg-elevated);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-  backdrop-filter: blur(10px);
-}
-
-.input-container {
-  padding: 16px;
-}
-
-.input-wrapper {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  background: var(--theme-bg-elevated);
-  border: 1px solid var(--theme-border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  transition: all 0.2s;
-}
-
-.input-wrapper:focus-within {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
-
-.message-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  resize: none;
-  font-size: 14px;
-}
-
-.message-input:focus {
-  box-shadow: none;
-}
-
-.input-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.input-action-btn {
-  color: var(--theme-text-secondary);
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.input-action-btn:hover {
-  color: var(--theme-text-secondary);
-  background-color: var(--theme-bg-elevated);
-}
-
-.send-btn {
-  padding: 4px 8px;
-  height: 28px;
-  border-radius: 6px;
-}
-
-.input-hint {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--theme-text-secondary);
-}
-
-.char-count {
-  color: var(--theme-text-secondary);
-}
-
-
-/* Animations */
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-@keyframes typing {
-  0%, 60%, 100% {
-    transform: translateY(0);
-  }
-  30% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes streaming {
-  0%, 60%, 100% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  30% {
-    transform: scale(1.2);
-    opacity: 1;
-  }
-}
-
-/* Responsive */
-@media (max-width: 480px) {
-  .user-message-bubble,
-  .assistant-message-bubble {
-    max-width: 95%;
-  }
-
-  .input-container {
-    padding: 12px;
-  }
-
-  .welcome-message {
-    padding: 24px 12px;
-  }
-}
-
-/* 浮动模式样式 */
-.ai-assistant-panel.floating {
-  border: 1px solid var(--theme-border);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
-  backdrop-filter: blur(20px);
-  position: relative;
-}
-
-.ai-assistant-panel.floating::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(24, 144, 255, 0.6) 25%,
-    rgba(114, 46, 209, 0.6) 50%,
-    rgba(24, 144, 255, 0.6) 75%,
-    transparent 100%);
-  border-radius: 12px 12px 0 0;
-}
-
-.ai-assistant-panel.dragging {
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25) !important;
-  transform: scale(1.02);
-  transition: all 0.1s ease;
-}
-
-.ai-assistant-panel.resizing {
-  transition: none;
-}
-
-/* 调整大小手柄 */
-.resize-handle {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 20px;
-  height: 20px;
-  cursor: nw-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.1) 0%,
-    rgba(24, 144, 255, 0.2) 100%);
-  border-top-left-radius: 8px;
-  transition: all 0.3s ease;
-  opacity: 0.6;
-}
-
-.resize-handle:hover {
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.2) 0%,
-    rgba(24, 144, 255, 0.3) 100%);
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-.resize-icon {
-  font-size: 12px;
-  color: #1890ff;
-  font-weight: bold;
-  line-height: 1;
-  transform: rotate(45deg);
-  user-select: none;
-}
-
-/* 浮动模式下内容区域调整 */
-.ai-assistant-panel.floating .content-container {
-  height: calc(100% - 60px);
-}
-
-/* 暗黑模式适配 */
-.dark .ai-assistant-panel.floating {
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
-}
-
-.dark .ai-assistant-panel.floating::before {
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(96, 165, 250, 0.6) 25%,
-    rgba(168, 85, 247, 0.6) 50%,
-    rgba(96, 165, 250, 0.6) 75%,
-    transparent 100%);
-}
-
-.dark .ai-assistant-panel.dragging {
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
-}
-
-.dark .resize-handle {
-  background: linear-gradient(135deg,
-    rgba(96, 165, 250, 0.1) 0%,
-    rgba(96, 165, 250, 0.2) 100%);
-}
-
-.dark .resize-handle:hover {
-  background: linear-gradient(135deg,
-    rgba(96, 165, 250, 0.2) 0%,
-    rgba(96, 165, 250, 0.3) 100%);
-}
-
-.dark .resize-icon {
-  color: #60a5fa;
-}
-
-.dark .status-bar.draggable-header {
-  background: linear-gradient(135deg,
-    var(--theme-bg-elevated) 0%,
-    rgba(96, 165, 250, 0.05) 100%);
-  border-bottom: 1px solid rgba(96, 165, 250, 0.1);
-}
-
-.dark .status-bar.draggable-header:hover {
-  background: linear-gradient(135deg,
-    var(--theme-bg-elevated) 0%,
-    rgba(96, 165, 250, 0.08) 100%);
-  border-bottom-color: rgba(96, 165, 250, 0.2);
-}
-
-/* 浮动模式指示器 */
-.floating-indicator {
-  font-size: 11px;
-  color: #8a2be2;
-  background: linear-gradient(135deg,
-    rgba(138, 43, 226, 0.1) 0%,
-    rgba(106, 13, 173, 0.15) 100%);
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
-  font-weight: 500;
-  animation: float-pulse 3s ease-in-out infinite;
-}
-
-@keyframes float-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 1;
-  }
-}
-
-/* 浮动窗口控制按钮 */
-.floating-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-.control-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  border: 1px solid transparent;
-}
-
-.minimize-btn {
-  background: linear-gradient(135deg,
-    rgba(255, 193, 7, 0.1) 0%,
-    rgba(255, 235, 59, 0.15) 100%);
-  border-color: rgba(255, 193, 7, 0.2);
-}
-
-.minimize-btn:hover {
-  background: linear-gradient(135deg,
-    rgba(255, 193, 7, 0.2) 0%,
-    rgba(255, 235, 59, 0.25) 100%);
-  border-color: rgba(255, 193, 7, 0.4);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
-}
-
-.minimize-icon {
-  width: 8px;
-  height: 2px;
-  background: #ffc107;
-  border-radius: 1px;
-}
-
-.maximize-btn {
-  background: linear-gradient(135deg,
-    rgba(76, 175, 80, 0.1) 0%,
-    rgba(129, 199, 132, 0.15) 100%);
-  border-color: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
-  font-size: 12px;
-}
-
-.maximize-btn:hover {
-  background: linear-gradient(135deg,
-    rgba(76, 175, 80, 0.2) 0%,
-    rgba(129, 199, 132, 0.25) 100%);
-  border-color: rgba(76, 175, 80, 0.4);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-}
-
-.dark .float-toggle-btn:hover {
-  color: #60a5fa;
-  background-color: rgba(96, 165, 250, 0.1);
-}
-
-/* 新的输入工具栏样式 */
-.input-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: var(--theme-bg-elevated);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 12px 12px 0 0;
-  backdrop-filter: blur(10px);
-  margin-bottom: 1px;
-  transition: all 0.3s ease;
-}
-
-.input-toolbar:hover {
-  background: var(--theme-bg-elevated);
-  border-color: rgba(24, 144, 255, 0.2);
-}
-
-.toolbar-left,
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 工具栏按钮样式 */
-.toolbar-button {
-  position: relative;
-  cursor: pointer;
-}
-
-.button-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  position: relative;
-  overflow: hidden;
-}
-
-.button-wrapper::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.6) 50%,
-    transparent 100%);
-  transition: left 0.5s ease;
-}
-
-.button-wrapper:hover::before {
-  left: 100%;
-}
-
-.button-wrapper:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-}
-
-.button-icon {
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.button-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--theme-text);
-  white-space: nowrap;
-}
-
-/* 历史按钮特殊样式 */
-.history-tool-button .button-wrapper {
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.08) 0%,
-    rgba(24, 144, 255, 0.15) 100%);
-  border-color: rgba(24, 144, 255, 0.2);
-  color: #1890ff;
-}
-
-.history-tool-button .button-wrapper:hover {
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.15) 0%,
-    rgba(24, 144, 255, 0.25) 100%);
-  border-color: rgba(24, 144, 255, 0.4);
-}
-
-.history-tool-button .button-icon {
-  color: #1890ff;
-}
-
-.session-count {
-  background: #ff4d4f;
-  color: white;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 10px;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  box-shadow: 0 2px 4px rgba(255, 77, 79, 0.3);
-  animation: pulse-count 2s infinite ease-in-out;
-}
-
-@keyframes pulse-count {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.9;
-  }
-}
-
-/* 设置按钮特殊样式 */
-.settings-tool-button .button-wrapper {
-  background: linear-gradient(135deg,
-    rgba(82, 196, 26, 0.08) 0%,
-    rgba(82, 196, 26, 0.15) 100%);
-  border-color: rgba(82, 196, 26, 0.2);
-  color: #52c41a;
-}
-
-.settings-tool-button .button-wrapper:hover {
-  background: linear-gradient(135deg,
-    rgba(82, 196, 26, 0.15) 0%,
-    rgba(82, 196, 26, 0.25) 100%);
-  border-color: rgba(82, 196, 26, 0.4);
-}
-
-.settings-tool-button .button-icon {
-  color: #52c41a;
-}
-
-.settings-tool-button .button-wrapper:hover .button-icon {
-  transform: rotate(90deg) scale(1.1);
-}
-
-/* 滚动按钮特殊样式 */
-.scroll-tool-button .button-wrapper {
-  background: linear-gradient(135deg,
-    rgba(255, 165, 0, 0.08) 0%,
-    rgba(255, 165, 0, 0.15) 100%);
-  border-color: rgba(255, 165, 0, 0.2);
-  color: #fa8c16;
-  animation: scroll-pulse 2s infinite ease-in-out;
-}
-
-.scroll-tool-button .button-wrapper:hover {
-  background: linear-gradient(135deg,
-    rgba(255, 165, 0, 0.15) 0%,
-    rgba(255, 165, 0, 0.25) 100%);
-  border-color: rgba(255, 165, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-.scroll-tool-button .button-icon {
-  color: #fa8c16;
-  transition: all 0.3s ease;
-}
-
-.scroll-tool-button .button-wrapper:hover .button-icon {
-  transform: translateY(2px) scale(1.2);
-  animation: bounce-down 0.6s ease infinite;
-}
-
-@keyframes scroll-pulse {
-  0%, 100% {
-    box-shadow: 0 2px 8px rgba(250, 140, 22, 0.1);
-  }
-  50% {
-    box-shadow: 0 4px 16px rgba(250, 140, 22, 0.2);
-  }
-}
-
-@keyframes bounce-down {
-  0%, 100% {
-    transform: translateY(2px) scale(1.2);
-  }
-  50% {
-    transform: translateY(4px) scale(1.2);
-  }
-}
-
-/* 下拉菜单样式 */
-.history-dropdown {
-  min-width: 360px;
-  max-width: 400px;
-  background: var(--theme-bg-elevated);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-}
-
-.dropdown-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.08) 0%,
-    rgba(24, 144, 255, 0.12) 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.header-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1890ff;
-}
-
-.new-session-btn {
-  background: #1890ff;
-  border-color: #1890ff;
-  color: white;
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-.new-session-btn:hover {
-  background: #40a9ff;
-  border-color: #40a9ff;
-  transform: translateY(-1px);
-}
-
-.session-list {
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.session-item-new {
-  border-radius: 8px;
-  margin-bottom: 4px;
-  transition: all 0.2s ease;
-}
-
-.session-item-new:hover {
-  background: rgba(24, 144, 255, 0.04);
-}
-
-.session-button {
-  width: 100%;
-  height: auto;
-  padding: 12px;
-  text-align: left;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.session-button.active {
-  background: rgba(24, 144, 255, 0.1);
-  border-color: rgba(24, 144, 255, 0.3);
-}
-
-.session-button:hover {
-  background: rgba(24, 144, 255, 0.08);
-  border-color: rgba(24, 144, 255, 0.2);
-}
-
-.session-content {
-  width: 100%;
-}
-
-.session-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.session-title-new {
-  font-weight: 500;
-  color: var(--theme-text);
-  font-size: 14px;
-}
-
-.session-time {
-  font-size: 12px;
-  color: var(--theme-text-secondary);
-}
-
-.session-meta-new {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mode-tag {
-  border-radius: 6px;
-  font-size: 11px;
-}
-
-.message-count {
-  font-size: 12px;
-  color: var(--theme-text-secondary);
-}
-
-.delete-session-btn {
-  color: #ff4d4f;
-  padding: 4px;
-  border-radius: 6px;
-}
-
-.delete-session-btn:hover {
-  background: rgba(255, 77, 79, 0.1);
-  color: #ff4d4f;
-}
-
-/* 设置下拉菜单样式 */
-.settings-dropdown {
-  min-width: 200px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.settings-menu-item {
-  padding: 12px 16px;
-  transition: all 0.2s ease;
-  border-radius: 0;
-}
-
-.settings-menu-item:hover {
-  background: rgba(82, 196, 26, 0.08);
-  color: #52c41a;
-}
-
-.danger-menu-item:hover {
-  background: rgba(255, 77, 79, 0.08);
-  color: #ff4d4f;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .input-toolbar {
-    padding: 8px 12px;
-  }
-
-  .button-wrapper {
-    padding: 6px 12px;
-    gap: 6px;
-  }
-
-  .button-label {
-    font-size: 13px;
-  }
-
-  .button-icon {
-    font-size: 14px;
-  }
-
-  .history-dropdown {
-    min-width: 280px;
-  }
-}
-</style>
+<style scoped src="./AIAssistantPanel.css"></style>
