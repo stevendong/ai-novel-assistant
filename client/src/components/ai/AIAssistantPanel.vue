@@ -80,58 +80,6 @@
       </div>
     </div>
 
-    <!-- Mode Tabs -->
-<!--    <div class="mode-tabs">-->
-<!--      <a-tabs-->
-<!--        v-model:activeKey="currentMode"-->
-<!--        size="small"-->
-<!--        @change="switchMode"-->
-<!--        class="custom-tabs"-->
-<!--      >-->
-<!--        <a-tab-pane key="chat" tab="智能对话">-->
-<!--          <template #tab>-->
-<!--            <MessageOutlined />-->
-<!--            <span class="tab-text">对话</span>-->
-<!--          </template>-->
-<!--        </a-tab-pane>-->
-<!--        <a-tab-pane key="enhance" tab="内容完善">-->
-<!--          <template #tab>-->
-<!--            <EditOutlined />-->
-<!--            <span class="tab-text">完善</span>-->
-<!--          </template>-->
-<!--        </a-tab-pane>-->
-<!--        <a-tab-pane key="check" tab="质量检查">-->
-<!--          <template #tab>-->
-<!--            <CheckCircleOutlined />-->
-<!--            <span class="tab-text">检查</span>-->
-<!--          </template>-->
-<!--        </a-tab-pane>-->
-<!--        <a-tab-pane v-if="false" key="outline" tab="大纲生成">-->
-<!--          <template #tab>-->
-<!--            <BulbOutlined />-->
-<!--            <span class="tab-text">大纲</span>-->
-<!--          </template>-->
-<!--        </a-tab-pane>-->
-<!--      </a-tabs>-->
-<!--    </div>-->
-
-    <!-- Quick Actions -->
-<!--    <div class="quick-actions" v-if="currentModeActions.length > 0">-->
-<!--      <div class="actions-grid">-->
-<!--        <a-button-->
-<!--          v-for="action in currentModeActions"-->
-<!--          :key="action.key"-->
-<!--          size="small"-->
-<!--          class="action-btn"-->
-<!--          :loading="action.key === loadingAction"-->
-<!--          @click="performQuickAction(action.key)"-->
-<!--        >-->
-<!--          <component :is="action.icon" />-->
-<!--          <span>{{ action.label }}</span>-->
-<!--        </a-button>-->
-<!--      </div>-->
-<!--    </div>-->
-
     <!-- Content Container -->
     <div class="content-container">
 
@@ -239,18 +187,6 @@
                       @content-update="onStreamContentUpdate"
                       @typing-speed-change="onTypingSpeedChange"
                     />
-                    <!-- 新创建的非流式AI消息使用打字机效果 -->
-<!--                    <TypewriterText-->
-<!--                      v-else-if="shouldUseTypewriter(message)"-->
-<!--                      :content="message.content"-->
-<!--                      :speed="typewriterSettings.speed"-->
-<!--                      :show-cursor="typewriterSettings.showCursor"-->
-<!--                      :enable-highlight="true"-->
-<!--                      :enable-tables="true"-->
-<!--                      :enable-task-lists="true"-->
-<!--                      @complete="onTypewriterComplete(message.id)"-->
-<!--                      @typing="onTypewriterTyping"-->
-<!--                    />-->
                     <!-- 历史消息直接渲染 -->
                     <MarkdownRenderer
                       v-else
@@ -355,15 +291,6 @@
           </div>
 
           <!-- Scroll to Bottom Button -->
-          <div
-            v-show="showScrollButton"
-            class="scroll-to-bottom"
-            @click="() => scrollToBottom()"
-          >
-            <a-button type="primary" shape="circle" size="small">
-              <DownOutlined />
-            </a-button>
-          </div>
         </div>
       </div>
 
@@ -434,6 +361,16 @@
         </div>
 
         <div class="toolbar-right">
+
+          <!-- 滑动到底部按钮 -->
+          <div class="toolbar-button scroll-tool-button" v-show="showScrollButton">
+            <a-tooltip title="滑动到底部" placement="top">
+              <div class="button-wrapper" @click="scrollToBottom">
+                <DownOutlined class="button-icon" />
+                <span class="button-label">到底部</span>
+              </div>
+            </a-tooltip>
+          </div>
           <!-- 设置按钮 -->
           <div class="toolbar-button settings-tool-button">
             <a-dropdown :trigger="['click']" placement="topRight">
@@ -560,20 +497,16 @@ import {
   ExpandOutlined,
   CompressOutlined
 } from '@ant-design/icons-vue'
-import OutlineGenerator from './OutlineGenerator.vue'
-import MarkdownRenderer from '@/components/common/MarkdownRenderer.vue'
-import SyncTypewriter from '@/components/common/SyncTypewriter.vue'
 import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
 import type { ChatMessage } from '@/stores/aiChat'
 import { apiClient } from '@/utils/api'
+import SyncTypewriter from "@/components/common/SyncTypewriter.vue";
+import MarkdownRenderer from "@/components/common/MarkdownRenderer.vue";
 
 // Stores
 const projectStore = useProjectStore()
 const chatStore = useAIChatStore()
-
-// Use interface from store
-// interface Message is now imported as ChatMessage
 
 // Define emits
 const emit = defineEmits<{
@@ -584,20 +517,12 @@ const emit = defineEmits<{
 // Reactive state
 const currentMode = ref<'chat' | 'enhance' | 'check' | 'outline'>('chat')
 const inputMessage = ref('')
-const loadingAction = ref<string | null>(null)
 const showScrollButton = ref(false)
 const messagesContainer = ref<HTMLElement>()
 const inputRef = ref()
 
-// 打字机效果设置
-const typewriterSettings = ref({
-  enabled: true,
-  speed: 30,
-  showCursor: true
-})
 const typingMessageId = ref<string | null>(null)
 const newlyCreatedMessageId = ref<string | null>(null)
-const deletingSessionId = ref<string | null>(null)
 const deletingMessageId = ref<string | null>(null)
 const isInitializing = ref(false)
 const hasInitialized = ref(false)
@@ -615,30 +540,6 @@ const isDragging = ref(false)
 const isResizing = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
 const resizeStart = ref({ x: 0, y: 0, width: 0, height: 0 })
-
-// 判断是否应该使用打字机效果
-const shouldUseTypewriter = (message: ChatMessage) => {
-  // 流式传输的消息使用StreamTypewriter，不使用传统打字机
-  if (message.metadata?.streaming) {
-    return false
-  }
-
-  // 只对新创建的非流式AI消息使用打字机效果，历史消息不使用
-  return message.role === 'assistant' &&
-         message.id === newlyCreatedMessageId.value &&
-         typingMessageId.value !== message.id &&
-         !message.metadata?.streaming
-}
-
-// 打字机完成回调
-const onTypewriterComplete = (messageId: string) => {
-  typingMessageId.value = messageId
-}
-
-// 打字机输入中回调
-const onTypewriterTyping = () => {
-  // 可以在这里添加其他逻辑，如自动滚动等
-}
 
 // 流式打字机完成回调
 const onStreamComplete = (messageId: string) => {
@@ -698,11 +599,6 @@ const modeConfigs = {
     ]
   }
 }
-
-// Computed properties
-const currentModeActions = computed(() => {
-  return modeConfigs[currentMode.value as keyof typeof modeConfigs]?.actions || []
-})
 
 // Current project from store
 const currentProject = computed(() => projectStore.currentProject)
@@ -803,37 +699,6 @@ const handleInput = () => {
   // Auto-resize and other input handling
 }
 
-const switchMode = async (mode: string) => {
-  const typedMode = mode as 'chat' | 'enhance' | 'check' | 'outline'
-  currentMode.value = typedMode
-  if (typedMode !== 'outline') {
-    await chatStore.updateSessionMode(typedMode)
-  }
-}
-
-const performQuickAction = async (actionKey: string) => {
-  loadingAction.value = actionKey
-
-  try {
-    switch (actionKey) {
-      case 'help':
-        await addMessage('assistant', '我可以帮助你：\n• 完善角色设定和背景\n• 扩展世界观和设定\n• 生成章节大纲\n• 检查内容一致性\n• 提供创作建议\n\n你可以直接向我提问，比如"帮我完善主角的性格"或"检查这个章节的逻辑"。')
-        break
-      case 'examples':
-        await addMessage('assistant', '以下是一些使用示例：\n\n**角色完善**\n"请帮我分析李明这个角色的性格特点"\n\n**设定扩展**\n"这个魔法体系还需要补充什么设定？"\n\n**一致性检查**\n"检查第三章是否有时间线问题"\n\n**创作建议**\n"给我一些关于紧张氛围营造的建议"')
-        break
-      case 'enhance-character':
-        await addMessage('assistant', '我来分析当前选中的角色。请告诉我你希望重点完善哪个方面：\n• 性格特征和心理动机\n• 外貌描述和行为习惯\n• 背景故事和成长经历\n• 人际关系和社交模式\n• 角色发展弧线和成长轨迹')
-        break
-      case 'check-consistency':
-        await performConsistencyCheck()
-        break
-    }
-  } finally {
-    loadingAction.value = null
-  }
-}
-
 const sendMessage = async () => {
   if (!inputMessage.value.trim() || inputMessage.value.length > 2000) return
 
@@ -869,121 +734,11 @@ const addMessage = async (role: 'user' | 'assistant', content: string, actions?:
   })
 }
 
-// formatMessage函数已被MarkdownRenderer组件替代
-
 const formatTime = (timestamp: Date) => {
   return timestamp.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit'
   })
-}
-
-// Message type detection (moved to store, kept here for quick actions)
-const getMessageType = (message: string) => {
-  const lowerMessage = message.toLowerCase()
-
-  if (currentMode.value === 'enhance') {
-    return 'enhancement'
-  } else if (currentMode.value === 'check') {
-    return 'consistency'
-  } else if (lowerMessage.includes('大纲') || lowerMessage.includes('章节')) {
-    return 'outline'
-  } else if (lowerMessage.includes('角色') || lowerMessage.includes('人物')) {
-    return 'character'
-  } else if (lowerMessage.includes('设定') || lowerMessage.includes('世界')) {
-    return 'worldbuilding'
-  } else {
-    return 'general'
-  }
-}
-
-const generateAIResponse = (userMessage: string): string => {
-  const message = userMessage.toLowerCase()
-
-  if (message.includes('角色') || message.includes('人物')) {
-    return '**角色分析建议**\n\n基于你的描述，我建议从以下几个方面完善角色：\n\n• **性格深度**：增加更多性格细节，比如习惯动作或口头禅\n• **背景故事**：完善关键事件和成长经历\n• **关系网络**：明确与其他角色的关系动态\n• **成长弧线**：设计角色在故事中的变化轨迹\n\n需要我详细分析哪个角色？'
-  }
-
-  if (message.includes('设定') || message.includes('世界')) {
-    return '**世界设定扩展**\n\n你的世界设定很有潜力！建议从这些方面深化：\n\n• **时代背景**：明确时间线和重要历史事件\n• **地理环境**：详细描述重要地点和地理关系\n• **社会制度**：政治结构、经济体系和文化特色\n• **特殊元素**：魔法/科技的运作规则和限制\n\n你希望重点扩展哪个方面？'
-  }
-
-  return '我理解你的需求。我可以从以下方面为你提供帮助：\n\n• **角色塑造**：性格、背景、关系网络\n• **世界观建设**：设定扩展、规则完善\n• **情节规划**：大纲设计、冲突设置\n• **质量检查**：一致性、逻辑性分析\n• **创作技巧**：写作方法和技巧建议\n\n请告诉我你希望重点关注哪个方面？'
-}
-
-const getResponseActions = (userMessage: string): Array<{ key: string; label: string }> | undefined => {
-  const message = userMessage.toLowerCase()
-
-  if (message.includes('角色')) {
-    return [
-      { key: 'analyze-character', label: '深度分析' },
-      { key: 'suggest-traits', label: '性格建议' }
-    ]
-  }
-
-  if (message.includes('设定')) {
-    return [
-      { key: 'expand-setting', label: '详细扩展' },
-      { key: 'check-logic', label: '逻辑检查' }
-    ]
-  }
-
-  return undefined
-}
-
-// 执行一致性检查
-const performConsistencyCheck = async () => {
-  if (!currentProject.value) {
-    addMessage('assistant', '请先选择一个小说项目才能进行一致性检查。')
-    return
-  }
-
-  try {
-    const response = await apiClient.post(`/api/ai/consistency/check`, {
-      novelId: currentProject.value.id,
-      scope: 'full'
-    })
-
-    const result = response.data
-    let message = '**一致性检查完成！**\n\n'
-
-    if (result.totalIssues === 0) {
-      message += '🎉 **恭喜！** 未发现明显的一致性问题。\n\n你的故事在角色、设定和情节方面都保持了良好的连贯性。'
-    } else {
-      message += `发现 ${result.totalIssues} 个需要注意的问题：\n\n`
-
-      if (result.summary) {
-        if (result.summary.high > 0) message += `🔴 **严重问题**: ${result.summary.high} 个\n`
-        if (result.summary.medium > 0) message += `🟡 **中等问题**: ${result.summary.medium} 个\n`
-        if (result.summary.low > 0) message += `🟢 **轻微问题**: ${result.summary.low} 个\n`
-      }
-
-      if (result.issues?.length > 0) {
-        message += '\n**主要问题：**\n'
-        result.issues.slice(0, 3).forEach((issue: any) => {
-          const icon = issue.severity === 'high' ? '🔴' : issue.severity === 'medium' ? '🟡' : '🟢'
-          message += `${icon} ${issue.issue}\n`
-        })
-
-        if (result.issues.length > 3) {
-          message += `\n还有 ${result.issues.length - 3} 个其他问题...`
-        }
-      }
-    }
-
-    const actions = result.totalIssues > 0 ? [
-      { key: 'view-all-issues', label: '查看所有问题' },
-      { key: 'fix-priority', label: '优先修复' }
-    ] : [
-      { key: 'detailed-analysis', label: '详细分析' }
-    ]
-
-    await addMessage('assistant', message, actions)
-
-  } catch (error) {
-    console.error('一致性检查失败:', error)
-    await addMessage('assistant', '抱歉，一致性检查服务暂时不可用。请稍后再试。')
-  }
 }
 
 // 清空对话历史
@@ -1086,15 +841,9 @@ const performMessageAction = (actionKey: string, message: ChatMessage) => {
   }
 }
 
-// 处理会话点击
-const handleSessionClick = async ({ key }: { key: string }) => {
-  if (key === 'new') {
-    // 创建新会话
-    await chatStore.createNewSession(currentProject.value?.id, currentMode.value as 'chat' | 'enhance' | 'check')
-  } else {
-    // 切换到选中的会话
-    await chatStore.switchSession(key)
-  }
+// 切换到指定会话
+const switchToSession = async (sessionId: string) => {
+  await chatStore.switchSession(sessionId)
 
   // 清除新创建消息ID，避免历史消息使用打字机效果
   newlyCreatedMessageId.value = null
@@ -1106,20 +855,18 @@ const handleSessionClick = async ({ key }: { key: string }) => {
   })
 }
 
-// 删除会话
-const handleDeleteSession = async (sessionId: string) => {
-  try {
-    deletingSessionId.value = sessionId
+// 创建新会话
+const createNewSession = async () => {
+  await chatStore.createNewSession(currentProject.value?.id, currentMode.value as 'chat' | 'enhance' | 'check')
 
-    // 调用store的删除方法
-    await chatStore.deleteSession(sessionId)
+  // 清除新创建消息ID，避免历史消息使用打字机效果
+  newlyCreatedMessageId.value = null
+  typingMessageId.value = null
 
-    deletingSessionId.value = null
-    console.log('Session deleted successfully')
-  } catch (error) {
-    deletingSessionId.value = null
-    console.error('Failed to delete session:', error)
-  }
+  // 自动滚动到底部
+  nextTick(() => {
+    scrollToBottom()
+  })
 }
 
 // 删除单条消息
@@ -1171,35 +918,6 @@ const getModeColor = (mode: string) => {
     check: '#faad14'
   }
   return colors[mode] || '#1890ff'
-}
-
-// 获取模式图标
-const getModeIcon = (mode: string) => {
-  const icons: Record<string, any> = {
-    chat: WechatOutlined,
-    enhance: EditOutlined,
-    check: SearchOutlined
-  }
-  return icons[mode] || WechatOutlined
-}
-
-// 格式化会话时间
-const formatSessionTime = (date: Date) => {
-  const now = new Date()
-  const diff = now.getTime() - new Date(date).getTime()
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
-
-  if (days > 0) {
-    return `${days}天前`
-  } else if (hours > 0) {
-    return `${hours}小时前`
-  } else if (minutes > 0) {
-    return `${minutes}分钟前`
-  } else {
-    return '刚刚'
-  }
 }
 
 // 增强的浮动模式相关方法
@@ -1454,7 +1172,6 @@ const loadFloatingState = () => {
   }
 }
 
-
 // Handle outline application
 const handleOutlineApplied = async (result: any) => {
   console.log('Outline applied successfully:', result)
@@ -1465,11 +1182,6 @@ const handleOutlineApplied = async (result: any) => {
     currentMode.value = 'chat'
   }, 2000)
 }
-
-// Watch for mode changes
-watch(currentMode, () => {
-  // Update suggestions based on mode
-})
 
 // Initialize
 onMounted(async () => {
@@ -1563,81 +1275,11 @@ onMounted(async () => {
   gap: 12px;
 }
 
-/* 会话管理区域 */
-.session-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 /* 控制按钮区域 */
 .control-section {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-/* 通用按钮样式 */
-.action-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 32px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: transparent;
-  border: 1px solid transparent;
-  position: relative;
-}
-
-.action-button:hover {
-  background: var(--theme-bg-elevated);
-  border-color: rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* 历史记录按钮特殊样式 */
-.history-button {
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.08) 0%,
-    rgba(24, 144, 255, 0.12) 100%);
-  border-color: rgba(24, 144, 255, 0.2);
-  color: #1890ff;
-}
-
-.history-button:hover {
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.15) 0%,
-    rgba(24, 144, 255, 0.20) 100%);
-  border-color: rgba(24, 144, 255, 0.4);
-}
-
-/* 设置按钮特殊样式 */
-.settings-button {
-  background: linear-gradient(135deg,
-    rgba(82, 196, 26, 0.08) 0%,
-    rgba(82, 196, 26, 0.12) 100%);
-  border-color: rgba(82, 196, 26, 0.2);
-  color: #52c41a;
-}
-
-.settings-button:hover {
-  background: linear-gradient(135deg,
-    rgba(82, 196, 26, 0.15) 0%,
-    rgba(82, 196, 26, 0.20) 100%);
-  border-color: rgba(82, 196, 26, 0.4);
-}
-
-/* 按钮内容容器 */
-.button-content {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  position: relative;
 }
 
 /* 按钮图标 */
@@ -1650,69 +1292,14 @@ onMounted(async () => {
   transform: scale(1.1);
 }
 
-/* 按钮徽章 */
-.button-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: #ff4d4f;
-  color: white;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 4px;
-  border-radius: 8px;
-  min-width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* 按钮文本 */
-.button-text {
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* 交互效果增强 */
-.action-button:active {
-  transform: translateY(0px) scale(0.98);
-  transition: transform 0.1s ease;
-}
-
-.action-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
-
 /* 历史记录按钮动画效果 */
 .history-button:hover .button-icon {
   transform: scale(1.1) rotate(5deg);
 }
 
-.history-button:active {
-  background: linear-gradient(135deg,
-    rgba(24, 144, 255, 0.20) 0%,
-    rgba(24, 144, 255, 0.25) 100%);
-}
-
 /* 设置按钮动画效果 */
 .settings-button:hover .button-icon {
   transform: scale(1.1) rotate(90deg);
-}
-
-.settings-button:active {
-  background: linear-gradient(135deg,
-    rgba(82, 196, 26, 0.20) 0%,
-    rgba(82, 196, 26, 0.25) 100%);
-}
-
-/* 徽章动画效果 */
-.button-badge {
-  animation: badge-pulse 2s infinite ease-in-out;
 }
 
 @keyframes badge-pulse {
@@ -1732,22 +1319,8 @@ onMounted(async () => {
     gap: 8px;
   }
 
-  .action-button {
-    min-width: 28px;
-    height: 28px;
-    padding: 4px 6px;
-  }
-
   .button-icon {
     font-size: 12px;
-  }
-
-  .button-badge {
-    font-size: 9px;
-    min-width: 14px;
-    height: 14px;
-    top: -5px;
-    right: -5px;
   }
 }
 
@@ -1874,84 +1447,8 @@ onMounted(async () => {
   }
 }
 
-/* 图标切换动画 */
-.icon-flip-enter-active,
-.icon-flip-leave-active {
-  transition: all 0.3s ease;
-}
-
-.icon-flip-enter-from {
-  transform: rotateY(90deg) scale(0.8);
-  opacity: 0;
-}
-
-.icon-flip-leave-to {
-  transform: rotateY(-90deg) scale(0.8);
-  opacity: 0;
-}
-
-.icon-flip-enter-to,
-.icon-flip-leave-from {
-  transform: rotateY(0deg) scale(1);
-  opacity: 1;
-}
-
-.session-item {
-  display: flex;
-  flex-direction: column;
-  padding: 4px 0;
-  max-width: 280px;
-}
-
-.session-title {
-  font-size: 13px;
-  color: var(--theme-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.session-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--theme-text-secondary);
-}
-
-.session-mode {
-  padding: 0 4px;
-  background: var(--theme-bg-elevated);
-  border-radius: 2px;
-}
-
 .session-time {
   opacity: 0.7;
-}
-
-/* Ant Design风格的会话下拉容器 */
-.session-dropdown-container {
-  background: var(--theme-bg-container);
-  border-radius: 8px;
-  border: 1px solid var(--theme-border);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  padding: 0;
-  min-width: 380px;
-  max-width: 400px;
-  max-height: 500px;
-  overflow: hidden;
-  font-size: 14px;
-}
-
-/* 头部样式 */
-.session-dropdown-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--theme-border);
-  background: var(--theme-bg-elevated);
 }
 
 .header-title {
@@ -1963,37 +1460,6 @@ onMounted(async () => {
   font-size: 14px;
 }
 
-.header-count {
-  color: var(--theme-text-secondary);
-  font-size: 12px;
-  background: var(--theme-bg-container);
-  padding: 2px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--theme-border);
-}
-
-/* 内容区域 */
-.session-dropdown-content {
-  max-height: 360px;
-  overflow-y: auto;
-  padding: 4px;
-}
-
-/* 会话列表项样式 */
-.session-list-item {
-  border-radius: 6px;
-  margin: 2px 0;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.session-list-item:hover {
-  background-color: var(--theme-bg-elevated);
-  border-color: var(--theme-border);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-}
-
 .session-list-item :deep(.ant-list-item-meta) {
   align-items: center;
 }
@@ -2002,59 +1468,12 @@ onMounted(async () => {
   margin-right: 12px;
 }
 
-.session-item-title {
-  color: var(--theme-text);
-  font-weight: 500;
-  font-size: 13px;
-  line-height: 1.4;
-  margin-bottom: 2px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.session-item-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
 .session-time {
   color: var(--theme-text-secondary);
   font-size: 11px;
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.session-action-btn {
-  opacity: 0.7;
-  transition: all 0.2s ease;
-  border-radius: 4px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.session-list-item:hover .session-action-btn {
-  opacity: 1;
-}
-
-.session-action-btn:hover {
-  background-color: rgba(255, 77, 79, 0.1);
-  color: #ff4d4f;
-}
-
-/* 底部操作区域 */
-.session-dropdown-footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--theme-border);
-  background: var(--theme-bg-elevated);
 }
 
 .new-session-btn {
@@ -2071,72 +1490,6 @@ onMounted(async () => {
 .new-session-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(24, 144, 255, 0.2);
-}
-
-/* 滚动条样式 */
-.session-dropdown-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.session-dropdown-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.session-dropdown-content::-webkit-scrollbar-thumb {
-  background: var(--theme-border);
-  border-radius: 2px;
-}
-
-.session-dropdown-content::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-text-secondary);
-}
-
-/* Mode Tabs */
-.mode-tabs {
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--theme-border);
-}
-
-.custom-tabs {
-  margin: 0;
-}
-
-.custom-tabs :deep(.ant-tabs-nav) {
-  margin: 0;
-  padding: 0 16px;
-}
-
-.custom-tabs :deep(.ant-tabs-tab) {
-  padding: 12px 8px;
-  font-size: 12px;
-}
-
-.tab-text {
-  margin-left: 4px;
-}
-
-/* Quick Actions */
-.quick-actions {
-  flex-shrink: 0;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--theme-border);
-  background: var(--theme-bg-elevated);
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 32px;
-  font-size: 12px;
-  border-radius: 6px;
 }
 
 .action-btn span {
@@ -2464,18 +1817,6 @@ onMounted(async () => {
   color: #1890ff;
 }
 
-/* Typing Indicator */
-.typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.typing-dots {
-  display: flex;
-  gap: 4px;
-}
-
 .typing-dots span {
   width: 6px;
   height: 6px;
@@ -2490,11 +1831,6 @@ onMounted(async () => {
 
 .typing-dots span:nth-child(3) {
   animation-delay: 0.4s;
-}
-
-.typing-text {
-  font-size: 12px;
-  color: var(--theme-text-secondary);
 }
 
 /* Streaming Indicator */
@@ -2536,29 +1872,10 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-.message-markdown.streaming {
-  opacity: 1;
-  transition: opacity 0.2s ease;
-}
-
-.message-markdown.streaming:empty {
-  opacity: 0.5;
-}
-
-/* Scroll to Bottom */
-.scroll-to-bottom {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  z-index: 10;
-}
-
 /* Input Area */
 .input-area {
   flex-shrink: 0;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 250, 0.98) 100%);
+  background: var(--theme-bg-elevated);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-top: none;
   border-radius: 0 0 12px 12px;
@@ -2669,10 +1986,6 @@ onMounted(async () => {
   .user-message-bubble,
   .assistant-message-bubble {
     max-width: 95%;
-  }
-
-  .actions-grid {
-    grid-template-columns: 1fr;
   }
 
   .input-container {
@@ -2906,9 +2219,7 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 250, 0.98) 100%);
+  background: var(--theme-bg-elevated);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px 12px 0 0;
   backdrop-filter: blur(10px);
@@ -2917,9 +2228,7 @@ onMounted(async () => {
 }
 
 .input-toolbar:hover {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(248, 248, 248, 1) 100%);
+  background: var(--theme-bg-elevated);
   border-color: rgba(24, 144, 255, 0.2);
 }
 
@@ -3056,11 +2365,57 @@ onMounted(async () => {
   transform: rotate(90deg) scale(1.1);
 }
 
+/* 滚动按钮特殊样式 */
+.scroll-tool-button .button-wrapper {
+  background: linear-gradient(135deg,
+    rgba(255, 165, 0, 0.08) 0%,
+    rgba(255, 165, 0, 0.15) 100%);
+  border-color: rgba(255, 165, 0, 0.2);
+  color: #fa8c16;
+  animation: scroll-pulse 2s infinite ease-in-out;
+}
+
+.scroll-tool-button .button-wrapper:hover {
+  background: linear-gradient(135deg,
+    rgba(255, 165, 0, 0.15) 0%,
+    rgba(255, 165, 0, 0.25) 100%);
+  border-color: rgba(255, 165, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.scroll-tool-button .button-icon {
+  color: #fa8c16;
+  transition: all 0.3s ease;
+}
+
+.scroll-tool-button .button-wrapper:hover .button-icon {
+  transform: translateY(2px) scale(1.2);
+  animation: bounce-down 0.6s ease infinite;
+}
+
+@keyframes scroll-pulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(250, 140, 22, 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(250, 140, 22, 0.2);
+  }
+}
+
+@keyframes bounce-down {
+  0%, 100% {
+    transform: translateY(2px) scale(1.2);
+  }
+  50% {
+    transform: translateY(4px) scale(1.2);
+  }
+}
+
 /* 下拉菜单样式 */
 .history-dropdown {
   min-width: 360px;
   max-width: 400px;
-  background: white;
+  background: var(--theme-bg-elevated);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   border: 1px solid rgba(0, 0, 0, 0.06);
