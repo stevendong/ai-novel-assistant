@@ -16,17 +16,6 @@
       </template>
       <span>{{ $t(`nav.${route.name}`) }}</span>
     </a-menu-item>
-
-    <!-- Chapters menu item -->
-    <a-menu-item
-      key="chapters"
-      @click="navigateToRoute('chapters')"
-    >
-      <template #icon>
-        <FileTextOutlined />
-      </template>
-      <span>{{ $t('nav.chapters') }}</span>
-    </a-menu-item>
   </a-menu>
 </template>
 
@@ -84,6 +73,13 @@ const navigationRoutes = ref([
     meta: {
       title: '世界设定',
       icon: 'GlobalOutlined'
+    }
+  },
+  {
+    name: 'chapters',
+    meta: {
+      title: '章节管理',
+      icon: 'FileTextOutlined'
     }
   },
   {

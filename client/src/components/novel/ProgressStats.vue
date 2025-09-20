@@ -1063,7 +1063,7 @@ const chapterColumns: ColumnsType = [
   {
     title: '操作',
     key: 'actions',
-    width: 120,
+    width: 200,
     fixed: 'right'
   }
 ]
@@ -1392,7 +1392,7 @@ onMounted(() => {
 .month-label {
   position: absolute;
   top: 0;
-  min-width: 20px;
+  width: 20px;
   text-align: left;
   font-size: 11px;
   color: var(--theme-text-secondary);
