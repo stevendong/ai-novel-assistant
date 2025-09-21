@@ -229,22 +229,7 @@
     </a-modal>
 
     <!-- Bottom Status Bar -->
-    <a-layout-footer class="status-bar">
-      <div class="status-left">
-        <a-space size="large">
-          <span>项目：{{ projectStore.currentProject?.title || '未选择' }}</span>
-          <span>状态：{{ projectStatus }}</span>
-          <span>字数：{{ wordCount }}</span>
-        </a-space>
-      </div>
-      <div class="status-right">
-        <a-space size="small">
-          <span>AI连接：</span>
-          <a-badge :status="aiStatus === 'connected' ? 'success' : 'error'" />
-          <span>{{ aiStatus === 'connected' ? '已连接' : '未连接' }}</span>
-        </a-space>
-      </div>
-    </a-layout-footer>
+    <StatusBar ref="statusBarRef" />
   </a-layout>
 </template>
 
@@ -274,7 +259,8 @@ import AIAssistantPanel from '@/components/ai/AIAssistantPanel.vue'
 import AIStarIcon from '@/components/icons/AIStarIcon.vue'
 import { useProjectStore } from '@/stores/project'
 import { useThemeStore } from '@/stores/theme'
-import { countValidWords, formatWordCount } from '@/utils/textUtils'
+import StatusBar from './StatusBar.vue'
+// 移除不再需要的文本工具导入
 import { useChapterList } from '@/composables/useChapterList'
 
 const projectStore = useProjectStore()
@@ -282,7 +268,8 @@ const themeStore = useThemeStore()
 const { chapters, loading: chaptersLoading, loadChapters, createChapter } = useChapterList()
 const collapsed = ref(false)
 const aiPanelCollapsed = ref(true)  // 默认关闭 AI 助手面板
-const aiPanelFloating = ref(false)  // AI 助手面板浮动模式状态
+const aiPanelFloating = ref(false)
+const statusBarRef = ref()  // AI 助手面板浮动模式状态
 const selectedChapter = ref<Chapter | null>(null)
 
 // 从localStorage加载AI面板状态
@@ -350,33 +337,7 @@ const hoverTrigger = computed(() => {
   return ['hover'] // 默认使用hover
 })
 
-const projectStatus = computed(() => {
-  if (!projectStore.currentProject) return '未选择'
-  switch (projectStore.currentProject.status) {
-    case 'draft': return '草稿'
-    case 'writing': return '写作中'
-    case 'completed': return '已完成'
-    default: return '未知'
-  }
-})
-
-// 计算总字数
-const wordCount = computed(() => {
-  if (!chapters.value || chapters.value.length === 0) return 0
-
-  const totalWords = chapters.value.reduce((total, chapter) => {
-    if (chapter.content) {
-      return total + countValidWords(chapter.content, {
-        removeMarkdown: true,
-        removeHtml: true
-      })
-    }
-    return total
-  }, 0)
-
-  return formatWordCount(totalWords)
-})
-const aiStatus = ref<'connected' | 'disconnected'>('disconnected')
+// 移除状态栏相关代码，现在由 StatusBar 组件处理
 
 // 组件挂载时加载项目数据
 onMounted(async () => {
@@ -1500,52 +1461,7 @@ const formatDate = (dateString: string) => {
   overflow: hidden;
 }
 
-/* Status Bar */
-.status-bar {
-  height: 48px;
-  background: var(--theme-bg-elevated);
-  border-top: 1px solid var(--theme-border);
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--theme-text-secondary);
-  transition: all 0.3s ease;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.02);
-}
-
-.status-left,
-.status-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.status-left span,
-.status-right span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-.status-left span:hover,
-.status-right span:hover {
-  color: var(--theme-text);
-}
-
-/* AI状态指示器 */
-.status-right .ant-badge {
-  margin-right: 4px;
-}
-
-/* 暗黑模式下状态栏 */
-.dark .status-bar {
-  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
-}
+/* 状态栏相关样式已移至 StatusBar.vue 组件 */
 
 /* Responsive Design */
 @media (max-width: 1200px) {

@@ -325,6 +325,7 @@ import { message } from 'ant-design-vue'
 import type { Novel, ProjectOverviewStats } from '@/types'
 import { novelService } from '@/services/novelService'
 import { useProjectStore } from '@/stores/project'
+import { getNovelStatusText, getNovelStatusColor } from '@/constants/status'
 
 // 全局项目状态
 const projectStore = useProjectStore()
@@ -415,21 +416,11 @@ const getRatingColor = (rating: string) => {
 }
 
 const getStatusColor = (status: string) => {
-  const colors = {
-    'draft': 'default',
-    'writing': 'processing',
-    'completed': 'success'
-  }
-  return colors[status as keyof typeof colors] || 'default'
+  return getNovelStatusColor(status)
 }
 
 const getStatusText = (status: string) => {
-  const texts = {
-    'draft': '草稿',
-    'writing': '写作中',
-    'completed': '已完成'
-  }
-  return texts[status as keyof typeof texts] || status
+  return getNovelStatusText(status)
 }
 
 const getProjectColor = (id: string) => {

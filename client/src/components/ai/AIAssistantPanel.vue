@@ -474,7 +474,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { Modal } from 'ant-design-vue'
+import { Modal, message } from 'ant-design-vue'
 import {
   RobotOutlined,
   UserOutlined,
@@ -872,6 +872,29 @@ const createNewSession = async () => {
   // 自动滚动到底部
   nextTick(() => {
     scrollToBottom()
+  })
+}
+
+// 删除会话
+const deleteSession = async (sessionId: string) => {
+  if (!sessionId) return
+
+  // 确认删除对话框
+  Modal.confirm({
+    title: '确认删除会话',
+    content: '确定要删除这个会话吗？此操作不可撤销。',
+    okText: '确认删除',
+    cancelText: '取消',
+    okType: 'danger',
+    onOk: async () => {
+      try {
+        await chatStore.deleteSession(sessionId)
+        message.success('会话删除成功')
+      } catch (error) {
+        console.error('删除会话失败:', error)
+        message.error('会话删除失败')
+      }
+    }
   })
 }
 

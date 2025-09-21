@@ -1,5 +1,6 @@
 import type { StatusTransition, StatusHistory, WorkflowConfig } from '@/types'
 import { api, type ApiResponse } from '@/utils/api'
+import { getNovelStatusText, getChapterStatusText, getNovelStatusColor, getChapterStatusColor } from '@/constants/status'
 
 const API_BASE = '/api'
 
@@ -107,52 +108,18 @@ class WorkflowService {
   // 获取状态显示文本
   getStatusText(status: string, entityType: 'novel' | 'chapter'): string {
     if (entityType === 'novel') {
-      const texts = {
-        'concept': '概念阶段',
-        'draft': '草稿阶段',
-        'planning': '规划阶段',
-        'writing': '写作阶段',
-        'editing': '编辑阶段',
-        'completed': '已完成',
-        'published': '已发布'
-      }
-      return texts[status as keyof typeof texts] || status
+      return getNovelStatusText(status)
     } else {
-      const texts = {
-        'planning': '规划中',
-        'outlined': '大纲完成',
-        'writing': '写作中',
-        'reviewing': '审核中',
-        'editing': '编辑中',
-        'completed': '已完成'
-      }
-      return texts[status as keyof typeof texts] || status
+      return getChapterStatusText(status)
     }
   }
 
   // 获取状态颜色
   getStatusColor(status: string, entityType: 'novel' | 'chapter'): string {
     if (entityType === 'novel') {
-      const colors = {
-        'concept': 'default',
-        'draft': 'default',
-        'planning': 'processing',
-        'writing': 'processing',
-        'editing': 'warning',
-        'completed': 'success',
-        'published': 'success'
-      }
-      return colors[status as keyof typeof colors] || 'default'
+      return getNovelStatusColor(status)
     } else {
-      const colors = {
-        'planning': 'default',
-        'outlined': 'processing',
-        'writing': 'processing',
-        'reviewing': 'warning',
-        'editing': 'warning',
-        'completed': 'success'
-      }
-      return colors[status as keyof typeof colors] || 'default'
+      return getChapterStatusColor(status)
     }
   }
 

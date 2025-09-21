@@ -26,6 +26,7 @@ const workflowRoutes = require('./routes/workflow');
 const consistencyRoutes = require('./routes/consistency');
 const uploadRoutes = require('./routes/upload');
 const conversationRoutes = require('./routes/conversations');
+const statsRoutes = require('./routes/stats');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -61,6 +62,7 @@ app.use('/api/workflow', workflowRoutes);
 app.use('/api/consistency', consistencyRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/conversations', conversationRoutes);
+app.use('/api', statsRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

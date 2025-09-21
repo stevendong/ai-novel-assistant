@@ -1,10 +1,12 @@
+import { NovelStatus, ChapterStatus } from '@/constants/status'
+
 export interface Novel {
   id: string
   title: string
   description: string
   genre: string
   rating: 'G' | 'PG' | 'PG-13' | 'R' | 'NC-17'
-  status: 'draft' | 'writing' | 'completed'
+  status: NovelStatus
   wordCount?: number
   targetWordCount?: number
   createdAt: string
@@ -86,7 +88,7 @@ export interface Chapter {
   content: string
   plotPoints: PlotPoint[]
   illustrations: Illustration[]
-  status: 'planning' | 'writing' | 'reviewing' | 'completed'
+  status: ChapterStatus
   wordCount?: number
   targetWordCount?: number
   progress?: number
@@ -148,7 +150,7 @@ export interface ChapterProgress {
   id: string
   chapterNumber: number
   title: string
-  status: 'planning' | 'writing' | 'reviewing' | 'completed'
+  status: ChapterStatus
   wordCount: number
   progress: number
   updatedAt: string

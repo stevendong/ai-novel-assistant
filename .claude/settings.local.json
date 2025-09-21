@@ -29,7 +29,8 @@
       "Bash(PORT=3002 npm run dev)",
       "Bash(printenv)",
       "Bash(npm run:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []
