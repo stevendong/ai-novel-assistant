@@ -36,6 +36,12 @@
               搜索
             </a-button>
           </a-col>
+          <a-col :span="8" class="text-right">
+            <a-button type="primary" @click="handleCreateUser">
+              <PlusOutlined />
+              创建用户
+            </a-button>
+          </a-col>
         </a-row>
       </a-card>
 
@@ -76,9 +82,19 @@
 
             <template v-if="column.key === 'actions'">
               <a-space>
+                <a-button size="small" @click="handleViewUser(record)">
+                  <EyeOutlined />
+                  查看
+                </a-button>
+
+                <a-button size="small" @click="handleEditUser(record)">
+                  <EditOutlined />
+                  编辑
+                </a-button>
+
                 <a-dropdown>
                   <template #overlay>
-                    <a-menu @click="({ key }) => handleRoleChange(record, key)">
+                    <a-menu @click="({ key }: { key: string }) => handleRoleChange(record, key)">
                       <a-menu-item key="admin" :disabled="record.role === 'admin'">
                         设为管理员
                       </a-menu-item>
@@ -120,6 +136,23 @@
         </a-table>
       </a-card>
     </div>
+
+    <!-- 用户表单模态框 -->
+    <UserForm
+      :visible="userFormVisible"
+      :user="selectedUser"
+      @update:visible="userFormVisible = $event"
+      @success="handleFormSuccess"
+    />
+
+    <!-- 用户详情抽屉 -->
+    <UserDetail
+      :visible="userDetailVisible"
+      :userId="selectedUserId"
+      @update:visible="userDetailVisible = $event"
+      @edit="handleEditFromDetail"
+      @refresh="loadUsers"
+    />
   </div>
 </template>
 
@@ -128,17 +161,22 @@ import { ref, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   SearchOutlined,
-  DownOutlined
+  DownOutlined,
+  PlusOutlined,
+  EyeOutlined,
+  EditOutlined
 } from '@ant-design/icons-vue'
 import { api } from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
+import UserForm from '@/components/admin/UserForm.vue'
+import UserDetail from '@/components/admin/UserDetail.vue'
 
 interface User {
   id: string
   username: string
   email: string
   nickname?: string
-  role: string
+  role: 'admin' | 'user'
   isActive: boolean
   lastLogin?: string
   createdAt: string
@@ -155,6 +193,12 @@ const loading = ref(false)
 const users = ref<User[]>([])
 const searchQuery = ref('')
 const roleFilter = ref('')
+
+// 表单和详情相关状态
+const userFormVisible = ref(false)
+const userDetailVisible = ref(false)
+const selectedUser = ref<User | null>(null)
+const selectedUserId = ref<string>('')
 
 const pagination = ref({
   current: 1,
@@ -212,7 +256,7 @@ const columns = [
   {
     title: '操作',
     key: 'actions',
-    width: 200
+    width: 280
   }
 ]
 
@@ -282,6 +326,36 @@ const handleDelete = async (user: User) => {
   }
 }
 
+// 创建用户
+const handleCreateUser = () => {
+  selectedUser.value = null
+  userFormVisible.value = true
+}
+
+// 编辑用户
+const handleEditUser = (user: User) => {
+  selectedUser.value = user
+  userFormVisible.value = true
+}
+
+// 查看用户详情
+const handleViewUser = (user: User) => {
+  selectedUserId.value = user.id
+  userDetailVisible.value = true
+}
+
+// 从详情页编辑
+const handleEditFromDetail = (user: User) => {
+  userDetailVisible.value = false
+  selectedUser.value = user
+  userFormVisible.value = true
+}
+
+// 表单成功回调
+const handleFormSuccess = () => {
+  loadUsers()
+}
+
 onMounted(() => {
   loadUsers()
 })
@@ -290,10 +364,9 @@ onMounted(() => {
 <style scoped>
 .user-management {
   height: 100%;
-  background: #f5f5f5;
 }
 
-.management-content {
-  background: #f5f5f5;
+.text-right {
+  text-align: right;
 }
 </style>

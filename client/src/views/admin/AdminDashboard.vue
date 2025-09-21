@@ -168,10 +168,5 @@ onMounted(() => {
 <style scoped>
 .admin-dashboard {
   height: 100%;
-  background: #f5f5f5;
-}
-
-.dashboard-content {
-  background: #f5f5f5;
 }
 </style>

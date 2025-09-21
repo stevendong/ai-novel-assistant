@@ -198,7 +198,7 @@ router.post('/login', async (req, res) => {
     });
 
     res.json({
-      message: 'Login successful',
+      message: '登录成功',
       user: userResponse,
       session: {
         sessionToken: session.sessionToken,
