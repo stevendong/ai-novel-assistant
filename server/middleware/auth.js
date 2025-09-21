@@ -158,8 +158,65 @@ const requireOwnership = (resourceType) => {
   };
 };
 
+const requireAdmin = async (req, res, next) => {
+  try {
+    // First check if user is authenticated
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Missing or invalid authorization header'
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const session = await AuthUtils.validateSession(token);
+
+    if (!session) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Invalid or expired session token'
+      });
+    }
+
+    if (!session.user.isActive) {
+      return res.status(401).json({
+        error: 'Account Disabled',
+        message: 'User account has been disabled'
+      });
+    }
+
+    // Check if user has admin role
+    if (session.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Admin access required'
+      });
+    }
+
+    req.user = session.user;
+    req.sessionId = session.id;
+    next();
+
+  } catch (error) {
+    logger.error('Admin auth middleware error:', {
+      error: error.message,
+      stack: error.stack,
+      url: req.url,
+      method: req.method,
+    });
+
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Authentication service error'
+    });
+  }
+};
+
 module.exports = {
   requireAuth,
   optionalAuth,
   requireOwnership,
+  requireAdmin,
 };

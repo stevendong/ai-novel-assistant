@@ -90,6 +90,7 @@ router.post('/register', async (req, res) => {
         email: true,
         nickname: true,
         avatar: true,
+        role: true,
         createdAt: true,
         inviteVerified: true,
       },
@@ -185,8 +186,10 @@ router.post('/login', async (req, res) => {
       email: user.email,
       nickname: user.nickname,
       avatar: user.avatar,
+      role: user.role,
       createdAt: user.createdAt,
       lastLogin: user.lastLogin,
+      inviteVerified: user.inviteVerified || false,
     };
 
     logger.info('User logged in successfully:', {
@@ -307,6 +310,7 @@ router.get('/me', requireAuth, async (req, res) => {
       email: req.user.email,
       nickname: req.user.nickname,
       avatar: req.user.avatar,
+      role: req.user.role,
       createdAt: req.user.createdAt,
       lastLogin: req.user.lastLogin,
       inviteVerified: req.user.inviteVerified,
@@ -353,6 +357,7 @@ router.put('/profile', requireAuth, async (req, res) => {
         email: true,
         nickname: true,
         avatar: true,
+        role: true,
         createdAt: true,
         lastLogin: true,
       },
@@ -475,7 +480,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
     if (req.user.inviteVerified) {
       return res.status(400).json({
         error: 'Already Verified',
-        message: 'User has already verified invite code',
+        message: '您已经验证过邀请码了，无需重复验证',
       });
     }
 
@@ -510,6 +515,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
           email: true,
           nickname: true,
           avatar: true,
+          role: true,
           createdAt: true,
           lastLogin: true,
           inviteVerified: true,

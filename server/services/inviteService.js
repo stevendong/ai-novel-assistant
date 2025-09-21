@@ -199,7 +199,7 @@ class InviteService {
         }
       })
 
-      if (recentUsages.length >= 3) {
+      if (recentUsages.length >= 30) {
         return { valid: false, error: 'IP_LIMIT_EXCEEDED', message: '该IP地址24小时内使用邀请码次数过多' }
       }
     }

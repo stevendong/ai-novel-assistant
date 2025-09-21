@@ -30,7 +30,8 @@
       "Bash(printenv)",
       "Bash(npm run:*)",
       "Bash(cat:*)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

@@ -10,6 +10,7 @@ export interface User {
   email: string
   nickname?: string
   avatar?: string
+  role: string
   createdAt: string
   updatedAt: string
   inviteVerified?: boolean
@@ -66,7 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value && !!sessionToken.value)
 
   // 初始化认证状态
-  const init = (): void => {
+  const init = async (): Promise<void> => {
     if (isInitialized.value) return
 
     const storedUser = localStorage.getItem('user')
@@ -81,6 +82,16 @@ export const useAuthStore = defineStore('auth', () => {
 
         // 设置API客户端的认证token
         apiClient.setAuthToken(storedSessionToken)
+
+        // 异步获取最新的用户状态以确保数据同步
+        try {
+          console.log('[Auth] Fetching latest profile during init...')
+          await fetchProfile()
+          console.log('[Auth] Profile fetched successfully, user:', user.value)
+        } catch (error) {
+          console.warn('Failed to fetch latest profile during init:', error)
+          // 如果获取失败，使用本地存储的数据继续
+        }
       } catch (error) {
         console.error('Failed to parse stored user data:', error)
         clearAuth()

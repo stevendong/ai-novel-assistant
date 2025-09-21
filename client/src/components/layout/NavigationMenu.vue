@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
   BookOutlined,
@@ -28,8 +28,11 @@ import {
   GlobalOutlined,
   FileTextOutlined,
   BarChartOutlined,
-  GiftOutlined
+  GiftOutlined,
+  SettingOutlined,
+  UserOutlined
 } from '@ant-design/icons-vue'
+import { usePermissions } from '@/composables/usePermissions'
 
 interface Props {
   collapsed?: boolean
@@ -41,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter()
 const route = useRoute()
+const { hasAdminAccess } = usePermissions()
 
 const selectedKeys = ref<string[]>([])
 
@@ -51,11 +55,13 @@ const iconMap = {
   GlobalOutlined,
   FileTextOutlined,
   BarChartOutlined,
-  GiftOutlined
+  GiftOutlined,
+  SettingOutlined,
+  UserOutlined
 }
 
-// Define navigation routes directly
-const navigationRoutes = ref([
+// 基础导航路由
+const baseRoutes = [
   {
     name: 'project',
     meta: {
@@ -90,6 +96,17 @@ const navigationRoutes = ref([
       title: '进度统计',
       icon: 'BarChartOutlined'
     }
+  }
+]
+
+// 管理员专用路由
+const adminRoutes = [
+  {
+    name: 'adminDashboard',
+    meta: {
+      title: '管理面板',
+      icon: 'SettingOutlined'
+    }
   },
   {
     name: 'inviteManagement',
@@ -97,8 +114,24 @@ const navigationRoutes = ref([
       title: '邀请码管理',
       icon: 'GiftOutlined'
     }
+  },
+  {
+    name: 'userManagement',
+    meta: {
+      title: '用户管理',
+      icon: 'UserOutlined'
+    }
   }
-])
+]
+
+// 根据权限动态生成导航路由
+const navigationRoutes = computed(() => {
+  const routes = [...baseRoutes]
+  if (hasAdminAccess.value) {
+    routes.push(...adminRoutes)
+  }
+  return routes
+})
 
 // Get icon component
 const getIcon = (iconName?: string) => {

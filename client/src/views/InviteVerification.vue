@@ -77,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
@@ -140,6 +140,29 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
+// 检查用户是否已验证邀请码
+onMounted(async () => {
+  // 等待认证状态完全初始化
+  if (!authStore.isInitialized) {
+    console.log('[InviteVerification] Auth not initialized, initializing...')
+    await authStore.init()
+  }
+  
+  console.log('[InviteVerification] User state:', {
+    user: authStore.user,
+    inviteVerified: authStore.user?.inviteVerified,
+    isAuthenticated: authStore.isAuthenticated
+  })
+  
+  // 如果用户已经验证过邀请码，直接跳转到主页
+  if (authStore.user?.inviteVerified) {
+    console.log('[InviteVerification] User already verified, redirecting to home')
+    message.info('您已经验证过邀请码了')
+    router.push('/')
+    return
+  }
+})
 
 // Components handle their own state - no additional initialization needed
 </script>
