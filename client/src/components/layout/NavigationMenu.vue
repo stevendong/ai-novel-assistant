@@ -27,7 +27,8 @@ import {
   TeamOutlined,
   GlobalOutlined,
   FileTextOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  GiftOutlined
 } from '@ant-design/icons-vue'
 
 interface Props {
@@ -49,7 +50,8 @@ const iconMap = {
   TeamOutlined,
   GlobalOutlined,
   FileTextOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  GiftOutlined
 }
 
 // Define navigation routes directly
@@ -87,6 +89,13 @@ const navigationRoutes = ref([
     meta: {
       title: '进度统计',
       icon: 'BarChartOutlined'
+    }
+  },
+  {
+    name: 'inviteManagement',
+    meta: {
+      title: '邀请码管理',
+      icon: 'GiftOutlined'
     }
   }
 ])

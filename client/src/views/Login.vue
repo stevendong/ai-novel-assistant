@@ -375,7 +375,7 @@ onMounted(() => {
 }
 
 :deep(.ant-form-item-label > label) {
-  color: #b1b9c5;
+  color: var(--theme-text);
   transition: color 0.3s ease;
 }
 

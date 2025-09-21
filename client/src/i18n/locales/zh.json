@@ -31,7 +31,8 @@
     "worldSettings": "世界设定",
     "progress": "进度统计",
     "consistency": "一致性检查",
-    "export": "导出发布"
+    "export": "导出发布",
+    "inviteManagement": "邀请码管理"
   },
   "project": {
     "title": "项目管理",
@@ -177,7 +178,19 @@
     "loginButton": "登录",
     "registerButton": "注册",
     "switchToRegister": "还没有账户？立即注册",
-    "switchToLogin": "已有账户？立即登录"
+    "switchToLogin": "已有账户？立即登录",
+    "inviteVerification": {
+      "title": "验证邀请码",
+      "subtitle": "请输入邀请码以继续使用系统",
+      "inviteCode": "邀请码",
+      "enterInviteCode": "请输入邀请码",
+      "verifyButton": "验证邀请码",
+      "skipForNow": "暂时跳过",
+      "verificationSuccess": "邀请码验证成功",
+      "verificationFailed": "邀请码验证失败",
+      "description": "邀请码用于控制系统访问权限，验证后即可正常使用所有功能。",
+      "formatHint": "邀请码格式：XX-XXXXXXXX-XX"
+    }
   },
   "message": {
     "saveSuccess": "保存成功",

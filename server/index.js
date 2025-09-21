@@ -27,6 +27,7 @@ const consistencyRoutes = require('./routes/consistency');
 const uploadRoutes = require('./routes/upload');
 const conversationRoutes = require('./routes/conversations');
 const statsRoutes = require('./routes/stats');
+const inviteRoutes = require('./routes/invites');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -63,6 +64,7 @@ app.use('/api/consistency', consistencyRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api', statsRoutes);
+app.use('/api/invites', inviteRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

@@ -3,6 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 const AuthUtils = require('../utils/auth');
 const { requireAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const inviteService = require('../services/inviteService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -71,13 +72,17 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await AuthUtils.hashPassword(password);
+    const userAgent = req.get('User-Agent');
+    const ipAddress = req.ip || req.connection.remoteAddress;
 
+    // 创建用户（无需邀请码验证）
     const user = await prisma.user.create({
       data: {
         username: username.toLowerCase(),
         email: email.toLowerCase(),
         password: hashedPassword,
         nickname: nickname || username,
+        inviteVerified: false, // 标记为未验证邀请码
       },
       select: {
         id: true,
@@ -86,11 +91,9 @@ router.post('/register', async (req, res) => {
         nickname: true,
         avatar: true,
         createdAt: true,
+        inviteVerified: true,
       },
     });
-
-    const userAgent = req.get('User-Agent');
-    const ipAddress = req.ip;
 
     const session = await AuthUtils.createUserSession(user.id, userAgent, ipAddress);
 
@@ -102,7 +105,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       message: 'User registered successfully',
-      user,
+      user: user,
       session: {
         sessionToken: session.sessionToken,
         refreshToken: session.refreshToken,
@@ -306,6 +309,7 @@ router.get('/me', requireAuth, async (req, res) => {
       avatar: req.user.avatar,
       createdAt: req.user.createdAt,
       lastLogin: req.user.lastLogin,
+      inviteVerified: req.user.inviteVerified,
     };
 
     res.json({
@@ -451,6 +455,109 @@ router.post('/logout-all', requireAuth, async (req, res) => {
     res.status(500).json({
       error: 'Logout Failed',
       message: 'Failed to logout all sessions',
+    });
+  }
+});
+
+// 验证并应用邀请码
+router.post('/verify-invite', requireAuth, async (req, res) => {
+  try {
+    const { inviteCode } = req.body;
+
+    if (!inviteCode || inviteCode.trim() === '') {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Invite code is required',
+      });
+    }
+
+    // 如果用户已经验证过邀请码，不允许重复验证
+    if (req.user.inviteVerified) {
+      return res.status(400).json({
+        error: 'Already Verified',
+        message: 'User has already verified invite code',
+      });
+    }
+
+    // 验证邀请码
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    const inviteValidation = await inviteService.validateInviteCode(inviteCode, {
+      userId: req.user.id,
+      ipAddress
+    });
+
+    if (!inviteValidation.valid) {
+      return res.status(400).json({
+        error: 'Invite Code Error',
+        message: inviteValidation.message,
+      });
+    }
+
+    // 在事务中更新用户状态并记录邀请码使用
+    const result = await prisma.$transaction(async (tx) => {
+      // 更新用户状态
+      const updatedUser = await tx.user.update({
+        where: { id: req.user.id },
+        data: {
+          inviteVerified: true,
+          inviteCodeUsed: inviteCode,
+          invitedBy: inviteValidation.inviteCode.creator?.id || null,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          nickname: true,
+          avatar: true,
+          createdAt: true,
+          lastLogin: true,
+          inviteVerified: true,
+        },
+      });
+
+      // 记录邀请码使用
+      const usage = await tx.InviteUsage.create({
+        data: {
+          codeId: inviteValidation.inviteCode.id,
+          userId: req.user.id,
+          ipAddress,
+          userAgent
+        }
+      });
+
+      // 更新邀请码使用计数
+      await tx.InviteCode.update({
+        where: { id: inviteValidation.inviteCode.id },
+        data: {
+          usedCount: { increment: 1 }
+        }
+      });
+
+      return { user: updatedUser, usage };
+    });
+
+    logger.info('Invite code verified successfully:', {
+      userId: req.user.id,
+      username: req.user.username,
+      inviteCode: inviteCode,
+    });
+
+    res.json({
+      message: 'Invite code verified successfully',
+      user: result.user,
+    });
+
+  } catch (error) {
+    logger.error('Invite verification error:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({
+      error: 'Verification Failed',
+      message: 'Failed to verify invite code',
     });
   }
 });

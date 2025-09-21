@@ -42,16 +42,16 @@
   --theme-border: #f0f0f0;
   --theme-text: rgba(0, 0, 0, 0.85);
   --theme-text-secondary: rgba(0, 0, 0, 0.65);
-  
+
   /* 选中状态主题变量 */
   --theme-selected-bg: #e6f7ff;
   --theme-selected-border: #91d5ff;
   --theme-selected-hover-bg: #bae7ff;
-  
+
   /* 图标背景主题变量 */
   --theme-icon-bg: #e6f7ff;
   --theme-icon-text: #1890ff;
-  
+
   /* 编辑器主题变量 */
   --theme-editor-bg: #ffffff;
   --theme-editor-text: #333333;
@@ -60,7 +60,7 @@
   --theme-editor-preview: #f9f9f9;
   --theme-chapter-avatar: #1890ff;
   --theme-warning-text: #ff6b35;
-  
+
   /* 编辑器内容样式变量 */
   --theme-editor-focus-bg: #fefefe;
   --theme-editor-placeholder: #bbbbbb;
@@ -70,7 +70,7 @@
   --theme-editor-active-btn: #1890ff;
   --theme-editor-secondary-text: #666666;
   --theme-editor-unsaved: #ff6b6b;
-  
+
   /* 一致性检查主题变量 */
   --theme-consistency-panel-bg: #fafafa;
   --theme-consistency-hover: rgba(0, 0, 0, 0.04);
@@ -363,4 +363,10 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:deep(.ant-table-thead > tr > th) {
+    background: var(--theme-bg-elevated);
+    border-bottom: 2px solid var(--theme-border);
+    font-weight: 600;
 }

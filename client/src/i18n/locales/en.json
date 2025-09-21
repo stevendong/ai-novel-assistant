@@ -31,7 +31,8 @@
     "worldSettings": "World Settings",
     "progress": "Progress Statistics",
     "consistency": "Consistency Check",
-    "export": "Export & Publish"
+    "export": "Export & Publish",
+    "inviteManagement": "Invite Code Management"
   },
   "project": {
     "title": "Project Management",
@@ -114,8 +115,6 @@
   "ai": {
     "assistant": "AI Assistant",
     "dialogue": "Dialogue Mode",
-    "enhance": "Text Enhancement",
-    "consistency": "Consistency Check",
     "generating": "Generating...",
     "askAnything": "How can I help you today?",
     "enhance": {
@@ -177,7 +176,19 @@
     "loginButton": "Sign In",
     "registerButton": "Sign Up",
     "switchToRegister": "Don't have an account? Sign up now",
-    "switchToLogin": "Already have an account? Sign in now"
+    "switchToLogin": "Already have an account? Sign in now",
+    "inviteVerification": {
+      "title": "Verify Invite Code",
+      "subtitle": "Please enter invite code to continue using the system",
+      "inviteCode": "Invite Code",
+      "enterInviteCode": "Please enter invite code",
+      "verifyButton": "Verify Invite Code",
+      "skipForNow": "Skip for now",
+      "verificationSuccess": "Invite code verification successful",
+      "verificationFailed": "Invite code verification failed",
+      "description": "Invite codes are used to control system access permissions. After verification, you can use all features normally.",
+      "formatHint": "Invite code format: XX-XXXXXXXX-XX"
+    }
   },
   "message": {
     "saveSuccess": "Save successful",

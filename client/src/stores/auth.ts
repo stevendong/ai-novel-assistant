@@ -12,6 +12,7 @@ export interface User {
   avatar?: string
   createdAt: string
   updatedAt: string
+  inviteVerified?: boolean
 }
 
 // 会话信息接口
@@ -142,10 +143,10 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await apiClient.post<AuthResponse>('/api/auth/login', credentials)
       setAuthData(response.data)
-      message.success(response.data.message || 'Login successful!')
+      message.success(response.data.message || '登录成功!')
       return { success: true, data: response.data }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Login failed'
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || '登录失败！'
       message.error(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
@@ -161,7 +162,7 @@ export const useAuthStore = defineStore('auth', () => {
         await apiClient.post('/api/auth/logout')
       }
       clearAuth()
-      message.success('Logged out successfully')
+      message.success('登出成功！')
       return { success: true }
     } catch (error: any) {
       console.error('Logout error:', error)
@@ -322,6 +323,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshSession,
     updateProfile,
     updateUserInfo,
+    updateUser: updateUserInfo, // 别名
     fetchProfile,
     deleteAccount,
     logoutAllSessions,

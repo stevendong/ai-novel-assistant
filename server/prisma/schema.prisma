@@ -24,10 +24,21 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // 邀请相关字段
+  invitedBy      String?  // 邀请者用户ID
+  inviteCodeUsed String?  // 使用的邀请码
+  inviteVerified Boolean  @default(false) // 是否已验证邀请码
+
   // 关联的小说
   novels       Novel[]
   sessions     UserSession[]
   conversations AIConversation[]
+
+  // 邀请关联
+  inviter        User?         @relation("UserInvites", fields: [invitedBy], references: [id])
+  invitees       User[]        @relation("UserInvites")
+  createdInvites InviteCode[]  @relation("CreatedInvites")
+  inviteUsages   InviteUsage[]
 }
 
 // 小说基本信息
@@ -299,4 +310,45 @@ model AIMessage {
 
   @@index([conversationId])
   @@index([conversationId, createdAt])
+}
+
+// 邀请码管理
+model InviteCode {
+  id          String   @id @default(cuid())
+  code        String   @unique        // 邀请码（8-12位字符）
+  createdBy   String?                 // 创建者用户ID，null表示系统生成
+  maxUses     Int      @default(1)    // 最大使用次数
+  usedCount   Int      @default(0)    // 已使用次数
+  expiresAt   DateTime?              // 过期时间，null表示永不过期
+  isActive    Boolean  @default(true) // 是否激活
+  description String?                // 邀请码描述/用途
+  codeType    String   @default("user") // 邀请码类型：system, admin, user
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  creator     User?         @relation("CreatedInvites", fields: [createdBy], references: [id])
+  usages      InviteUsage[]
+
+  @@index([code])
+  @@index([createdBy])
+  @@index([isActive, expiresAt])
+}
+
+// 邀请码使用记录
+model InviteUsage {
+  id         String   @id @default(cuid())
+  codeId     String   // 邀请码ID
+  userId     String   // 使用者用户ID
+  usedAt     DateTime @default(now())
+  ipAddress  String?  // 使用时的IP地址
+  userAgent  String?  // 浏览器信息
+
+  // 关联
+  inviteCode InviteCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([codeId, userId]) // 防止同一用户重复使用同一邀请码
+  @@index([codeId])
+  @@index([userId])
 }
