@@ -315,6 +315,88 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // 检查可用性（统一接口）
+  const checkAvailability = async (data: { username?: string; email?: string }): Promise<{ available: boolean; conflicts?: any; error?: string }> => {
+    try {
+      const response = await apiClient.post<{ available: boolean; conflicts?: any }>('/api/auth/check-availability', data, { skipAuth: true })
+      return { available: response.data.available, conflicts: response.data.conflicts }
+    } catch (error: any) {
+      console.error('Availability check error:', error)
+      return { available: false, error: error.response?.data?.message || 'Failed to check availability' }
+    }
+  }
+
+  // 修改密码
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.put<{ message?: string }>('/api/auth/password', {
+        currentPassword,
+        newPassword
+      })
+      message.success(response.data.message || 'Password changed successfully!')
+      return { success: true, message: response.data.message }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Password change failed'
+      message.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 获取用户统计信息
+  const getUserStats = async (): Promise<{ success: boolean; data?: any; error?: string }> => {
+    try {
+      const response = await apiClient.get<{ stats: any }>('/api/auth/stats')
+      return { success: true, data: response.data.stats }
+    } catch (error: any) {
+      console.error('Get user stats error:', error)
+      return { success: false, error: error.response?.data?.message || 'Failed to get user stats' }
+    }
+  }
+
+  // 获取用户会话列表
+  const getUserSessions = async (): Promise<{ success: boolean; data?: any[]; error?: string }> => {
+    try {
+      const response = await apiClient.get<{ sessions: any[] }>('/api/auth/sessions')
+      return { success: true, data: response.data.sessions }
+    } catch (error: any) {
+      console.error('Get user sessions error:', error)
+      return { success: false, error: error.response?.data?.message || 'Failed to get user sessions' }
+    }
+  }
+
+  // 删除特定会话
+  const deleteSession = async (sessionId: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const response = await apiClient.delete<{ message?: string }>(`/api/auth/sessions/${sessionId}`)
+      return { success: true, message: response.data.message }
+    } catch (error: any) {
+      console.error('Delete session error:', error)
+      return { success: false, error: error.response?.data?.message || 'Failed to delete session' }
+    }
+  }
+
+  // 获取用户活动记录
+  const getUserActivity = async (page = 1, limit = 20): Promise<{ success: boolean; data?: any; error?: string }> => {
+    try {
+      const response = await apiClient.get<{ activities: any[]; pagination: any }>('/api/auth/activity', {
+        params: { page, limit }
+      })
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      console.error('Get user activity error:', error)
+      return { success: false, error: error.response?.data?.message || 'Failed to get user activity' }
+    }
+  }
+
+  // 刷新用户信息（从服务器获取最新数据）
+  const refreshUser = async (): Promise<{ success: boolean; error?: string }> => {
+    const result = await fetchProfile()
+    return { success: result.success, error: result.error }
+  }
+
   return {
     // 状态
     user: readonly(user),
@@ -336,10 +418,17 @@ export const useAuthStore = defineStore('auth', () => {
     updateUserInfo,
     updateUser: updateUserInfo, // 别名
     fetchProfile,
+    refreshUser,
     deleteAccount,
     logoutAllSessions,
     checkUsernameAvailability,
     checkEmailAvailability,
+    checkAvailability,
+    changePassword,
+    getUserStats,
+    getUserSessions,
+    deleteSession,
+    getUserActivity,
     clearAuth,
 
     // 向后兼容 - 提供apiClient访问

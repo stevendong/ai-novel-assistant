@@ -138,18 +138,92 @@ const rules: Record<string, Rule[]> = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_-]+$/, message: '用户名只能包含字母、数字、下划线和短横线', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9_-]+$/, message: '用户名只能包含字母、数字、下划线和短横线', trigger: 'blur' },
+    {
+      validator: async (_rule: any, value: string) => {
+        if (!value || value.length < 3) return Promise.resolve()
+
+        // 检查用户名是否已存在（仅在新建或修改用户名时检查）
+        if (!isEdit.value || (props.user && value.toLowerCase() !== props.user.username.toLowerCase())) {
+          try {
+            const response = await api.get('/api/admin/users/search/suggestions', {
+              params: { q: value }
+            })
+            const existingUser = response.data.find((u: any) =>
+              u.username.toLowerCase() === value.toLowerCase()
+            )
+            if (existingUser) {
+              return Promise.reject(new Error('用户名已存在'))
+            }
+          } catch (error) {
+            // 网络错误时不阻塞验证
+          }
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur'
+    }
   ],
   email: [
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
+    {
+      validator: async (_rule: any, value: string) => {
+        if (!value) return Promise.resolve()
+
+        // 检查邮箱是否已存在（仅在新建或修改邮箱时检查）
+        if (!isEdit.value || (props.user && value.toLowerCase() !== props.user.email.toLowerCase())) {
+          try {
+            const response = await api.get('/api/admin/users/search/suggestions', {
+              params: { q: value }
+            })
+            const existingUser = response.data.find((u: any) =>
+              u.email.toLowerCase() === value.toLowerCase()
+            )
+            if (existingUser) {
+              return Promise.reject(new Error('邮箱已存在'))
+            }
+          } catch (error) {
+            // 网络错误时不阻塞验证
+          }
+        }
+        return Promise.resolve()
+      },
+      trigger: 'blur'
+    }
   ],
   nickname: [
-    { max: 50, message: '昵称不能超过50个字符', trigger: 'blur' }
+    { max: 50, message: '昵称不能超过50个字符', trigger: 'blur' },
+    { pattern: /^[^<>'"&]*$/, message: '昵称不能包含特殊字符', trigger: 'blur' }
   ],
   password: [
     ...(isEdit.value ? [] : [{ required: true, message: '请输入密码', trigger: 'blur' }]),
-    { min: 6, message: '密码至少6个字符', trigger: 'blur' }
+    { min: 6, message: '密码至少6个字符', trigger: 'blur' },
+    { max: 128, message: '密码不能超过128个字符', trigger: 'blur' },
+    {
+      validator: async (_rule: any, value: string) => {
+        if (!value) return Promise.resolve()
+
+        // 密码强度检查
+        const hasLower = /[a-z]/.test(value)
+        const hasUpper = /[A-Z]/.test(value)
+        const hasNumber = /\d/.test(value)
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(value)
+
+        const strength = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length
+
+        if (value.length >= 8 && strength >= 3) {
+          return Promise.resolve() // 强密码
+        } else if (value.length >= 6 && strength >= 2) {
+          return Promise.resolve() // 中等密码
+        } else if (value.length >= 6) {
+          return Promise.resolve() // 弱密码但可接受
+        } else {
+          return Promise.reject(new Error('密码强度不足，建议包含大小写字母、数字和特殊字符'))
+        }
+      },
+      trigger: 'blur'
+    }
   ],
   confirmPassword: [
     {
@@ -226,19 +300,19 @@ const handleSubmit = async () => {
 
     if (isEdit.value && props.user?.id) {
       // 更新用户
-      await api.put(`/admin/users/${props.user.id}`, submitData)
-      
+      await api.put(`/api/admin/users/${props.user.id}`, submitData)
+
       // 如果状态有变化，单独更新状态
       if (formData.isActive !== props.user.isActive) {
-        await api.patch(`/admin/users/${props.user.id}/status`, {
+        await api.patch(`/api/admin/users/${props.user.id}/status`, {
           isActive: formData.isActive
         })
       }
-      
+
       message.success('用户信息更新成功')
     } else {
       // 创建用户
-      await api.post('/admin/users', submitData)
+      await api.post('/api/admin/users', submitData)
       message.success('用户创建成功')
     }
 

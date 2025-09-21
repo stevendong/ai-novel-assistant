@@ -98,7 +98,7 @@
             <EditOutlined />
             编辑用户
           </a-button>
-          <a-button 
+          <a-button
             :type="userData.isActive ? 'default' : 'primary'"
             @click="handleToggleStatus"
             :loading="actionLoading.status"
@@ -108,7 +108,7 @@
           </a-button>
           <a-dropdown>
             <template #overlay>
-              <a-menu @click="({ key }) => handleRoleChange(key as string)">
+              <a-menu @click="(e: any) => handleRoleChange(e.key as string)">
                 <a-menu-item key="admin" :disabled="userData.role === 'admin'">
                   设为管理员
                 </a-menu-item>
@@ -136,8 +136,8 @@
             @confirm="handleDelete"
             :disabled="userData.id === currentUserId || actionLoading.delete"
           >
-            <a-button 
-              danger 
+            <a-button
+              danger
               :loading="actionLoading.delete"
               :disabled="userData.id === currentUserId"
             >
@@ -182,10 +182,11 @@
         :rules="[
           { required: true, message: '请确认密码' },
           {
-            validator: async (_, value) => {
+            validator: async (_: any, value: string) => {
               if (value !== resetPasswordForm.newPassword) {
                 return Promise.reject(new Error('两次输入的密码不一致'))
               }
+              return Promise.resolve()
             }
           }
         ]"
@@ -298,7 +299,7 @@ const loadUserDetail = async () => {
 
   try {
     loading.value = true
-    const response = await api.get(`/admin/users/${props.userId}`)
+    const response = await api.get(`/api/admin/users/${props.userId}`)
     userData.value = response.data
   } catch (error) {
     console.error('加载用户详情失败:', error)
@@ -335,7 +336,7 @@ const handleToggleStatus = async () => {
   try {
     actionLoading.status = true
     const newStatus = !userData.value.isActive
-    await api.patch(`/admin/users/${userData.value.id}/status`, {
+    await api.patch(`/api/admin/users/${userData.value.id}/status`, {
       isActive: newStatus
     })
     message.success(`用户${newStatus ? '启用' : '禁用'}成功`)
@@ -355,7 +356,7 @@ const handleRoleChange = async (newRole: string) => {
 
   try {
     actionLoading.role = true
-    await api.patch(`/admin/users/${userData.value.id}/role`, { role: newRole })
+    await api.patch(`/api/admin/users/${userData.value.id}/role`, { role: newRole })
     message.success('角色更新成功')
     userData.value.role = newRole as 'admin' | 'user'
     emit('refresh')
@@ -380,7 +381,7 @@ const confirmResetPassword = async () => {
     await resetPasswordFormRef.value?.validate()
     actionLoading.password = true
 
-    await api.patch(`/admin/users/${userData.value?.id}/password`, {
+    await api.patch(`/api/admin/users/${userData.value?.id}/password`, {
       newPassword: resetPasswordForm.newPassword
     })
 
@@ -401,7 +402,7 @@ const handleDelete = async () => {
 
   try {
     actionLoading.delete = true
-    await api.delete(`/admin/users/${userData.value.id}`)
+    await api.delete(`/api/admin/users/${userData.value.id}`)
     message.success('用户删除成功')
     emit('update:visible', false)
     emit('refresh')

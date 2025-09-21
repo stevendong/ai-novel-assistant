@@ -314,7 +314,7 @@ import {
   ReloadOutlined,
   SearchOutlined
 } from '@ant-design/icons-vue'
-import { apiClient } from '@/utils/api'
+import { api } from '@/utils/api'
 
 // 响应式数据
 const loading = ref(false)
@@ -477,7 +477,7 @@ const loadInviteCodes = async () => {
       isActive: filterStatus.value || undefined
     }
 
-    const response = await apiClient.get('/api/invites/list', { params })
+    const response = await api.get('/api/invites/list', { params })
 
     inviteCodes.value = response.data.codes
     pagination.total = response.data.pagination.total
@@ -491,7 +491,7 @@ const loadInviteCodes = async () => {
 
 const loadStats = async () => {
   try {
-    const response = await apiClient.get('/api/invites/stats')
+    const response = await api.get('/api/invites/stats')
     stats.value = response.data
   } catch (error) {
     console.error('加载统计数据失败:', error)
@@ -524,7 +524,7 @@ const refreshData = () => {
 const createInviteCode = async () => {
   createLoading.value = true
   try {
-    await apiClient.post('/api/invites/create', createForm)
+    await api.post('/api/invites/create', createForm)
     message.success('邀请码生成成功')
     showCreateModal.value = false
     Object.assign(createForm, {
@@ -545,7 +545,7 @@ const createInviteCode = async () => {
 const batchCreateInviteCodes = async () => {
   batchLoading.value = true
   try {
-    const response = await apiClient.post('/api/invites/batch-create', batchForm)
+    const response = await api.post('/api/invites/batch-create', batchForm)
     message.success(`批量生成 ${response.data.count} 个邀请码成功`)
     showBatchModal.value = false
     Object.assign(batchForm, {
@@ -566,7 +566,7 @@ const batchCreateInviteCodes = async () => {
 
 const deactivateCode = async (record: any) => {
   try {
-    await apiClient.post(`/api/invites/${record.id}/deactivate`)
+    await api.post(`/api/invites/${record.id}/deactivate`)
     message.success('邀请码已禁用')
     refreshData()
   } catch (error) {
@@ -578,7 +578,7 @@ const deactivateCode = async (record: any) => {
 const activateCode = async (record: any) => {
   try {
     // 这里需要后端提供激活接口
-    await apiClient.post(`/api/invites/${record.id}/activate`)
+    await api.post(`/api/invites/${record.id}/activate`)
     message.success('邀请码已激活')
     refreshData()
   } catch (error) {
@@ -589,7 +589,7 @@ const activateCode = async (record: any) => {
 
 const deleteCode = async (record: any) => {
   try {
-    await apiClient.delete(`/api/invites/${record.id}`)
+    await api.delete(`/api/invites/${record.id}`)
     message.success('邀请码已删除')
     refreshData()
   } catch (error) {

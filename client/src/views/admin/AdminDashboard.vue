@@ -142,7 +142,7 @@ const stats = ref<Stats>({
 const loadStats = async () => {
   try {
     loading.value = true
-    const response = await api.get('/admin/stats')
+    const response = await api.get('/api/admin/stats')
     stats.value = response.data
   } catch (error) {
     console.error('加载统计信息失败:', error)

@@ -571,9 +571,18 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
       });
     }
 
+    // 软删除：设置为非活跃状态并清除敏感信息
     await prisma.user.update({
       where: { id },
-      data: { isActive: false }
+      data: {
+        isActive: false,
+        // 注销所有会话
+      }
+    });
+
+    // 删除用户的所有会话
+    await prisma.userSession.deleteMany({
+      where: { userId: id }
     });
 
     logger.info('User deleted (deactivated):', {
@@ -594,6 +603,205 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to delete user'
+    });
+  }
+});
+
+// 批量用户操作
+router.patch('/users/batch', requireAdmin, async (req, res) => {
+  try {
+    const { userIds, action, data } = req.body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'User IDs array is required'
+      });
+    }
+
+    if (!action || !['activate', 'deactivate', 'delete', 'updateRole'].includes(action)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Valid action is required: activate, deactivate, delete, updateRole'
+      });
+    }
+
+    // 防止管理员对自己进行批量操作
+    if (userIds.includes(req.user.id)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Cannot perform batch operations on your own account'
+      });
+    }
+
+    let updateData = {};
+    let result;
+
+    switch (action) {
+      case 'activate':
+        updateData = { isActive: true };
+        break;
+      case 'deactivate':
+        updateData = { isActive: false };
+        break;
+      case 'delete':
+        updateData = { isActive: false };
+        // 删除相关会话
+        await prisma.userSession.deleteMany({
+          where: { userId: { in: userIds } }
+        });
+        break;
+      case 'updateRole':
+        if (!data || !['admin', 'user'].includes(data.role)) {
+          return res.status(400).json({
+            error: 'Bad Request',
+            message: 'Valid role is required for updateRole action'
+          });
+        }
+        updateData = { role: data.role };
+        break;
+    }
+
+    result = await prisma.user.updateMany({
+      where: {
+        id: { in: userIds }
+      },
+      data: updateData
+    });
+
+    logger.info('Batch user operation:', {
+      adminId: req.user.id,
+      action,
+      targetUserIds: userIds,
+      affectedCount: result.count
+    });
+
+    res.json({
+      message: `Successfully performed ${action} on ${result.count} users`,
+      affectedCount: result.count
+    });
+  } catch (error) {
+    logger.error('Batch user operation error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to perform batch operation'
+    });
+  }
+});
+
+// 用户搜索建议
+router.get('/users/search/suggestions', requireAdmin, async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { username: { contains: q } },
+          { email: { contains: q } },
+          { nickname: { contains: q } }
+        ]
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        nickname: true,
+        role: true,
+        isActive: true
+      },
+      take: 10
+    });
+
+    res.json(users);
+  } catch (error) {
+    logger.error('User search suggestions error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to fetch search suggestions'
+    });
+  }
+});
+
+// 导出用户数据
+router.get('/users/export', requireAdmin, async (req, res) => {
+  try {
+    const { format = 'json', includeInactive = false } = req.query;
+
+    const where = {};
+    if (!includeInactive) {
+      where.isActive = true;
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        nickname: true,
+        role: true,
+        isActive: true,
+        lastLogin: true,
+        createdAt: true,
+        inviteCodeUsed: true,
+        inviteVerified: true,
+        _count: {
+          select: {
+            novels: true,
+            sessions: true,
+            conversations: true,
+            invitees: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (format === 'csv') {
+      const csv = [
+        'ID,Username,Email,Nickname,Role,Active,Last Login,Created At,Novels,Sessions,Conversations,Invitees',
+        ...users.map(user => [
+          user.id,
+          user.username,
+          user.email,
+          user.nickname || '',
+          user.role,
+          user.isActive,
+          user.lastLogin || '',
+          user.createdAt,
+          user._count.novels,
+          user._count.sessions,
+          user._count.conversations,
+          user._count.invitees
+        ].join(','))
+      ].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
+      res.send(csv);
+    } else {
+      res.json({
+        exportDate: new Date().toISOString(),
+        totalUsers: users.length,
+        users
+      });
+    }
+
+    logger.info('User data exported:', {
+      adminId: req.user.id,
+      format,
+      userCount: users.length
+    });
+  } catch (error) {
+    logger.error('Export users error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to export user data'
     });
   }
 });

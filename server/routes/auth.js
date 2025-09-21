@@ -338,7 +338,25 @@ router.put('/profile', requireAuth, async (req, res) => {
     const { nickname, avatar } = req.body;
 
     const updateData = {};
-    if (nickname !== undefined) updateData.nickname = nickname;
+
+    // 验证昵称
+    if (nickname !== undefined) {
+      if (nickname.length > 50) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Nickname cannot exceed 50 characters',
+        });
+      }
+      // 防止XSS攻击
+      if (/<[^>]*>/.test(nickname)) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Nickname cannot contain HTML tags',
+        });
+      }
+      updateData.nickname = nickname.trim();
+    }
+
     if (avatar !== undefined) updateData.avatar = avatar;
 
     if (Object.keys(updateData).length === 0) {
@@ -360,6 +378,7 @@ router.put('/profile', requireAuth, async (req, res) => {
         role: true,
         createdAt: true,
         lastLogin: true,
+        inviteVerified: true,
       },
     });
 
@@ -564,6 +583,377 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
     res.status(500).json({
       error: 'Verification Failed',
       message: 'Failed to verify invite code',
+    });
+  }
+});
+
+// 修改密码
+router.put('/password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Current password and new password are required',
+      });
+    }
+
+    if (!validatePassword(newPassword)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'New password must be at least 6 characters long',
+      });
+    }
+
+    // 获取用户当前密码
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { password: true }
+    });
+
+    // 验证当前密码
+    const isValidPassword = await AuthUtils.verifyPassword(currentPassword, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        error: 'Invalid Password',
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // 加密新密码
+    const hashedNewPassword = await AuthUtils.hashPassword(newPassword);
+
+    // 更新密码
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedNewPassword },
+    });
+
+    // 注销所有其他会话（除了当前会话）
+    const authHeader = req.headers.authorization;
+    const currentToken = authHeader.substring(7);
+
+    await prisma.userSession.deleteMany({
+      where: {
+        userId: req.user.id,
+        sessionToken: { not: currentToken }
+      }
+    });
+
+    logger.info('User password changed:', {
+      userId: req.user.id,
+      username: req.user.username,
+    });
+
+    res.json({
+      message: 'Password changed successfully. Other sessions have been logged out.',
+    });
+
+  } catch (error) {
+    logger.error('Change password error:', {
+      error: error.message,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({
+      error: 'Password Change Failed',
+      message: 'Failed to change password',
+    });
+  }
+});
+
+// 获取用户会话列表
+router.get('/sessions', requireAuth, async (req, res) => {
+  try {
+    const sessions = await prisma.userSession.findMany({
+      where: { userId: req.user.id },
+      select: {
+        id: true,
+        sessionToken: true,
+        createdAt: true,
+        lastUsed: true,
+        expiresAt: true,
+        userAgent: true,
+        ipAddress: true,
+      },
+      orderBy: { lastUsed: 'desc' }
+    });
+
+    // 标记当前会话
+    const authHeader = req.headers.authorization;
+    const currentToken = authHeader.substring(7);
+
+    const sessionsWithCurrent = sessions.map(session => ({
+      ...session,
+      isCurrent: session.sessionToken === currentToken,
+      // 隐藏完整token，只显示前几位
+      sessionToken: session.sessionToken.substring(0, 8) + '...'
+    }));
+
+    res.json({
+      sessions: sessionsWithCurrent,
+    });
+
+  } catch (error) {
+    logger.error('Get sessions error:', {
+      error: error.message,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({
+      error: 'Sessions Error',
+      message: 'Failed to get user sessions',
+    });
+  }
+});
+
+// 删除特定会话
+router.delete('/sessions/:sessionId', requireAuth, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    // 确保会话属于当前用户
+    const session = await prisma.userSession.findFirst({
+      where: {
+        id: sessionId,
+        userId: req.user.id
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        error: 'Session Not Found',
+        message: 'Session not found or does not belong to current user',
+      });
+    }
+
+    // 检查是否是当前会话
+    const authHeader = req.headers.authorization;
+    const currentToken = authHeader.substring(7);
+
+    if (session.sessionToken === currentToken) {
+      return res.status(400).json({
+        error: 'Cannot Delete Current Session',
+        message: 'Cannot delete current session. Use logout instead.',
+      });
+    }
+
+    await prisma.userSession.delete({
+      where: { id: sessionId }
+    });
+
+    logger.info('User session deleted:', {
+      userId: req.user.id,
+      sessionId: sessionId,
+    });
+
+    res.json({
+      message: 'Session deleted successfully',
+    });
+
+  } catch (error) {
+    logger.error('Delete session error:', {
+      error: error.message,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({
+      error: 'Delete Session Failed',
+      message: 'Failed to delete session',
+    });
+  }
+});
+
+// 获取用户统计信息
+router.get('/stats', requireAuth, async (req, res) => {
+  try {
+    const [novelsCount, chaptersCount, activeSessions, totalWords] = await Promise.all([
+      // 用户的小说数量
+      prisma.novel.count({
+        where: { userId: req.user.id }
+      }),
+      // 用户的章节数量
+      prisma.chapter.count({
+        where: {
+          novel: { userId: req.user.id }
+        }
+      }),
+      // 活跃会话数量
+      prisma.userSession.count({
+        where: {
+          userId: req.user.id,
+          expiresAt: { gt: new Date() }
+        }
+      }),
+      // 总字数
+      prisma.chapter.aggregate({
+        where: {
+          novel: { userId: req.user.id }
+        },
+        _sum: { wordCount: true }
+      })
+    ]);
+
+    // 最近写作天数（最近30天有更新的天数）
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentActivity = await prisma.novel.count({
+      where: {
+        userId: req.user.id,
+        updatedAt: { gte: thirtyDaysAgo }
+      }
+    });
+
+    res.json({
+      stats: {
+        novels: novelsCount,
+        chapters: chaptersCount,
+        totalWords: totalWords._sum.wordCount || 0,
+        activeSessions: activeSessions,
+        recentActivity: recentActivity,
+      }
+    });
+
+  } catch (error) {
+    logger.error('Get user stats error:', {
+      error: error.message,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({
+      error: 'Stats Error',
+      message: 'Failed to get user statistics',
+    });
+  }
+});
+
+// 检查用户名/邮箱可用性
+router.post('/check-availability', async (req, res) => {
+  try {
+    const { username, email } = req.body;
+
+    if (!username && !email) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Username or email is required',
+      });
+    }
+
+    const whereConditions = [];
+    if (username) whereConditions.push({ username: username.toLowerCase() });
+    if (email) whereConditions.push({ email: email.toLowerCase() });
+
+    const existingUser = await prisma.user.findFirst({
+      where: { OR: whereConditions },
+      select: { username: true, email: true }
+    });
+
+    const result = {
+      available: !existingUser,
+      conflicts: {}
+    };
+
+    if (existingUser) {
+      if (username && existingUser.username === username.toLowerCase()) {
+        result.conflicts.username = 'Username is already taken';
+      }
+      if (email && existingUser.email === email.toLowerCase()) {
+        result.conflicts.email = 'Email is already registered';
+      }
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('Check availability error:', {
+      error: error.message,
+    });
+
+    res.status(500).json({
+      error: 'Availability Check Failed',
+      message: 'Failed to check availability',
+    });
+  }
+});
+
+// 用户活动日志
+router.get('/activity', requireAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+
+    // 获取用户的活动记录（基于小说和章节的更新）
+    const [novels, chapters] = await Promise.all([
+      prisma.novel.findMany({
+        where: { userId: req.user.id },
+        select: {
+          id: true,
+          title: true,
+          updatedAt: true,
+          status: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: parseInt(limit),
+        skip: offset
+      }),
+      prisma.chapter.findMany({
+        where: {
+          novel: { userId: req.user.id }
+        },
+        select: {
+          id: true,
+          title: true,
+          updatedAt: true,
+          status: true,
+          novel: {
+            select: { title: true }
+          }
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: parseInt(limit),
+        skip: offset
+      })
+    ]);
+
+    // 合并并排序活动
+    const activities = [
+      ...novels.map(novel => ({
+        type: 'novel',
+        id: novel.id,
+        title: novel.title,
+        updatedAt: novel.updatedAt,
+        status: novel.status,
+      })),
+      ...chapters.map(chapter => ({
+        type: 'chapter',
+        id: chapter.id,
+        title: `${chapter.novel.title} - ${chapter.title}`,
+        updatedAt: chapter.updatedAt,
+        status: chapter.status,
+      }))
+    ].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+      .slice(0, parseInt(limit));
+
+    res.json({
+      activities,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: activities.length
+      }
+    });
+
+  } catch (error) {
+    logger.error('Get user activity error:', {
+      error: error.message,
+      userId: req.user?.id,
+    });
+
+    res.status(500).json({
+      error: 'Activity Error',
+      message: 'Failed to get user activity',
     });
   }
 });
