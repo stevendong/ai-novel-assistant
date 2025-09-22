@@ -1,15 +1,18 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const aiService = require('../services/aiService');
+const memoryService = require('../services/memoryService');
+const { requireAuth } = require('../middleware/auth');
 const prisma = new PrismaClient();
 
 const router = express.Router();
 
-// 通用AI对话接口
-router.post('/chat', async (req, res) => {
+// 通用AI对话接口（增强版本，支持记忆）
+router.post('/chat', requireAuth, async (req, res) => {
   try {
     const { novelId, message, context, type, provider, model } = req.body;
-    
+    const userId = req.user.id; // 从认证中间件获取用户ID
+
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -18,31 +21,37 @@ router.post('/chat', async (req, res) => {
     let novelContext = null;
     if (novelId) {
       novelContext = await prisma.novel.findUnique({
-        where: { id: novelId },
+        where: { id: novelId, userId: userId }, // 确保用户权限
         include: {
           characters: { take: 10 },
           settings: { take: 10 },
-          chapters: { 
+          chapters: {
             take: 5,
             orderBy: { chapterNumber: 'desc' }
           },
           aiSettings: true
         }
       });
+
+      if (!novelContext) {
+        return res.status(403).json({ error: 'Novel not found or access denied' });
+      }
     }
 
-    // 使用AI服务生成响应
+    // 使用增强的AI服务生成响应（包含记忆功能）
     const response = await aiService.generateResponse(novelContext, message, type, {
       provider,
       model,
-      taskType: type, // 让aiService使用任务特定的参数
-      temperature: undefined // 让配置系统决定温度
+      taskType: type,
+      temperature: undefined,
+      userId: userId, // 传递用户ID用于记忆功能
+      messageType: context?.messageType || 'general'
     });
 
     res.json(response);
   } catch (error) {
     console.error('Error in AI chat:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'AI service error',
       message: process.env.NODE_ENV === 'development' ? error.message : 'AI service temporarily unavailable'
     });
@@ -50,7 +59,7 @@ router.post('/chat', async (req, res) => {
 });
 
 // 流式AI对话接口
-router.post('/chat/stream', async (req, res) => {
+router.post('/chat/stream', requireAuth, async (req, res) => {
   try {
     const { novelId, message, context, type, provider, model } = req.body;
     
@@ -93,7 +102,9 @@ router.post('/chat/stream', async (req, res) => {
         provider,
         model,
         taskType: type,
-        temperature: undefined
+        temperature: undefined,
+        userId: req.user?.id,
+        messageType: type
       });
 
       // 处理流式响应
@@ -547,6 +558,205 @@ router.post('/outline/share', async (req, res) => {
     res.status(500).json({ 
       error: 'Failed to create shareable outline',
       message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// ===== 记忆管理相关API =====
+
+// 获取记忆健康状态
+router.get('/memory/health', requireAuth, async (req, res) => {
+  try {
+    const healthStatus = await memoryService.healthCheck();
+    res.json(healthStatus);
+  } catch (error) {
+    console.error('Memory health check failed:', error);
+    res.status(500).json({
+      error: 'Memory health check failed',
+      message: error.message
+    });
+  }
+});
+
+// 获取用户记忆统计
+router.get('/memory/stats', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { novelId } = req.query;
+
+    // 获取记忆服务指标
+    const serviceMetrics = memoryService.getMetrics();
+
+    // 获取用户记忆统计
+    const where = { userId };
+    if (novelId) where.novelId = novelId;
+
+    const memoryStats = await prisma.memoryBackup.groupBy({
+      by: ['memoryType'],
+      where: where,
+      _count: { id: true },
+      _avg: { importance: true }
+    });
+
+    const totalMemories = await prisma.memoryBackup.count({ where });
+
+    const recentMemories = await prisma.memoryBackup.findMany({
+      where: where,
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        content: true,
+        memoryType: true,
+        importance: true,
+        createdAt: true
+      }
+    });
+
+    res.json({
+      service: serviceMetrics,
+      user: {
+        totalMemories,
+        memoryByType: memoryStats.reduce((acc, stat) => {
+          acc[stat.memoryType] = {
+            count: stat._count.id,
+            avgImportance: stat._avg.importance
+          };
+          return acc;
+        }, {}),
+        recentMemories
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching memory stats:', error);
+    res.status(500).json({
+      error: 'Failed to fetch memory statistics',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Statistics service error'
+    });
+  }
+});
+
+// 手动添加记忆
+router.post('/memory/add', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { content, novelId, memoryType = 'user_note', importance = 3 } = req.body;
+
+    if (!content || content.length < 5) {
+      return res.status(400).json({ error: 'Content is required and must be at least 5 characters' });
+    }
+
+    const context = {
+      userId,
+      novelId,
+      mode: 'manual',
+      messageType: 'user_added'
+    };
+
+    const metadata = {
+      memory_type: memoryType,
+      importance,
+      source: 'manual_input',
+      userConfirmed: true
+    };
+
+    const result = await memoryService.addMemory(content, context, metadata);
+
+    if (result) {
+      res.status(201).json({
+        success: true,
+        memoryId: result.id,
+        message: 'Memory added successfully'
+      });
+    } else {
+      res.status(500).json({
+        error: 'Failed to add memory',
+        message: 'Memory service is currently unavailable'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error adding manual memory:', error);
+    res.status(500).json({
+      error: 'Failed to add memory',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Memory service error'
+    });
+  }
+});
+
+// 搜索记忆
+router.post('/memory/search', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { query, novelId, memoryType, limit = 10 } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    const context = {
+      userId,
+      novelId,
+      mode: 'search',
+      messageType: memoryType
+    };
+
+    const memories = await memoryService.retrieveRelevantMemories(query, context);
+
+    res.json({
+      query,
+      count: memories.length,
+      memories: memories.slice(0, limit).map(memory => ({
+        content: memory.content,
+        memoryType: memory.metadata?.memory_type,
+        importance: memory.metadata?.importance,
+        score: memory.score,
+        createdAt: memory.metadata?.timestamp ? new Date(memory.metadata.timestamp) : null
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error searching memories:', error);
+    res.status(500).json({
+      error: 'Memory search failed',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Search service error'
+    });
+  }
+});
+
+// 清除用户记忆（谨慎操作）
+router.delete('/memory/clear', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { novelId, confirmCode } = req.body;
+
+    // 安全确认码
+    if (confirmCode !== 'CLEAR_MY_MEMORIES') {
+      return res.status(400).json({
+        error: 'Invalid confirmation code',
+        message: 'Please provide the correct confirmation code to proceed'
+      });
+    }
+
+    const where = { userId };
+    if (novelId) where.novelId = novelId;
+
+    // 清除本地备份
+    const deletedCount = await prisma.memoryBackup.deleteMany({ where });
+
+    res.json({
+      success: true,
+      deletedCount: deletedCount.count,
+      message: novelId
+        ? `Cleared ${deletedCount.count} memories for novel ${novelId}`
+        : `Cleared ${deletedCount.count} total memories`
+    });
+
+  } catch (error) {
+    console.error('Error clearing memories:', error);
+    res.status(500).json({
+      error: 'Failed to clear memories',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Clear operation failed'
     });
   }
 });

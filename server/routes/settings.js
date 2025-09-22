@@ -203,7 +203,11 @@ router.post('/:id/enhance', async (req, res) => {
       },
       buildEnhancementPrompt(setting, expandAspects, plotRelevance, expansionType),
       'creative',
-      { taskType: 'world_building' }
+      {
+        taskType: 'world_building',
+        userId: req.user.id,
+        messageType: 'worldbuilding'
+      }
     );
 
     // 解析AI响应并结构化
@@ -555,7 +559,11 @@ router.post('/:id/expand', async (req, res) => {
       },
       buildExpansionPrompt(setting, focusAreas, detailLevel),
       'creative',
-      { taskType: 'detail_expansion' }
+      {
+        taskType: 'detail_expansion',
+        userId: req.user.id,
+        messageType: 'worldbuilding'
+      }
     );
 
     // 解析AI响应并结构化
@@ -838,7 +846,11 @@ router.post('/:id/suggestions', async (req, res) => {
       },
       buildSuggestionsPrompt(setting, suggestionType),
       'analytical',
-      { taskType: 'creative_analysis' }
+      {
+        taskType: 'creative_analysis',
+        userId: req.user.id,
+        messageType: 'worldbuilding'
+      }
     );
 
     // 解析AI建议响应
@@ -1093,7 +1105,11 @@ router.post('/batch-generate/:novelId', async (req, res) => {
       },
       batchPrompt,
       'creative',
-      { taskType: 'world_building_batch' }
+      {
+        taskType: 'world_building_batch',
+        userId: req.user.id,
+        messageType: 'worldbuilding'
+      }
     );
 
     // 解析批量生成结果
@@ -1457,7 +1473,11 @@ router.post('/:id/consistency-check', async (req, res) => {
       },
       buildConsistencyPrompt(setting, scope),
       'analytical',
-      { taskType: 'consistency_check' }
+      {
+        taskType: 'consistency_check',
+        userId: req.user.id,
+        messageType: 'consistency'
+      }
     );
 
     // 解析一致性检查结果

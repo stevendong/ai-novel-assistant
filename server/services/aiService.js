@@ -7,6 +7,7 @@ const {
   validateResponse
 } = require('../utils/aiHelpers');
 const logger = require('../utils/logger');
+const memoryService = require('./memoryService');
 
 class AIService {
   constructor() {
@@ -297,10 +298,79 @@ class AIService {
     }
   }
 
-  // Novel-specific AI methods
+  // Novel-specific AI methods (Enhanced with Memory)
   async generateResponse(novelContext, userMessage, type = 'general', options = {}) {
+    const startTime = Date.now();
+
+    try {
+      // 1. 检索相关记忆（如果启用且有用户ID）
+      let memories = [];
+      if (options.userId) {
+        memories = await memoryService.retrieveRelevantMemories(userMessage, {
+          userId: options.userId,
+          novelId: novelContext?.id,
+          mode: type,
+          messageType: options.messageType
+        });
+      }
+
+      // 2. 构建增强的系统提示词
+      const systemPrompt = memories.length > 0
+        ? this.buildMemoryEnhancedPrompt(novelContext, type, memories)
+        : this.buildSystemPrompt(novelContext, type);
+
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ];
+
+      // 3. 调用AI模型
+      const response = await this.chat(messages, {
+        temperature: options.temperature || (type === 'creative' ? 0.9 : 0.7),
+        provider: options.provider,
+        model: options.model
+      });
+
+      // 4. 解析响应
+      const parsedResponse = this.parseResponse(response.content, type, novelContext);
+
+      // 5. 异步更新记忆（不阻塞响应）
+      if (options.userId) {
+        this.updateMemoriesAsync(userMessage, response.content, {
+          userId: options.userId,
+          novelId: novelContext?.id,
+          mode: type,
+          messageType: options.messageType
+        });
+      }
+
+      // 6. 记录性能指标
+      const duration = Date.now() - startTime;
+      logger.info(`AI Response with Memory: ${duration}ms, memories used: ${memories.length}`);
+
+      return {
+        ...parsedResponse,
+        metadata: {
+          ...parsedResponse.metadata,
+          memoriesUsed: memories.length,
+          memoryEnhanced: memories.length > 0,
+          processingTime: duration
+        }
+      };
+
+    } catch (error) {
+      logger.error('Memory-enhanced AI generation failed:', error);
+      // 降级到无记忆模式
+      return await this.generateResponseFallback(novelContext, userMessage, type, options);
+    }
+  }
+
+  // 原有方法作为降级方案
+  async generateResponseFallback(novelContext, userMessage, type = 'general', options = {}) {
+    logger.info('Using fallback mode (no memory enhancement)');
+
     const systemPrompt = this.buildSystemPrompt(novelContext, type);
-    
+
     const messages = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
@@ -312,24 +382,299 @@ class AIService {
       model: options.model
     });
 
-    return this.parseResponse(response.content, type);
+    return this.parseResponse(response.content, type, novelContext);
+  }
+
+  // 构建记忆增强的提示词
+  buildMemoryEnhancedPrompt(novelContext, type, memories) {
+    let basePrompt = this.buildSystemPrompt(novelContext, type);
+
+    if (memories && memories.length > 0) {
+      basePrompt += '\n\n=== 相关记忆上下文 ===\n';
+      basePrompt += '以下是与当前对话相关的历史记忆，请在回答时参考这些信息以保持连贯性和个性化：\n';
+
+      memories.forEach((memory, index) => {
+        basePrompt += `\n${index + 1}. ${memory.content}`;
+        if (memory.metadata?.memory_type) {
+          basePrompt += ` [类型: ${memory.metadata.memory_type}]`;
+        }
+        if (memory.metadata?.importance > 3) {
+          basePrompt += ` [重要]`;
+        }
+      });
+
+      basePrompt += '\n\n请基于这些记忆信息和当前小说背景，提供连贯、一致且个性化的回答。';
+      basePrompt += '\n如果发现记忆中的信息与当前设定有冲突，请优先使用当前设定并提醒我。';
+    }
+
+    return basePrompt;
+  }
+
+  // 异步更新记忆
+  async updateMemoriesAsync(userMessage, aiResponse, context) {
+    try {
+      // 提取重要信息进行记忆
+      const importantInfo = this.extractImportantInformation(userMessage, aiResponse, context);
+
+      if (importantInfo.length > 0) {
+        // 使用批量添加以避免阻塞
+        await memoryService.addMemoryBatch(
+          importantInfo.map(info => ({
+            content: info.content,
+            context: context,
+            metadata: {
+              memory_type: info.type,
+              confidence: info.confidence,
+              source: 'ai_conversation',
+              extractedFrom: 'ai_response'
+            }
+          }))
+        );
+      }
+
+      // 如果用户消息包含明确的偏好表达，也记录下来
+      if (this.containsUserPreference(userMessage)) {
+        await memoryService.addMemoryBatch([{
+          content: `用户偏好表达: ${userMessage}`,
+          context: context,
+          metadata: {
+            memory_type: 'user_preference',
+            confidence: 0.9,
+            source: 'user_message'
+          }
+        }]);
+      }
+
+    } catch (error) {
+      logger.error('Memory update failed:', error);
+    }
+  }
+
+  // 提取重要信息
+  extractImportantInformation(userMessage, aiResponse, context) {
+    const importantInfo = [];
+
+    // 角色相关信息提取
+    const characterPatterns = [
+      /(?:角色|人物)[^。]*?([^。]{10,})/g,
+      /(?:性格|特征|背景)[^。]*?([^。]{10,})/g,
+      /(?:他|她|它)(?:是|会|能)[^。]*?([^。]{10,})/g
+    ];
+
+    characterPatterns.forEach(pattern => {
+      const matches = aiResponse.match(pattern);
+      if (matches) {
+        matches.forEach(match => {
+          importantInfo.push({
+            content: match.trim(),
+            type: 'character_trait',
+            confidence: 0.8
+          });
+        });
+      }
+    });
+
+    // 世界设定相关信息
+    const settingPatterns = [
+      /(?:世界|设定|规则)[^。]*?([^。]{10,})/g,
+      /(?:地点|位置|环境)[^。]*?([^。]{10,})/g,
+      /(?:文化|传统|习俗)[^。]*?([^。]{10,})/g
+    ];
+
+    settingPatterns.forEach(pattern => {
+      const matches = aiResponse.match(pattern);
+      if (matches) {
+        matches.forEach(match => {
+          importantInfo.push({
+            content: match.trim(),
+            type: 'world_setting',
+            confidence: 0.8
+          });
+        });
+      }
+    });
+
+    // 创作决策
+    const decisionPatterns = [
+      /(?:建议|推荐|应该)[^。]*?([^。]{10,})/g,
+      /(?:可以|能够|不妨)[^。]*?([^。]{10,})/g
+    ];
+
+    decisionPatterns.forEach(pattern => {
+      const matches = aiResponse.match(pattern);
+      if (matches) {
+        matches.forEach(match => {
+          importantInfo.push({
+            content: match.trim(),
+            type: 'creative_decision',
+            confidence: 0.6
+          });
+        });
+      }
+    });
+
+    // 一致性规则
+    if (context.mode === 'check' || aiResponse.includes('一致性') || aiResponse.includes('矛盾')) {
+      const consistencyPatterns = [
+        /(?:需要注意|要避免|应该保持)[^。]*?([^。]{10,})/g,
+        /(?:一致性|矛盾)[^。]*?([^。]{10,})/g
+      ];
+
+      consistencyPatterns.forEach(pattern => {
+        const matches = aiResponse.match(pattern);
+        if (matches) {
+          matches.forEach(match => {
+            importantInfo.push({
+              content: match.trim(),
+              type: 'consistency_rule',
+              confidence: 0.9
+            });
+          });
+        }
+      });
+    }
+
+    // 去重和质量过滤
+    const uniqueInfo = [];
+    const seenContent = new Set();
+
+    importantInfo.forEach(info => {
+      const normalized = info.content.toLowerCase().replace(/\s+/g, '');
+      if (!seenContent.has(normalized) && info.content.length >= 10) {
+        seenContent.add(normalized);
+        uniqueInfo.push(info);
+      }
+    });
+
+    return uniqueInfo.slice(0, 5); // 限制数量避免过多记忆
+  }
+
+  // 检测用户偏好表达
+  containsUserPreference(userMessage) {
+    const preferenceKeywords = [
+      '喜欢', '不喜欢', '希望', '不希望', '想要', '不想要',
+      '偏好', '倾向于', '避免', '总是', '从不', '永远'
+    ];
+
+    return preferenceKeywords.some(keyword => userMessage.includes(keyword));
   }
 
   async generateResponseStream(novelContext, userMessage, type = 'general', options = {}) {
+    const startTime = Date.now();
+
+    try {
+      // 1. 检索相关记忆（如果启用且有用户ID）
+      let memories = [];
+      if (options.userId) {
+        memories = await memoryService.retrieveRelevantMemories(userMessage, {
+          userId: options.userId,
+          novelId: novelContext?.id,
+          mode: type,
+          messageType: options.messageType
+        });
+      }
+
+      // 2. 构建增强的系统提示词
+      const systemPrompt = memories.length > 0
+        ? this.buildMemoryEnhancedPrompt(novelContext, type, memories)
+        : this.buildSystemPrompt(novelContext, type);
+
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ];
+
+      // 3. 创建流式响应
+      const stream = await this.chatStream(messages, {
+        temperature: options.temperature || (type === 'creative' ? 0.9 : 0.7),
+        provider: options.provider,
+        model: options.model
+      });
+
+      // 4. 包装流式响应以支持记忆更新
+      return this.wrapStreamWithMemoryUpdate(stream, {
+        userMessage,
+        context: {
+          userId: options.userId,
+          novelId: novelContext?.id,
+          mode: type,
+          messageType: options.messageType
+        },
+        memoriesUsed: memories.length,
+        startTime
+      });
+
+    } catch (error) {
+      logger.error('Memory-enhanced streaming failed:', error);
+      // 降级到无记忆模式
+      return await this.generateResponseStreamFallback(novelContext, userMessage, type, options);
+    }
+  }
+
+  // 降级方案：无记忆的流式响应
+  async generateResponseStreamFallback(novelContext, userMessage, type = 'general', options = {}) {
+    logger.info('Using fallback mode for streaming (no memory enhancement)');
+
     const systemPrompt = this.buildSystemPrompt(novelContext, type);
-    
+
     const messages = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage }
     ];
 
-    const stream = await this.chatStream(messages, {
+    return await this.chatStream(messages, {
       temperature: options.temperature || (type === 'creative' ? 0.9 : 0.7),
       provider: options.provider,
       model: options.model
     });
+  }
 
-    return stream;
+  /**
+   * 包装流式响应以支持记忆更新
+   */
+  wrapStreamWithMemoryUpdate(originalStream, memoryContext) {
+    const { userMessage, context, memoriesUsed, startTime } = memoryContext;
+    let fullResponse = '';
+
+    // 创建一个新的异步生成器
+    const wrappedStream = async function* () {
+      try {
+        // 流式传递原始响应
+        for await (const chunk of originalStream) {
+          // 收集完整响应内容
+          const choice = chunk.choices?.[0];
+          if (choice?.delta?.content) {
+            fullResponse += choice.delta.content;
+          }
+
+          // 原样传递chunk
+          yield chunk;
+
+          // 检测到流式响应结束
+          if (choice?.finish_reason) {
+            // 异步更新记忆，不阻塞响应
+            if (context.userId && fullResponse.trim()) {
+              setImmediate(async () => {
+                try {
+                  await aiService.updateMemoriesAsync(userMessage, fullResponse, context);
+
+                  // 记录性能指标
+                  const duration = Date.now() - startTime;
+                  logger.info(`Streaming response with memory: ${duration}ms, memories used: ${memoriesUsed}`);
+                } catch (error) {
+                  logger.error('Failed to update memories after streaming:', error);
+                }
+              });
+            }
+          }
+        }
+      } catch (error) {
+        logger.error('Error in wrapped stream:', error);
+        throw error;
+      }
+    };
+
+    return wrappedStream();
   }
 
   buildSystemPrompt(novelContext, type) {

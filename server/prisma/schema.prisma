@@ -40,6 +40,9 @@ model User {
   invitees       User[]        @relation("UserInvites")
   createdInvites InviteCode[]  @relation("CreatedInvites")
   inviteUsages   InviteUsage[]
+
+  // 记忆备份关联
+  memoryBackups  MemoryBackup[]
 }
 
 // 小说基本信息
@@ -352,4 +355,27 @@ model InviteUsage {
   @@unique([codeId, userId]) // 防止同一用户重复使用同一邀请码
   @@index([codeId])
   @@index([userId])
+}
+
+// Mem0记忆备份表
+model MemoryBackup {
+  id         String   @id @default(cuid())
+  userId     String   // 用户ID
+  novelId    String?  // 小说ID，可为空表示全局记忆
+  mem0Id     String?  // Mem0中的记忆ID
+  content    String   // 记忆内容
+  memoryType String   @default("general") // 记忆类型
+  importance Int      @default(1) // 重要性等级 1-5
+  metadata   String?  // JSON格式的元数据
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // 关联
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([novelId])
+  @@index([memoryType])
+  @@index([userId, novelId])
+  @@index([importance])
 }

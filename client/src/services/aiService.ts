@@ -115,12 +115,20 @@ class AIService {
   // 流式AI对话
   async chatStream(novelId: string, message: string, onStream: StreamHandler, context = {}, options = {}): Promise<void> {
     try {
+      // 获取认证token
+      const token = localStorage.getItem('sessionToken')
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
+      }
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/ai/chat/stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream'
-        },
+        headers,
         body: JSON.stringify({
           novelId,
           message,
@@ -132,6 +140,14 @@ class AIService {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // 处理认证失败
+          localStorage.removeItem('user')
+          localStorage.removeItem('sessionToken')
+          localStorage.removeItem('refreshToken')
+          window.location.href = '/login'
+          return
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 

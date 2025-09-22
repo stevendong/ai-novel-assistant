@@ -31,7 +31,10 @@
       "Bash(npm run:*)",
       "Bash(cat:*)",
       "Bash(npm start)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "WebFetch(domain:docs.mem0.ai)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)"
     ],
     "deny": [],
     "ask": []

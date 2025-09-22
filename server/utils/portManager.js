@@ -59,7 +59,7 @@ async function getProcessInfo(pid) {
  */
 async function killPortProcesses(port, force = false) {
   const pids = await getPortPids(port);
-  
+
   if (pids.length === 0) {
     return {
       success: true,
@@ -75,13 +75,13 @@ async function killPortProcesses(port, force = false) {
     try {
       const processInfo = await getProcessInfo(pid);
       await execAsync(`kill -${signal} ${pid}`);
-      
+
       killedProcesses.push({
         pid,
         command: processInfo?.command || 'Unknown',
-        signal
+        signal:'SIGKILL'
       });
-      
+
       console.log(`✓ 已杀死进程 ${pid} (${processInfo?.command || 'Unknown'})`);
     } catch (error) {
       console.warn(`⚠ 无法杀死进程 ${pid}: ${error.message}`);
@@ -93,11 +93,11 @@ async function killPortProcesses(port, force = false) {
 
   // 验证端口是否已释放
   const stillInUse = await isPortInUse(port);
-  
+
   return {
     success: !stillInUse,
-    message: stillInUse 
-      ? `端口 ${port} 仍被占用，可能需要强制杀死进程` 
+    message: stillInUse
+      ? `端口 ${port} 仍被占用，可能需要强制杀死进程`
       : `端口 ${port} 已成功释放`,
     killedProcesses,
     stillInUse
@@ -111,17 +111,17 @@ async function killPortProcesses(port, force = false) {
  * @returns {Promise<object>} 操作结果
  */
 async function ensurePortAvailable(port, options = {}) {
-  const { 
-    autoKill = true, 
-    force = false, 
+  const {
+    autoKill = true,
+    force = false,
     retryCount = 2,
-    showProcessInfo = true 
+    showProcessInfo = true
   } = options;
 
   console.log(`🔍 检查端口 ${port} 是否可用...`);
 
   const inUse = await isPortInUse(port);
-  
+
   if (!inUse) {
     console.log(`✅ 端口 ${port} 可用`);
     return {
@@ -134,7 +134,7 @@ async function ensurePortAvailable(port, options = {}) {
   if (showProcessInfo) {
     const pids = await getPortPids(port);
     console.log(`⚠ 端口 ${port} 被以下进程占用:`);
-    
+
     for (const pid of pids) {
       const processInfo = await getProcessInfo(pid);
       console.log(`  PID: ${pid}, 命令: ${processInfo?.command || 'Unknown'}`);
@@ -154,7 +154,7 @@ async function ensurePortAvailable(port, options = {}) {
   let result;
   for (let i = 0; i < retryCount; i++) {
     result = await killPortProcesses(port, force || i > 0);
-    
+
     if (result.success) {
       console.log(`✅ ${result.message}`);
       return {
