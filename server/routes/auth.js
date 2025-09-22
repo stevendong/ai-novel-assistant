@@ -488,6 +488,46 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
   try {
     const { inviteCode } = req.body;
 
+    // 系统管理员无需验证邀请码，直接标记为已验证
+    if (req.user.role === 'admin') {
+      if (req.user.inviteVerified) {
+        return res.status(400).json({
+          error: 'Already Verified',
+          message: '您已经验证过邀请码了，无需重复验证',
+        });
+      }
+
+      // 直接为管理员用户标记为已验证
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          inviteVerified: true,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          nickname: true,
+          avatar: true,
+          role: true,
+          createdAt: true,
+          lastLogin: true,
+          inviteVerified: true,
+        },
+      });
+
+      logger.info('Admin user automatically verified:', {
+        userId: req.user.id,
+        username: req.user.username,
+        role: req.user.role,
+      });
+
+      return res.json({
+        message: '系统管理员账户已自动完成验证',
+        user: updatedUser,
+      });
+    }
+
     if (!inviteCode || inviteCode.trim() === '') {
       return res.status(400).json({
         error: 'Validation Error',
