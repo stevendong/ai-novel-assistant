@@ -29,6 +29,7 @@ export interface ConversationSession {
   messages: ChatMessage[]
   createdAt: Date
   updatedAt: Date
+  isCreating?: boolean  // 标记是否正在创建中，避免重复调用
 }
 
 export const useAIChatStore = defineStore('aiChat', () => {
@@ -64,10 +65,12 @@ export const useAIChatStore = defineStore('aiChat', () => {
         actions: [
           { key: 'help', label: '查看帮助' },
           { key: 'examples', label: '查看示例' }
-        ]
+        ],
+        metadata: { messageType: 'welcome' }  // 🔥 添加欢迎消息标记
       }],
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      isCreating: true  // 🔥 标记为创建中状态
     }
 
     currentSession.value = session
@@ -76,10 +79,30 @@ export const useAIChatStore = defineStore('aiChat', () => {
     // Save to database if autoSave is enabled
     if (settings.value.autoSave) {
       try {
-        await createSessionInDatabase(session)
+        const createdSession = await createSessionInDatabase(session)
+        // 🔥 关键修复：用服务器返回的ID更新本地会话
+        if (createdSession && createdSession.id) {
+          session.id = createdSession.id
+          currentSession.value.id = createdSession.id
+
+          // 也更新sessions数组中的引用
+          const sessionIndex = sessions.value.findIndex(s => s === session)
+          if (sessionIndex !== -1) {
+            sessions.value[sessionIndex].id = createdSession.id
+          }
+        }
       } catch (error) {
         console.warn('Failed to save new session to database:', error)
+      } finally {
+        // 🔥 清除创建状态，无论成功还是失败
+        session.isCreating = false
+        if (currentSession.value) {
+          currentSession.value.isCreating = false
+        }
       }
+    } else {
+      // 即使不自动保存，也要清除创建状态
+      session.isCreating = false
     }
 
     return session
@@ -436,7 +459,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         console.warn('Failed to delete session from database:', error)
       }
 
-      // If we deleted the current session, create a new one or switch to another
+      // If we deleted the current session, switch to another or clear current session
       if (currentSession.value?.id === sessionId) {
         if (sessions.value.length > 0) {
           currentSession.value = sessions.value[0]
@@ -445,7 +468,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
             currentSession.value.messages = await loadSessionMessages(currentSession.value.id)
           }
         } else {
-          await createNewSession()
+          // 允许没有会话的状态，不自动创建新会话
+          currentSession.value = null
         }
       }
     }
@@ -551,6 +575,12 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
   // Database API functions
   const saveSessionToDatabase = async (session: ConversationSession) => {
+    // 🔥 避免在会话创建过程中重复调用
+    if (session.isCreating) {
+      console.log('Session is being created, skipping save...')
+      return
+    }
+
     try {
       // Check if session exists in database
       const existingSession = await apiClient.get(`/api/conversations/${session.id}`)
@@ -589,7 +619,19 @@ export const useAIChatStore = defineStore('aiChat', () => {
     } catch (error: any) {
       if (error.response?.status === 404) {
         // Session doesn't exist, create it
-        await createSessionInDatabase(session)
+        const createdSession = await createSessionInDatabase(session)
+
+        // 🔥 关键修复：创建会话后更新本地引用
+        if (createdSession && createdSession.id && currentSession.value) {
+          // 更新当前会话ID
+          currentSession.value.id = createdSession.id
+
+          // 更新sessions数组中的ID
+          const sessionIndex = sessions.value.findIndex(s => s.id === session.id)
+          if (sessionIndex !== -1) {
+            sessions.value[sessionIndex].id = createdSession.id
+          }
+        }
       } else {
         throw error
       }
@@ -608,7 +650,13 @@ export const useAIChatStore = defineStore('aiChat', () => {
       const createdSession = response.data
 
       // Add all messages except the welcome message (which is created automatically)
-      const messagesToAdd = session.messages.filter(msg => msg.role !== 'assistant' || !msg.actions?.some(a => a.key === 'help'))
+      const messagesToAdd = session.messages.filter(msg => {
+        // 🔥 修复过滤逻辑：排除欢迎消息
+        if (msg.role === 'assistant' && msg.actions?.some(a => a.key === 'help')) {
+          return false // 这是欢迎消息，不添加到数据库
+        }
+        return true // 其他消息正常添加
+      })
 
       for (const message of messagesToAdd) {
         const response = await apiClient.post(`/api/conversations/${createdSession.id}/messages`, {
@@ -622,6 +670,23 @@ export const useAIChatStore = defineStore('aiChat', () => {
         // Update local message with the server-returned ID
         if (response.data && response.data.id) {
           message.id = response.data.id
+        }
+      }
+
+      // 🔥 重要：更新本地会话ID为服务器返回的ID
+      session.id = createdSession.id
+
+      // 🔥 关键修复：用后端返回的欢迎消息ID更新前端欢迎消息
+      if (createdSession.messages && createdSession.messages.length > 0) {
+        const backendWelcomeMessage = createdSession.messages.find((msg: any) => msg.messageType === 'welcome')
+        if (backendWelcomeMessage) {
+          // 找到前端的欢迎消息并更新ID
+          const frontendWelcomeMessage = session.messages.find(msg =>
+            msg.role === 'assistant' && msg.actions?.some(a => a.key === 'help')
+          )
+          if (frontendWelcomeMessage) {
+            frontendWelcomeMessage.id = backendWelcomeMessage.id
+          }
         }
       }
 

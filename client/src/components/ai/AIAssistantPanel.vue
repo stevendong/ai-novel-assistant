@@ -103,23 +103,42 @@
 
       <!-- Chat Container (for other modes) -->
       <div v-else class="chat-container">
-        <!-- Messages Area -->
-      <div
-        ref="messagesContainer"
-        class="messages-area"
-        @scroll="handleScroll"
-      >
-        <div class="messages-wrapper">
-          <!-- Welcome Message -->
-          <div class="welcome-message" v-if="messages.length === 1">
-            <div class="welcome-icon">
+        <!-- No Session State -->
+        <div v-if="!chatStore.hasActiveSession" class="no-session-state">
+          <div class="no-session-content">
+            <div class="no-session-icon">
               <RobotOutlined />
             </div>
-            <div class="welcome-content">
-              <h3>AI创作助手</h3>
-              <p>{{ getModeDescription(currentMode) }}</p>
+            <div class="no-session-text">
+              <h3>开始新对话</h3>
+              <p>创建一个新的AI对话来获取创作帮助</p>
+            </div>
+            <div class="no-session-actions">
+              <a-button type="primary" size="large" @click="createNewSession" class="start-chat-btn">
+                <PlusOutlined />
+                开始对话
+              </a-button>
             </div>
           </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div v-else
+          ref="messagesContainer"
+          class="messages-area"
+          @scroll="handleScroll"
+        >
+          <div class="messages-wrapper">
+            <!-- Welcome Message -->
+            <div class="welcome-message" v-if="messages.length === 1">
+              <div class="welcome-icon">
+                <RobotOutlined />
+              </div>
+              <div class="welcome-content">
+                <h3>AI创作助手</h3>
+                <p>{{ getModeDescription(currentMode) }}</p>
+              </div>
+            </div>
 
           <!-- Message List -->
           <div class="message-list">
@@ -300,11 +319,11 @@
           </div>
 
           <!-- Scroll to Bottom Button -->
+          </div>
         </div>
-      </div>
 
-      <!-- Input Toolbar -->
-      <div class="input-toolbar">
+      <!-- Input Toolbar (only show when there's an active session) -->
+      <div v-if="chatStore.hasActiveSession" class="input-toolbar">
         <div class="toolbar-left">
           <!-- 历史消息按钮 -->
           <div class="toolbar-button history-tool-button">
@@ -335,7 +354,7 @@
                           type="text"
                           block
                           class="session-button"
-                          :class="{ active: session.id === chatStore.currentSessionId }"
+                          :class="{ active: session.id === chatStore.currentSession?.id }"
                           @click="switchToSession(session.id)"
                         >
                           <div class="session-content">
@@ -414,8 +433,8 @@
         </div>
       </div>
 
-      <!-- Input Area -->
-      <div class="input-area">
+      <!-- Input Area (only show when there's an active session) -->
+      <div v-if="chatStore.hasActiveSession" class="input-area">
         <div class="input-container">
           <div class="input-wrapper">
             <a-textarea
