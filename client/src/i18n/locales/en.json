@@ -187,7 +187,10 @@
       "verificationSuccess": "Invite code verification successful",
       "verificationFailed": "Invite code verification failed",
       "description": "Invite codes are used to control system access permissions. After verification, you can use all features normally.",
-      "formatHint": "Invite code format: XX-XXXXXXXX-XX"
+      "formatHint": "Invite code format: XX-XXXXXXXX-XX",
+      "currentUser": "Current User",
+      "switchAccount": "Switch Account",
+      "logout": "Sign Out"
     }
   },
   "message": {

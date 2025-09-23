@@ -3,6 +3,64 @@
     <!-- Settings Controls -->
     <div class="settings-controls">
       <div class="control-buttons">
+        <!-- User Info Display -->
+        <div v-if="authStore.isAuthenticated" class="user-info-section">
+          <a-dropdown :trigger="['click']" placement="bottomRight">
+            <template #overlay>
+              <a-menu>
+                <a-menu-item-group :title="$t('auth.inviteVerification.currentUser')">
+                  <a-menu-item key="user-info" disabled class="user-menu-info">
+                    <div class="user-details">
+                      <div class="user-avatar">
+                        <a-avatar
+                          :src="authStore.user?.avatar"
+                          :size="24"
+                        >
+                          {{ authStore.user?.nickname?.charAt(0) || authStore.user?.username?.charAt(0) }}
+                        </a-avatar>
+                      </div>
+                      <div class="user-text">
+                        <div class="user-name">
+                          {{ authStore.user?.nickname || authStore.user?.username }}
+                        </div>
+                        <div class="user-email">{{ authStore.user?.email }}</div>
+                      </div>
+                    </div>
+                  </a-menu-item>
+                </a-menu-item-group>
+                <a-menu-divider />
+                <a-menu-item key="switch-account" @click="handleSwitchAccount">
+                  <template #icon>
+                    <SwapOutlined />
+                  </template>
+                  {{ $t('auth.inviteVerification.switchAccount') }}
+                </a-menu-item>
+                <a-menu-item key="logout" @click="handleLogout">
+                  <template #icon>
+                    <LogoutOutlined />
+                  </template>
+                  {{ $t('auth.inviteVerification.logout') }}
+                </a-menu-item>
+              </a-menu>
+            </template>
+            <a-button type="text" class="user-info-button">
+              <template #icon>
+                <a-avatar
+                  :src="authStore.user?.avatar"
+                  :size="32"
+                  class="user-avatar-button"
+                >
+                  {{ authStore.user?.nickname?.charAt(0) || authStore.user?.username?.charAt(0) }}
+                </a-avatar>
+              </template>
+              <span class="user-name-display">
+                {{ authStore.user?.nickname || authStore.user?.username }}
+              </span>
+              <DownOutlined class="dropdown-icon" />
+            </a-button>
+          </a-dropdown>
+        </div>
+
         <LanguageToggle />
         <ThemeToggle />
       </div>
@@ -81,7 +139,10 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
-  CheckOutlined
+  CheckOutlined,
+  SwapOutlined,
+  LogoutOutlined,
+  DownOutlined
 } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -141,6 +202,28 @@ const handleSubmit = async () => {
   }
 }
 
+// 切换账号
+const handleSwitchAccount = async () => {
+  try {
+    await authStore.logout()
+    // 登出后跳转到登录页面
+    router.push('/login')
+  } catch (error) {
+    console.error('Switch account failed:', error)
+  }
+}
+
+// 登出
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    // 登出后跳转到登录页面
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  }
+}
+
 // 检查用户是否已验证邀请码
 onMounted(async () => {
   // 等待认证状态完全初始化
@@ -148,13 +231,13 @@ onMounted(async () => {
     console.log('[InviteVerification] Auth not initialized, initializing...')
     await authStore.init()
   }
-  
+
   console.log('[InviteVerification] User state:', {
     user: authStore.user,
     inviteVerified: authStore.user?.inviteVerified,
     isAuthenticated: authStore.isAuthenticated
   })
-  
+
   // 如果用户已经验证过邀请码，直接跳转到主页
   if (authStore.user?.inviteVerified) {
     console.log('[InviteVerification] User already verified, redirecting to home')
@@ -191,6 +274,115 @@ onMounted(async () => {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+/* User Info Section */
+.user-info-section {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.user-info-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  height: auto;
+  min-height: 40px;
+  border-radius: 8px;
+  background: var(--theme-bg-container);
+  border: 1px solid var(--theme-border);
+  transition: all 0.3s ease;
+  color: var(--theme-text);
+}
+
+.user-info-button:hover {
+  background: var(--theme-bg-hover);
+  border-color: var(--theme-icon-text);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar-button {
+  flex-shrink: 0;
+}
+
+.user-name-display {
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-icon {
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  transition: transform 0.3s ease;
+}
+
+.user-info-button:hover .dropdown-icon {
+  transform: translateY(1px);
+}
+
+/* User Menu Styles */
+.user-menu-info {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.user-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  min-width: 200px;
+}
+
+.user-avatar {
+  flex-shrink: 0;
+}
+
+.user-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--theme-text);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-email {
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Menu Item Hover Effects */
+:deep(.ant-dropdown-menu-item:not(.user-menu-info)) {
+  transition: all 0.3s ease;
+}
+
+:deep(.ant-dropdown-menu-item:not(.user-menu-info):hover) {
+  background: var(--theme-selected-bg);
+}
+
+:deep(.ant-dropdown-menu-item-group-title) {
+  color: var(--theme-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .invite-verification-content {
@@ -358,6 +550,30 @@ onMounted(async () => {
 
   .control-buttons {
     gap: 8px;
+  }
+
+  /* Mobile User Info Adjustments */
+  .user-info-button {
+    padding: 4px 8px;
+    min-height: 36px;
+  }
+
+  .user-name-display {
+    max-width: 80px;
+    font-size: 13px;
+  }
+
+  .user-details {
+    min-width: 180px;
+    padding: 6px 4px;
+  }
+
+  .user-name {
+    font-size: 13px;
+  }
+
+  .user-email {
+    font-size: 11px;
   }
 }
 

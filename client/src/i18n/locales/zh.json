@@ -191,7 +191,10 @@
       "verificationSuccess": "邀请码验证成功",
       "verificationFailed": "邀请码验证失败",
       "description": "邀请码用于控制系统访问权限，验证后即可正常使用所有功能。",
-      "formatHint": "邀请码格式：XX-XXXXXXXX-XX"
+      "formatHint": "邀请码格式：XX-XXXXXXXX-XX",
+      "currentUser": "当前用户",
+      "switchAccount": "切换账号",
+      "logout": "退出登录"
     }
   },
   "message": {
