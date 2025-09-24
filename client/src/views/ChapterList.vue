@@ -32,16 +32,27 @@
               <a-select-option value="reviewing">审核中</a-select-option>
               <a-select-option value="completed">已完成</a-select-option>
             </a-select>
-            <a-button 
-              type="primary" 
-              @click="showAddChapterDialog"
-              :loading="chaptersLoading"
-            >
-              <template #icon>
-                <PlusOutlined />
+            <a-dropdown>
+              <a-button type="primary" :loading="chaptersLoading">
+                <template #icon>
+                  <PlusOutlined />
+                </template>
+                添加章节
+                <DownOutlined style="margin-left: 4px; font-size: 10px;" />
+              </a-button>
+              <template #overlay>
+                <a-menu @click="handleAddMenuClick">
+                  <a-menu-item key="single">
+                    <PlusOutlined />
+                    单个添加
+                  </a-menu-item>
+                  <a-menu-item key="batch">
+                    <BulbOutlined />
+                    AI批量生成
+                  </a-menu-item>
+                </a-menu>
               </template>
-              添加章节
-            </a-button>
+            </a-dropdown>
           </a-space>
         </div>
       </div>
@@ -253,6 +264,18 @@
         </div>
       </a-form>
     </a-modal>
+
+    <!-- Batch Chapter Creator Modal -->
+    <a-modal
+      v-model:open="batchChapterVisible"
+      title="AI批量章节生成"
+      width="1200px"
+      :footer="null"
+      :maskClosable="false"
+      centered
+    >
+      <BatchChapterCreator @close="handleBatchCreatorClose" />
+    </a-modal>
   </div>
 </template>
 
@@ -265,13 +288,16 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  CopyOutlined
+  CopyOutlined,
+  DownOutlined,
+  BulbOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
 import { countValidWords } from '@/utils/textUtils'
 import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
+import BatchChapterCreator from '@/components/chapter/BatchChapterCreator.vue'
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -293,6 +319,7 @@ const {
 // 对话框状态
 const addChapterVisible = ref(false)
 const editChapterVisible = ref(false)
+const batchChapterVisible = ref(false)
 const addChapterForm = ref({
   title: '',
   outline: ''
@@ -360,17 +387,46 @@ onMounted(async () => {
   }
 })
 
+// 菜单点击处理
+const handleAddMenuClick = ({ key }) => {
+  switch (key) {
+    case 'single':
+      showAddChapterDialog()
+      break
+    case 'batch':
+      showBatchChapterDialog()
+      break
+  }
+}
+
 // 添加章节相关方法
 const showAddChapterDialog = () => {
   if (!projectStore.currentProject) {
     message.error('请先选择项目')
     return
   }
-  
+
   addChapterVisible.value = true
   addChapterForm.value = {
     title: '',
     outline: ''
+  }
+}
+
+const showBatchChapterDialog = () => {
+  if (!projectStore.currentProject) {
+    message.error('请先选择项目')
+    return
+  }
+
+  batchChapterVisible.value = true
+}
+
+const handleBatchCreatorClose = async () => {
+  batchChapterVisible.value = false
+  // 刷新章节列表以显示新创建的章节
+  if (projectStore.currentProject) {
+    await loadChapters(projectStore.currentProject.id)
   }
 }
 

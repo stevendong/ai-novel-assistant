@@ -1,11 +1,12 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const { requireAuth } = require("../middleware/auth");
 const prisma = new PrismaClient();
 
 const router = express.Router();
 
 // 获取小说的所有世界设定
-router.get('/novel/:novelId', async (req, res) => {
+router.get('/novel/:novelId', requireAuth, async (req, res) => {
   try {
     const { novelId } = req.params;
     const settings = await prisma.worldSetting.findMany({
@@ -22,13 +23,13 @@ router.get('/novel/:novelId', async (req, res) => {
         { createdAt: 'asc' }
       ]
     });
-    
+
     // Parse details field for each setting
     const parsedSettings = settings.map(setting => ({
       ...setting,
       details: setting.details ? JSON.parse(setting.details) : {}
     }));
-    
+
     res.json(parsedSettings);
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -37,7 +38,7 @@ router.get('/novel/:novelId', async (req, res) => {
 });
 
 // 获取单个设定详情
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const setting = await prisma.worldSetting.findUnique({
@@ -60,7 +61,7 @@ router.get('/:id', async (req, res) => {
     if (!setting) {
       return res.status(404).json({ error: 'Setting not found' });
     }
-    
+
     // Parse details field
     setting.details = setting.details ? JSON.parse(setting.details) : {};
 
@@ -72,10 +73,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // 创建新设定
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
     const { novelId, type, name, description, details } = req.body;
-    
+
     if (!novelId || !type || !name) {
       return res.status(400).json({ error: 'Novel ID, type, and name are required' });
     }
@@ -89,7 +90,7 @@ router.post('/', async (req, res) => {
         details: JSON.stringify(details || {})
       }
     });
-    
+
     // Parse details back to object for response
     setting.details = JSON.parse(setting.details || '{}');
 
@@ -101,7 +102,7 @@ router.post('/', async (req, res) => {
 });
 
 // 更新设定信息
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { type, name, description, details, isLocked } = req.body;
@@ -113,16 +114,16 @@ router.put('/:id', async (req, res) => {
       isLocked,
       updatedAt: new Date()
     };
-    
+
     if (details !== undefined) {
       updateData.details = JSON.stringify(details);
     }
-    
+
     const setting = await prisma.worldSetting.update({
       where: { id },
       data: updateData
     });
-    
+
     // Parse details back to object for response
     if (setting.details) {
       setting.details = JSON.parse(setting.details);
@@ -139,10 +140,10 @@ router.put('/:id', async (req, res) => {
 });
 
 // 删除设定
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     await prisma.worldSetting.delete({
       where: { id }
     });
@@ -158,7 +159,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // AI完善世界设定
-router.post('/:id/enhance', async (req, res) => {
+router.post('/:id/enhance', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { expandAspects = [], plotRelevance, expansionType = 'comprehensive' } = req.body;
@@ -414,11 +415,11 @@ function parseEnhancementResponse(content, settingType) {
 function validateAndEnhanceResponse(response, settingType) {
   const defaultResponse = getDefaultEnhancementStructure(settingType);
   const fieldsStructure = getSettingFieldsStructure(settingType);
-  
+
   // 处理新的detailsFields结构
   const detailsFields = {};
   const fieldNames = Object.keys(fieldsStructure);
-  
+
   fieldNames.forEach(fieldKey => {
     if (response.detailsFields && response.detailsFields[fieldKey]) {
       detailsFields[fieldKey] = response.detailsFields[fieldKey];
@@ -522,7 +523,7 @@ function getDefaultEnhancementStructure(settingType) {
 }
 
 // AI扩展设定细节
-router.post('/:id/expand', async (req, res) => {
+router.post('/:id/expand', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { focusAreas = [], detailLevel = 'standard' } = req.body;
@@ -806,7 +807,7 @@ function getDefaultExpansionStructure(settingType) {
 }
 
 // AI智能建议接口
-router.post('/:id/suggestions', async (req, res) => {
+router.post('/:id/suggestions', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { suggestionType = 'general' } = req.body;
@@ -992,12 +993,12 @@ function parseSuggestionsResponse(content) {
 }
 
 // 应用AI增强内容到设定
-router.post('/:id/apply-enhancement', async (req, res) => {
+router.post('/:id/apply-enhancement', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      enhancedDescription, 
-      detailsFields, 
+    const {
+      enhancedDescription,
+      detailsFields,
       applyDescription = false,
       applyFields = []
     } = req.body;
@@ -1027,7 +1028,7 @@ router.post('/:id/apply-enhancement', async (req, res) => {
     // 应用详细字段
     if (detailsFields && applyFields.length > 0) {
       const currentDetails = setting.details ? JSON.parse(setting.details) : {};
-      
+
       applyFields.forEach(fieldKey => {
         if (detailsFields[fieldKey]) {
           currentDetails[fieldKey] = detailsFields[fieldKey];
@@ -1061,7 +1062,7 @@ router.post('/:id/apply-enhancement', async (req, res) => {
 });
 
 // 批量生成世界设定
-router.post('/batch-generate/:novelId', async (req, res) => {
+router.post('/batch-generate/:novelId', requireAuth, async (req, res) => {
   try {
     const { novelId } = req.params;
     const {
@@ -1382,7 +1383,7 @@ function generateDefaultBatchResponse(settingTypes, count) {
 }
 
 // 应用批量生成的设定
-router.post('/apply-batch/:novelId', async (req, res) => {
+router.post('/apply-batch/:novelId', requireAuth, async (req, res) => {
   try {
     const { novelId } = req.params;
     const { generatedSettings, selectedSettings = [] } = req.body;
@@ -1435,7 +1436,7 @@ router.post('/apply-batch/:novelId', async (req, res) => {
 });
 
 // AI一致性检查接口
-router.post('/:id/consistency-check', async (req, res) => {
+router.post('/:id/consistency-check', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { scope = 'setting' } = req.body;

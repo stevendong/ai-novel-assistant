@@ -43,6 +43,9 @@ model User {
 
   // 记忆备份关联
   memoryBackups  MemoryBackup[]
+
+  // 批量章节生成关联
+  batchGenerations BatchChapterGeneration[]
 }
 
 // 小说基本信息
@@ -69,6 +72,7 @@ model Novel {
   goals         WritingGoal[]
   workflows     WorkflowConfig[]
   conversations AIConversation[]
+  batchGenerations BatchChapterGeneration[]
 
   @@index([userId])
 }
@@ -378,4 +382,59 @@ model MemoryBackup {
   @@index([memoryType])
   @@index([userId, novelId])
   @@index([importance])
+}
+
+// 批量章节生成记录表
+model BatchChapterGeneration {
+  id                String   @id @default(cuid())
+  novelId           String
+  userId            String
+  batchName         String   // 批次名称
+  mode              String   // continue, insert, branch, expand
+  parameters        String   // 生成参数（JSON字符串）
+  status            String   @default("pending") // pending, analyzing, generating, completed, failed
+  progress          Int      @default(0) // 0-100
+  totalChapters     Int      // 计划生成章节数
+  completedChapters Int      @default(0) // 已完成章节数
+  startPosition     Int?     // 起始位置（章节号）
+  analysisResult    String?  // 上下文分析结果（JSON字符串）
+  errorMessage      String?  // 错误信息
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // 关联
+  novel             Novel              @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generatedChapters GeneratedChapter[]
+
+  @@index([novelId])
+  @@index([userId])
+  @@index([status])
+}
+
+// 生成章节模板表
+model GeneratedChapter {
+  id              String   @id @default(cuid())
+  batchId         String
+  chapterNumber   Int
+  title           String
+  outline         String
+  plotPoints      String   // 剧情要点（JSON字符串）
+  characters      String?  // 涉及角色（JSON字符串）
+  settings        String?  // 使用设定（JSON字符串）
+  estimatedWords  Int      @default(0) // 预估字数
+  priority        Int      @default(1) // 重要性等级 1-5
+  dependencies    String?  // 依赖的章节ID列表（JSON字符串）
+  aiConfidence    Float    @default(0.8) // AI生成信心度 0-1
+  status          String   @default("draft") // draft, approved, rejected, applied
+  notes           String?  // 用户备注
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 关联
+  batch           BatchChapterGeneration @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([status])
+  @@unique([batchId, chapterNumber])
 }
