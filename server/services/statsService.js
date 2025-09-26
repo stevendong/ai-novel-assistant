@@ -294,21 +294,38 @@ class StatsService {
   // 获取AI服务状态
   async getAIStatus() {
     try {
-      // 这里可以检查 OpenAI API 密钥是否配置
-      const hasApiKey = !!process.env.OPENAI_API_KEY
+      const aiService = require('./aiService')
 
-      if (!hasApiKey) {
+      // 获取当前默认提供商
+      const defaultProvider = aiService.getDefaultProvider()
+
+      if (!defaultProvider) {
         return {
           connected: false,
           model: null,
+          error: 'No AI provider configured'
+        }
+      }
+
+      // 检查提供商是否有有效的客户端或API密钥
+      const hasValidConfig = defaultProvider.client ||
+        (defaultProvider.config && defaultProvider.config.apiKey)
+
+      if (!hasValidConfig) {
+        return {
+          connected: false,
+          model: defaultProvider.models?.chat || null,
           error: 'API key not configured'
         }
       }
 
-      // 可以进一步测试 API 连接
+      // 返回当前配置的提供商信息
       return {
         connected: true,
-        model: 'gpt-3.5-turbo',
+        model: defaultProvider.models?.chat || 'unknown',
+        provider: Object.keys(aiService.providers).find(key =>
+          aiService.providers.get(key) === defaultProvider
+        ),
         usage: {
           requests: 0, // 可以从缓存或数据库获取
           tokens: 0
@@ -318,6 +335,7 @@ class StatsService {
       console.error('Error getting AI status:', error)
       return {
         connected: false,
+        model: null,
         error: error.message
       }
     }

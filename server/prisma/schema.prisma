@@ -46,6 +46,9 @@ model User {
 
   // 批量章节生成关联
   batchGenerations BatchChapterGeneration[]
+
+  // AI偏好设置关联
+  aiPreferences    UserAIPreferences?
 }
 
 // 小说基本信息
@@ -437,4 +440,22 @@ model GeneratedChapter {
   @@index([batchId])
   @@index([status])
   @@unique([batchId, chapterNumber])
+}
+
+// 用户AI偏好设置
+model UserAIPreferences {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  preferredProvider  String?  // openai, claude, custom等
+  preferredModel     String?  // 具体模型名称
+  taskPreferences    String   @default("{}") // 任务特定偏好设置(JSON)
+  autoSave           Boolean  @default(true)
+  maxHistoryLength   Int      @default(50)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // 关联
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

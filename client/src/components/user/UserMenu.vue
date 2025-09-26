@@ -110,6 +110,99 @@
           <small class="form-hint">此操作将永久删除您的账户和所有数据，无法恢复</small>
         </div>
       </a-tab-pane>
+
+      <a-tab-pane key="ai" tab="AI设置">
+        <div class="ai-settings">
+          <div class="settings-section">
+            <h4>AI提供商</h4>
+            <p class="section-description">选择您偏好的AI服务提供商</p>
+            <a-select
+              v-model:value="aiSettings.provider"
+              style="width: 100%"
+              :options="availableProviders"
+              :loading="loadingProviders"
+              @change="onProviderChange"
+            />
+          </div>
+
+          <div class="settings-section">
+            <h4>AI模型</h4>
+            <p class="section-description">选择具体的AI模型</p>
+            <a-select
+              v-model:value="aiSettings.model"
+              style="width: 100%"
+              :options="availableModels"
+              :disabled="!aiSettings.provider"
+              @change="onModelChange"
+            />
+          </div>
+
+          <div class="settings-section">
+            <h4>对话设置</h4>
+            <div class="setting-item">
+              <div class="setting-label">
+                <span>自动保存对话</span>
+                <small>自动保存AI对话记录</small>
+              </div>
+              <a-switch v-model:checked="aiSettings.autoSave" @change="onAutoSaveChange" />
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-label">
+                <span>对话历史长度</span>
+                <small>保留的对话消息数量 (10-200)</small>
+              </div>
+              <a-input-number
+                v-model:value="aiSettings.maxHistoryLength"
+                :min="10"
+                :max="200"
+                :step="10"
+                style="width: 120px"
+                @change="onHistoryLengthChange"
+              />
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h4>任务偏好</h4>
+            <p class="section-description">为不同类型的任务配置偏好模型</p>
+            <div class="task-preferences">
+              <div class="task-item" v-for="task in taskTypes" :key="task.key">
+                <div class="task-info">
+                  <span class="task-name">{{ task.name }}</span>
+                  <small class="task-desc">{{ task.description }}</small>
+                </div>
+                <a-select
+                  v-model:value="aiSettings.taskPreferences[task.key]"
+                  style="width: 160px"
+                  :options="taskModelOptions"
+                  placeholder="使用默认"
+                  allow-clear
+                  @change="onTaskPreferenceChange"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h4>快速操作</h4>
+            <a-row :gutter="12">
+              <a-col :span="12">
+                <a-button @click="resetAISettings" block>
+                  <template #icon><ReloadOutlined /></template>
+                  重置为默认
+                </a-button>
+              </a-col>
+              <a-col :span="12">
+                <a-button type="primary" @click="saveAISettings" :loading="savingSettings" block>
+                  <template #icon><SaveOutlined /></template>
+                  保存设置
+                </a-button>
+              </a-col>
+            </a-row>
+          </div>
+        </div>
+      </a-tab-pane>
     </a-tabs>
   </a-modal>
 
@@ -167,18 +260,53 @@ import {
   SettingOutlined,
   QuestionCircleOutlined,
   LogoutOutlined,
-  DownOutlined
+  DownOutlined,
+  ReloadOutlined,
+  SaveOutlined
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useAIChatStore } from '@/stores/aiChat'
+import { apiClient } from '@/utils/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const aiChatStore = useAIChatStore()
 
 const profileModalVisible = ref(false)
 const settingsModalVisible = ref(false)
 const logoutAllModalVisible = ref(false)
 const deleteAccountModalVisible = ref(false)
 const deleteAccountPassword = ref('')
+
+// AI设置相关数据
+const aiSettings = reactive({
+  provider: 'openai',
+  model: 'gpt-3.5-turbo',
+  autoSave: true,
+  maxHistoryLength: 50,
+  taskPreferences: {}
+})
+
+const availableProviders = ref([])
+const availableModels = ref([])
+const loadingProviders = ref(false)
+const savingSettings = ref(false)
+
+// 任务类型定义
+const taskTypes = [
+  { key: 'consistency', name: '一致性检查', description: '检查内容的逻辑一致性' },
+  { key: 'creative', name: '创意写作', description: '生成创意内容和情节' },
+  { key: 'analysis', name: '内容分析', description: '分析文本结构和质量' },
+  { key: 'content_generation', name: '内容生成', description: '生成章节和段落内容' }
+]
+
+const taskModelOptions = computed(() => {
+  const options = availableModels.value.map(model => ({
+    label: model.label,
+    value: model.value
+  }))
+  return options
+})
 
 // const profileForm = Form.useForm()
 const profileData = reactive({
@@ -301,13 +429,163 @@ const cancelDeleteAccount = () => {
   deleteAccountModalVisible.value = false
 }
 
+// AI设置相关方法
+const loadAIConfig = async () => {
+  try {
+    loadingProviders.value = true
+
+    // 获取配置信息
+    const configResponse = await apiClient.get('/api/ai/config')
+    const config = configResponse.data
+
+    // 设置可用提供商
+    availableProviders.value = config.availableProviders.map(provider => ({
+      label: `${provider.name} (${provider.type})`,
+      value: provider.name
+    }))
+
+    // 获取用户偏好设置
+    try {
+      const preferencesResponse = await apiClient.get('/api/ai/preferences')
+      const preferences = preferencesResponse.data
+
+      Object.assign(aiSettings, {
+        provider: preferences.preferredProvider || config.defaultProvider,
+        model: preferences.preferredModel || config.defaultModel,
+        autoSave: preferences.autoSave ?? true,
+        maxHistoryLength: preferences.maxHistoryLength || 50,
+        taskPreferences: preferences.taskPreferences || {}
+      })
+    } catch (error) {
+      console.warn('加载用户偏好失败，使用默认设置:', error)
+      Object.assign(aiSettings, {
+        provider: config.defaultProvider,
+        model: config.defaultModel,
+        autoSave: true,
+        maxHistoryLength: 50,
+        taskPreferences: {}
+      })
+    }
+
+    // 设置当前提供商的可用模型
+    updateAvailableModels()
+  } catch (error) {
+    console.error('加载AI配置失败:', error)
+    message.error('加载AI配置失败')
+  } finally {
+    loadingProviders.value = false
+  }
+}
+
+const updateAvailableModels = () => {
+  const selectedProvider = availableProviders.value.find(p => p.value === aiSettings.provider)
+  if (!selectedProvider) {
+    availableModels.value = []
+    return
+  }
+
+  // 这里应该根据实际的API返回的provider信息来设置模型列表
+  // 暂时使用简化的逻辑
+  const modelMap = {
+    'openai': [
+      { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo' },
+      { label: 'GPT-4', value: 'gpt-4' },
+      { label: 'Kimi K2 Instruct', value: 'kimi-k2-instruct' }
+    ],
+    'claude': [
+      { label: 'Claude 3 Haiku', value: 'claude-3-haiku-20240307' },
+      { label: 'Claude 3 Sonnet', value: 'claude-3-sonnet-20240229' },
+      { label: 'Claude 3 Opus', value: 'claude-3-opus-20240229' }
+    ]
+  }
+
+  availableModels.value = modelMap[aiSettings.provider] || []
+}
+
+const onProviderChange = (value) => {
+  aiSettings.provider = value
+  updateAvailableModels()
+  // 重置模型选择为第一个可用模型
+  if (availableModels.value.length > 0) {
+    aiSettings.model = availableModels.value[0].value
+  }
+}
+
+const onModelChange = (value) => {
+  aiSettings.model = value
+}
+
+const onAutoSaveChange = (checked) => {
+  aiSettings.autoSave = checked
+}
+
+const onHistoryLengthChange = (value) => {
+  aiSettings.maxHistoryLength = value
+}
+
+const onTaskPreferenceChange = () => {
+  // 任务偏好变更处理逻辑
+}
+
+const resetAISettings = async () => {
+  try {
+    const configResponse = await apiClient.get('/api/ai/config')
+    const config = configResponse.data
+
+    Object.assign(aiSettings, {
+      provider: config.defaultProvider,
+      model: config.defaultModel,
+      autoSave: true,
+      maxHistoryLength: 50,
+      taskPreferences: {}
+    })
+
+    updateAvailableModels()
+    message.success('已重置为默认设置')
+  } catch (error) {
+    console.error('重置设置失败:', error)
+    message.error('重置设置失败')
+  }
+}
+
+const saveAISettings = async () => {
+  try {
+    savingSettings.value = true
+
+    await apiClient.put('/api/ai/preferences', {
+      preferredProvider: aiSettings.provider,
+      preferredModel: aiSettings.model,
+      autoSave: aiSettings.autoSave,
+      maxHistoryLength: aiSettings.maxHistoryLength,
+      taskPreferences: aiSettings.taskPreferences
+    })
+
+    // 同步到AI Chat Store
+    await aiChatStore.updateSettingsEnhanced({
+      provider: aiSettings.provider,
+      model: aiSettings.model,
+      autoSave: aiSettings.autoSave,
+      maxHistoryLength: aiSettings.maxHistoryLength
+    })
+
+    message.success('AI设置已保存')
+  } catch (error) {
+    console.error('保存AI设置失败:', error)
+    message.error('保存设置失败')
+  } finally {
+    savingSettings.value = false
+  }
+}
+
 // 生命周期
 onMounted(async () => {
   try {
     // 确保认证 store 已初始化
     await authStore.init()
+    // 加载AI配置
+    await loadAIConfig()
   } catch (error) {
-    console.error('Failed to initialize auth store:', error)
+    console.error('Failed to initialize:', error)
   }
 })
 </script>
@@ -383,5 +661,74 @@ onMounted(async () => {
 .delete-account-form li {
   margin-bottom: 4px;
   color: #6b7280;
+}
+
+/* AI设置相关样式 */
+.ai-settings {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.section-description {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-label {
+  flex: 1;
+}
+
+.setting-label span {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.setting-label small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.task-preferences {
+  space-y: 12px;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.task-info {
+  flex: 1;
+}
+
+.task-name {
+  font-weight: 500;
+  color: #1f2937;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.task-desc {
+  color: #6b7280;
+  font-size: 12px;
 }
 </style>

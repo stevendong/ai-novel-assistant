@@ -40,10 +40,13 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const aiStatus = ref<'online' | 'offline'>('online')
   const settings = ref({
     provider: 'openai',
-    model: 'deepseek-v3.1',
+    model: 'gpt-3.5-turbo', // 与后端配置保持一致
     autoSave: true,
     maxHistoryLength: 50
   })
+
+  // 配置初始化状态
+  const isConfigLoaded = ref(false)
 
   // Getters
   const currentMessages = computed(() => currentSession.value?.messages || [])
@@ -745,9 +748,74 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
   }
 
+  // 从服务器加载AI配置
+  const loadAIConfig = async () => {
+    try {
+      const configResponse = await apiClient.get('/api/ai/config')
+      const preferencesResponse = await apiClient.get('/api/ai/preferences')
+
+      const config = configResponse.data
+      const preferences = preferencesResponse.data
+
+      // 使用用户偏好设置，如果没有则使用系统默认配置
+      settings.value = {
+        provider: preferences.preferredProvider || config.defaultProvider || 'openai',
+        model: preferences.preferredModel || config.defaultModel || 'gpt-3.5-turbo',
+        autoSave: preferences.autoSave ?? true,
+        maxHistoryLength: preferences.maxHistoryLength || 50
+      }
+
+      isConfigLoaded.value = true
+      console.log('AI配置已加载:', settings.value)
+    } catch (error) {
+      console.warn('加载AI配置失败，使用默认配置:', error)
+      isConfigLoaded.value = true
+    }
+  }
+
+  // 保存AI偏好设置到服务器
+  const saveAIPreferences = async () => {
+    try {
+      await apiClient.put('/api/ai/preferences', {
+        preferredProvider: settings.value.provider,
+        preferredModel: settings.value.model,
+        autoSave: settings.value.autoSave,
+        maxHistoryLength: settings.value.maxHistoryLength
+      })
+      console.log('AI偏好设置已保存')
+    } catch (error) {
+      console.error('保存AI偏好设置失败:', error)
+    }
+  }
+
+  // 更新设置（增强版，同步到服务器）
+  const updateSettingsEnhanced = async (newSettings: Partial<typeof settings.value>) => {
+    const oldSettings = { ...settings.value }
+    Object.assign(settings.value, newSettings)
+
+    // 如果provider或model发生变化，同步到服务器
+    if (newSettings.provider !== oldSettings.provider ||
+        newSettings.model !== oldSettings.model ||
+        newSettings.autoSave !== oldSettings.autoSave ||
+        newSettings.maxHistoryLength !== oldSettings.maxHistoryLength) {
+      await saveAIPreferences()
+    }
+
+    // 同时保存到本地存储（作为备份）
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aiChatSettings', JSON.stringify(settings.value))
+    }
+  }
+
   // Initialize
   const initializeStore = async () => {
+    // 先尝试从服务器加载配置
+    await loadAIConfig()
+
+    // 然后加载本地设置作为补充
     loadSettings()
+
+    // 最后加载会话数据
     await loadSessions()
   }
 
@@ -761,6 +829,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
     isTyping,
     aiStatus,
     settings,
+    isConfigLoaded,
 
     // Getters
     currentMessages,
@@ -776,9 +845,12 @@ export const useAIChatStore = defineStore('aiChat', () => {
     clearCurrentSession,
     deleteSession,
     updateSettings,
+    updateSettingsEnhanced,
     saveSession,
     saveAllSessions,
     loadSessions,
-    loadSettings
+    loadSettings,
+    loadAIConfig,
+    saveAIPreferences
   }
 })
