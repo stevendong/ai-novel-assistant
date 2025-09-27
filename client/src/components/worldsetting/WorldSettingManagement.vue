@@ -252,7 +252,16 @@
                     <DownOutlined />
                   </a-button>
                 </a-dropdown>
-                <a-button 
+                <a-button
+                  :type="showAISuggestionsPanel ? 'primary' : 'default'"
+                  @click="showAISuggestionsPanel = !showAISuggestionsPanel"
+                >
+                  <template #icon>
+                    <BulbOutlined />
+                  </template>
+                  AI建议
+                </a-button>
+                <a-button
                   :type="selectedSetting.isLocked ? 'default' : 'primary'"
                   @click="toggleLock"
                 >
@@ -417,8 +426,20 @@
         </div>
 
         <!-- AI Suggestions Panel (30%) -->
-        <div class="w-80 theme-bg-elevated border-l theme-border p-4">
-          <h3 class="text-sm font-medium theme-text-primary mb-4">AI 建议</h3>
+        <div v-if="showAISuggestionsPanel" class="w-80 theme-bg-elevated border-l theme-border p-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-medium theme-text-primary">AI 建议</h3>
+            <a-button
+              type="text"
+              size="small"
+              @click="showAISuggestionsPanel = false"
+              class="!p-1 !h-auto hover:!bg-gray-100 dark:hover:!bg-gray-700"
+            >
+              <template #icon>
+                <CloseOutlined class="text-xs" />
+              </template>
+            </a-button>
+          </div>
           
           <div class="space-y-4">
             <a-card size="small" title="扩展建议">
@@ -972,7 +993,8 @@ import {
   ExpandAltOutlined,
   BulbOutlined,
   CheckCircleOutlined,
-  DownOutlined
+  DownOutlined,
+  CloseOutlined
 } from '@ant-design/icons-vue'
 import type { WorldSetting } from '@/types'
 import { settingService } from '@/services/settingService'
@@ -990,6 +1012,7 @@ const editingSetting = ref<any>({})
 const searchQuery = ref('')
 const activeTab = ref('details')
 const showAddSettingModal = ref(false)
+const showAISuggestionsPanel = ref(true)
 const newSetting = ref({
   type: '',
   name: '',

@@ -62,6 +62,15 @@
             </a-tooltip>
           </div>
 
+          <!-- 通用关闭按钮 -->
+          <div v-if="!isFloating" class="general-controls">
+            <a-tooltip title="关闭AI助手">
+              <div class="control-btn close-btn" @click="closeFloatingMode">
+                <component :is="CloseOutlined" />
+              </div>
+            </a-tooltip>
+          </div>
+
           <!-- 浮动模式窗口控制按钮 -->
           <div v-if="isFloating" class="floating-controls">
             <a-tooltip title="最小化">

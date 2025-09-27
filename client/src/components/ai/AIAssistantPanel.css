@@ -1008,6 +1008,14 @@
   }
 }
 
+/* 通用控制按钮 */
+.general-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
 /* 浮动窗口控制按钮 */
 .floating-controls {
   display: flex;

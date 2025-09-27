@@ -12,22 +12,22 @@
             新增
           </a-button>
         </div>
-        
+
         <a-input-search
           v-model:value="searchQuery"
           placeholder="搜索角色..."
           size="small"
         />
       </div>
-      
+
       <div class="flex-1 overflow-y-auto p-2">
         <div
           v-for="character in filteredCharacters"
           :key="character.id"
           @click="selectCharacter(character)"
           class="p-3 mb-2 rounded-lg cursor-pointer transition-colors"
-          :class="selectedCharacter?.id === character.id 
-            ? 'theme-selected-bg border theme-selected-border' 
+          :class="selectedCharacter?.id === character.id
+            ? 'theme-selected-bg border theme-selected-border'
             : 'theme-bg-container border theme-border theme-selected-hover'"
         >
           <div class="flex items-start space-x-3">
@@ -63,7 +63,7 @@
           <p>选择一个角色以查看和编辑详情</p>
         </div>
       </div>
-      
+
       <div v-else class="flex-1 flex">
         <!-- Character Form (70%) -->
         <div class="flex-1 p-6 overflow-y-auto">
@@ -86,7 +86,7 @@
                   </template>
                   AI完善
                 </a-button>
-                <a-button 
+                <a-button
                   :type="selectedCharacter.isLocked ? 'default' : 'primary'"
                   @click="toggleLock"
                 >
@@ -95,6 +95,15 @@
                     <UnlockOutlined v-else />
                   </template>
                   {{ selectedCharacter.isLocked ? '解锁' : '锁定' }}
+                </a-button>
+                <a-button
+                  :type="showAISuggestionsPanel ? 'primary' : 'default'"
+                  @click="showAISuggestionsPanel = !showAISuggestionsPanel"
+                >
+                  <template #icon>
+                    <BulbOutlined />
+                  </template>
+                  AI建议
                 </a-button>
                 <a-button danger @click="deleteCharacter">
                   <template #icon>
@@ -139,19 +148,19 @@
                       </a-form-item>
                     </a-col>
                   </a-row>
-                  
+
                   <a-form-item label="角色描述">
-                    <a-textarea 
-                      v-model:value="editingCharacter.description" 
+                    <a-textarea
+                      v-model:value="editingCharacter.description"
                       :rows="3"
                       placeholder="简要描述角色的基本信息..."
                       :disabled="selectedCharacter.isLocked"
                     />
                   </a-form-item>
-                  
+
                   <a-form-item label="外貌特征">
-                    <a-textarea 
-                      v-model:value="editingCharacter.appearance" 
+                    <a-textarea
+                      v-model:value="editingCharacter.appearance"
                       :rows="4"
                       placeholder="详细描述角色的外貌特征..."
                       :disabled="selectedCharacter.isLocked"
@@ -162,26 +171,26 @@
                 <!-- Personality Tab -->
                 <a-tab-pane key="personality" tab="性格特征">
                   <a-form-item label="性格特点">
-                    <a-textarea 
-                      v-model:value="editingCharacter.personality" 
+                    <a-textarea
+                      v-model:value="editingCharacter.personality"
                       :rows="6"
                       placeholder="描述角色的性格特点、行为习惯、说话方式等..."
                       :disabled="selectedCharacter.isLocked"
                     />
                   </a-form-item>
-                  
+
                   <a-form-item label="核心价值观">
-                    <a-textarea 
-                      v-model:value="editingCharacter.values" 
+                    <a-textarea
+                      v-model:value="editingCharacter.values"
                       :rows="3"
                       placeholder="角色的核心价值观和信念..."
                       :disabled="selectedCharacter.isLocked"
                     />
                   </a-form-item>
-                  
+
                   <a-form-item label="恐惧与弱点">
-                    <a-textarea 
-                      v-model:value="editingCharacter.fears" 
+                    <a-textarea
+                      v-model:value="editingCharacter.fears"
                       :rows="3"
                       placeholder="角色害怕什么，有什么弱点..."
                       :disabled="selectedCharacter.isLocked"
@@ -192,17 +201,17 @@
                 <!-- Background Tab -->
                 <a-tab-pane key="background" tab="背景故事">
                   <a-form-item label="个人背景">
-                    <a-textarea 
-                      v-model:value="editingCharacter.background" 
+                    <a-textarea
+                      v-model:value="editingCharacter.background"
                       :rows="8"
                       placeholder="角色的成长经历、重要事件、人生转折点..."
                       :disabled="selectedCharacter.isLocked"
                     />
                   </a-form-item>
-                  
+
                   <a-form-item label="技能与能力">
-                    <a-textarea 
-                      v-model:value="editingCharacter.skills" 
+                    <a-textarea
+                      v-model:value="editingCharacter.skills"
                       :rows="3"
                       placeholder="角色掌握的技能、特殊能力..."
                       :disabled="selectedCharacter.isLocked"
@@ -213,22 +222,22 @@
                 <!-- Relationships Tab -->
                 <a-tab-pane key="relationships" tab="人际关系">
                   <div class="space-y-4">
-                    <div 
-                      v-for="(relation, index) in editingCharacter.relationships" 
+                    <div
+                      v-for="(relation, index) in editingCharacter.relationships"
                       :key="index"
                       class="p-4 border theme-border rounded-lg"
                     >
                       <a-row :gutter="16" align="middle">
                         <a-col :span="6">
-                          <a-input 
-                            v-model:value="relation.character" 
+                          <a-input
+                            v-model:value="relation.character"
                             placeholder="角色名称"
                             :disabled="selectedCharacter.isLocked"
                           />
                         </a-col>
                         <a-col :span="4">
-                          <a-select 
-                            v-model:value="relation.type" 
+                          <a-select
+                            v-model:value="relation.type"
                             placeholder="关系类型"
                             :disabled="selectedCharacter.isLocked"
                           >
@@ -242,8 +251,8 @@
                           </a-select>
                         </a-col>
                         <a-col :span="4">
-                          <a-select 
-                            v-model:value="relation.importance" 
+                          <a-select
+                            v-model:value="relation.importance"
                             placeholder="重要程度"
                             :disabled="selectedCharacter.isLocked"
                           >
@@ -253,16 +262,16 @@
                           </a-select>
                         </a-col>
                         <a-col :span="8">
-                          <a-input 
-                            v-model:value="relation.description" 
+                          <a-input
+                            v-model:value="relation.description"
                             placeholder="关系描述"
                             :disabled="selectedCharacter.isLocked"
                           />
                         </a-col>
                         <a-col :span="2">
-                          <a-button 
-                            type="text" 
-                            danger 
+                          <a-button
+                            type="text"
+                            danger
                             @click="removeRelationship(index)"
                             :disabled="selectedCharacter.isLocked"
                           >
@@ -271,10 +280,10 @@
                         </a-col>
                       </a-row>
                     </div>
-                    
-                    <a-button 
-                      type="dashed" 
-                      block 
+
+                    <a-button
+                      type="dashed"
+                      block
                       @click="addRelationship"
                       :disabled="selectedCharacter.isLocked"
                     >
@@ -286,8 +295,8 @@
               </a-tabs>
 
               <div class="mt-6 text-right">
-                <a-button 
-                  type="primary" 
+                <a-button
+                  type="primary"
                   html-type="submit"
                   :disabled="selectedCharacter.isLocked"
                 >
@@ -299,8 +308,20 @@
         </div>
 
         <!-- AI Suggestions Panel (30%) -->
-        <div class="w-96 theme-bg-elevated border-l theme-border p-4">
-          <h3 class="text-sm font-medium theme-text-primary mb-4">AI 建议</h3>
+        <div v-if="showAISuggestionsPanel" class="w-96 theme-bg-elevated border-l theme-border p-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-medium theme-text-primary">AI 建议</h3>
+            <a-button
+              type="text"
+              size="small"
+              @click="showAISuggestionsPanel = false"
+              class="!p-1 !h-auto hover:!bg-gray-100 dark:hover:!bg-gray-700"
+            >
+              <template #icon>
+                <CloseOutlined class="text-xs" />
+              </template>
+            </a-button>
+          </div>
 
           <div v-if="aiEnhancementResult && aiEnhancementResult.suggestions" class="space-y-4">
             <!-- 动态显示主要AI建议 -->
@@ -712,7 +733,9 @@ import {
   RobotOutlined,
   LockOutlined,
   UnlockOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  CloseOutlined,
+  BulbOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
@@ -744,6 +767,7 @@ const searchQuery = ref('')
 const activeTab = ref('basic')
 const showAddCharacterModal = ref(false)
 const showAIEnhancementModal = ref(false)
+const showAISuggestionsPanel = ref(true)
 const showFullAIPreview = ref(false)
 const aiEnhancementResult = ref<any>(null)
 const newCharacter = ref({
@@ -764,7 +788,7 @@ const filteredCharacters = computed(() => {
 
 const selectCharacter = async (character: Character) => {
   selectedCharacter.value = character
-  
+
   // 获取完整角色信息
   const fullCharacter = await getCharacter(character.id)
   if (fullCharacter) {
@@ -798,7 +822,7 @@ const toggleLock = async () => {
     const updated = await updateCharacter(selectedCharacter.value.id, {
       isLocked: newLockStatus
     })
-    
+
     if (updated) {
       selectedCharacter.value = updated
     }
@@ -807,7 +831,7 @@ const toggleLock = async () => {
 
 const saveCharacter = async () => {
   if (!selectedCharacter.value) return
-  
+
   // 转换关系数据格式
   const relationshipsObject: Record<string, any> = {}
   if (Array.isArray(editingCharacter.value.relationships)) {
@@ -821,7 +845,7 @@ const saveCharacter = async () => {
       }
     })
   }
-  
+
   const updateData = {
     name: editingCharacter.value.name,
     description: editingCharacter.value.description,
@@ -835,7 +859,7 @@ const saveCharacter = async () => {
     skills: editingCharacter.value.skills,
     relationships: relationshipsObject
   }
-  
+
   const updated = await updateCharacter(selectedCharacter.value.id, updateData)
   if (updated) {
     selectedCharacter.value = updated
@@ -845,7 +869,7 @@ const saveCharacter = async () => {
 
 const deleteCharacter = async () => {
   if (!selectedCharacter.value) return
-  
+
   const success = await deleteCharacterAPI(selectedCharacter.value.id)
   if (success) {
     selectedCharacter.value = null
@@ -1102,14 +1126,14 @@ const initializeData = async () => {
   if (isInitializing.value || !projectStore.currentProject) {
     return
   }
-  
+
   try {
     isInitializing.value = true
-    
+
     // 清除当前选择的角色
     selectedCharacter.value = null
     editingCharacter.value = {}
-    
+
     await loadCharacters()
     // 如果有角色，选择第一个
     if (characters.value.length > 0) {
