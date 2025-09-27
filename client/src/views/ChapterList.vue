@@ -402,7 +402,7 @@ const handleAddMenuClick = ({ key }) => {
 // 添加章节相关方法
 const showAddChapterDialog = () => {
   if (!projectStore.currentProject) {
-    message.error('请先选择项目')
+    message.error('请先选择作品')
     return
   }
 
@@ -415,7 +415,7 @@ const showAddChapterDialog = () => {
 
 const showBatchChapterDialog = () => {
   if (!projectStore.currentProject) {
-    message.error('请先选择项目')
+    message.error('请先选择作品')
     return
   }
 

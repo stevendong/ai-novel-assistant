@@ -459,7 +459,7 @@ const prevStep = () => {
 const analyzeContext = async () => {
   const novelId = projectStore.currentProject?.id
   if (!novelId) {
-    throw new Error('请先选择项目')
+    throw new Error('请先选择作品')
   }
 
   const response = await apiClient.get(`/api/chapters/batch/${novelId}/analyze`)
@@ -473,7 +473,7 @@ const analyzeContext = async () => {
 const startGeneration = async () => {
   const novelId = projectStore.currentProject?.id
   if (!novelId) {
-    throw new Error('请先选择项目')
+    throw new Error('请先选择作品')
   }
 
   // 创建生成任务

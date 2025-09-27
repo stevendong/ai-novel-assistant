@@ -271,7 +271,7 @@
             <template #title>
               <div class="card-title">
                 <BookOutlined />
-                整体项目进度
+                整体作品进度
               </div>
             </template>
 
@@ -305,7 +305,7 @@
                     stroke-color="#722ed1"
                     :format="percent => `${percent}%`"
                   />
-                  <p class="circle-label">项目完成度</p>
+                  <p class="circle-label">作品完成度</p>
                 </div>
               </a-col>
             </a-row>

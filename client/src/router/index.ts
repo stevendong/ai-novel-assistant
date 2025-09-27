@@ -47,7 +47,7 @@ const router = createRouter({
           name: 'project',
           component: ProjectManagement,
           meta: {
-            title: '项目信息',
+            title: '作品信息',
             icon: 'BookOutlined'
           }
         },

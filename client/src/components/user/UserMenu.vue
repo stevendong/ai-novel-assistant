@@ -233,7 +233,7 @@
     <div class="delete-account-form">
       <p>此操作将永久删除您的账户和所有相关数据，包括：</p>
       <ul>
-        <li>所有小说项目</li>
+        <li>所有小说作品</li>
         <li>角色和世界设定</li>
         <li>章节内容</li>
         <li>写作统计</li>

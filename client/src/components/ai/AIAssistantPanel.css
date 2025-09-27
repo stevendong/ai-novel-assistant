@@ -1253,42 +1253,7 @@
   transform: rotate(90deg) scale(1.1);
 }
 
-/* 滚动按钮特殊样式 */
-.scroll-tool-button .button-wrapper {
-  background: linear-gradient(135deg,
-    rgba(255, 165, 0, 0.08) 0%,
-    rgba(255, 165, 0, 0.15) 100%);
-  border-color: rgba(255, 165, 0, 0.2);
-  color: #fa8c16;
-  animation: scroll-pulse 2s infinite ease-in-out;
-}
 
-.scroll-tool-button .button-wrapper:hover {
-  background: linear-gradient(135deg,
-    rgba(255, 165, 0, 0.15) 0%,
-    rgba(255, 165, 0, 0.25) 100%);
-  border-color: rgba(255, 165, 0, 0.4);
-  transform: translateY(-2px);
-}
-
-.scroll-tool-button .button-icon {
-  color: #fa8c16;
-  transition: all 0.3s ease;
-}
-
-.scroll-tool-button .button-wrapper:hover .button-icon {
-  transform: translateY(2px) scale(1.2);
-  animation: bounce-down 0.6s ease infinite;
-}
-
-@keyframes scroll-pulse {
-  0%, 100% {
-    box-shadow: 0 2px 8px rgba(250, 140, 22, 0.1);
-  }
-  50% {
-    box-shadow: 0 4px 16px rgba(250, 140, 22, 0.2);
-  }
-}
 
 @keyframes bounce-down {
   0%, 100% {
@@ -1475,4 +1440,5 @@
   .history-dropdown {
     min-width: 280px;
   }
+
 }

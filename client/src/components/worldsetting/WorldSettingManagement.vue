@@ -1493,7 +1493,7 @@ const addSetting = async () => {
   }
 
   if (!projectStore.currentProject?.id) {
-    message.error('请先选择项目')
+    message.error('请先选择作品')
     return
   }
 
@@ -1578,7 +1578,7 @@ watch(() => projectStore.currentProject?.id, (newProjectId) => {
 // 批量生成相关方法
 const executeBatchGenerate = async () => {
   if (!projectStore.currentProject?.id) {
-    message.error('请先选择项目')
+    message.error('请先选择作品')
     return
   }
 

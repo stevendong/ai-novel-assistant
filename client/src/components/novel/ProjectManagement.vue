@@ -2,25 +2,25 @@
   <div class="h-full p-6 overflow-y-auto">
     <div class="max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold theme-text-primary">项目管理</h1>
+        <h1 class="text-2xl font-bold theme-text-primary">作品管理</h1>
         <a-space>
           <a-button type="primary" @click="showNewProjectModal = true">
             <template #icon>
               <PlusOutlined />
             </template>
-            新建项目
+            新建作品
           </a-button>
           <a-button @click="importProject">
             <template #icon>
               <ImportOutlined />
             </template>
-            导入项目
+            导入作品
           </a-button>
         </a-space>
       </div>
 
       <!-- Current Project Info -->
-      <a-card v-if="projectStore.currentProject" class="mb-6" title="当前项目">
+      <a-card v-if="projectStore.currentProject" class="mb-6" title="当前作品">
         <template #extra>
           <a-space>
             <a-button size="small" @click="openEditProject">
@@ -41,7 +41,7 @@
         <a-row :gutter="[16, 16]">
           <a-col :span="12">
             <a-descriptions :column="1" size="small">
-              <a-descriptions-item label="项目名称">
+              <a-descriptions-item label="作品名称">
                 {{ projectStore.currentProject.title }}
               </a-descriptions-item>
               <a-descriptions-item label="类型">
@@ -78,7 +78,7 @@
         </a-row>
 
         <div class="mt-4">
-          <h4 class="text-sm font-medium theme-text-primary mb-2">项目描述</h4>
+          <h4 class="text-sm font-medium theme-text-primary mb-2">作品描述</h4>
           <p class="theme-text-secondary text-sm leading-relaxed">
             {{ projectStore.currentProject.description }}
           </p>
@@ -89,7 +89,7 @@
       <a-card class="mb-6">
         <template #title>
           <div class="flex items-center justify-between">
-            <span>最近项目</span>
+            <span>最近作品</span>
             <div class="flex items-center gap-2">
               <a-tag v-if="recentProjects.length > 5" color="blue">
                 {{ showAllRecent ? `显示全部 ${recentProjects.length}` : `显示 5 / ${recentProjects.length}` }}
@@ -149,7 +149,7 @@
         <a-col :span="8">
           <a-card size="small">
             <a-statistic
-              title="总项目数"
+              title="总作品数"
               :value="totalProjects"
               :prefix="h(BookOutlined)"
             />
@@ -158,7 +158,7 @@
         <a-col :span="8">
           <a-card size="small">
             <a-statistic
-              title="进行中项目"
+              title="进行中作品"
               :value="inProgressProjects"
               :prefix="h(EditOutlined)"
               :value-style="{ color: '#3f8600' }"
@@ -168,7 +168,7 @@
         <a-col :span="8">
           <a-card size="small">
             <a-statistic
-              title="已完成项目"
+              title="已完成作品"
               :value="completedProjects"
               :prefix="h(CheckCircleOutlined)"
               :value-style="{ color: '#cf1322' }"
@@ -181,21 +181,21 @@
     <!-- New Project Modal -->
     <a-modal
       v-model:open="showNewProjectModal"
-      title="创建新项目"
+      title="创建新作品"
       width="600px"
       @ok="createNewProject"
       :confirm-loading="loading"
     >
       <a-form :model="newProject" layout="vertical" ref="newFormRef">
         <a-form-item 
-          label="项目名称" 
+          label="作品名称" 
           name="title"
-          :rules="[{ required: true, message: '请输入项目名称', trigger: 'blur' }]"
+          :rules="[{ required: true, message: '请输入作品名称', trigger: 'blur' }]"
         >
-          <a-input v-model:value="newProject.title" placeholder="输入项目名称" />
+          <a-input v-model:value="newProject.title" placeholder="输入作品名称" />
         </a-form-item>
         
-        <a-form-item label="项目描述">
+        <a-form-item label="作品描述">
           <a-textarea
             v-model:value="newProject.description"
             :rows="3"
@@ -246,21 +246,21 @@
     <!-- Edit Project Modal -->
     <a-modal
       v-model:open="showEditProjectModal"
-      title="编辑项目"
+      title="编辑作品"
       width="600px"
       @ok="updateProject"
       :confirm-loading="loading"
     >
       <a-form :model="editProject" layout="vertical" ref="editFormRef">
         <a-form-item 
-          label="项目名称" 
+          label="作品名称" 
           name="title"
-          :rules="[{ required: true, message: '请输入项目名称', trigger: 'blur' }]"
+          :rules="[{ required: true, message: '请输入作品名称', trigger: 'blur' }]"
         >
-          <a-input v-model:value="editProject.title" placeholder="输入项目名称" />
+          <a-input v-model:value="editProject.title" placeholder="输入作品名称" />
         </a-form-item>
         
-        <a-form-item label="项目描述">
+        <a-form-item label="作品描述">
           <a-textarea
             v-model:value="editProject.description"
             :rows="3"
@@ -327,7 +327,7 @@ import { novelService } from '@/services/novelService'
 import { useProjectStore } from '@/stores/project'
 import { getNovelStatusText, getNovelStatusColor } from '@/constants/status'
 
-// 全局项目状态
+// 全局作品状态
 const projectStore = useProjectStore()
 
 // 响应式数据
@@ -361,7 +361,7 @@ const totalProjects = computed(() => projectStats.value?.projects.total || 0)
 const inProgressProjects = computed(() => projectStats.value?.projects.writing || 0)
 const completedProjects = computed(() => projectStats.value?.projects.completed || 0)
 
-// 限制最近项目显示数量为5个（如果showAllRecent为false）
+// 限制最近作品显示数量为5个（如果showAllRecent为false）
 const recentProjectsLimited = computed(() => {
   return showAllRecent.value ? recentProjects.value : recentProjects.value.slice(0, 5)
 })
@@ -377,7 +377,7 @@ const loadData = async () => {
     
     projectStats.value = stats
     
-    // 设置最近项目列表（排除当前项目）
+    // 设置最近作品列表（排除当前作品）
     if (projectStore.currentProject) {
       recentProjects.value = projectStore.projects.filter(n => n.id !== projectStore.currentProject!.id)
     } else {
@@ -385,7 +385,7 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('Failed to load project data:', error)
-    message.error('加载项目数据失败')
+    message.error('加载作品数据失败')
   } finally {
     loading.value = false
   }
@@ -432,7 +432,7 @@ const getProjectColor = (id: string) => {
 const openEditProject = () => {
   if (!projectStore.currentProject) return
   
-  // 用当前项目数据填充编辑表单
+  // 用当前作品数据填充编辑表单
   editProject.value = {
     title: projectStore.currentProject.title,
     description: projectStore.currentProject.description || '',
@@ -450,32 +450,32 @@ const deleteProject = async () => {
   try {
     await novelService.deleteNovel(projectStore.currentProject.id)
     projectStore.removeProject(projectStore.currentProject.id)
-    message.success('项目删除成功')
+    message.success('作品删除成功')
     await loadData() // 重新加载数据
   } catch (error) {
     console.error('Failed to delete project:', error)
-    message.error('删除项目失败')
+    message.error('删除作品失败')
   }
 }
 
 const openProject = (project: Novel) => {
-  // 通过全局store切换项目（会刷新页面）
+  // 通过全局store切换作品（会刷新页面）
   projectStore.switchProject(project.id)
 }
 
 const duplicateProject = async (project: Novel) => {
   try {
     const duplicated = await novelService.duplicateNovel(project.id, `${project.title} (副本)`)
-    message.success('项目复制成功')
+    message.success('作品复制成功')
     await loadData() // 重新加载数据
   } catch (error) {
     console.error('Failed to duplicate project:', error)
-    message.error('复制项目失败')
+    message.error('复制作品失败')
   }
 }
 
 const importProject = () => {
-  // TODO: 实现项目导入功能
+  // TODO: 实现作品导入功能
   message.info('导入功能开发中...')
 }
 
@@ -501,7 +501,7 @@ const createNewProject = async () => {
     // 添加到全局store
     projectStore.addProject(created)
     
-    message.success('项目创建成功')
+    message.success('作品创建成功')
     showNewProjectModal.value = false
     
     // Reset form
@@ -522,7 +522,7 @@ const createNewProject = async () => {
       return
     }
     console.error('Failed to create project:', error)
-    message.error('创建项目失败')
+    message.error('创建作品失败')
   } finally {
     loading.value = false
   }
@@ -530,7 +530,7 @@ const createNewProject = async () => {
 
 const updateProject = async () => {
   if (!projectStore.currentProject) {
-    message.error('没有选择要编辑的项目')
+    message.error('没有选择要编辑的作品')
     return
   }
   
@@ -547,10 +547,10 @@ const updateProject = async () => {
       targetWordCount: editProject.value.targetWordCount
     })
     
-    // 更新全局store中的项目数据
+    // 更新全局store中的作品数据
     projectStore.updateProject(updated)
     
-    message.success('项目更新成功')
+    message.success('作品更新成功')
     showEditProjectModal.value = false
     
     // 重新加载数据以保证数据一致性
@@ -561,7 +561,7 @@ const updateProject = async () => {
       return
     }
     console.error('Failed to update project:', error)
-    message.error('项目更新失败')
+    message.error('作品更新失败')
   } finally {
     loading.value = false
   }
@@ -588,7 +588,7 @@ const updateProject = async () => {
   height: 32px;
 }
 
-/* 当没有项目时的提示样式 */
+/* 当没有作品时的提示样式 */
 .no-projects-hint {
   text-align: center;
   padding: 20px;

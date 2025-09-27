@@ -25,7 +25,7 @@
     "subtitle": "智能协作，创意无限"
   },
   "nav": {
-    "project": "项目管理",
+    "project": "作品管理",
     "chapters": "章节管理",
     "characters": "人物设定",
     "worldSettings": "世界设定",
@@ -37,16 +37,16 @@
     "userManagement": "用户管理"
   },
   "project": {
-    "title": "项目管理",
-    "selectProject": "选择项目",
-    "noProject": "暂无项目，请先创建项目",
-    "createProject": "创建新项目",
-    "projectName": "项目名称",
-    "projectDescription": "项目描述",
-    "projectType": "项目类型",
-    "enterProjectName": "请输入项目名称",
-    "enterProjectDescription": "请输入项目描述（可选）",
-    "deleteConfirm": "确定要删除这个项目吗？",
+    "title": "作品管理",
+    "selectProject": "选择作品",
+    "noProject": "暂无作品，请先创建作品",
+    "createProject": "创建新作品",
+    "projectName": "作品名称",
+    "projectDescription": "作品描述",
+    "projectType": "作品类型",
+    "enterProjectName": "请输入作品名称",
+    "enterProjectDescription": "请输入作品描述（可选）",
+    "deleteConfirm": "确定要删除这个作品吗？",
     "stats": {
       "totalWords": "总字数",
       "totalChapters": "总章节",

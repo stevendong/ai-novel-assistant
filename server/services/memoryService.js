@@ -35,7 +35,6 @@ class MemoryService {
 
     try {
       const config = memoryConfig.cloud;
-      console.log('config', config);
       if (!config.apiKey) {
         logger.warn('MEM0_API_KEY not provided, memory service will use fallback mode');
         return;
