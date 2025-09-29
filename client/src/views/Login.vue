@@ -42,15 +42,15 @@
           </a-form-item>
 
           <a-form-item
-            :label="t('auth.email')"
+            :label="isLogin ? t('auth.emailOrUsername') : t('auth.email')"
             :rules="[
-              { required: true, message: t('auth.enterEmail') },
-              { type: 'email', message: t('auth.emailRule') }
+              { required: true, message: isLogin ? t('auth.enterEmailOrUsername') : t('auth.enterEmail') },
+              ...(isLogin ? [] : [{ type: 'email', message: t('auth.emailRule') }])
             ]"
           >
             <a-input
               v-model:value="formData.identifier"
-              :placeholder="t('auth.enterEmail')"
+              :placeholder="isLogin ? t('auth.enterEmailOrUsername') : t('auth.enterEmail')"
               size="large"
               :disabled="authStore.isLoading"
             >
@@ -112,6 +112,13 @@
             </a-input>
           </a-form-item>
 
+          <!-- Remember me checkbox for login -->
+          <a-form-item v-if="isLogin">
+            <a-checkbox v-model:checked="formData.rememberMe">
+              {{ t('auth.rememberMe') }}
+            </a-checkbox>
+          </a-form-item>
+
           <a-form-item>
             <a-button
               type="primary"
@@ -162,7 +169,8 @@ const formData = reactive({
   identifier: '',  // email or username for login
   password: '',
   confirmPassword: '',
-  nickname: ''
+  nickname: '',
+  rememberMe: false
 })
 
 const validatePasswordConfirm = (rule, value) => {
@@ -175,9 +183,23 @@ const validatePasswordConfirm = (rule, value) => {
 const toggleMode = () => {
   isLogin.value = !isLogin.value
 
+  // 清空表单数据
   Object.keys(formData).forEach(key => {
-    formData[key] = ''
+    if (key === 'rememberMe') {
+      formData[key] = false
+    } else {
+      formData[key] = ''
+    }
   })
+
+  // 如果切换到登录模式，恢复记住的用户信息
+  if (isLogin.value) {
+    const rememberedIdentifier = localStorage.getItem('rememberedIdentifier')
+    if (rememberedIdentifier) {
+      formData.identifier = rememberedIdentifier
+      formData.rememberMe = true
+    }
+  }
 }
 
 const handleSubmit = async (e) => {
@@ -186,7 +208,7 @@ const handleSubmit = async (e) => {
   try {
     // Basic validation
     if (!formData.identifier || !formData.password) {
-      message.error(t('auth.fillRequired'))
+      message.error(isLogin.value ? t('auth.fillLoginRequired') : t('auth.fillRequired'))
       return
     }
 
@@ -198,10 +220,18 @@ const handleSubmit = async (e) => {
     if (isLogin.value) {
       const result = await authStore.login({
         identifier: formData.identifier,
-        password: formData.password
+        password: formData.password,
+        rememberMe: formData.rememberMe
       })
 
       if (result.success) {
+        // 处理记住我功能
+        if (formData.rememberMe) {
+          localStorage.setItem('rememberedIdentifier', formData.identifier)
+        } else {
+          localStorage.removeItem('rememberedIdentifier')
+        }
+
         const redirect = router.currentRoute.value.query.redirect || '/'
         router.push(redirect)
       }
@@ -233,6 +263,13 @@ onMounted(() => {
 
   // 初始化主题
   themeStore.initTheme()
+
+  // 恢复记住的用户信息
+  const rememberedIdentifier = localStorage.getItem('rememberedIdentifier')
+  if (rememberedIdentifier) {
+    formData.identifier = rememberedIdentifier
+    formData.rememberMe = true
+  }
 
   if (authStore.isAuthenticated) {
     const redirect = router.currentRoute.value.query.redirect || '/'

@@ -40,8 +40,9 @@ export interface RegisterData {
 
 // 登录凭据接口
 export interface LoginCredentials {
-  email: string
+  identifier: string  // 可以是email或username
   password: string
+  rememberMe?: boolean
 }
 
 // 个人资料更新数据接口
@@ -152,7 +153,9 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (credentials: LoginCredentials): Promise<{ success: boolean; data?: AuthResponse; error?: string }> => {
     isLoading.value = true
     try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/login', credentials)
+      // 发送给服务器的登录数据（不包含rememberMe，这是前端功能）
+      const { rememberMe, ...loginData } = credentials
+      const response = await apiClient.post<AuthResponse>('/api/auth/login', loginData)
       setAuthData(response.data)
       message.success(response.data.message || '登录成功!')
       return { success: true, data: response.data }

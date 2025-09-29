@@ -34,7 +34,9 @@
       "Bash(sqlite3:*)",
       "WebFetch(domain:docs.mem0.ai)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npx:*)",
+      "Bash(open https://www.google.com)"
     ],
     "deny": [],
     "ask": []
