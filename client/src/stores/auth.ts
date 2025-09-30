@@ -231,6 +231,42 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('user', JSON.stringify(updatedUser))
   }
 
+  // 上传头像
+  const uploadAvatar = async (formData: FormData): Promise<{ success: boolean; data?: { user: User; message?: string }; error?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.post<{ user: User; message?: string }>('/api/auth/upload-avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Avatar upload failed'
+      return { success: false, error: errorMessage }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 删除头像
+  const deleteAvatar = async (): Promise<{ success: boolean; data?: { user: User; message?: string }; error?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.delete<{ user: User; message?: string }>('/api/auth/avatar')
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Avatar deletion failed'
+      return { success: false, error: errorMessage }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // 获取用户资料
   const fetchProfile = async (): Promise<{ success: boolean; data?: { user: User }; error?: string }> => {
     if (!sessionToken.value) return { success: false, error: 'Not authenticated' }
@@ -420,6 +456,8 @@ export const useAuthStore = defineStore('auth', () => {
     updateProfile,
     updateUserInfo,
     updateUser: updateUserInfo, // 别名
+    uploadAvatar,
+    deleteAvatar,
     fetchProfile,
     refreshUser,
     deleteAccount,

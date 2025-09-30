@@ -108,6 +108,16 @@ const router = createRouter({
           }
         },
         {
+          path: '/profile',
+          name: 'userProfile',
+          component: () => import('@/views/user/UserProfile.vue'),
+          meta: {
+            title: '个人资料',
+            icon: 'UserOutlined',
+            hidden: true
+          }
+        },
+        {
           path: '/admin/dashboard',
           name: 'adminDashboard',
           component: () => import('@/views/admin/AdminDashboard.vue'),

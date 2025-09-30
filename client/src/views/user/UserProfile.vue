@@ -44,19 +44,12 @@
               </a-form-item>
 
               <a-form-item label="头像" name="avatar">
-                <div class="avatar-upload">
-                  <a-avatar
-                    :size="64"
-                    :src="profileForm.avatar || userStore.user?.avatar"
-                    :alt="userStore.user?.nickname || userStore.user?.username"
-                  >
-                    {{ (userStore.user?.nickname || userStore.user?.username)?.charAt(0) }}
-                  </a-avatar>
-                  <a-button class="ml-4" @click="handleAvatarUpload">
-                    <UploadOutlined />
-                    更换头像
-                  </a-button>
-                </div>
+                <AvatarUpload
+                  :current-avatar="userStore.user?.avatar"
+                  :size="80"
+                  @upload-success="handleAvatarUploadSuccess"
+                  @delete-success="handleAvatarDeleteSuccess"
+                />
               </a-form-item>
 
               <a-form-item :wrapper-col="{ offset: 6, span: 18 }">
@@ -167,7 +160,7 @@
               <div v-for="session in sessions" :key="session.id" class="session-item mb-3">
                 <div class="session-info">
                   <div class="session-device">
-                    <ComputerOutlined />
+                    <DesktopOutlined />
                     {{ getDeviceInfo(session.userAgent) }}
                     <a-tag v-if="session.isCurrent" size="small" color="green" class="ml-2">
                       当前会话
@@ -205,12 +198,12 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import type { FormInstance, Rule } from 'ant-design-vue/es/form'
 import {
-  UploadOutlined,
   ReloadOutlined,
-  ComputerOutlined
+  DesktopOutlined
 } from '@ant-design/icons-vue'
 import { api } from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
+import AvatarUpload from '@/components/user/AvatarUpload.vue'
 
 const userStore = useAuthStore()
 
@@ -370,10 +363,16 @@ const resetPasswordForm = () => {
   passwordFormRef.value?.resetFields()
 }
 
-// 处理头像上传
-const handleAvatarUpload = () => {
-  // TODO: 实现头像上传功能
-  message.info('头像上传功能待实现')
+// 处理头像上传成功
+const handleAvatarUploadSuccess = (url: string) => {
+  profileForm.avatar = url
+  message.success('头像上传成功')
+}
+
+// 处理头像删除成功
+const handleAvatarDeleteSuccess = () => {
+  profileForm.avatar = ''
+  message.success('头像删除成功')
 }
 
 // 加载用户统计

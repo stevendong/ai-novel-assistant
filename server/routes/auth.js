@@ -1,12 +1,30 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const multer = require('multer');
 const AuthUtils = require('../utils/auth');
 const { requireAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const inviteService = require('../services/inviteService');
+const uploadService = require('../services/uploadService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// 配置 multer 用于头像上传
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    // 只允许图片类型
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('只允许上传图片文件'));
+    }
+  }
+});
 
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -994,6 +1012,149 @@ router.get('/activity', requireAuth, async (req, res) => {
     res.status(500).json({
       error: 'Activity Error',
       message: 'Failed to get user activity',
+    });
+  }
+});
+
+// 上传用户头像
+router.post('/upload-avatar', requireAuth, avatarUpload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: '未提供头像文件' });
+    }
+
+    const userId = req.user.id;
+
+    // 获取当前用户信息
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarKey: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    // 上传新头像到云存储
+    const uploadResult = await uploadService.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      'avatars'
+    );
+
+    if (!uploadResult.success) {
+      return res.status(500).json({ error: '头像上传失败: ' + uploadResult.error });
+    }
+
+    // 如果有旧头像，删除旧的
+    if (user.avatarKey) {
+      await uploadService.deleteFile(user.avatarKey).catch(err => {
+        logger.warn('Delete old avatar failed:', { error: err.message, userId });
+      });
+    }
+
+    // 更新用户头像信息
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatar: uploadResult.url,
+        avatarKey: uploadResult.key
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        nickname: true,
+        avatar: true,
+        role: true,
+        createdAt: true
+      }
+    });
+
+    logger.info('User avatar uploaded:', {
+      userId,
+      avatarUrl: uploadResult.url
+    });
+
+    res.json({
+      message: '头像上传成功',
+      user: updatedUser
+    });
+
+  } catch (error) {
+    logger.error('Upload avatar error:', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.user?.id
+    });
+
+    res.status(500).json({
+      error: 'Upload Failed',
+      message: error.message || '头像上传失败'
+    });
+  }
+});
+
+// 删除用户头像
+router.delete('/avatar', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarKey: true, avatar: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    if (!user.avatar) {
+      return res.status(400).json({ error: '用户未设置头像' });
+    }
+
+    // 从云存储删除头像
+    if (user.avatarKey) {
+      await uploadService.deleteFile(user.avatarKey).catch(err => {
+        logger.warn('Delete avatar file failed:', { error: err.message, userId });
+      });
+    }
+
+    // 更新数据库，移除头像信息
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatar: null,
+        avatarKey: null
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        nickname: true,
+        avatar: true,
+        role: true,
+        createdAt: true
+      }
+    });
+
+    logger.info('User avatar deleted:', { userId });
+
+    res.json({
+      message: '头像删除成功',
+      user: updatedUser
+    });
+
+  } catch (error) {
+    logger.error('Delete avatar error:', {
+      error: error.message,
+      userId: req.user?.id
+    });
+
+    res.status(500).json({
+      error: 'Delete Failed',
+      message: '头像删除失败'
     });
   }
 });

@@ -339,14 +339,8 @@ const handleMenuClick = ({ key }) => {
 }
 
 const showProfile = () => {
-  // 显示用户资料页面
-  Object.assign(profileData, {
-    username: authStore.user?.username || '',
-    email: authStore.user?.email || '',
-    nickname: authStore.user?.nickname || '',
-    avatar: authStore.user?.avatar || ''
-  })
-  profileModalVisible.value = true
+  // 跳转到用户资料页面
+  router.push('/profile')
 }
 
 const handleUpdateProfile = async () => {
