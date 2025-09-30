@@ -28,6 +28,7 @@ import {
   GlobalOutlined,
   FileTextOutlined,
   BarChartOutlined,
+  FolderOutlined,
   GiftOutlined,
   SettingOutlined,
   UserOutlined
@@ -55,6 +56,7 @@ const iconMap = {
   GlobalOutlined,
   FileTextOutlined,
   BarChartOutlined,
+  FolderOutlined,
   GiftOutlined,
   SettingOutlined,
   UserOutlined
@@ -95,6 +97,13 @@ const baseRoutes = [
     meta: {
       title: '进度统计',
       icon: 'BarChartOutlined'
+    }
+  },
+  {
+    name: 'files',
+    meta: {
+      title: '文件管理',
+      icon: 'FolderOutlined'
     }
   }
 ]

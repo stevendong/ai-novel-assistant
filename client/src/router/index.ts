@@ -10,6 +10,7 @@ import WorldSettingManagement from '@/components/worldsetting/WorldSettingManage
 import ChapterEditor from '@/components/chapter/ChapterEditor.vue'
 import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
+import FileManagement from '@/components/file/FileManagement.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -95,6 +96,15 @@ const router = createRouter({
           meta: {
             title: '进度统计',
             icon: 'BarChartOutlined'
+          }
+        },
+        {
+          path: '/files',
+          name: 'files',
+          component: FileManagement,
+          meta: {
+            title: '文件管理',
+            icon: 'FolderOutlined'
           }
         },
         {

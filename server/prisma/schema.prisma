@@ -49,6 +49,9 @@ model User {
 
   // AI偏好设置关联
   aiPreferences    UserAIPreferences?
+
+  // 文件上传关联
+  files            File[]
 }
 
 // 小说基本信息
@@ -76,28 +79,32 @@ model Novel {
   workflows     WorkflowConfig[]
   conversations AIConversation[]
   batchGenerations BatchChapterGeneration[]
+  files         File[]
 
   @@index([userId])
 }
 
 // 角色信息
 model Character {
-  id           String  @id @default(cuid())
-  novelId      String
-  name         String
-  description  String?
-  age          String? // 年龄
-  identity     String? // 身份/职业
-  appearance   String?
-  personality  String?
-  values       String? // 核心价值观
-  fears        String? // 恐惧与弱点
-  background   String?
-  skills       String? // 技能与能力
-  relationships String? // 关系网络 JSON字符串
-  isLocked     Boolean @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String  @id @default(cuid())
+  novelId        String
+  name           String
+  description    String?
+  age            String? // 年龄
+  identity       String? // 身份/职业
+  appearance     String?
+  personality    String?
+  values         String? // 核心价值观
+  fears          String? // 恐惧与弱点
+  background     String?
+  skills         String? // 技能与能力
+  relationships  String? // 关系网络 JSON字符串
+  avatar         String? // 角色头像URL
+  avatarKey      String? // 头像文件key
+  avatarMetadata String? // 头像元数据(JSON)
+  isLocked       Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   novel        Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
   chapterRefs  ChapterCharacter[]
@@ -458,4 +465,31 @@ model UserAIPreferences {
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// 文件管理
+model File {
+  id          String   @id @default(cuid())
+  userId      String   // 上传者用户ID
+  novelId     String?  // 关联的小说ID（可选）
+  fileName    String   // 原始文件名
+  fileKey     String   // 存储的文件key
+  fileUrl     String   // 文件访问URL
+  fileType    String   // 文件MIME类型
+  fileSize    Int      // 文件大小（字节）
+  category    String   @default("other") // 文件分类：worldbook(世界书), character(角色卡), document(文档), image(图片), other(其他)
+  description String?  // 文件描述
+  tags        String?  // 标签（JSON数组字符串）
+  isPublic    Boolean  @default(false) // 是否公开
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  novel       Novel?   @relation(fields: [novelId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([novelId])
+  @@index([category])
+  @@index([createdAt])
 }

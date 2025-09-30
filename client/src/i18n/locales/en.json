@@ -30,9 +30,20 @@
     "characters": "Character Settings",
     "worldSettings": "World Settings",
     "progress": "Progress Statistics",
+    "files": "File Management",
     "consistency": "Consistency Check",
     "export": "Export & Publish",
     "inviteManagement": "Invite Code Management"
+  },
+  "file": {
+    "title": "File Management",
+    "categories": {
+      "worldbook": "World Book",
+      "character": "Character Card",
+      "document": "Document",
+      "image": "Image",
+      "other": "Other"
+    }
   },
   "project": {
     "title": "Project Management",
