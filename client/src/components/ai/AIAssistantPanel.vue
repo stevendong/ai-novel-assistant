@@ -1,23 +1,15 @@
 <template>
-  <div
+  <FloatingContainer
       class="ai-assistant-panel"
-      :class="{
-      'floating': isFloating,
-      'dragging': isDragging,
-      'resizing': isResizing,
-      'minimized': isFloating && isMinimized
-    }"
-      :style="isFloating ? {
-      position: 'fixed',
-      left: floatingPosition.x + 'px',
-      top: floatingPosition.y + 'px',
-      width: isMinimized ? 'auto' : floatingSize.width + 'px',
-      height: isMinimized ? 'auto' : floatingSize.height + 'px',
-      zIndex: 1000,
-      borderRadius: '12px',
-      boxShadow: '0 12px 24px rgba(0, 0, 0, 0.15)',
-      overflow: 'hidden'
-    } : {}"
+      :is-floating="isFloating"
+      :is-minimized="isMinimized"
+      :is-maximized="isMaximized"
+      :floating-position="floatingPosition"
+      :floating-size="floatingSize"
+      :is-dragging="isDragging"
+      :is-resizing="isResizing"
+      @drag-start="startDragOrRestore"
+      @resize-start="handleResizeStart"
   >
     <!-- AI Status Bar -->
     <StatusBar
@@ -57,295 +49,32 @@
         />
 
         <!-- Messages Area -->
-        <div v-else
-             ref="messagesContainer"
-             class="messages-area"
-             @scroll="handleScroll"
-        >
-          <div class="messages-wrapper">
-            <!-- Welcome Message -->
-            <div class="welcome-message" v-if="messages.length === 1">
-              <div class="welcome-icon">
-                <RobotOutlined/>
-              </div>
-              <div class="welcome-content">
-                <h3>AI创作助手</h3>
-                <p>{{ getModeDescription(currentMode) }}</p>
-              </div>
-            </div>
-
-            <!-- Message List -->
-            <div class="message-list">
-              <div
-                  v-for="message in messages"
-                  :key="message.id"
-                  class="message-item"
-                  :class="{ 'user-message': message.role === 'user', 'assistant-message': message.role === 'assistant' }"
-              >
-                <!-- User Message -->
-                <div v-if="message.role === 'user'" class="user-message-bubble">
-                  <div class="message-content">
-                    <div class="message-text">{{ message.content }}</div>
-                    <div class="message-meta user-message-meta">
-                      <span class="message-time">{{ formatTime(message.timestamp) }}</span>
-                      <div class="message-operations user-operations">
-                        <!-- 删除按钮 -->
-                        <a-tooltip title="删除消息">
-                          <a-button
-                              type="text"
-                              size="small"
-                              class="operation-btn delete-btn"
-                              @click="handleDeleteMessage(message.id)"
-                              :loading="deletingMessageId === message.id"
-                              danger
-                          >
-                            <DeleteOutlined/>
-                          </a-button>
-                        </a-tooltip>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="message-avatar">
-                    <a-avatar size="small" class="user-avatar">
-                      <UserOutlined/>
-                    </a-avatar>
-                  </div>
-                </div>
-
-                <!-- Assistant Message -->
-                <div v-else class="assistant-message-bubble">
-                  <div class="message-avatar">
-                    <a-avatar size="small" class="ai-avatar">
-                      <RobotOutlined/>
-                    </a-avatar>
-                  </div>
-                  <div class="message-content">
-                    <div class="message-text">
-                      <!-- 流式传输指示器 -->
-                      <div v-if="message.metadata?.streaming" class="streaming-indicator">
-                        <div class="streaming-dots">
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </div>
-                        <span class="streaming-text">正在接收...</span>
-                      </div>
-
-                      <!-- 流式消息使用SyncTypewriter -->
-                      <SyncTypewriter
-                          v-if="message.metadata?.streaming"
-                          :content="message.content"
-                          :is-streaming="message.metadata?.streaming"
-                          :enable-highlight="true"
-                          :enable-tables="true"
-                          :enable-task-lists="true"
-                          :show-cursor="true"
-                          :sync-mode="'smooth'"
-                          :buffer-size="3"
-                          :min-display-interval="25"
-                          :max-display-interval="120"
-                          :adaptive-typing="true"
-                          @complete="onStreamComplete(message.id)"
-                          @content-update="onStreamContentUpdate"
-                          @typing-speed-change="onTypingSpeedChange"
-                      />
-                      <!-- 历史消息直接渲染 -->
-                      <MarkdownRenderer
-                          v-else
-                          :content="message.content"
-                          :enable-highlight="true"
-                          :enable-tables="true"
-                          :enable-task-lists="true"
-                          class="message-markdown"
-                      />
-                    </div>
-                    <div class="message-meta">
-                      <span class="message-time">{{ formatTime(message.timestamp) }}</span>
-                      <div class="message-operations">
-                        <!-- 复制按钮 -->
-                        <a-tooltip title="复制消息">
-                          <a-button
-                              type="text"
-                              size="small"
-                              class="operation-btn"
-                              @click="copyMessage(message.content)"
-                          >
-                            <CopyOutlined/>
-                          </a-button>
-                        </a-tooltip>
-
-                        <!-- 重新生成按钮（仅AI消息） -->
-                        <a-tooltip title="重新生成" v-if="message.role === 'assistant'">
-                          <a-button
-                              type="text"
-                              size="small"
-                              class="operation-btn"
-                              @click="regenerateMessage(message)"
-                          >
-                            <ReloadOutlined/>
-                          </a-button>
-                        </a-tooltip>
-
-                        <!-- 删除按钮 -->
-                        <a-tooltip title="删除消息">
-                          <a-button
-                              type="text"
-                              size="small"
-                              class="operation-btn delete-btn"
-                              @click="handleDeleteMessage(message.id)"
-                              :loading="deletingMessageId === message.id"
-                              danger
-                          >
-                            <DeleteOutlined/>
-                          </a-button>
-                        </a-tooltip>
-                      </div>
-
-                      <!-- 原有的操作按钮 -->
-                      <div class="message-actions" v-if="message.actions">
-                        <a-button
-                            v-for="action in message.actions"
-                            :key="action.key"
-                            type="text"
-                            size="small"
-                            class="action-btn-small"
-                            @click="performMessageAction(action.key, message)"
-                        >
-                          {{ action.label }}
-                        </a-button>
-                      </div>
-
-                      <!-- 建议和跟进问题 -->
-                      <div class="message-suggestions" v-if="message.metadata?.suggestions?.length">
-                        <div class="suggestion-label">💡 建议：</div>
-                        <div class="suggestion-list">
-                          <a-tag
-                              v-for="(suggestion, index) in message.metadata.suggestions.slice(0, 3)"
-                              :key="index"
-                              color="blue"
-                              class="suggestion-tag"
-                              @click="applySuggestion(suggestion)"
-                          >
-                            {{ suggestion }}
-                          </a-tag>
-                        </div>
-                      </div>
-
-                      <div class="message-followups" v-if="message.metadata?.followUps?.length">
-                        <div class="followup-label">🤔 相关问题：</div>
-                        <div class="followup-list">
-                          <a-button
-                              v-for="(followUp, index) in message.metadata.followUps.slice(0, 2)"
-                              :key="index"
-                              type="text"
-                              size="small"
-                              class="followup-btn"
-                              @click="askFollowUp(followUp)"
-                          >
-                            {{ followUp }}
-                          </a-button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
+        <MessageList
+          v-else
+          ref="messageListRef"
+          :messages="messages"
+          :mode-description="getModeDescription(currentMode)"
+          :deleting-message-id="deletingMessageId"
+          @scroll="handleScroll"
+          @delete-message="handleDeleteMessage"
+          @copy-message="copyMessage"
+          @regenerate-message="regenerateMessage"
+          @apply-suggestion="applySuggestion"
+          @ask-followup="askFollowUp"
+          @perform-action="performMessageAction"
+          @scroll-button-change="handleScrollButtonChange"
+        />
 
         <!-- Input Toolbar (only show when there's an active session) -->
-        <div v-if="chatStore.hasActiveSession" class="input-toolbar">
-          <div class="toolbar-left">
-            <!-- 历史消息按钮 -->
-            <div class="toolbar-button history-tool-button">
-              <a-dropdown :trigger="['click']" placement="topLeft">
-                <div class="button-wrapper">
-                  <HistoryOutlined class="button-icon"/>
-                  <span class="button-label">历史消息</span>
-                  <span class="session-count">{{ chatStore.sessions.length }}</span>
-                </div>
-                <template #overlay>
-                  <div class="history-dropdown">
-                    <div class="dropdown-header">
-                      <span class="header-title">会话历史</span>
-                      <a-button type="text" size="small" @click="createNewSession" class="new-session-btn">
-                        <PlusOutlined/>
-                        新建
-                      </a-button>
-                    </div>
-                    <a-list
-                        size="small"
-                        :data-source="chatStore.sessions"
-                        class="session-list"
-                        :locale="{ emptyText: '暂无历史会话' }"
-                    >
-                      <template #renderItem="{ item: session }">
-                        <a-list-item class="session-item-new">
-                          <a-button
-                              type="text"
-                              block
-                              class="session-button"
-                              :class="{ active: session.id === chatStore.currentSession?.id }"
-                              @click="switchToSession(session.id)"
-                          >
-                            <div class="session-content">
-                              <div class="session-info">
-                                <span class="session-title-new">{{ session.title || '新对话' }}</span>
-                                <span class="session-time">{{ formatTime(session.updatedAt) }}</span>
-                              </div>
-                              <div class="session-meta-new">
-                                <a-tag size="small" :color="getModeColor(session.mode)" class="mode-tag">
-                                  {{ getModeLabel(session.mode) }}
-                                </a-tag>
-                                <span class="message-count">{{ session.messages.length }}条</span>
-                              </div>
-                            </div>
-                          </a-button>
-                          <a-button
-                              type="text"
-                              size="small"
-                              danger
-                              class="delete-session-btn"
-                              @click="deleteSession(session.id)"
-                          >
-                            <DeleteOutlined/>
-                          </a-button>
-                        </a-list-item>
-                      </template>
-                    </a-list>
-                  </div>
-                </template>
-              </a-dropdown>
-            </div>
-          </div>
-
-          <div class="toolbar-right">
-            <!-- 设置按钮 -->
-            <div class="toolbar-button settings-tool-button">
-              <a-dropdown :trigger="['click']" placement="topRight">
-                <div class="button-wrapper">
-                  <SettingOutlined class="button-icon"/>
-                  <span class="button-label">设置</span>
-                </div>
-                <template #overlay>
-                  <a-menu class="settings-dropdown">
-                    <a-menu-item
-                        key="clear"
-                        @click="clearConversation"
-                        :disabled="isClearingConversation"
-                        class="settings-menu-item danger-menu-item"
-                    >
-                      <DeleteOutlined/>
-                      <span>{{ isClearingConversation ? '清空中...' : '清空当前对话' }}</span>
-                    </a-menu-item>
-                  </a-menu>
-                </template>
-              </a-dropdown>
-            </div>
-          </div>
-        </div>
+        <ChatToolbar
+          v-if="chatStore.hasActiveSession"
+          :sessions="chatStore.sessions"
+          :current-session-id="chatStore.currentSession?.id"
+          @switch-session="switchToSession"
+          @create-session="createNewSession"
+          @delete-session="deleteSession"
+          @clear-conversation="clearConversation"
+        />
 
         <!-- Input Area (only show when there's an active session) -->
         <MessageInput
@@ -376,47 +105,34 @@
         @visibility-change="handleScrollButtonVisibilityChange"
     />
 
-    <!-- 浮动模式调整大小手柄 -->
-    <div
-        v-if="isFloating && !isMinimized"
-        class="resize-handle"
-        @mousedown="startResize($event)"
-    >
-      <div class="resize-icon">⋰</div>
-    </div>
-  </div>
+  </FloatingContainer>
 </template>
 
 <script setup lang="ts">
 import {ref, computed, onMounted, nextTick, watch} from 'vue'
 import {Modal, message} from 'ant-design-vue'
 import {
-  RobotOutlined,
-  UserOutlined,
+  BulbOutlined,
+  FileTextOutlined,
   EditOutlined,
   CheckCircleOutlined,
-  BulbOutlined,
-  SettingOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  FileTextOutlined,
   TeamOutlined,
   GlobalOutlined,
-  ExclamationCircleOutlined,
-  CopyOutlined,
-  HistoryOutlined,
-  PlusOutlined
+  ExclamationCircleOutlined
 } from '@ant-design/icons-vue'
 import {useProjectStore} from '@/stores/project'
 import {useAIChatStore} from '@/stores/aiChat'
 import type {ChatMessage} from '@/stores/aiChat'
 import {apiClient} from '@/utils/api'
-import SyncTypewriter from "@/components/common/SyncTypewriter.vue";
-import MarkdownRenderer from "@/components/common/MarkdownRenderer.vue";
-import StatusBar from "@/components/ai/StatusBar.vue";
-import WelcomeScreen from "@/components/ai/WelcomeScreen.vue";
-import MessageInput from "@/components/ai/MessageInput.vue";
-import ScrollToBottomButton from "@/components/ai/ScrollToBottomButton.vue";
+import {useFloatingWindow} from '@/composables/useFloatingWindow'
+import StatusBar from "@/components/ai/StatusBar.vue"
+import WelcomeScreen from "@/components/ai/WelcomeScreen.vue"
+import MessageInput from "@/components/ai/MessageInput.vue"
+import ScrollToBottomButton from "@/components/ai/ScrollToBottomButton.vue"
+import FloatingContainer from "@/components/ai/FloatingContainer.vue"
+import MessageList from "@/components/ai/MessageList.vue"
+import ChatToolbar from "@/components/ai/ChatToolbar.vue"
+import OutlineGenerator from "@/components/ai/OutlineGenerator.vue"
 
 // Stores
 const projectStore = useProjectStore()
@@ -434,11 +150,8 @@ const currentMode = ref<'chat' | 'enhance' | 'check' | 'outline'>('chat')
 const inputMessage = ref('')
 const showScrollButton = ref(false)
 const unreadCount = ref(0)
-const messagesContainer = ref<HTMLElement>()
-const scrollDebounceTimer = ref<NodeJS.Timeout | null>(null)
-const lastScrollTime = ref(0)
-const autoScrollEnabled = ref(true)
 const scrollProgress = ref(0)
+const messageListRef = ref<InstanceType<typeof MessageList>>()
 
 const typingMessageId = ref<string | null>(null)
 const newlyCreatedMessageId = ref<string | null>(null)
@@ -451,33 +164,40 @@ const isClearingConversation = ref(false)
 const isFloating = ref(false)
 const isMaximized = ref(false)
 const isMinimized = ref(false)
-const floatingPosition = ref({x: 100, y: 100})
-const floatingSize = ref({width: 400, height: 600})
-const originalSize = ref({width: 400, height: 600})
-const originalPosition = ref({x: 100, y: 100})
-const isDragging = ref(false)
-const isResizing = ref(false)
-const dragStart = ref({x: 0, y: 0})
-const resizeStart = ref({x: 0, y: 0, width: 0, height: 0})
+
+// 使用浮动窗口钩子
+const {
+  floatingPosition,
+  floatingSize,
+  originalSize,
+  originalPosition,
+  isDragging,
+  isResizing,
+  startDrag,
+  startResize,
+  ensureWindowInBounds,
+  saveFloatingState,
+  loadFloatingState: loadFloatingWindowState
+} = useFloatingWindow()
 
 // 流式打字机完成回调
 const onStreamComplete = (messageId: string) => {
   console.log('Stream typewriter completed for message:', messageId)
-  // 可以在这里添加完成后的逻辑
 }
 
 // 流式打字机内容更新回调
 const onStreamContentUpdate = (content: string) => {
   // 流式内容更新时自动滚动
   nextTick(() => {
-    scrollToBottom()
+    if (messageListRef.value) {
+      messageListRef.value.scrollToBottom()
+    }
   })
 }
 
 // 打字机速度变化回调
 const onTypingSpeedChange = (speed: number) => {
   console.log('SyncTypewriter speed changed:', speed, 'ms')
-  // 可以在这里根据速度变化调整其他UI行为
 }
 
 // Use store state
@@ -578,66 +298,23 @@ const getInputPlaceholder = (mode: string) => {
 }
 
 
-const handleScroll = () => {
-  if (!messagesContainer.value) return
-
-  // 记录滚动时间，用于智能滚动判断
-  lastScrollTime.value = Date.now()
-
-  // 清除之前的防抖定时器
-  if (scrollDebounceTimer.value) {
-    clearTimeout(scrollDebounceTimer.value)
-  }
-
-  // 防抖处理，避免过度触发
-  scrollDebounceTimer.value = setTimeout(() => {
-    if (!messagesContainer.value) return
-
-    const {scrollTop, scrollHeight, clientHeight} = messagesContainer.value
-    const scrollPercentage = scrollTop / (scrollHeight - clientHeight)
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-
-    // 计算滚动进度（0-100）
-    scrollProgress.value = Math.min(100, Math.max(0, scrollPercentage * 100))
-
-    // 更精确的底部检测：距离底部小于50px或滚动百分比大于95%
-    const isNearBottom = distanceFromBottom < 50 || scrollPercentage > 0.95
-    const hasScrollableContent = scrollHeight > clientHeight + 10
-
-    // 如果用户手动滚动了，暂时禁用自动滚动
-    const timeSinceScroll = Date.now() - lastScrollTime.value
-    if (timeSinceScroll < 100) {
-      autoScrollEnabled.value = false
-      // 5秒后重新启用自动滚动
-      setTimeout(() => {
-        autoScrollEnabled.value = true
-      }, 5000)
-    }
-
-    showScrollButton.value = !isNearBottom && hasScrollableContent
-
-    // 如果用户滚动到底部，清除未读计数
-    if (isNearBottom) {
-      unreadCount.value = 0
-    }
-  }, 50) // 50ms防抖
+// 处理滚动事件（从MessageList传递过来）
+const handleScroll = (event: Event) => {
+  // 可以在这里添加额外的滚动处理逻辑
 }
 
+// 滚动到底部
 const scrollToBottom = (smooth = true) => {
-  if (!messagesContainer.value) return
+  if (messageListRef.value) {
+    messageListRef.value.scrollToBottom(smooth)
+  }
+}
 
-  // 清除未读计数
-  unreadCount.value = 0
-
-  messagesContainer.value.scrollTo({
-    top: messagesContainer.value.scrollHeight,
-    behavior: smooth ? 'smooth' : 'auto'
-  })
-
-  // 触发滚动检测，更新按钮状态
-  setTimeout(() => {
-    handleScroll()
-  }, smooth ? 300 : 50)
+// 处理滚动按钮变化（从MessageList传递过来）
+const handleScrollButtonChange = (visible: boolean, unread: number, progress: number) => {
+  showScrollButton.value = visible
+  unreadCount.value = unread
+  scrollProgress.value = progress
 }
 
 // 处理滚动按钮可见性变化
@@ -685,75 +362,28 @@ const addMessage = async (role: 'user' | 'assistant', content: string, actions?:
   // 如果是AI消息，设置新创建的消息ID用于打字机效果
   if (role === 'assistant' && message) {
     newlyCreatedMessageId.value = message.id
-
-    // 检查用户是否在底部，如果不在则增加未读计数
-    if (messagesContainer.value) {
-      const {scrollTop, scrollHeight, clientHeight} = messagesContainer.value
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-      const isNearBottom = distanceFromBottom < 50
-
-      if (!isNearBottom && showScrollButton.value) {
-        unreadCount.value++
-      }
-    }
   }
 
-  // 智能自动滚动到底部
+  // 自动滚动到底部
   nextTick(() => {
-    // 只有在自动滚动启用且用户不在滚动时才自动滚动
-    if (autoScrollEnabled.value || role === 'user') {
-      scrollToBottom()
-    }
-  })
-}
-
-const formatTime = (timestamp: Date) => {
-  return timestamp.toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit'
+    scrollToBottom()
   })
 }
 
 // 清空对话历史
 const clearConversation = async () => {
-  if (!chatStore.currentSession || isClearingConversation.value) {
-    return
+  if (!chatStore.currentSession) return
+
+  try {
+    await chatStore.clearCurrentSession()
+    
+    // 自动滚动到底部以显示欢迎消息
+    nextTick(() => {
+      scrollToBottom()
+    })
+  } catch (error) {
+    console.error('清空对话失败:', error)
   }
-
-  Modal.confirm({
-    title: '确认清空对话',
-    content: '此操作将删除当前对话中的所有消息记录（包括用户消息、AI回复和欢迎消息），且无法恢复。清空后将重新创建一个新的欢迎消息。是否继续？',
-    okText: '确认清空',
-    okType: 'danger',
-    cancelText: '取消',
-    onOk: async () => {
-      try {
-        isClearingConversation.value = true
-        await chatStore.clearCurrentSession()
-
-        // 显示成功提示
-        Modal.success({
-          title: '清空成功',
-          content: '对话历史已清空',
-          okText: '知道了'
-        })
-
-        // 自动滚动到底部以显示欢迎消息
-        nextTick(() => {
-          scrollToBottom()
-        })
-      } catch (error) {
-        console.error('清空对话失败:', error)
-        Modal.error({
-          title: '清空失败',
-          content: '清空对话时发生错误，请稍后重试',
-          okText: '知道了'
-        })
-      } finally {
-        isClearingConversation.value = false
-      }
-    }
-  })
 }
 
 // 复制消息
@@ -845,24 +475,12 @@ const createNewSession = async () => {
 // 删除会话
 const deleteSession = async (sessionId: string) => {
   if (!sessionId) return
-
-  // 确认删除对话框
-  Modal.confirm({
-    title: '确认删除会话',
-    content: '确定要删除这个会话吗？此操作不可撤销。',
-    okText: '确认删除',
-    cancelText: '取消',
-    okType: 'danger',
-    onOk: async () => {
-      try {
-        await chatStore.deleteSession(sessionId)
-        message.success('会话删除成功')
-      } catch (error) {
-        console.error('删除会话失败:', error)
-        message.error('会话删除失败')
-      }
-    }
-  })
+  
+  try {
+    await chatStore.deleteSession(sessionId)
+  } catch (error) {
+    console.error('删除会话失败:', error)
+  }
 }
 
 // 删除单条消息
@@ -896,56 +514,36 @@ const handleDeleteMessage = async (messageId: string) => {
   }
 }
 
-// 获取模式标签
-const getModeLabel = (mode: string) => {
-  const labels: Record<string, string> = {
-    chat: '对话',
-    enhance: '完善',
-    check: '检查'
-  }
-  return labels[mode] || mode
-}
 
-// 获取模式颜色
-const getModeColor = (mode: string) => {
-  const colors: Record<string, string> = {
-    chat: '#1890ff',
-    enhance: '#52c41a',
-    check: '#faad14'
-  }
-  return colors[mode] || '#1890ff'
-}
-
-// 增强的浮动模式相关方法
+// 浮动模式相关方法
 const toggleFloatingMode = () => {
-  // 重置所有状态
   isMaximized.value = false
   isMinimized.value = false
-
   isFloating.value = !isFloating.value
 
   if (isFloating.value) {
-    // 进入浮动模式，确保窗口在可见区域
     ensureWindowInBounds()
   }
 
   // 保存浮动模式状态
-  saveFloatingState()
+  try {
+    localStorage.setItem('ai_panel_floating', JSON.stringify(isFloating.value))
+    localStorage.setItem('ai_panel_maximized', JSON.stringify(isMaximized.value))
+    localStorage.setItem('ai_panel_minimized', JSON.stringify(isMinimized.value))
+  } catch (error) {
+    console.warn('Failed to save floating state:', error)
+  }
 
-  // 触发父组件更新布局
   emit('floating-mode-change', isFloating.value)
-
   console.log('浮动模式切换:', isFloating.value ? '启用' : '禁用')
 }
 
 // 最大化/还原窗口
 const toggleMaximize = () => {
   if (!isMaximized.value) {
-    // 保存当前尺寸和位置
     originalSize.value = {...floatingSize.value}
     originalPosition.value = {...floatingPosition.value}
 
-    // 最大化到屏幕尺寸
     floatingSize.value = {
       width: window.innerWidth - 40,
       height: window.innerHeight - 40
@@ -953,13 +551,17 @@ const toggleMaximize = () => {
     floatingPosition.value = {x: 20, y: 20}
     isMaximized.value = true
   } else {
-    // 还原到原始尺寸
     floatingSize.value = {...originalSize.value}
     floatingPosition.value = {...originalPosition.value}
     isMaximized.value = false
   }
 
   saveFloatingState()
+  try {
+    localStorage.setItem('ai_panel_maximized', JSON.stringify(isMaximized.value))
+  } catch (error) {
+    console.warn('Failed to save maximized state:', error)
+  }
   console.log('窗口最大化:', isMaximized.value)
 }
 
@@ -967,247 +569,52 @@ const toggleMaximize = () => {
 const minimizeWindow = () => {
   isMinimized.value = !isMinimized.value
 
-  // 保存状态
-  saveFloatingState()
+  try {
+    localStorage.setItem('ai_panel_minimized', JSON.stringify(isMinimized.value))
+  } catch (error) {
+    console.warn('Failed to save minimized state:', error)
+  }
 
   console.log('窗口最小化:', isMinimized.value)
 }
 
 // 关闭AI助手模块
 const closeFloatingMode = () => {
-  // 重置所有浮动状态
   isFloating.value = false
   isMaximized.value = false
   isMinimized.value = false
 
-  // 保存状态
-  saveFloatingState()
-
-  // 触发父组件关闭整个AI助手面板
-  emit('close-panel')
-
-  console.log('关闭AI助手模块')
-}
-
-// 确保窗口在可见区域内
-const ensureWindowInBounds = () => {
-  const maxX = window.innerWidth - floatingSize.value.width
-  const maxY = window.innerHeight - floatingSize.value.height
-
-  floatingPosition.value.x = Math.max(0, Math.min(maxX, floatingPosition.value.x))
-  floatingPosition.value.y = Math.max(0, Math.min(maxY, floatingPosition.value.y))
-
-  // 确保最小尺寸
-  floatingSize.value.width = Math.max(320, floatingSize.value.width)
-  floatingSize.value.height = Math.max(400, floatingSize.value.height)
-}
-
-// 保存浮动状态
-const saveFloatingState = () => {
   try {
     localStorage.setItem('ai_panel_floating', JSON.stringify(isFloating.value))
     localStorage.setItem('ai_panel_maximized', JSON.stringify(isMaximized.value))
     localStorage.setItem('ai_panel_minimized', JSON.stringify(isMinimized.value))
-    localStorage.setItem('ai_panel_position', JSON.stringify(floatingPosition.value))
-    localStorage.setItem('ai_panel_size', JSON.stringify(floatingSize.value))
-    localStorage.setItem('ai_panel_original_size', JSON.stringify(originalSize.value))
-    localStorage.setItem('ai_panel_original_position', JSON.stringify(originalPosition.value))
   } catch (error) {
     console.warn('Failed to save floating state:', error)
   }
+
+  emit('close-panel')
+  console.log('关闭AI助手模块')
 }
 
 // 处理拖拽或恢复窗口
 const startDragOrRestore = (e: MouseEvent) => {
   if (!isFloating.value || isMaximized.value) return
-
-  // 防止在按钮上开始拖拽
-  const target = e.target as HTMLElement
-  if (target.closest('.float-toggle-container, .control-btn, .history-btn')) {
-    return
-  }
-
-  // 如果是最小化状态，设置一个定时器来区分点击和拖拽
-  if (isMinimized.value) {
-    let dragTimer: number | null = null
-    let hasDragged = false
-
-    const startX = e.clientX
-    const startY = e.clientY
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = Math.abs(moveEvent.clientX - startX)
-      const deltaY = Math.abs(moveEvent.clientY - startY)
-
-      // 如果移动超过5像素，认为是拖拽
-      if (deltaX > 5 || deltaY > 5) {
-        hasDragged = true
-        if (dragTimer) {
-          clearTimeout(dragTimer)
-          dragTimer = null
-        }
-        // 开始拖拽
-        startDrag(e)
-        // 移除临时监听器
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
-      }
-    }
-
-    const handleMouseUp = () => {
-      // 移除临时监听器
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-
-    // 添加临时监听器
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-
-    e.preventDefault()
-  } else {
-    // 非最小化状态直接开始拖拽
-    startDrag(e)
-  }
+  startDrag(e, isMinimized.value)
 }
 
-// 改进的拖拽开始
-const startDrag = (e: MouseEvent) => {
+// 处理调整大小
+const handleResizeStart = (e: MouseEvent) => {
   if (!isFloating.value || isMaximized.value) return
-
-  // 防止在按钮上开始拖拽
-  const target = e.target as HTMLElement
-  if (target.closest('.float-toggle-container, .control-btn, .history-btn')) {
-    return
-  }
-
-  isDragging.value = true
-  dragStart.value = {
-    x: e.clientX - floatingPosition.value.x,
-    y: e.clientY - floatingPosition.value.y
-  }
-
-  document.addEventListener('mousemove', handleDrag)
-  document.addEventListener('mouseup', stopDrag)
-  document.body.style.userSelect = 'none'
-  document.body.style.cursor = 'move'
-  e.preventDefault()
-}
-
-// 改进的拖拽过程
-const handleDrag = (e: MouseEvent) => {
-  if (!isDragging.value) return
-
-  const newPosition = {
-    x: e.clientX - dragStart.value.x,
-    y: e.clientY - dragStart.value.y
-  }
-
-  // 获取当前窗口的实际尺寸（最小化时使用最小宽度）
-  const currentWidth = isMinimized.value ? 280 : floatingSize.value.width
-  const currentHeight = isMinimized.value ? 60 : floatingSize.value.height
-
-  // 磁性吸附到边缘
-  const snapThreshold = 20
-  const maxX = window.innerWidth - currentWidth
-  const maxY = window.innerHeight - currentHeight
-
-  // 左边缘吸附
-  if (newPosition.x < snapThreshold) {
-    newPosition.x = 0
-  }
-  // 右边缘吸附
-  else if (newPosition.x > maxX - snapThreshold) {
-    newPosition.x = maxX
-  }
-
-  // 顶部边缘吸附
-  if (newPosition.y < snapThreshold) {
-    newPosition.y = 0
-  }
-  // 底部边缘吸附
-  else if (newPosition.y > maxY - snapThreshold) {
-    newPosition.y = maxY
-  }
-
-  // 确保不超出边界
-  floatingPosition.value = {
-    x: Math.max(0, Math.min(maxX, newPosition.x)),
-    y: Math.max(0, Math.min(maxY, newPosition.y))
-  }
-}
-
-// 改进的停止拖拽
-const stopDrag = () => {
-  if (!isDragging.value) return
-
-  isDragging.value = false
-  document.removeEventListener('mousemove', handleDrag)
-  document.removeEventListener('mouseup', stopDrag)
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-
-  // 保存位置
-  saveFloatingState()
-}
-
-// 改进的调整大小开始
-const startResize = (e: MouseEvent) => {
-  if (!isFloating.value || isMaximized.value) return
-
-  isResizing.value = true
-  resizeStart.value = {
-    x: e.clientX,
-    y: e.clientY,
-    width: floatingSize.value.width,
-    height: floatingSize.value.height
-  }
-
-  document.addEventListener('mousemove', handleResize)
-  document.addEventListener('mouseup', stopResize)
-  document.body.style.userSelect = 'none'
-  document.body.style.cursor = 'nw-resize'
-  e.preventDefault()
-  e.stopPropagation()
-}
-
-// 改进的调整大小过程
-const handleResize = (e: MouseEvent) => {
-  if (!isResizing.value) return
-
-  const deltaX = e.clientX - resizeStart.value.x
-  const deltaY = e.clientY - resizeStart.value.y
-
-  const newWidth = Math.max(320, Math.min(1200, resizeStart.value.width + deltaX))
-  const newHeight = Math.max(400, Math.min(900, resizeStart.value.height + deltaY))
-
-  // 确保不超出视窗边界
-  const maxWidth = window.innerWidth - floatingPosition.value.x - 20
-  const maxHeight = window.innerHeight - floatingPosition.value.y - 20
-
-  floatingSize.value = {
-    width: Math.min(newWidth, maxWidth),
-    height: Math.min(newHeight, maxHeight)
-  }
-}
-
-// 改进的停止调整大小
-const stopResize = () => {
-  if (!isResizing.value) return
-
-  isResizing.value = false
-  document.removeEventListener('mousemove', handleResize)
-  document.removeEventListener('mouseup', stopResize)
-  document.body.style.userSelect = ''
-  document.body.style.cursor = ''
-
-  // 保存大小
-  saveFloatingState()
+  startResize(e)
 }
 
 // 加载浮动模式状态
 const loadFloatingState = () => {
   try {
+    // 先加载位置和大小
+    loadFloatingWindowState()
+
+    // 再加载浮动模式开关状态
     const floatingState = localStorage.getItem('ai_panel_floating')
     if (floatingState !== null) {
       isFloating.value = JSON.parse(floatingState)
@@ -1223,27 +630,6 @@ const loadFloatingState = () => {
       isMinimized.value = JSON.parse(minimizedState)
     }
 
-    const position = localStorage.getItem('ai_panel_position')
-    if (position) {
-      floatingPosition.value = JSON.parse(position)
-    }
-
-    const size = localStorage.getItem('ai_panel_size')
-    if (size) {
-      floatingSize.value = JSON.parse(size)
-    }
-
-    const originalSizeState = localStorage.getItem('ai_panel_original_size')
-    if (originalSizeState) {
-      originalSize.value = JSON.parse(originalSizeState)
-    }
-
-    const originalPositionState = localStorage.getItem('ai_panel_original_position')
-    if (originalPositionState) {
-      originalPosition.value = JSON.parse(originalPositionState)
-    }
-
-    // 确保窗口在可见区域内
     if (isFloating.value) {
       ensureWindowInBounds()
     }
@@ -1296,4 +682,76 @@ onMounted(async () => {
   })
 })
 </script>
-<style scoped src="./AIAssistantPanel.css"></style>
+<style scoped>
+/* AI Assistant Panel */
+.ai-assistant-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--theme-bg-container);
+  overflow: hidden;
+}
+
+/* Content Container */
+.content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Chat Container */
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Outline Mode */
+.outline-mode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes streaming {
+  0%, 60%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  30% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .content-container {
+    padding: 0;
+  }
+}
+</style>

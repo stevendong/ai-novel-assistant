@@ -109,6 +109,17 @@ const handleCreateSession = () => {
   height: 48px;
   padding: 0 24px;
   font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.start-chat-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 
 /* Welcome Message */

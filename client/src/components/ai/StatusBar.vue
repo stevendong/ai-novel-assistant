@@ -350,6 +350,50 @@ const startDragOrRestore = (event: MouseEvent) => {
   transform: rotateY(-90deg);
 }
 
+/* 浮动模式指示器 */
+.floating-indicator {
+  font-size: 11px;
+  color: #8a2be2;
+  background: linear-gradient(135deg,
+    rgba(138, 43, 226, 0.1) 0%,
+    rgba(106, 13, 173, 0.15) 100%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-weight: 500;
+  animation: float-pulse 3s ease-in-out infinite;
+}
+
+@keyframes float-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+/* 暗色模式适配 */
+.dark .status-bar.draggable-header {
+  background: linear-gradient(135deg,
+    var(--theme-bg-elevated) 0%,
+    rgba(96, 165, 250, 0.05) 100%);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.1);
+}
+
+.dark .status-bar.draggable-header:hover {
+  background: linear-gradient(135deg,
+    var(--theme-bg-elevated) 0%,
+    rgba(96, 165, 250, 0.08) 100%);
+  border-bottom-color: rgba(96, 165, 250, 0.2);
+}
+
+.dark .float-toggle-container:hover .toggle-icon {
+  color: #60a5fa;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .status-actions {

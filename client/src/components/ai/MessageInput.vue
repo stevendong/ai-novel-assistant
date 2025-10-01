@@ -295,19 +295,17 @@ defineExpose({
   }
 }
 
-/* 暗色主题适配 */
-@media (prefers-color-scheme: dark) {
-  .message-input-component {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
+/* 暗色模式适配 */
+.dark .message-input-component {
+  border-color: rgba(255, 255, 255, 0.1);
+}
 
-  .input-wrapper {
-    border-color: rgba(255, 255, 255, 0.15);
-  }
+.dark .input-wrapper {
+  border-color: rgba(255, 255, 255, 0.15);
+}
 
-  .input-wrapper:focus-within {
-    border-color: #1890ff;
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
-  }
+.dark .input-wrapper:focus-within {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
 }
 </style>
