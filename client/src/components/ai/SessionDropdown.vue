@@ -462,7 +462,6 @@ const handleDeleteSession = (sessionId: string) => {
 
 .delete-btn {
   opacity: 0;
-  padding: 4px;
   border-radius: 6px;
   transition: all 0.2s ease;
   flex-shrink: 0;

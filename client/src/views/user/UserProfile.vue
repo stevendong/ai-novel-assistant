@@ -317,7 +317,7 @@ const handleUpdateProfile = async () => {
   try {
     profileLoading.value = true
 
-    const response = await api.put('/auth/profile', {
+    const response = await api.put('/api/auth/profile', {
       nickname: profileForm.nickname,
       avatar: profileForm.avatar
     })
@@ -337,7 +337,7 @@ const handleChangePassword = async () => {
   try {
     passwordLoading.value = true
 
-    await api.put('/auth/password', {
+    await api.put('/api/auth/password', {
       currentPassword: passwordForm.currentPassword,
       newPassword: passwordForm.newPassword
     })
@@ -379,7 +379,7 @@ const handleAvatarDeleteSuccess = () => {
 const loadUserStats = async () => {
   try {
     statsLoading.value = true
-    const response = await api.get('/auth/stats')
+    const response = await api.get('/api/auth/stats')
     userStats.value = response.data.stats
   } catch (error) {
     console.error('加载统计信息失败:', error)
@@ -392,7 +392,7 @@ const loadUserStats = async () => {
 const loadSessions = async () => {
   try {
     sessionsLoading.value = true
-    const response = await api.get('/auth/sessions')
+    const response = await api.get('/api/auth/sessions')
     sessions.value = response.data.sessions
   } catch (error) {
     console.error('加载会话列表失败:', error)
@@ -406,7 +406,7 @@ const loadSessions = async () => {
 const handleDeleteSession = async (sessionId: string) => {
   try {
     sessionDeleting.value = sessionId
-    await api.delete(`/auth/sessions/${sessionId}`)
+    await api.delete(`/api/auth/sessions/${sessionId}`)
     message.success('会话注销成功')
     loadSessions()
   } catch (error: any) {
@@ -421,7 +421,7 @@ const handleDeleteSession = async (sessionId: string) => {
 const handleLogoutAll = async () => {
   try {
     logoutAllLoading.value = true
-    await api.post('/auth/logout-all')
+    await api.post('/api/auth/logout-all')
     message.success('所有其他会话已注销')
     loadSessions()
   } catch (error: any) {

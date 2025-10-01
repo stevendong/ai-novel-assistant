@@ -477,15 +477,24 @@ router.delete('/account', requireAuth, async (req, res) => {
 
 router.post('/logout-all', requireAuth, async (req, res) => {
   try {
-    await AuthUtils.invalidateAllUserSessions(req.user.id);
+    // 获取当前会话token，保留当前会话，只删除其他会话
+    const authHeader = req.headers.authorization;
+    const currentToken = authHeader.substring(7);
 
-    logger.info('All user sessions invalidated:', {
+    await prisma.userSession.deleteMany({
+      where: {
+        userId: req.user.id,
+        sessionToken: { not: currentToken }
+      }
+    });
+
+    logger.info('All other user sessions invalidated:', {
       userId: req.user.id,
       username: req.user.username,
     });
 
     res.json({
-      message: 'All sessions logged out successfully',
+      message: 'All other sessions logged out successfully',
     });
 
   } catch (error) {
