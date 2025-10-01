@@ -35,6 +35,10 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 信任代理，使得 req.ip 能正确获取客户端真实IP
+// 这对于部署在Nginx、Apache等反向代理后的应用很重要
+app.set('trust proxy', true);
+
 // 中间件
 app.use(helmet());
 app.use(cors({

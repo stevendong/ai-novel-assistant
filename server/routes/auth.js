@@ -6,6 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const inviteService = require('../services/inviteService');
 const uploadService = require('../services/uploadService');
+const { getCleanClientIp } = require('../utils/ipHelper');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -91,7 +92,7 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await AuthUtils.hashPassword(password);
     const userAgent = req.get('User-Agent');
-    const ipAddress = req.ip || req.connection.remoteAddress;
+    const ipAddress = getCleanClientIp(req);
 
     // 创建用户（无需邀请码验证）
     const user = await prisma.user.create({
@@ -194,7 +195,7 @@ router.post('/login', async (req, res) => {
     });
 
     const userAgent = req.get('User-Agent');
-    const ipAddress = req.ip;
+    const ipAddress = getCleanClientIp(req);
 
     const session = await AuthUtils.createUserSession(user.id, userAgent, ipAddress);
 
@@ -571,7 +572,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
     }
 
     // 验证邀请码
-    const ipAddress = req.ip || req.connection.remoteAddress;
+    const ipAddress = getCleanClientIp(req);
     const userAgent = req.get('User-Agent');
     const inviteValidation = await inviteService.validateInviteCode(inviteCode, {
       userId: req.user.id,
