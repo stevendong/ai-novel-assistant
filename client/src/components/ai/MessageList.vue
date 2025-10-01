@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { RobotOutlined } from '@ant-design/icons-vue'
 import type { ChatMessage } from '@/stores/aiChat'
 import MessageItem from './MessageItem.vue'
@@ -68,14 +68,20 @@ const {
   unreadCount,
   scrollProgress,
   handleScroll: handleScrollLogic,
-  scrollToBottom
+  scrollToBottom,
+  onNewMessage,
+  checkScrollPosition
 } = useMessageScroll()
 
 // 处理滚动事件
 const handleScroll = (event: Event) => {
   handleScrollLogic()
   emit('scroll', event)
-  emit('scroll-button-change', showScrollButton.value, unreadCount.value, scrollProgress.value)
+
+  // 通知父组件按钮状态变化
+  nextTick(() => {
+    emit('scroll-button-change', showScrollButton.value, unreadCount.value, scrollProgress.value)
+  })
 }
 
 // 处理消息操作
@@ -103,10 +109,30 @@ const performMessageAction = (actionKey: string, message: ChatMessage) => {
   emit('perform-action', actionKey, message)
 }
 
-// 监听消息变化，自动滚动到底部
-watch(() => props.messages.length, () => {
+// 监听消息数量变化
+watch(() => props.messages.length, (newLength, oldLength) => {
+  // 只有新增消息时才触发（防止删除消息时也滚动）
+  if (newLength > oldLength) {
+    nextTick(() => {
+      // 处理新消息到达：自动滚动或增加未读计数
+      onNewMessage()
+
+      // 通知父组件按钮状态变化
+      setTimeout(() => {
+        emit('scroll-button-change', showScrollButton.value, unreadCount.value, scrollProgress.value)
+      }, 450)
+    })
+  }
+})
+
+// 组件挂载后检查初始滚动状态
+onMounted(() => {
   nextTick(() => {
-    scrollToBottom()
+    // 延迟检查，确保 DOM 已完全渲染
+    setTimeout(() => {
+      checkScrollPosition()
+      emit('scroll-button-change', showScrollButton.value, unreadCount.value, scrollProgress.value)
+    }, 100)
   })
 })
 

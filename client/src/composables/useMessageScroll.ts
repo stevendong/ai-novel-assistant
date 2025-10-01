@@ -1,97 +1,155 @@
 import { ref } from 'vue'
 
 export function useMessageScroll() {
+  // 状态管理
   const messagesContainer = ref<HTMLElement>()
   const showScrollButton = ref(false)
   const unreadCount = ref(0)
   const scrollProgress = ref(0)
-  const autoScrollEnabled = ref(true)
-  const lastScrollTime = ref(0)
-  const scrollDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+  const isUserScrolling = ref(false)
+  const scrollTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
+  /**
+   * 判断是否在底部
+   * @returns true 表示在底部，false 表示不在底部
+   */
+  const isAtBottom = (): boolean => {
+    if (!messagesContainer.value) return true
+
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+
+    // 计算距离底部的像素距离（确保不为负数）
+    const distanceFromBottom = Math.max(0, scrollHeight - scrollTop - clientHeight)
+
+    // 阈值设为 5px，考虑浮点数精度和亚像素渲染
+    return distanceFromBottom <= 5
+  }
+
+  /**
+   * 判断是否有可滚动内容
+   * @returns true 表示内容超过一屏需要滚动，false 表示内容不足一屏
+   */
+  const hasScrollableContent = (): boolean => {
+    if (!messagesContainer.value) return false
+
+    const { scrollHeight, clientHeight } = messagesContainer.value
+
+    // 内容高度比可见高度多至少 20px 才认为有可滚动内容
+    return scrollHeight > clientHeight + 20
+  }
+
+  /**
+   * 更新按钮显示状态
+   */
+  const updateButtonState = () => {
+    if (!messagesContainer.value) {
+      showScrollButton.value = false
+      return
+    }
+
+    const atBottom = isAtBottom()
+    const hasContent = hasScrollableContent()
+
+    // 按钮显示规则：
+    // 1. 不在底部 且 有可滚动内容 -> 显示
+    // 2. 在底部 或 无可滚动内容 -> 隐藏
+    showScrollButton.value = !atBottom && hasContent
+
+    // 在底部时清除未读计数
+    if (atBottom) {
+      unreadCount.value = 0
+    }
+
+    // 更新滚动进度
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+    const maxScroll = Math.max(1, scrollHeight - clientHeight)
+    scrollProgress.value = Math.round((scrollTop / maxScroll) * 100)
+  }
+
+  /**
+   * 处理滚动事件
+   */
   const handleScroll = () => {
     if (!messagesContainer.value) return
 
-    // 记录滚动时间，用于智能滚动判断
-    lastScrollTime.value = Date.now()
+    // 标记用户正在滚动
+    isUserScrolling.value = true
 
-    // 清除之前的防抖定时器
-    if (scrollDebounceTimer.value) {
-      clearTimeout(scrollDebounceTimer.value)
+    // 清除之前的定时器
+    if (scrollTimer.value) {
+      clearTimeout(scrollTimer.value)
     }
 
-    // 防抖处理，避免过度触发
-    scrollDebounceTimer.value = setTimeout(() => {
-      if (!messagesContainer.value) return
-
-      const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
-      const scrollPercentage = scrollTop / (scrollHeight - clientHeight)
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-
-      // 计算滚动进度（0-100）
-      scrollProgress.value = Math.min(100, Math.max(0, scrollPercentage * 100))
-
-      // 更精确的底部检测
-      const isNearBottom = distanceFromBottom < 50 || scrollPercentage > 0.95
-      const hasScrollableContent = scrollHeight > clientHeight + 10
-
-      // 如果用户手动滚动了，暂时禁用自动滚动
-      const timeSinceScroll = Date.now() - lastScrollTime.value
-      if (timeSinceScroll < 100) {
-        autoScrollEnabled.value = false
-        // 5秒后重新启用自动滚动
-        setTimeout(() => {
-          autoScrollEnabled.value = true
-        }, 5000)
-      }
-
-      showScrollButton.value = !isNearBottom && hasScrollableContent
-
-      // 如果用户滚动到底部，清除未读计数
-      if (isNearBottom) {
-        unreadCount.value = 0
-      }
-    }, 50) // 50ms防抖
+    // 防抖：50ms 后更新按钮状态
+    scrollTimer.value = setTimeout(() => {
+      updateButtonState()
+      isUserScrolling.value = false
+    }, 50)
   }
 
+  /**
+   * 滚动到底部
+   * @param smooth 是否平滑滚动
+   */
   const scrollToBottom = (smooth = true) => {
     if (!messagesContainer.value) return
 
     // 清除未读计数
     unreadCount.value = 0
 
+    // 执行滚动
     messagesContainer.value.scrollTo({
       top: messagesContainer.value.scrollHeight,
       behavior: smooth ? 'smooth' : 'auto'
     })
 
-    // 触发滚动检测，更新按钮状态
+    // 延迟更新按钮状态（等待滚动完成）
     setTimeout(() => {
-      handleScroll()
-    }, smooth ? 300 : 50)
+      updateButtonState()
+    }, smooth ? 400 : 100)
   }
 
-  // 增加未读消息计数
-  const incrementUnreadCount = () => {
-    if (messagesContainer.value && showScrollButton.value) {
-      const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-      const isNearBottom = distanceFromBottom < 50
+  /**
+   * 处理新消息到达
+   * - 如果在底部，自动滚动到底部
+   * - 如果不在底部，增加未读计数
+   */
+  const onNewMessage = () => {
+    if (!messagesContainer.value) return
 
-      if (!isNearBottom) {
-        unreadCount.value++
-      }
+    const atBottom = isAtBottom()
+
+    if (atBottom) {
+      // 在底部：自动滚动到新消息
+      scrollToBottom(true)
+    } else {
+      // 不在底部：增加未读计数
+      unreadCount.value++
+      updateButtonState()
     }
   }
 
+  /**
+   * 检查并更新滚动位置（用于外部调用）
+   */
+  const checkScrollPosition = () => {
+    updateButtonState()
+  }
+
   return {
+    // 状态
     messagesContainer,
     showScrollButton,
     unreadCount,
     scrollProgress,
-    autoScrollEnabled,
+    isUserScrolling,
+
+    // 方法
     handleScroll,
     scrollToBottom,
-    incrementUnreadCount
+    onNewMessage,
+    checkScrollPosition,
+    isAtBottom,
+    hasScrollableContent
   }
 }

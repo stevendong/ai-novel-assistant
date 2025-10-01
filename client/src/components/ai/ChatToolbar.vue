@@ -23,6 +23,17 @@
     </div>
 
     <div class="toolbar-right">
+      <!-- 滚动到底部按钮 -->
+      <div
+        v-if="showScrollButton"
+        class="toolbar-button scroll-tool-button"
+        @click="handleScrollToBottom"
+      >
+        <div class="button-wrapper">
+          <VerticalAlignBottomOutlined class="button-icon" />
+        </div>
+      </div>
+
       <!-- 设置按钮 -->
       <div class="toolbar-button settings-tool-button">
         <a-dropdown :trigger="['click']" placement="topRight">
@@ -52,10 +63,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Modal } from 'ant-design-vue'
-import { 
-  HistoryOutlined, 
-  SettingOutlined, 
-  DeleteOutlined 
+import {
+  HistoryOutlined,
+  SettingOutlined,
+  DeleteOutlined,
+  VerticalAlignBottomOutlined
 } from '@ant-design/icons-vue'
 import SessionDropdown from './SessionDropdown.vue'
 import type { ConversationSession } from '@/stores/aiChat'
@@ -64,6 +76,7 @@ import type { ConversationSession } from '@/stores/aiChat'
 const props = defineProps<{
   sessions: ConversationSession[]
   currentSessionId?: string
+  showScrollButton?: boolean
 }>()
 
 // Emits
@@ -72,6 +85,7 @@ const emit = defineEmits<{
   'create-session': []
   'delete-session': [sessionId: string]
   'clear-conversation': []
+  'scroll-to-bottom': []
 }>()
 
 // State
@@ -92,6 +106,11 @@ const handleDeleteSession = (sessionId: string) => {
   emit('delete-session', sessionId)
 }
 
+// 处理滚动到底部
+const handleScrollToBottom = () => {
+  emit('scroll-to-bottom')
+}
+
 // 处理清空对话
 const handleClearConversation = () => {
   Modal.confirm({
@@ -104,7 +123,7 @@ const handleClearConversation = () => {
       try {
         isClearingConversation.value = true
         emit('clear-conversation')
-        
+
         // 显示成功提示
         Modal.success({
           title: '清空成功',
@@ -190,6 +209,58 @@ const handleClearConversation = () => {
   margin-left: 4px;
 }
 
+/* 滚动到底部按钮样式 */
+.scroll-tool-button .button-wrapper {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scroll-tool-button .button-wrapper.has-unread {
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.1) 0%, rgba(255, 120, 117, 0.1) 100%);
+  border: 1px solid rgba(255, 77, 79, 0.2);
+}
+
+.scroll-tool-button .button-wrapper.has-unread .button-icon,
+.scroll-tool-button .button-wrapper.has-unread .button-label {
+  color: #ff4d4f;
+}
+
+.scroll-tool-button .button-wrapper:hover {
+  background: #d9d9d9;
+}
+
+.scroll-tool-button .button-wrapper.has-unread:hover {
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.15) 0%, rgba(255, 120, 117, 0.15) 100%);
+  border-color: rgba(255, 77, 79, 0.3);
+}
+
+.unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  margin-left: 4px;
+  animation: badge-pulse 2s ease infinite;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(255, 77, 79, 0);
+  }
+}
+
 /* 设置下拉菜单样式 */
 .settings-dropdown {
   min-width: 160px;
@@ -230,6 +301,20 @@ const handleClearConversation = () => {
 .dark .button-icon,
 .dark .button-label {
   color: #a3a3a3;
+}
+
+.dark .scroll-tool-button .button-wrapper.has-unread {
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.15) 0%, rgba(255, 120, 117, 0.15) 100%);
+  border-color: rgba(255, 77, 79, 0.3);
+}
+
+.dark .scroll-tool-button .button-wrapper.has-unread:hover {
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.2) 0%, rgba(255, 120, 117, 0.2) 100%);
+  border-color: rgba(255, 77, 79, 0.4);
+}
+
+.dark .scroll-tool-button .button-wrapper:hover {
+  background: #3a3a3a;
 }
 
 .dark .danger-menu-item:hover {

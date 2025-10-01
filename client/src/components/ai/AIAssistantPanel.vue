@@ -70,10 +70,13 @@
           v-if="chatStore.hasActiveSession"
           :sessions="chatStore.sessions"
           :current-session-id="chatStore.currentSession?.id"
+          :show-scroll-button="showScrollButton"
+          :unread-count="unreadCount"
           @switch-session="switchToSession"
           @create-session="createNewSession"
           @delete-session="deleteSession"
           @clear-conversation="clearConversation"
+          @scroll-to-bottom="scrollToBottom"
         />
 
         <!-- Input Area (only show when there's an active session) -->
@@ -94,23 +97,11 @@
 
     </div>
 
-    <!-- 新的滚动到底部按钮 -->
-    <ScrollToBottomButton
-        :visible="showScrollButton"
-        :unread-count="unreadCount"
-        :scroll-progress="scrollProgress"
-        :show-progress="true"
-        :auto-hide="false"
-        @click="scrollToBottom"
-        @visibility-change="handleScrollButtonVisibilityChange"
-    />
-
   </FloatingContainer>
 </template>
 
 <script setup lang="ts">
 import {ref, computed, onMounted, nextTick, watch} from 'vue'
-import {Modal, message} from 'ant-design-vue'
 import {
   BulbOutlined,
   FileTextOutlined,
@@ -128,12 +119,9 @@ import {useFloatingWindow} from '@/composables/useFloatingWindow'
 import StatusBar from "@/components/ai/StatusBar.vue"
 import WelcomeScreen from "@/components/ai/WelcomeScreen.vue"
 import MessageInput from "@/components/ai/MessageInput.vue"
-import ScrollToBottomButton from "@/components/ai/ScrollToBottomButton.vue"
 import FloatingContainer from "@/components/ai/FloatingContainer.vue"
 import MessageList from "@/components/ai/MessageList.vue"
 import ChatToolbar from "@/components/ai/ChatToolbar.vue"
-import OutlineGenerator from "@/components/ai/OutlineGenerator.vue"
-
 // Stores
 const projectStore = useProjectStore()
 const chatStore = useAIChatStore()
@@ -317,11 +305,6 @@ const handleScrollButtonChange = (visible: boolean, unread: number, progress: nu
   scrollProgress.value = progress
 }
 
-// 处理滚动按钮可见性变化
-const handleScrollButtonVisibilityChange = (visible: boolean) => {
-  showScrollButton.value = visible
-}
-
 const handleInput = () => {
   // Auto-resize and other input handling
 }
@@ -376,7 +359,7 @@ const clearConversation = async () => {
 
   try {
     await chatStore.clearCurrentSession()
-    
+
     // 自动滚动到底部以显示欢迎消息
     nextTick(() => {
       scrollToBottom()
@@ -475,7 +458,7 @@ const createNewSession = async () => {
 // 删除会话
 const deleteSession = async (sessionId: string) => {
   if (!sessionId) return
-  
+
   try {
     await chatStore.deleteSession(sessionId)
   } catch (error) {
