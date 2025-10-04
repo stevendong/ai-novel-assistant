@@ -1,807 +1,76 @@
 <template>
-  <div class="h-full flex">
-    <!-- Character List (30%) -->
-    <div class="w-80 theme-bg-elevated border-r theme-border flex flex-col">
-      <div class="p-4 border-b theme-border">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold theme-text-primary">角色库</h2>
-          <a-space size="small">
-            <a-button size="small" @click="showCardSelectorModal = true">
-              <template #icon>
-                <UploadOutlined />
-              </template>
-              导入卡片
-            </a-button>
-            <a-button type="primary" size="small" @click="showAddCharacterModal = true">
-              <template #icon>
-                <PlusOutlined />
-              </template>
-              新增
-            </a-button>
-          </a-space>
-        </div>
+  <div class="character-management h-full flex">
+    <!-- Left: Character List -->
+    <div class="w-80 flex-shrink-0">
+      <CharacterList
+        :characters="filteredCharacters"
+        :selected-id="selectedCharacter?.id"
+        @select="selectCharacter"
+        @add="showAddCharacterModal = true"
+        @search="handleSearch"
+      />
 
-        <a-input-search
-          v-model:value="searchQuery"
-          placeholder="搜索角色..."
-          size="small"
+      <div class="p-4 border-t theme-border">
+        <a-button block @click="showCardSelectorModal = true">
+          <template #icon><UploadOutlined /></template>
+          导入角色卡
+        </a-button>
+      </div>
+    </div>
+
+    <!-- Right: Character Details -->
+    <div class="flex-1 flex">
+      <div class="flex-1 overflow-hidden">
+        <CharacterDetail
+          :character="selectedCharacter"
+          :enhancing="enhancing"
+          :exporting="exporting"
+          @save="saveCharacter"
+          @change-avatar="openAvatarSelector"
+          @enhance="requestAIEnhancement"
+          @export="exportCharacterCard"
+          @toggle-lock="toggleLock"
+          @delete="confirmDeleteCharacter"
         />
       </div>
 
-      <div class="flex-1 overflow-y-auto p-2">
-        <div
-          v-for="character in filteredCharacters"
-          :key="character.id"
-          @click="selectCharacter(character)"
-          class="p-3 mb-2 rounded-lg cursor-pointer transition-colors"
-          :class="selectedCharacter?.id === character.id
-            ? 'theme-selected-bg border theme-selected-border'
-            : 'theme-bg-container border theme-border theme-selected-hover'"
-        >
-          <div class="flex items-start space-x-3">
-            <a-avatar
-              :size="40"
-              shape="square"
-              :src="character.avatar"
-              :style="!character.avatar ? { backgroundColor: getCharacterColor(character.id) } : {}"
-            >
-              <template v-if="!character.avatar">
-                {{ character.name.charAt(0) }}
-              </template>
-            </a-avatar>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <h4 class="text-sm font-medium theme-text-primary truncate">
-                  {{ character.name }}
-                </h4>
-                <a-tag v-if="character.isLocked" size="small" color="red">
-                  锁定
-                </a-tag>
-              </div>
-              <p class="text-xs theme-text-primary mt-1 line-clamp-2">
-                {{ character.description }}
-              </p>
-              <div class="flex items-center mt-2 text-xs theme-text-primary">
-                <span>{{ character.personality?.split('，')[0] || '未设定性格' }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- AI Enhancement Panel -->
+      <div v-if="showAISuggestionsPanel" class="w-96 flex-shrink-0">
+        <AIEnhancementPanel
+          :visible="showAISuggestionsPanel"
+          :result="aiEnhancementResult"
+          @close="showAISuggestionsPanel = false"
+          @apply="applySuggestion"
+          @apply-all="applyAllSuggestions"
+        />
       </div>
     </div>
 
-    <!-- Character Details (70%) -->
-    <div class="flex-1 flex flex-col">
-      <div v-if="!selectedCharacter" class="flex-1 flex items-center justify-center theme-text-primary">
-        <div class="text-center">
-          <TeamOutlined style="font-size: 48px; margin-bottom: 16px;" />
-          <p>选择一个角色以查看和编辑详情</p>
-        </div>
-      </div>
+    <!-- Modals -->
+    <CharacterFormModal
+      v-model:visible="showAddCharacterModal"
+      :creating="loading"
+      :generating="generatingCharacter"
+      :ai-result="aiGeneratedCharacter"
+      @create="createNewCharacter"
+      @generate="generateAICharacter"
+      @clear-a-i="clearAIGeneration"
+      @select-card="openCardSelector"
+    />
 
-      <div v-else class="flex-1 flex">
-        <!-- Character Form (70%) -->
-        <div class="flex-1 p-6 overflow-y-auto">
-          <div class="max-w-3xl">
-            <!-- Header -->
-            <div class="character-header">
-              <!-- 顶部区域：头像、标题和操作按钮 -->
-              <div class="header-main">
-                <!-- 左侧：头像和信息 -->
-                <div class="header-left">
-                  <a-tooltip title="点击选择头像" placement="bottom">
-                    <div class="avatar-wrapper" @click="openAvatarSelector">
-                      <a-badge
-                        :count="selectedCharacter.isLocked ? '锁' : 0"
-                        :number-style="{ backgroundColor: '#ff4d4f' }"
-                      >
-                        <a-avatar
-                          :size="64"
-                          shape="square"
-                          :src="selectedCharacter.avatar"
-                          :style="!selectedCharacter.avatar ? { backgroundColor: getCharacterColor(selectedCharacter.id) } : {}"
-                        >
-                          <template v-if="!selectedCharacter.avatar">
-                            {{ selectedCharacter.name.charAt(0) }}
-                          </template>
-                        </a-avatar>
-                      </a-badge>
-                      <div class="avatar-overlay">
-                        <UploadOutlined />
-                      </div>
-                    </div>
-                  </a-tooltip>
+    <CharacterImportProgress
+      :visible="showImportProgressModal"
+      :step="importStep"
+      :status-text="importStatusText"
+      :loading="importing"
+      :error="importError"
+      :preview-data="importPreviewData"
+      :complete="importComplete"
+      @close="closeImportProgress"
+      @view="viewImportedCharacter"
+    />
 
-                  <div class="header-info">
-                    <h1 class="header-title">{{ selectedCharacter.name }}</h1>
-                    <div class="header-meta">
-                      <a-space :size="8">
-                        <span v-if="selectedCharacter.identity" class="meta-item">
-                          {{ selectedCharacter.identity }}
-                        </span>
-                        <a-divider v-if="selectedCharacter.identity && selectedCharacter.age" type="vertical" />
-                        <span v-if="selectedCharacter.age" class="meta-item">
-                          {{ selectedCharacter.age }}
-                        </span>
-                      </a-space>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 右侧：操作按钮 -->
-                <div class="header-actions">
-                  <a-space :size="8" wrap>
-                    <!-- AI完善 -->
-                    <a-tooltip title="AI分析角色并提供完善建议">
-                      <a-button
-                        type="primary"
-                        @click="requestAIEnhancement"
-                        :loading="enhancing"
-                      >
-                        <template #icon><RobotOutlined /></template>
-                        AI完善
-                      </a-button>
-                    </a-tooltip>
-
-                    <!-- AI建议面板切换 -->
-                    <a-tooltip :title="showAISuggestionsPanel ? '隐藏AI建议' : '显示AI建议'">
-                      <a-button
-                        :type="showAISuggestionsPanel ? 'primary' : 'default'"
-                        @click="showAISuggestionsPanel = !showAISuggestionsPanel"
-                      >
-                        <template #icon><BulbOutlined /></template>
-                      </a-button>
-                    </a-tooltip>
-
-                    <!-- 导出 -->
-                    <a-tooltip title="导出角色卡为PNG文件">
-                      <a-button @click="exportCharacterCard" :loading="exporting">
-                        <template #icon><DownloadOutlined /></template>
-                        导出角色卡
-                      </a-button>
-                    </a-tooltip>
-
-                    <!-- 更多操作 -->
-                    <a-dropdown>
-                      <a-button>
-                        <template #icon><MoreOutlined /></template>
-                      </a-button>
-                      <template #overlay>
-                        <a-menu>
-                          <a-menu-item key="lock" @click="toggleLock">
-                            <LockOutlined v-if="!selectedCharacter.isLocked" />
-                            <UnlockOutlined v-else />
-                            {{ selectedCharacter.isLocked ? '解锁角色' : '锁定角色' }}
-                          </a-menu-item>
-                          <a-menu-divider />
-                          <a-menu-item key="delete" danger @click="confirmDeleteCharacter">
-                            <DeleteOutlined /> 删除角色
-                          </a-menu-item>
-                        </a-menu>
-                      </template>
-                    </a-dropdown>
-                  </a-space>
-                </div>
-              </div>
-            </div>
-
-            <!-- Character Form -->
-            <a-form :model="editingCharacter" layout="vertical" @finish="saveCharacter">
-              <a-tabs v-model:activeKey="activeTab" type="card">
-                <!-- Basic Info Tab -->
-                <a-tab-pane key="basic" tab="基本信息">
-                  <a-row :gutter="16">
-                    <a-col :span="8">
-                      <a-form-item label="角色姓名" required>
-                        <a-input
-                          v-model:value="editingCharacter.name"
-                          placeholder="输入角色姓名"
-                          :disabled="selectedCharacter.isLocked"
-                        />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="年龄">
-                        <a-input
-                          v-model:value="editingCharacter.age"
-                          placeholder="如：28岁"
-                          :disabled="selectedCharacter.isLocked"
-                        />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="身份/职业">
-                        <a-input
-                          v-model:value="editingCharacter.identity"
-                          placeholder="如：私人侦探"
-                          :disabled="selectedCharacter.isLocked"
-                        />
-                      </a-form-item>
-                    </a-col>
-                  </a-row>
-
-                  <a-form-item label="角色描述">
-                    <a-textarea
-                      v-model:value="editingCharacter.description"
-                      :rows="3"
-                      placeholder="简要描述角色的基本信息..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="外貌特征">
-                    <a-textarea
-                      v-model:value="editingCharacter.appearance"
-                      :rows="4"
-                      placeholder="详细描述角色的外貌特征..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-                </a-tab-pane>
-
-                <!-- Personality Tab -->
-                <a-tab-pane key="personality" tab="性格特征">
-                  <a-form-item label="性格特点">
-                    <a-textarea
-                      v-model:value="editingCharacter.personality"
-                      :rows="6"
-                      placeholder="描述角色的性格特点、行为习惯、说话方式等..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="核心价值观">
-                    <a-textarea
-                      v-model:value="editingCharacter.values"
-                      :rows="3"
-                      placeholder="角色的核心价值观和信念..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="恐惧与弱点">
-                    <a-textarea
-                      v-model:value="editingCharacter.fears"
-                      :rows="3"
-                      placeholder="角色害怕什么，有什么弱点..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-                </a-tab-pane>
-
-                <!-- Background Tab -->
-                <a-tab-pane key="background" tab="背景故事">
-                  <a-form-item label="个人背景">
-                    <a-textarea
-                      v-model:value="editingCharacter.background"
-                      :rows="8"
-                      placeholder="角色的成长经历、重要事件、人生转折点..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="技能与能力">
-                    <a-textarea
-                      v-model:value="editingCharacter.skills"
-                      :rows="3"
-                      placeholder="角色掌握的技能、特殊能力..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-                </a-tab-pane>
-
-                <!-- Relationships Tab -->
-                <a-tab-pane key="relationships" tab="人际关系">
-                  <div class="space-y-4">
-                    <div
-                      v-for="(relation, index) in editingCharacter.relationships"
-                      :key="index"
-                      class="p-4 border theme-border rounded-lg"
-                    >
-                      <a-row :gutter="16" align="middle">
-                        <a-col :span="6">
-                          <a-input
-                            v-model:value="relation.character"
-                            placeholder="角色名称"
-                            :disabled="selectedCharacter.isLocked"
-                          />
-                        </a-col>
-                        <a-col :span="4">
-                          <a-select
-                            v-model:value="relation.type"
-                            placeholder="关系类型"
-                            :disabled="selectedCharacter.isLocked"
-                          >
-                            <a-select-option value="家人">家人</a-select-option>
-                            <a-select-option value="朋友">朋友</a-select-option>
-                            <a-select-option value="敌人">敌人</a-select-option>
-                            <a-select-option value="导师">导师</a-select-option>
-                            <a-select-option value="下属">下属</a-select-option>
-                            <a-select-option value="恋人">恋人</a-select-option>
-                            <a-select-option value="其他">其他</a-select-option>
-                          </a-select>
-                        </a-col>
-                        <a-col :span="4">
-                          <a-select
-                            v-model:value="relation.importance"
-                            placeholder="重要程度"
-                            :disabled="selectedCharacter.isLocked"
-                          >
-                            <a-select-option value="高">高</a-select-option>
-                            <a-select-option value="中">中</a-select-option>
-                            <a-select-option value="低">低</a-select-option>
-                          </a-select>
-                        </a-col>
-                        <a-col :span="8">
-                          <a-input
-                            v-model:value="relation.description"
-                            placeholder="关系描述"
-                            :disabled="selectedCharacter.isLocked"
-                          />
-                        </a-col>
-                        <a-col :span="2">
-                          <a-button
-                            type="text"
-                            danger
-                            @click="removeRelationship(index)"
-                            :disabled="selectedCharacter.isLocked"
-                          >
-                            <DeleteOutlined />
-                          </a-button>
-                        </a-col>
-                      </a-row>
-                    </div>
-
-                    <a-button
-                      type="dashed"
-                      block
-                      @click="addRelationship"
-                      :disabled="selectedCharacter.isLocked"
-                    >
-                      <PlusOutlined />
-                      添加关系
-                    </a-button>
-                  </div>
-                </a-tab-pane>
-
-                <!-- SillyTavern Fields Tab -->
-                <a-tab-pane key="sillytavern" tab="SillyTavern">
-                  <a-alert
-                    message="SillyTavern 扩展字段"
-                    description="这些字段用于 SillyTavern 角色卡导入/导出。如果不使用 SillyTavern，可以忽略这些字段。"
-                    type="info"
-                    show-icon
-                    closable
-                    class="mb-4"
-                  />
-
-                  <a-form-item label="第一条消息/问候语">
-                    <a-textarea
-                      v-model:value="editingCharacter.firstMessage"
-                      :rows="3"
-                      placeholder="角色的第一条问候消息..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="对话示例">
-                    <a-textarea
-                      v-model:value="editingCharacter.messageExample"
-                      :rows="5"
-                      placeholder="示例对话，格式：&#10;{{user}}: 用户消息&#10;{{char}}: 角色回复"
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="系统提示词">
-                    <a-textarea
-                      v-model:value="editingCharacter.systemPrompt"
-                      :rows="4"
-                      placeholder="系统级别的提示词，用于引导 AI 行为..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="历史后指令">
-                    <a-textarea
-                      v-model:value="editingCharacter.postHistoryInstructions"
-                      :rows="3"
-                      placeholder="在对话历史之后的额外指令..."
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-form-item label="标签">
-                    <a-input
-                      v-model:value="editingCharacter.tags"
-                      placeholder="标签，用逗号分隔：例如 fantasy, adventure, hero"
-                      :disabled="selectedCharacter.isLocked"
-                    />
-                  </a-form-item>
-
-                  <a-row :gutter="16">
-                    <a-col :span="12">
-                      <a-form-item label="创作者">
-                        <a-input
-                          v-model:value="editingCharacter.creator"
-                          placeholder="创作者名称"
-                          :disabled="selectedCharacter.isLocked"
-                        />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="12">
-                      <a-form-item label="版本号">
-                        <a-input
-                          v-model:value="editingCharacter.characterVersion"
-                          placeholder="例如：1.0"
-                          :disabled="selectedCharacter.isLocked"
-                        />
-                      </a-form-item>
-                    </a-col>
-                  </a-row>
-                </a-tab-pane>
-              </a-tabs>
-
-              <div class="mt-6 text-right">
-                <a-button
-                  type="primary"
-                  html-type="submit"
-                  :disabled="selectedCharacter.isLocked"
-                >
-                  保存修改
-                </a-button>
-              </div>
-            </a-form>
-          </div>
-        </div>
-
-        <!-- AI Suggestions Panel (30%) -->
-        <div v-if="showAISuggestionsPanel" class="w-96 theme-bg-elevated border-l theme-border p-4">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-medium theme-text-primary">AI 建议</h3>
-            <a-button
-              type="text"
-              size="small"
-              @click="showAISuggestionsPanel = false"
-              class="!p-1 !h-auto hover:!bg-gray-100 dark:hover:!bg-gray-700"
-            >
-              <template #icon>
-                <CloseOutlined class="text-xs" />
-              </template>
-            </a-button>
-          </div>
-
-          <div v-if="aiEnhancementResult && aiEnhancementResult.suggestions" class="space-y-4">
-            <!-- 动态显示主要AI建议 -->
-            <a-card v-if="aiEnhancementResult.suggestions.personality" size="small" title="性格建议">
-              <p class="text-sm theme-text-primary line-clamp-3">
-                {{ aiEnhancementResult.suggestions.personality.substring(0, 120) }}{{ aiEnhancementResult.suggestions.personality.length > 120 ? '...' : '' }}
-              </p>
-              <a-button type="link" size="small" class="p-0 mt-2" @click="applyAISuggestion('personality', aiEnhancementResult.suggestions.personality)">
-                应用建议
-              </a-button>
-            </a-card>
-
-            <a-card v-if="aiEnhancementResult.suggestions.background" size="small" title="背景建议">
-              <p class="text-sm theme-text-primary line-clamp-3">
-                {{ aiEnhancementResult.suggestions.background.substring(0, 120) }}{{ aiEnhancementResult.suggestions.background.length > 120 ? '...' : '' }}
-              </p>
-              <a-button type="link" size="small" class="p-0 mt-2" @click="applyAISuggestion('background', aiEnhancementResult.suggestions.background)">
-                应用建议
-              </a-button>
-            </a-card>
-
-            <a-card v-if="aiEnhancementResult.suggestions.skills" size="small" title="技能建议">
-              <p class="text-sm theme-text-primary line-clamp-3">
-                {{ aiEnhancementResult.suggestions.skills.substring(0, 120) }}{{ aiEnhancementResult.suggestions.skills.length > 120 ? '...' : '' }}
-              </p>
-              <a-button type="link" size="small" class="p-0 mt-2" @click="applyAISuggestion('skills', aiEnhancementResult.suggestions.skills)">
-                应用建议
-              </a-button>
-            </a-card>
-
-            <div class="text-center">
-              <a-button type="link" size="small" @click="showAIEnhancementModal = true">
-                查看所有建议 ({{ Object.keys(aiEnhancementResult.suggestions).length }} 项)
-              </a-button>
-            </div>
-          </div>
-
-          <!-- 默认显示 -->
-          <div v-else class="space-y-4">
-            <a-card size="small" title="AI 分析提示">
-              <p class="text-sm theme-text-primary">
-                点击下方按钮获取 AI 对当前角色的完善建议，包括性格分析、背景故事和外貌描述等。
-              </p>
-            </a-card>
-          </div>
-
-          <div class="mt-6">
-            <a-button type="primary" block @click="requestAIEnhancement" :loading="enhancing">
-              <template #icon>
-                <RobotOutlined />
-              </template>
-              {{ aiEnhancementResult ? '重新分析' : 'AI 全面分析' }}
-            </a-button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Character Modal -->
-    <a-modal
-      v-model:open="showAddCharacterModal"
-      title="添加新角色"
-      width="600px"
-      @ok="addCharacter"
-    >
-      <a-form :model="newCharacter" layout="vertical">
-        <a-form-item label="角色姓名" required>
-          <a-input v-model:value="newCharacter.name" placeholder="输入角色姓名" />
-        </a-form-item>
-        <a-form-item label="简要描述">
-          <a-textarea
-            v-model:value="newCharacter.description"
-            :rows="3"
-            placeholder="简要描述角色..."
-          />
-        </a-form-item>
-
-        <!-- AI 生成选项 -->
-        <a-divider>AI 生成辅助</a-divider>
-        <a-form-item label="AI 生成提示" help="描述你想要的角色特征，AI 将根据此生成详细角色信息">
-          <a-textarea
-            v-model:value="newCharacter.aiPrompt"
-            :rows="2"
-            placeholder="例如：一个勇敢的年轻骑士，有着复杂的过去..."
-          />
-        </a-form-item>
-
-        <a-form-item>
-          <a-space>
-            <a-button
-              @click="generateCharacterWithAI"
-              :loading="generatingCharacter"
-              type="primary"
-              ghost
-            >
-              <template #icon>
-                <RobotOutlined />
-              </template>
-              AI 生成角色
-            </a-button>
-            <a-button
-              @click="clearAIGeneration"
-              :disabled="!hasAIGeneration"
-              size="small"
-            >
-              清除生成内容
-            </a-button>
-          </a-space>
-        </a-form-item>
-
-        <!-- AI 生成预览 -->
-        <div v-if="aiGeneratedCharacter" class="border theme-border rounded-lg p-4 theme-bg-elevated">
-          <h4 class="text-sm font-medium mb-3 text-blue-600 dark:text-blue-400">AI 生成预览</h4>
-          <a-space direction="vertical" style="width: 100%" size="small">
-            <div v-if="aiGeneratedCharacter.name">
-              <strong class="text-xs theme-text-secondary">建议姓名:</strong>
-              <p class="text-sm mt-1 theme-text-primary">{{ aiGeneratedCharacter.name }}</p>
-            </div>
-            <div v-if="aiGeneratedCharacter.age">
-              <strong class="text-xs theme-text-secondary">年龄:</strong>
-              <p class="text-sm mt-1 theme-text-primary">{{ aiGeneratedCharacter.age }}</p>
-            </div>
-            <div v-if="aiGeneratedCharacter.identity">
-              <strong class="text-xs theme-text-secondary">身份/职业:</strong>
-              <p class="text-sm mt-1 theme-text-primary">{{ aiGeneratedCharacter.identity }}</p>
-            </div>
-            <div v-if="aiGeneratedCharacter.appearance">
-              <strong class="text-xs theme-text-secondary">外貌特征:</strong>
-              <p class="text-sm mt-1 theme-text-primary line-clamp-3">{{ aiGeneratedCharacter.appearance }}</p>
-            </div>
-            <div v-if="aiGeneratedCharacter.personality">
-              <strong class="text-xs theme-text-secondary">性格特征:</strong>
-              <p class="text-sm mt-1 theme-text-primary line-clamp-3">{{ aiGeneratedCharacter.personality }}</p>
-            </div>
-            <div v-if="aiGeneratedCharacter.background">
-              <strong class="text-xs theme-text-secondary">背景故事:</strong>
-              <p class="text-sm mt-1 theme-text-primary line-clamp-2">{{ aiGeneratedCharacter.background }}</p>
-            </div>
-          </a-space>
-          <div class="mt-4 text-center space-x-2">
-            <a-button type="primary" size="small" @click="applyAIGeneration">
-              应用生成内容
-            </a-button>
-            <a-button size="small" @click="showFullAIPreview = true">
-              查看完整信息
-            </a-button>
-          </div>
-        </div>
-      </a-form>
-    </a-modal>
-
-    <!-- AI Enhancement Result Modal -->
-    <a-modal
-      v-model:open="showAIEnhancementModal"
-      title="AI 完善建议"
-      width="800px"
-      :footer="null"
-    >
-      <div v-if="aiEnhancementResult" class="space-y-6">
-        <!-- AI Suggestions -->
-        <div v-if="aiEnhancementResult.suggestions">
-          <h4 class="text-lg font-medium mb-4">完善建议</h4>
-
-          <div class="space-y-4">
-            <!-- 年龄/身份建议 -->
-            <div v-if="aiEnhancementResult.suggestions.age" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-orange-600">年龄/身份</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('age', aiEnhancementResult.suggestions.age)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('age', aiEnhancementResult.suggestions.age)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.age }}</p>
-            </div>
-
-            <!-- 角色描述建议 -->
-            <div v-if="aiEnhancementResult.suggestions.description" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-indigo-600">角色描述</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('description', aiEnhancementResult.suggestions.description)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('description', aiEnhancementResult.suggestions.description)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.description }}</p>
-            </div>
-
-            <!-- 外貌特征建议 -->
-            <div v-if="aiEnhancementResult.suggestions.appearance" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-purple-600">外貌特征</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('appearance', aiEnhancementResult.suggestions.appearance)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('appearance', aiEnhancementResult.suggestions.appearance)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.appearance }}</p>
-            </div>
-
-            <!-- 性格特征建议 -->
-            <div v-if="aiEnhancementResult.suggestions.personality" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-blue-600">性格特征</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('personality', aiEnhancementResult.suggestions.personality)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('personality', aiEnhancementResult.suggestions.personality)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.personality }}</p>
-            </div>
-
-            <!-- 核心价值观建议 -->
-            <div v-if="aiEnhancementResult.suggestions.values" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-cyan-600">核心价值观</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('values', aiEnhancementResult.suggestions.values)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('values', aiEnhancementResult.suggestions.values)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.values }}</p>
-            </div>
-
-            <!-- 恐惧与弱点建议 -->
-            <div v-if="aiEnhancementResult.suggestions.fears" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-red-600">恐惧与弱点</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('fears', aiEnhancementResult.suggestions.fears)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('fears', aiEnhancementResult.suggestions.fears)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.fears }}</p>
-            </div>
-
-            <!-- 背景故事建议 -->
-            <div v-if="aiEnhancementResult.suggestions.background" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-green-600">背景故事</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('background', aiEnhancementResult.suggestions.background)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('background', aiEnhancementResult.suggestions.background)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.background }}</p>
-            </div>
-
-            <!-- 技能与能力建议 -->
-            <div v-if="aiEnhancementResult.suggestions.skills" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-emerald-600">技能与能力</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('skills', aiEnhancementResult.suggestions.skills)">
-                    替换
-                  </a-button>
-                  <a-button size="small" type="primary" @click="mergeAISuggestion('skills', aiEnhancementResult.suggestions.skills)">
-                    合并
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.skills }}</p>
-            </div>
-
-            <!-- 人际关系建议 -->
-            <div v-if="aiEnhancementResult.suggestions.relationships" class="border theme-border rounded-lg p-4">
-              <div class="flex items-center justify-between mb-2">
-                <h5 class="font-medium text-pink-600">人际关系</h5>
-                <a-space>
-                  <a-button size="small" @click="applyAISuggestion('relationships', aiEnhancementResult.suggestions.relationships)">
-                    查看详情
-                  </a-button>
-                </a-space>
-              </div>
-              <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiEnhancementResult.suggestions.relationships }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- AI Questions -->
-        <div v-if="aiEnhancementResult.questions && aiEnhancementResult.questions.length > 0">
-          <h4 class="text-lg font-medium mb-4">思考问题</h4>
-          <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <p class="text-sm text-orange-600 mb-2">AI 提出以下问题来帮助你进一步完善角色：</p>
-            <ul class="list-disc list-inside space-y-1">
-              <li v-for="question in aiEnhancementResult.questions" :key="question" class="text-sm text-orange-700">
-                {{ question }}
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="text-center pt-4 border-t theme-border">
-          <a-space>
-            <a-button @click="showAIEnhancementModal = false">关闭</a-button>
-            <a-button type="primary" @click="showAIEnhancementModal = false; saveCharacter()">
-              保存并关闭
-            </a-button>
-          </a-space>
-        </div>
-      </div>
-    </a-modal>
-
-    <!-- 角色卡文件选择弹窗 -->
+    <!-- File Selectors -->
     <FileSelectorModal
       v-model:visible="showCardSelectorModal"
       :accept="['image/png']"
@@ -810,7 +79,6 @@
       @select="handleCardFileSelect"
     />
 
-    <!-- 头像选择弹窗 -->
     <FileSelectorModal
       v-model:visible="showAvatarSelectorModal"
       :accept="['image/*']"
@@ -818,200 +86,31 @@
       :novel-id="novelId"
       @select="handleAvatarFileSelect"
     />
-
-    <!-- 导入进度对话框 -->
-    <a-modal
-      v-model:open="showImportProgressModal"
-      title="导入角色卡"
-      :closable="false"
-      :maskClosable="false"
-      :footer="null"
-      width="600px"
-    >
-      <div class="import-progress-content">
-        <a-steps :current="importStep" size="small" class="mb-6">
-          <a-step title="读取文件" />
-          <a-step title="提取数据" />
-          <a-step title="AI解析" />
-          <a-step title="创建角色" />
-        </a-steps>
-
-        <div class="import-status">
-          <a-spin :spinning="importing">
-            <div class="status-message">
-              <CheckCircleOutlined v-if="importStep > 0" class="text-green-500 mr-2" />
-              <LoadingOutlined v-else class="mr-2" />
-              <span>{{ importStatusText }}</span>
-            </div>
-
-            <div v-if="importError" class="error-message mt-4">
-              <a-alert :message="importError" type="error" show-icon closable />
-            </div>
-
-            <div v-if="importPreviewData" class="preview-section mt-6">
-              <h4 class="text-sm font-medium mb-3 theme-text-primary">角色预览</h4>
-              <div class="preview-card">
-                <div class="flex items-start space-x-4">
-                  <a-avatar
-                    :size="64"
-                    shape="square"
-                    :src="importPreviewData.avatar"
-                  >
-                    {{ importPreviewData.name?.charAt(0) }}
-                  </a-avatar>
-                  <div class="flex-1">
-                    <h5 class="font-medium theme-text-primary">{{ importPreviewData.name }}</h5>
-                    <p class="text-xs theme-text-secondary mt-1">
-                      {{ importPreviewData.age || '年龄未知' }} · {{ importPreviewData.identity || '身份未知' }}
-                    </p>
-                    <p class="text-sm theme-text-primary mt-2 line-clamp-2">
-                      {{ importPreviewData.description }}
-                    </p>
-                  </div>
-                </div>
-
-                <div class="field-status mt-4 grid grid-cols-2 gap-2">
-                  <div class="field-item" :class="{ 'field-complete': importPreviewData.personality }">
-                    <span class="field-label">性格特征</span>
-                    <CheckCircleOutlined v-if="importPreviewData.personality" class="text-green-500" />
-                    <CloseCircleOutlined v-else class="text-gray-400" />
-                  </div>
-                  <div class="field-item" :class="{ 'field-complete': importPreviewData.appearance }">
-                    <span class="field-label">外貌特征</span>
-                    <CheckCircleOutlined v-if="importPreviewData.appearance" class="text-green-500" />
-                    <CloseCircleOutlined v-else class="text-gray-400" />
-                  </div>
-                  <div class="field-item" :class="{ 'field-complete': importPreviewData.background }">
-                    <span class="field-label">背景故事</span>
-                    <CheckCircleOutlined v-if="importPreviewData.background" class="text-green-500" />
-                    <CloseCircleOutlined v-else class="text-gray-400" />
-                  </div>
-                  <div class="field-item" :class="{ 'field-complete': importPreviewData.skills }">
-                    <span class="field-label">技能能力</span>
-                    <CheckCircleOutlined v-if="importPreviewData.skills" class="text-green-500" />
-                    <CloseCircleOutlined v-else class="text-gray-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </a-spin>
-        </div>
-
-        <div v-if="importComplete" class="import-actions mt-6 text-center">
-          <a-space>
-            <a-button @click="closeImportProgress">关闭</a-button>
-            <a-button type="primary" @click="viewImportedCharacter">查看角色</a-button>
-          </a-space>
-        </div>
-      </div>
-    </a-modal>
-
-    <!-- 完整AI预览模态框 -->
-    <a-modal
-      v-model:open="showFullAIPreview"
-      title="AI 生成角色完整信息"
-      width="700px"
-      :footer="null"
-    >
-      <div v-if="aiGeneratedCharacter" class="space-y-4">
-        <div v-if="aiGeneratedCharacter.name" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-blue-600 dark:text-blue-400 mb-2">建议姓名</h5>
-          <p class="text-sm theme-text-primary">{{ aiGeneratedCharacter.name }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.age" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-orange-600 dark:text-orange-400 mb-2">年龄</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.age }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.identity" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-yellow-600 dark:text-yellow-400 mb-2">身份/职业</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.identity }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.description" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-indigo-600 dark:text-indigo-400 mb-2">角色描述</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.description }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.appearance" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-purple-600 dark:text-purple-400 mb-2">外貌特征</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.appearance }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.personality" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-green-600 dark:text-green-400 mb-2">性格特征</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.personality }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.values" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-cyan-600 dark:text-cyan-400 mb-2">核心价值观</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.values }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.fears" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-red-600 dark:text-red-400 mb-2">恐惧与弱点</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.fears }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.background" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-amber-600 dark:text-amber-400 mb-2">背景故事</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.background }}</p>
-        </div>
-
-        <div v-if="aiGeneratedCharacter.skills" class="border theme-border rounded-lg p-3">
-          <h5 class="font-medium text-emerald-600 dark:text-emerald-400 mb-2">技能与能力</h5>
-          <p class="text-sm theme-text-primary whitespace-pre-wrap">{{ aiGeneratedCharacter.skills }}</p>
-        </div>
-
-        <div class="text-center pt-4 border-t theme-border">
-          <a-space>
-            <a-button @click="showFullAIPreview = false">关闭</a-button>
-            <a-button type="primary" @click="applyAIGeneration; showFullAIPreview = false">
-              应用生成内容
-            </a-button>
-          </a-space>
-        </div>
-      </div>
-    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { message } from 'ant-design-vue'
-import {
-  PlusOutlined,
-  TeamOutlined,
-  RobotOutlined,
-  LockOutlined,
-  UnlockOutlined,
-  DeleteOutlined,
-  CloseOutlined,
-  BulbOutlined,
-  UploadOutlined,
-  DownloadOutlined,
-  MoreOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  LoadingOutlined
-} from '@ant-design/icons-vue'
+import { ref, computed, onMounted } from 'vue'
+import { message, Modal } from 'ant-design-vue'
+import { UploadOutlined } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
 import { useProjectStore } from '@/stores/project'
 import { apiClient } from '@/utils/api'
+import CharacterList from './CharacterList.vue'
+import CharacterDetail from './CharacterDetail.vue'
+import CharacterFormModal from './CharacterFormModal.vue'
+import CharacterImportProgress from './CharacterImportProgress.vue'
+import AIEnhancementPanel from './AIEnhancementPanel.vue'
 import FileSelectorModal from '@/components/file/FileSelectorModal.vue'
 
-// 使用项目Store
 const projectStore = useProjectStore()
 
-// 使用角色管理 composable
 const {
   characters,
   currentCharacter,
   loading,
   enhancing,
-  developing,
   loadCharacters,
   getCharacter,
   createCharacter,
@@ -1022,421 +121,128 @@ const {
   searchCharacters
 } = useCharacter()
 
+// State
 const selectedCharacter = ref<Character | null>(null)
-const editingCharacter = ref<any>({})
 const searchQuery = ref('')
-const activeTab = ref('basic')
 const showAddCharacterModal = ref(false)
-const showAIEnhancementModal = ref(false)
-const showAISuggestionsPanel = ref(true)
-const showFullAIPreview = ref(false)
+const showAISuggestionsPanel = ref(false)
 const aiEnhancementResult = ref<any>(null)
-const newCharacter = ref({
-  name: '',
-  description: '',
-  aiPrompt: ''
-})
-
 const generatingCharacter = ref(false)
 const aiGeneratedCharacter = ref(null)
 const exporting = ref(false)
 const importing = ref(false)
 
-// 角色卡选择相关
+// Card selection & import
 const showCardSelectorModal = ref(false)
-
-// 导入进度相关
 const showImportProgressModal = ref(false)
-const importStep = ref(0) // 0: 读取文件, 1: 提取数据, 2: AI解析, 3: 创建角色
+const importStep = ref(0)
 const importStatusText = ref('准备导入...')
 const importPreviewData = ref<any>(null)
 const importError = ref('')
 const importComplete = ref(false)
 const importedCharacterId = ref('')
 
-const novelId = computed(() => projectStore.currentProject?.id || '')
-
-// 头像选择相关
+// Avatar selection
 const showAvatarSelectorModal = ref(false)
 
-const hasAIGeneration = computed(() => !!aiGeneratedCharacter.value)
+const novelId = computed(() => projectStore.currentProject?.id || '')
 
 const filteredCharacters = computed(() => {
   if (!searchQuery.value) return characters.value
   return searchCharacters(searchQuery.value)
 })
 
+// Lifecycle
+onMounted(() => {
+  loadCharacters()
+})
+
+// Character Selection
 const selectCharacter = async (character: Character) => {
-  selectedCharacter.value = character
-
-  // 获取完整角色信息
-  const fullCharacter = await getCharacter(character.id)
-  if (fullCharacter) {
-    editingCharacter.value = {
-      ...fullCharacter,
-      age: fullCharacter.age || '',
-      identity: fullCharacter.identity || '',
-      values: fullCharacter.values || '',
-      fears: fullCharacter.fears || '',
-      skills: fullCharacter.skills || '',
-      relationships: Array.isArray(fullCharacter.relationships)
-        ? fullCharacter.relationships
-        : Object.entries(fullCharacter.relationships || {}).map(([character, data]: [string, any]) => ({
-            character,
-            type: data.type || '',
-            importance: data.importance || '',
-            description: data.description || ''
-          })),
-      // SillyTavern 字段
-      firstMessage: fullCharacter.firstMessage || '',
-      messageExample: fullCharacter.messageExample || '',
-      alternateGreetings: fullCharacter.alternateGreetings || '',
-      systemPrompt: fullCharacter.systemPrompt || '',
-      postHistoryInstructions: fullCharacter.postHistoryInstructions || '',
-      tags: fullCharacter.tags || '',
-      creator: fullCharacter.creator || '',
-      characterVersion: fullCharacter.characterVersion || '',
-      characterBook: fullCharacter.characterBook || '',
-      originalCardData: fullCharacter.originalCardData || ''
-    }
+  const full = await getCharacter(character.id)
+  if (full) {
+    selectedCharacter.value = full
   }
 }
 
-const getCharacterColor = (id: string) => {
-  const colors = ['#f56a00', '#7265e6', '#ffbf00', '#00a2ae', '#87d068']
-  return colors[parseInt(id) % colors.length]
+// Search
+const handleSearch = (query: string) => {
+  searchQuery.value = query
 }
 
-const toggleLock = async () => {
-  if (selectedCharacter.value) {
-    const newLockStatus = !selectedCharacter.value.isLocked
-    const updated = await updateCharacter(selectedCharacter.value.id, {
-      isLocked: newLockStatus
-    })
-
-    if (updated) {
-      selectedCharacter.value = updated
-    }
-  }
-}
-
-const saveCharacter = async () => {
-  if (!selectedCharacter.value) return
-
-  // 转换关系数据格式
-  const relationshipsObject: Record<string, any> = {}
-  if (Array.isArray(editingCharacter.value.relationships)) {
-    editingCharacter.value.relationships.forEach((rel: any) => {
-      if (rel.character) {
-        relationshipsObject[rel.character] = {
-          type: rel.type,
-          importance: rel.importance,
-          description: rel.description
-        }
-      }
-    })
-  }
-
-  const updateData = {
-    name: editingCharacter.value.name,
-    description: editingCharacter.value.description,
-    age: editingCharacter.value.age,
-    identity: editingCharacter.value.identity,
-    appearance: editingCharacter.value.appearance,
-    personality: editingCharacter.value.personality,
-    values: editingCharacter.value.values,
-    fears: editingCharacter.value.fears,
-    background: editingCharacter.value.background,
-    skills: editingCharacter.value.skills,
-    relationships: relationshipsObject,
-    // SillyTavern 字段
-    firstMessage: editingCharacter.value.firstMessage,
-    messageExample: editingCharacter.value.messageExample,
-    alternateGreetings: editingCharacter.value.alternateGreetings,
-    systemPrompt: editingCharacter.value.systemPrompt,
-    postHistoryInstructions: editingCharacter.value.postHistoryInstructions,
-    tags: editingCharacter.value.tags,
-    creator: editingCharacter.value.creator,
-    characterVersion: editingCharacter.value.characterVersion,
-    characterBook: editingCharacter.value.characterBook
-  }
-
-  const updated = await updateCharacter(selectedCharacter.value.id, updateData)
-  if (updated) {
-    selectedCharacter.value = updated
-    message.success('角色信息保存成功')
-  }
-}
-
-const confirmDeleteCharacter = () => {
-  if (!selectedCharacter.value) return
-
-  // 使用 Ant Design 的 Modal.confirm
-  import('ant-design-vue').then(({ Modal }) => {
-    Modal.confirm({
-      title: '确认删除角色？',
-      content: `确定要删除角色 "${selectedCharacter.value?.name}" 吗？此操作无法撤销。`,
-      okText: '确认删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: async () => {
-        await deleteCharacter()
-      }
-    })
-  })
-}
-
-const deleteCharacter = async () => {
-  if (!selectedCharacter.value) return
-
-  const success = await deleteCharacterAPI(selectedCharacter.value.id)
-  if (success) {
-    selectedCharacter.value = null
-    editingCharacter.value = {}
-    // 如果还有其他角色，选择第一个
-    if (characters.value.length > 0) {
-      await selectCharacter(characters.value[0])
-    }
-  }
-}
-
-const requestAIEnhancement = async () => {
-  if (!selectedCharacter.value) return
-
-  const enhancement = await enhanceCharacter(selectedCharacter.value.id, {
-    enhanceAspects: ['personality', 'background', 'appearance'],
-    context: editingCharacter.value.description || ''
-  })
-
-  if (enhancement) {
-    aiEnhancementResult.value = enhancement
-    showAIEnhancementModal.value = true
-  }
-}
-
-const applyAISuggestion = (aspect: string, suggestion: string) => {
-  if (!editingCharacter.value) return
-
-  // 将AI建议应用到编辑中的角色数据
-  switch (aspect) {
-    case 'age':
-      editingCharacter.value.age = suggestion
-      break
-    case 'description':
-      editingCharacter.value.description = suggestion
-      break
-    case 'appearance':
-      editingCharacter.value.appearance = suggestion
-      break
-    case 'personality':
-      editingCharacter.value.personality = suggestion
-      break
-    case 'values':
-      editingCharacter.value.values = suggestion
-      break
-    case 'fears':
-      editingCharacter.value.fears = suggestion
-      break
-    case 'background':
-      editingCharacter.value.background = suggestion
-      break
-    case 'skills':
-      editingCharacter.value.skills = suggestion
-      break
-    case 'relationships':
-      // 这个可能需要特殊处理，暂时作为描述文本
-      console.log('关系建议:', suggestion)
-      message.info('人际关系建议已在控制台输出，请手动添加到关系面板')
-      return
-  }
-
-  const fieldNames: Record<string, string> = {
-    age: '年龄/身份',
-    description: '角色描述',
-    appearance: '外貌',
-    personality: '性格',
-    values: '价值观',
-    fears: '恐惧弱点',
-    background: '背景',
-    skills: '技能',
-    relationships: '人际关系'
-  }
-
-  message.success(`已应用${fieldNames[aspect]}建议`)
-}
-
-const mergeAISuggestion = (aspect: string, suggestion: string) => {
-  if (!editingCharacter.value) return
-
-  // 将AI建议与现有内容合并
-  switch (aspect) {
-    case 'age':
-      const currentAge = editingCharacter.value.age || ''
-      editingCharacter.value.age = currentAge + (currentAge ? ' / ' : '') + suggestion
-      break
-    case 'description':
-      const currentDescription = editingCharacter.value.description || ''
-      editingCharacter.value.description = currentDescription + (currentDescription ? '\n\n' : '') + suggestion
-      break
-    case 'appearance':
-      const currentAppearance = editingCharacter.value.appearance || ''
-      editingCharacter.value.appearance = currentAppearance + (currentAppearance ? '\n\n' : '') + suggestion
-      break
-    case 'personality':
-      const currentPersonality = editingCharacter.value.personality || ''
-      editingCharacter.value.personality = currentPersonality + (currentPersonality ? '\n\n' : '') + suggestion
-      break
-    case 'values':
-      const currentValues = editingCharacter.value.values || ''
-      editingCharacter.value.values = currentValues + (currentValues ? '\n\n' : '') + suggestion
-      break
-    case 'fears':
-      const currentFears = editingCharacter.value.fears || ''
-      editingCharacter.value.fears = currentFears + (currentFears ? '\n\n' : '') + suggestion
-      break
-    case 'background':
-      const currentBackground = editingCharacter.value.background || ''
-      editingCharacter.value.background = currentBackground + (currentBackground ? '\n\n' : '') + suggestion
-      break
-    case 'skills':
-      const currentSkills = editingCharacter.value.skills || ''
-      editingCharacter.value.skills = currentSkills + (currentSkills ? '\n\n' : '') + suggestion
-      break
-    case 'relationships':
-      console.log('关系建议:', suggestion)
-      message.info('人际关系建议已在控制台输出，请手动添加到关系面板')
-      return
-  }
-
-  const fieldNames: Record<string, string> = {
-    age: '年龄/身份',
-    description: '角色描述',
-    appearance: '外貌',
-    personality: '性格',
-    values: '价值观',
-    fears: '恐惧弱点',
-    background: '背景',
-    skills: '技能',
-    relationships: '人际关系'
-  }
-
-  message.success(`已合并${fieldNames[aspect]}建议`)
-}
-
-const addRelationship = () => {
-  if (!editingCharacter.value.relationships) {
-    editingCharacter.value.relationships = []
-  }
-  editingCharacter.value.relationships.push({
-    character: '',
-    type: '',
-    importance: '',
-    description: ''
-  })
-}
-
-const removeRelationship = (index: number) => {
-  editingCharacter.value.relationships.splice(index, 1)
-}
-
-const addCharacter = async () => {
-  if (!newCharacter.value.name.trim()) {
-    message.error('请输入角色姓名')
-    return
-  }
-
-  // 如果有AI生成的内容，包含在创建数据中
-  const characterData = {
-    name: newCharacter.value.name,
-    description: newCharacter.value.description
-  }
-
-  // 如果有AI生成的详细信息，添加到角色数据中
-  if (aiGeneratedCharacter.value) {
-    Object.assign(characterData, {
-      age: aiGeneratedCharacter.value.age,
-      identity: aiGeneratedCharacter.value.identity,
-      appearance: aiGeneratedCharacter.value.appearance,
-      personality: aiGeneratedCharacter.value.personality,
-      background: aiGeneratedCharacter.value.background,
-      values: aiGeneratedCharacter.value.values,
-      fears: aiGeneratedCharacter.value.fears,
-      skills: aiGeneratedCharacter.value.skills
-    })
-  }
-
-  const created = await createCharacter(characterData)
-
-  if (created) {
+// Create Character
+const createNewCharacter = async (data: any) => {
+  const character = await createCharacter(data)
+  if (character) {
     showAddCharacterModal.value = false
-    resetNewCharacterForm()
-    // 选择新创建的角色
-    await selectCharacter(created)
+    await selectCharacter(character)
+    clearAIGeneration()
   }
 }
 
-const resetNewCharacterForm = () => {
-  newCharacter.value = { name: '', description: '', aiPrompt: '' }
-  aiGeneratedCharacter.value = null
-}
-
-const generateCharacterWithAI = async () => {
-  if (!newCharacter.value.aiPrompt?.trim()) {
-    message.error('请输入AI生成提示')
-    return
-  }
-
+// AI Generation
+const generateAICharacter = async (prompt: string) => {
   generatingCharacter.value = true
-
   try {
-    const result = await generateCharacter({
-      prompt: newCharacter.value.aiPrompt,
-      baseInfo: {
-        name: newCharacter.value.name,
-        description: newCharacter.value.description
-      }
-    })
-
+    const result = await generateCharacter({ prompt })
     if (result) {
       aiGeneratedCharacter.value = result.character
-      if (result.fallback) {
-        message.warning('AI服务暂时不可用，已提供基础角色框架')
-      } else {
-        message.success('AI角色生成成功！请查看预览内容')
-      }
     }
-
-  } catch (error) {
-    console.error('AI生成错误:', error)
-    message.error('AI生成失败，请稍后重试')
   } finally {
     generatingCharacter.value = false
   }
 }
 
-const applyAIGeneration = () => {
-  if (!aiGeneratedCharacter.value) return
-
-  // 如果AI生成了建议姓名且用户没有输入姓名，则应用建议姓名
-  if (aiGeneratedCharacter.value.name && !newCharacter.value.name.trim()) {
-    newCharacter.value.name = aiGeneratedCharacter.value.name
-  }
-
-  // 如果AI生成了更好的描述，可以选择性更新
-  if (aiGeneratedCharacter.value.description && !newCharacter.value.description) {
-    newCharacter.value.description = aiGeneratedCharacter.value.description
-  }
-
-  message.success('AI生成内容已准备就绪，点击确定创建角色')
-}
-
 const clearAIGeneration = () => {
   aiGeneratedCharacter.value = null
-  newCharacter.value.aiPrompt = ''
-  message.info('已清除AI生成内容')
+  generatingCharacter.value = false
 }
 
-// 头像选择相关函数
+// Save Character
+const saveCharacter = async (data: Partial<Character>) => {
+  if (!selectedCharacter.value) return
+
+  const updated = await updateCharacter(selectedCharacter.value.id, data)
+  if (updated) {
+    selectedCharacter.value = updated
+  }
+}
+
+// AI Enhancement
+const requestAIEnhancement = async () => {
+  if (!selectedCharacter.value) return
+
+  const result = await enhanceCharacter(selectedCharacter.value.id, {})
+  if (result) {
+    aiEnhancementResult.value = result
+    showAISuggestionsPanel.value = true
+  }
+}
+
+const applySuggestion = async (field: string, value: string) => {
+  if (!selectedCharacter.value) return
+
+  const updated = await updateCharacter(selectedCharacter.value.id, {
+    [field]: value
+  })
+  if (updated) {
+    selectedCharacter.value = updated
+    message.success('建议已应用')
+  }
+}
+
+const applyAllSuggestions = async (suggestions: Record<string, string>) => {
+  if (!selectedCharacter.value) return
+
+  const updated = await updateCharacter(selectedCharacter.value.id, suggestions)
+  if (updated) {
+    selectedCharacter.value = updated
+    message.success('所有建议已应用')
+    showAISuggestionsPanel.value = false
+  }
+}
+
+// Avatar
 const openAvatarSelector = () => {
   showAvatarSelectorModal.value = true
 }
@@ -1447,32 +253,95 @@ const handleAvatarFileSelect = async (file: any) => {
     return
   }
 
-  try {
-    // 直接更新角色的头像URL
-    const updated = await updateCharacter(selectedCharacter.value.id, {
-      avatar: file.fileUrl,
-      avatarKey: file.fileKey || ''
-    })
+  const updated = await updateCharacter(selectedCharacter.value.id, {
+    avatar: file.fileUrl,
+    avatarKey: file.fileKey || ''
+  })
 
-    if (updated) {
-      selectedCharacter.value = updated
-
-      // 更新角色列表中的头像
-      const charIndex = characters.value.findIndex(c => c.id === selectedCharacter.value!.id)
-      if (charIndex !== -1) {
-        characters.value[charIndex].avatar = file.fileUrl
-      }
-
-      message.success('头像更新成功！')
-      showAvatarSelectorModal.value = false
+  if (updated) {
+    selectedCharacter.value = updated
+    const charIndex = characters.value.findIndex(c => c.id === selectedCharacter.value!.id)
+    if (charIndex !== -1) {
+      characters.value[charIndex].avatar = file.fileUrl
     }
-  } catch (error) {
-    console.error('头像更新失败:', error)
-    message.error('头像更新失败，请重试')
+    message.success('头像更新成功！')
+    showAvatarSelectorModal.value = false
   }
 }
 
-// 从文件选择器选择角色卡文件
+// Lock/Unlock
+const toggleLock = async () => {
+  if (!selectedCharacter.value) return
+
+  const updated = await updateCharacter(selectedCharacter.value.id, {
+    isLocked: !selectedCharacter.value.isLocked
+  })
+
+  if (updated) {
+    selectedCharacter.value = updated
+  }
+}
+
+// Delete
+const confirmDeleteCharacter = () => {
+  if (!selectedCharacter.value) return
+
+  Modal.confirm({
+    title: '确认删除',
+    content: `确定要删除角色 "${selectedCharacter.value.name}" 吗？此操作不可恢复。`,
+    okText: '删除',
+    okType: 'danger',
+    cancelText: '取消',
+    onOk: async () => {
+      if (selectedCharacter.value) {
+        const success = await deleteCharacterAPI(selectedCharacter.value.id)
+        if (success) {
+          selectedCharacter.value = null
+        }
+      }
+    }
+  })
+}
+
+// Export
+const exportCharacterCard = async () => {
+  if (!selectedCharacter.value) return
+
+  exporting.value = true
+
+  try {
+    const response = await apiClient.getAxiosInstance().get(
+      `/api/characters/${selectedCharacter.value.id}/export-card`,
+      {
+        responseType: 'blob'
+      }
+    )
+
+    const blob = new Blob([response.data], { type: 'image/png' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${selectedCharacter.value.name}_card.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    message.success('角色卡导出成功！')
+  } catch (error) {
+    console.error('导出失败:', error)
+    message.error('角色卡导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
+
+// Import Card
+const openCardSelector = () => {
+  showAddCharacterModal.value = false
+  showCardSelectorModal.value = true
+}
+
 const handleCardFileSelect = async (file: any) => {
   if (!file || !file.fileUrl) {
     message.warning('请选择有效的角色卡文件')
@@ -1484,7 +353,6 @@ const handleCardFileSelect = async (file: any) => {
     return
   }
 
-  // 初始化导入状态
   showCardSelectorModal.value = false
   showImportProgressModal.value = true
   importing.value = true
@@ -1496,7 +364,6 @@ const handleCardFileSelect = async (file: any) => {
   importedCharacterId.value = ''
 
   try {
-    // 步骤1: 读取文件
     await new Promise(resolve => setTimeout(resolve, 300))
     const response = await fetch(file.fileUrl)
     const blob = await response.blob()
@@ -1509,11 +376,9 @@ const handleCardFileSelect = async (file: any) => {
     const formData = new FormData()
     formData.append('card', cardFile)
     formData.append('novelId', projectStore.currentProject.id)
-    // 传递文件库中的图片信息，避免重复上传
     formData.append('existingFileUrl', file.fileUrl)
     formData.append('existingFileKey', file.fileKey || '')
 
-    // 步骤2-3: 提取和AI解析（在服务端完成）
     importStep.value = 2
     importStatusText.value = 'AI 正在智能映射字段（姓名、外貌、性格、技能等）...'
 
@@ -1536,7 +401,6 @@ const handleCardFileSelect = async (file: any) => {
     }
 
     if (result.success) {
-      // 步骤4: 创建角色完成
       importStep.value = 3
       importStatusText.value = '角色创建成功！'
       importPreviewData.value = {
@@ -1547,7 +411,6 @@ const handleCardFileSelect = async (file: any) => {
       importComplete.value = true
       importing.value = false
 
-      // 重新加载角色列表
       await loadCharacters()
     }
   } catch (error) {
@@ -1557,7 +420,6 @@ const handleCardFileSelect = async (file: any) => {
   }
 }
 
-// 关闭导入进度对话框
 const closeImportProgress = () => {
   showImportProgressModal.value = false
   importStep.value = 0
@@ -1567,7 +429,6 @@ const closeImportProgress = () => {
   importComplete.value = false
 }
 
-// 查看导入的角色
 const viewImportedCharacter = async () => {
   if (importedCharacterId.value) {
     const character = characters.value.find(c => c.id === importedCharacterId.value)
@@ -1577,297 +438,10 @@ const viewImportedCharacter = async () => {
   }
   closeImportProgress()
 }
-
-// 导出角色卡函数
-const exportCharacterCard = async () => {
-  if (!selectedCharacter.value) return
-
-  exporting.value = true
-
-  try {
-    const response = await apiClient.getAxiosInstance().get(
-      `/api/characters/${selectedCharacter.value.id}/export-card`,
-      {
-        responseType: 'blob'
-      }
-    )
-
-    // 获取文件名
-    const contentDisposition = response.headers['content-disposition']
-    let fileName = `${selectedCharacter.value.name}_card.png`
-    if (contentDisposition) {
-      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition)
-      if (matches && matches[1]) {
-        fileName = decodeURIComponent(matches[1].replace(/['"]/g, ''))
-      }
-    }
-
-    // 下载文件
-    const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = fileName
-    document.body.appendChild(a)
-    a.click()
-    window.URL.revokeObjectURL(url)
-    document.body.removeChild(a)
-
-    message.success('角色卡导出成功！')
-  } catch (error) {
-    console.error('角色卡导出失败:', error)
-    message.error('角色卡导出失败，请重试')
-  } finally {
-    exporting.value = false
-  }
-}
-
-// 防重复加载标志
-const isInitializing = ref(false)
-
-// 初始化数据加载函数
-const initializeData = async () => {
-  // 防止重复初始化
-  if (isInitializing.value || !projectStore.currentProject) {
-    return
-  }
-
-  try {
-    isInitializing.value = true
-
-    // 清除当前选择的角色
-    selectedCharacter.value = null
-    editingCharacter.value = {}
-
-    await loadCharacters()
-    // 如果有角色，选择第一个
-    if (characters.value.length > 0) {
-      await selectCharacter(characters.value[0])
-    }
-  } finally {
-    isInitializing.value = false
-  }
-}
-
-// 监听项目变化
-watch(
-  () => projectStore.currentProject,
-  async (newProject, oldProject) => {
-    // 只有当项目真正发生变化时才重新加载数据
-    if (newProject && newProject.id !== oldProject?.id) {
-      await initializeData()
-    } else if (!newProject) {
-      // 如果没有当前项目，清空数据
-      selectedCharacter.value = null
-      editingCharacter.value = {}
-    }
-  }
-)
-
-// 组件挂载时加载数据
-onMounted(async () => {
-  // 初始化时加载数据
-  if (projectStore.currentProject) {
-    await initializeData()
-  }
-})
 </script>
 
 <style scoped>
-/* Character Header */
-.character-header {
-  padding-bottom: 24px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.dark .character-header {
-  border-bottom-color: #303030;
-}
-
-.header-main {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-  min-width: 0;
-}
-
-/* Avatar Wrapper */
-.avatar-wrapper {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.avatar-wrapper:hover {
-  transform: scale(1.05);
-}
-
-.avatar-wrapper:active {
-  transform: scale(0.98);
-}
-
-.avatar-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 20px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  border-radius: 8px;
-}
-
-.avatar-wrapper:hover .avatar-overlay {
-  opacity: 1;
-}
-
-/* Header Info */
-.header-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.header-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: rgba(0, 0, 0, 0.88);
-}
-
-.dark .header-title {
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.header-meta {
-  margin-top: 8px;
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.dark .header-meta {
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.meta-item {
-  display: inline-flex;
-  align-items: center;
-}
-
-/* Header Actions */
-.header-actions {
-  flex-shrink: 0;
-}
-
-/* Import Progress Modal */
-.import-progress-content {
-  min-height: 300px;
-}
-
-.import-status {
-  padding: 20px;
-  border-radius: 8px;
-  background: var(--theme-bg-elevated);
-}
-
-.status-message {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  color: var(--theme-text-primary);
-  font-weight: 500;
-}
-
-.preview-card {
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid var(--theme-border);
+.character-management {
   background: var(--theme-bg-container);
-}
-
-.field-status {
-  padding-top: 12px;
-  border-top: 1px solid var(--theme-border);
-}
-
-.field-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: var(--theme-bg-elevated);
-  font-size: 13px;
-  color: var(--theme-text-secondary);
-  transition: all 0.3s;
-}
-
-.field-item.field-complete {
-  background: rgba(82, 196, 26, 0.1);
-  color: var(--theme-text-primary);
-}
-
-.field-label {
-  font-weight: 500;
-}
-
-/* Utility Classes */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.space-y-6 > * + * {
-  margin-top: 1.5rem;
-}
-
-.space-y-4 > * + * {
-  margin-top: 1rem;
-}
-
-.space-y-1 > * + * {
-  margin-top: 0.25rem;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .header-main {
-    flex-direction: column;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .header-actions :deep(.ant-space) {
-    width: 100%;
-  }
 }
 </style>

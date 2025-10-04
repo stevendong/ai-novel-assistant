@@ -36,7 +36,9 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.npmjs.com)",
       "Bash(npx:*)",
-      "Bash(open https://www.google.com)"
+      "Bash(open https://www.google.com)",
+      "Bash(for file in CharacterList.vue CharacterDetail.vue CharacterFormModal.vue CharacterImportProgress.vue AIEnhancementPanel.vue)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
