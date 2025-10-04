@@ -91,83 +91,130 @@
         <div class="flex-1 p-6 overflow-y-auto">
           <div class="max-w-3xl">
             <!-- Header -->
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center space-x-4">
-                <a-upload
-                  :show-upload-list="false"
-                  :before-upload="beforeAvatarUpload"
-                  :custom-request="handleAvatarUpload"
-                  accept="image/*"
-                >
-                  <a-avatar
-                    :size="56"
-                    shape="square"
-                    :src="selectedCharacter.avatar"
-                    :style="!selectedCharacter.avatar ? { backgroundColor: getCharacterColor(selectedCharacter.id) } : {}"
-                    class="cursor-pointer hover:opacity-80 transition-opacity"
+            <div class="character-header">
+              <!-- 顶部区域：头像、标题和操作按钮 -->
+              <div class="header-main">
+                <!-- 左侧：头像和信息 -->
+                <div class="header-left">
+                  <a-upload
+                    :show-upload-list="false"
+                    :before-upload="beforeAvatarUpload"
+                    :custom-request="handleAvatarUpload"
+                    accept="image/*"
                   >
-                    <template v-if="!selectedCharacter.avatar">
-                      {{ selectedCharacter.name.charAt(0) }}
-                    </template>
-                  </a-avatar>
-                </a-upload>
-                <div>
-                  <h1 class="text-2xl font-bold theme-text-primary">{{ selectedCharacter.name }}</h1>
-                  <p class="text-sm theme-text-primary">角色详情编辑 · 点击头像上传</p>
+                    <a-tooltip title="点击上传头像" placement="bottom">
+                      <div class="avatar-wrapper">
+                        <a-badge
+                          :count="selectedCharacter.isLocked ? '锁' : 0"
+                          :number-style="{ backgroundColor: '#ff4d4f' }"
+                        >
+                          <a-avatar
+                            :size="64"
+                            shape="square"
+                            :src="selectedCharacter.avatar"
+                            :style="!selectedCharacter.avatar ? { backgroundColor: getCharacterColor(selectedCharacter.id) } : {}"
+                          >
+                            <template v-if="!selectedCharacter.avatar">
+                              {{ selectedCharacter.name.charAt(0) }}
+                            </template>
+                          </a-avatar>
+                        </a-badge>
+                        <div class="avatar-overlay">
+                          <UploadOutlined />
+                        </div>
+                      </div>
+                    </a-tooltip>
+                  </a-upload>
+
+                  <div class="header-info">
+                    <h1 class="header-title">{{ selectedCharacter.name }}</h1>
+                    <div class="header-meta">
+                      <a-space :size="8">
+                        <span v-if="selectedCharacter.identity" class="meta-item">
+                          {{ selectedCharacter.identity }}
+                        </span>
+                        <a-divider v-if="selectedCharacter.identity && selectedCharacter.age" type="vertical" />
+                        <span v-if="selectedCharacter.age" class="meta-item">
+                          {{ selectedCharacter.age }}
+                        </span>
+                      </a-space>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 右侧：操作按钮 -->
+                <div class="header-actions">
+                  <a-space :size="8" wrap>
+                    <!-- AI完善 -->
+                    <a-tooltip title="AI分析角色并提供完善建议">
+                      <a-button
+                        type="primary"
+                        @click="requestAIEnhancement"
+                        :loading="enhancing"
+                      >
+                        <template #icon><RobotOutlined /></template>
+                        AI完善
+                      </a-button>
+                    </a-tooltip>
+
+                    <!-- AI建议面板切换 -->
+                    <a-tooltip :title="showAISuggestionsPanel ? '隐藏AI建议' : '显示AI建议'">
+                      <a-button
+                        :type="showAISuggestionsPanel ? 'primary' : 'default'"
+                        @click="showAISuggestionsPanel = !showAISuggestionsPanel"
+                      >
+                        <template #icon><BulbOutlined /></template>
+                      </a-button>
+                    </a-tooltip>
+
+                    <!-- 导入导出 -->
+                    <a-dropdown>
+                      <a-button>
+                        <template #icon><SwapOutlined /></template>
+                        导入/导出
+                        <DownOutlined />
+                      </a-button>
+                      <template #overlay>
+                        <a-menu>
+                          <a-menu-item key="import">
+                            <a-upload
+                              :show-upload-list="false"
+                              :before-upload="beforeCardImageUpload"
+                              :custom-request="handleCardImageUpload"
+                              accept="image/png"
+                            >
+                              <UploadOutlined /> 上传卡片图作为头像
+                            </a-upload>
+                          </a-menu-item>
+                          <a-menu-item key="export" @click="exportCharacterCard" :disabled="exporting">
+                            <DownloadOutlined /> 导出角色卡
+                          </a-menu-item>
+                        </a-menu>
+                      </template>
+                    </a-dropdown>
+
+                    <!-- 更多操作 -->
+                    <a-dropdown>
+                      <a-button>
+                        <template #icon><MoreOutlined /></template>
+                      </a-button>
+                      <template #overlay>
+                        <a-menu>
+                          <a-menu-item key="lock" @click="toggleLock">
+                            <LockOutlined v-if="!selectedCharacter.isLocked" />
+                            <UnlockOutlined v-else />
+                            {{ selectedCharacter.isLocked ? '解锁角色' : '锁定角色' }}
+                          </a-menu-item>
+                          <a-menu-divider />
+                          <a-menu-item key="delete" danger @click="confirmDeleteCharacter">
+                            <DeleteOutlined /> 删除角色
+                          </a-menu-item>
+                        </a-menu>
+                      </template>
+                    </a-dropdown>
+                  </a-space>
                 </div>
               </div>
-              <a-space>
-                <a-upload
-                  :show-upload-list="false"
-                  :before-upload="beforeCardImageUpload"
-                  :custom-request="handleCardImageUpload"
-                  accept="image/png"
-                >
-                  <a-button>
-                    <template #icon>
-                      <UploadOutlined />
-                    </template>
-                    上传卡片图作为头像
-                  </a-button>
-                </a-upload>
-                <a-button @click="exportCharacterCard" :loading="exporting">
-                  <template #icon>
-                    <DownloadOutlined />
-                  </template>
-                  导出卡片
-                </a-button>
-                <a-button @click="requestAIEnhancement" :loading="enhancing">
-                  <template #icon>
-                    <RobotOutlined />
-                  </template>
-                  AI完善
-                </a-button>
-                <a-button
-                  :type="selectedCharacter.isLocked ? 'default' : 'primary'"
-                  @click="toggleLock"
-                >
-                  <template #icon>
-                    <LockOutlined v-if="selectedCharacter.isLocked" />
-                    <UnlockOutlined v-else />
-                  </template>
-                  {{ selectedCharacter.isLocked ? '解锁' : '锁定' }}
-                </a-button>
-                <a-button
-                  :type="showAISuggestionsPanel ? 'primary' : 'default'"
-                  @click="showAISuggestionsPanel = !showAISuggestionsPanel"
-                >
-                  <template #icon>
-                    <BulbOutlined />
-                  </template>
-                  AI建议
-                </a-button>
-                <a-button danger @click="deleteCharacter">
-                  <template #icon>
-                    <DeleteOutlined />
-                  </template>
-                  删除
-                </a-button>
-              </a-space>
             </div>
 
             <!-- Character Form -->
@@ -870,7 +917,10 @@ import {
   CloseOutlined,
   BulbOutlined,
   UploadOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  DownOutlined,
+  MoreOutlined,
+  SwapOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
@@ -1024,6 +1074,24 @@ const saveCharacter = async () => {
     selectedCharacter.value = updated
     message.success('角色信息保存成功')
   }
+}
+
+const confirmDeleteCharacter = () => {
+  if (!selectedCharacter.value) return
+
+  // 使用 Ant Design 的 Modal.confirm
+  import('ant-design-vue').then(({ Modal }) => {
+    Modal.confirm({
+      title: '确认删除角色？',
+      content: `确定要删除角色 "${selectedCharacter.value?.name}" 吗？此操作无法撤销。`,
+      okText: '确认删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        await deleteCharacter()
+      }
+    })
+  })
 }
 
 const deleteCharacter = async () => {
@@ -1548,9 +1616,103 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Character Header */
+.character-header {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.dark .character-header {
+  border-bottom-color: #303030;
+}
+
+.header-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Avatar Wrapper */
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  border-radius: 8px;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
+/* Header Info */
+.header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.dark .header-title {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.header-meta {
+  margin-top: 8px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.dark .header-meta {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Header Actions */
+.header-actions {
+  flex-shrink: 0;
+}
+
+/* Utility Classes */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1558,6 +1720,7 @@ onMounted(async () => {
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1572,5 +1735,20 @@ onMounted(async () => {
 
 .space-y-1 > * + * {
   margin-top: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-main {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions :deep(.ant-space) {
+    width: 100%;
+  }
 }
 </style>
