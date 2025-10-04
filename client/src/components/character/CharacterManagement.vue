@@ -6,19 +6,12 @@
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-lg font-semibold theme-text-primary">角色库</h2>
           <a-space size="small">
-            <a-upload
-              :show-upload-list="false"
-              :before-upload="beforeCardImport"
-              :custom-request="handleCardImport"
-              accept="image/png"
-            >
-              <a-button size="small">
-                <template #icon>
-                  <UploadOutlined />
-                </template>
-                导入卡片
-              </a-button>
-            </a-upload>
+            <a-button size="small" @click="showCardSelectorModal = true">
+              <template #icon>
+                <UploadOutlined />
+              </template>
+              导入卡片
+            </a-button>
             <a-button type="primary" size="small" @click="showAddCharacterModal = true">
               <template #icon>
                 <PlusOutlined />
@@ -96,35 +89,28 @@
               <div class="header-main">
                 <!-- 左侧：头像和信息 -->
                 <div class="header-left">
-                  <a-upload
-                    :show-upload-list="false"
-                    :before-upload="beforeAvatarUpload"
-                    :custom-request="handleAvatarUpload"
-                    accept="image/*"
-                  >
-                    <a-tooltip title="点击上传头像" placement="bottom">
-                      <div class="avatar-wrapper">
-                        <a-badge
-                          :count="selectedCharacter.isLocked ? '锁' : 0"
-                          :number-style="{ backgroundColor: '#ff4d4f' }"
+                  <a-tooltip title="点击选择头像" placement="bottom">
+                    <div class="avatar-wrapper" @click="openAvatarSelector">
+                      <a-badge
+                        :count="selectedCharacter.isLocked ? '锁' : 0"
+                        :number-style="{ backgroundColor: '#ff4d4f' }"
+                      >
+                        <a-avatar
+                          :size="64"
+                          shape="square"
+                          :src="selectedCharacter.avatar"
+                          :style="!selectedCharacter.avatar ? { backgroundColor: getCharacterColor(selectedCharacter.id) } : {}"
                         >
-                          <a-avatar
-                            :size="64"
-                            shape="square"
-                            :src="selectedCharacter.avatar"
-                            :style="!selectedCharacter.avatar ? { backgroundColor: getCharacterColor(selectedCharacter.id) } : {}"
-                          >
-                            <template v-if="!selectedCharacter.avatar">
-                              {{ selectedCharacter.name.charAt(0) }}
-                            </template>
-                          </a-avatar>
-                        </a-badge>
-                        <div class="avatar-overlay">
-                          <UploadOutlined />
-                        </div>
+                          <template v-if="!selectedCharacter.avatar">
+                            {{ selectedCharacter.name.charAt(0) }}
+                          </template>
+                        </a-avatar>
+                      </a-badge>
+                      <div class="avatar-overlay">
+                        <UploadOutlined />
                       </div>
-                    </a-tooltip>
-                  </a-upload>
+                    </div>
+                  </a-tooltip>
 
                   <div class="header-info">
                     <h1 class="header-title">{{ selectedCharacter.name }}</h1>
@@ -167,31 +153,13 @@
                       </a-button>
                     </a-tooltip>
 
-                    <!-- 导入导出 -->
-                    <a-dropdown>
-                      <a-button>
-                        <template #icon><SwapOutlined /></template>
-                        导入/导出
-                        <DownOutlined />
+                    <!-- 导出 -->
+                    <a-tooltip title="导出角色卡为PNG文件">
+                      <a-button @click="exportCharacterCard" :loading="exporting">
+                        <template #icon><DownloadOutlined /></template>
+                        导出角色卡
                       </a-button>
-                      <template #overlay>
-                        <a-menu>
-                          <a-menu-item key="import">
-                            <a-upload
-                              :show-upload-list="false"
-                              :before-upload="beforeCardImageUpload"
-                              :custom-request="handleCardImageUpload"
-                              accept="image/png"
-                            >
-                              <UploadOutlined /> 上传卡片图作为头像
-                            </a-upload>
-                          </a-menu-item>
-                          <a-menu-item key="export" @click="exportCharacterCard" :disabled="exporting">
-                            <DownloadOutlined /> 导出角色卡
-                          </a-menu-item>
-                        </a-menu>
-                      </template>
-                    </a-dropdown>
+                    </a-tooltip>
 
                     <!-- 更多操作 -->
                     <a-dropdown>
@@ -833,6 +801,24 @@
       </div>
     </a-modal>
 
+    <!-- 角色卡文件选择弹窗 -->
+    <FileSelectorModal
+      v-model:visible="showCardSelectorModal"
+      :accept="['image/png']"
+      :category="'character'"
+      :novel-id="novelId"
+      @select="handleCardFileSelect"
+    />
+
+    <!-- 头像选择弹窗 -->
+    <FileSelectorModal
+      v-model:visible="showAvatarSelectorModal"
+      :accept="['image/*']"
+      :category="'character'"
+      :novel-id="novelId"
+      @select="handleAvatarFileSelect"
+    />
+
     <!-- 完整AI预览模态框 -->
     <a-modal
       v-model:open="showFullAIPreview"
@@ -918,14 +904,13 @@ import {
   BulbOutlined,
   UploadOutlined,
   DownloadOutlined,
-  DownOutlined,
-  MoreOutlined,
-  SwapOutlined
+  MoreOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
 import { useProjectStore } from '@/stores/project'
 import { apiClient } from '@/utils/api'
+import FileSelectorModal from '@/components/file/FileSelectorModal.vue'
 
 // 使用项目Store
 const projectStore = useProjectStore()
@@ -966,6 +951,14 @@ const generatingCharacter = ref(false)
 const aiGeneratedCharacter = ref(null)
 const exporting = ref(false)
 const importing = ref(false)
+
+// 角色卡选择相关
+const showCardSelectorModal = ref(false)
+
+const novelId = computed(() => projectStore.currentProject?.id || '')
+
+// 头像选择相关
+const showAvatarSelectorModal = ref(false)
 
 const hasAIGeneration = computed(() => !!aiGeneratedCharacter.value)
 
@@ -1344,79 +1337,49 @@ const clearAIGeneration = () => {
   message.info('已清除AI生成内容')
 }
 
-// 头像上传相关函数
-const beforeAvatarUpload = (file: File) => {
-  const isImage = file.type.startsWith('image/')
-  if (!isImage) {
-    message.error('只能上传图片文件！')
-    return false
-  }
-
-  const isLt10M = file.size / 1024 / 1024 < 10
-  if (!isLt10M) {
-    message.error('图片大小不能超过 10MB！')
-    return false
-  }
-
-  return true
+// 头像选择相关函数
+const openAvatarSelector = () => {
+  showAvatarSelectorModal.value = true
 }
 
-const handleAvatarUpload = async ({ file }: any) => {
-  if (!selectedCharacter.value) return
-
-  const formData = new FormData()
-  formData.append('avatar', file)
+const handleAvatarFileSelect = async (file: any) => {
+  if (!file || !file.fileUrl || !selectedCharacter.value) {
+    message.warning('请选择有效的图片文件')
+    return
+  }
 
   try {
-    const response = await apiClient.post(
-      `/api/characters/${selectedCharacter.value.id}/avatar`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    )
+    // 直接更新角色的头像URL
+    const updated = await updateCharacter(selectedCharacter.value.id, {
+      avatar: file.fileUrl,
+      avatarKey: file.fileKey || ''
+    })
 
-    const result = response.data
-
-    if (result.success) {
-      // 更新当前角色头像
-      selectedCharacter.value.avatar = result.avatar
-      selectedCharacter.value.avatarKey = result.avatarKey
+    if (updated) {
+      selectedCharacter.value = updated
 
       // 更新角色列表中的头像
       const charIndex = characters.value.findIndex(c => c.id === selectedCharacter.value!.id)
       if (charIndex !== -1) {
-        characters.value[charIndex].avatar = result.avatar
+        characters.value[charIndex].avatar = file.fileUrl
       }
 
-      message.success('头像上传成功！')
+      message.success('头像更新成功！')
+      showAvatarSelectorModal.value = false
     }
   } catch (error) {
-    console.error('头像上传失败:', error)
-    message.error('头像上传失败，请重试')
+    console.error('头像更新失败:', error)
+    message.error('头像更新失败，请重试')
   }
 }
 
-// 角色卡导入相关函数
-const beforeCardImport = (file: File) => {
-  const isPNG = file.type === 'image/png'
-  if (!isPNG) {
-    message.error('只支持 PNG 格式的角色卡！')
-    return false
+// 从文件选择器选择角色卡文件
+const handleCardFileSelect = async (file: any) => {
+  if (!file || !file.fileUrl) {
+    message.warning('请选择有效的角色卡文件')
+    return
   }
 
-  const isLt10M = file.size / 1024 / 1024 < 10
-  if (!isLt10M) {
-    message.error('文件大小不能超过 10MB！')
-    return false
-  }
-
-  return true
-}
-
-const handleCardImport = async ({ file }: any) => {
   if (!projectStore.currentProject) {
     message.error('请先选择一个项目')
     return
@@ -1424,12 +1387,20 @@ const handleCardImport = async ({ file }: any) => {
 
   importing.value = true
 
-  const formData = new FormData()
-  formData.append('card', file)
-  formData.append('novelId', projectStore.currentProject.id)
-
   try {
-    const response = await apiClient.post(
+    // 下载文件并转换为 Blob
+    const response = await fetch(file.fileUrl)
+    const blob = await response.blob()
+    const cardFile = new File([blob], file.fileName || 'character_card.png', { type: 'image/png' })
+
+    const formData = new FormData()
+    formData.append('card', cardFile)
+    formData.append('novelId', projectStore.currentProject.id)
+    // 传递文件库中的图片信息，避免重复上传
+    formData.append('existingFileUrl', file.fileUrl)
+    formData.append('existingFileKey', file.fileKey || '')
+
+    const importResponse = await apiClient.post(
       '/api/characters/import-card',
       formData,
       {
@@ -1439,17 +1410,16 @@ const handleCardImport = async ({ file }: any) => {
       }
     )
 
-    const result = response.data
+    const result = importResponse.data
 
     if (result.conflict) {
-      // 处理名称冲突
       message.warning(`角色 "${result.existingCharacter.name}" 已存在，请重命名后再试`)
-      // TODO: 可以添加一个对话框让用户选择如何处理冲突
       return
     }
 
     if (result.success) {
       message.success('角色卡导入成功！')
+      showCardSelectorModal.value = false
       // 重新加载角色列表
       await loadCharacters()
       // 选择新导入的角色
@@ -1462,61 +1432,6 @@ const handleCardImport = async ({ file }: any) => {
     message.error('角色卡导入失败，请确保这是有效的 SillyTavern 角色卡')
   } finally {
     importing.value = false
-  }
-}
-
-// 上传角色卡图片作为头像
-const beforeCardImageUpload = (file: File) => {
-  const isPNG = file.type === 'image/png'
-  if (!isPNG) {
-    message.error('只支持 PNG 格式的角色卡图片！')
-    return false
-  }
-
-  const isLt10M = file.size / 1024 / 1024 < 10
-  if (!isLt10M) {
-    message.error('图片大小不能超过 10MB！')
-    return false
-  }
-
-  return true
-}
-
-const handleCardImageUpload = async ({ file }: any) => {
-  if (!selectedCharacter.value) return
-
-  const formData = new FormData()
-  formData.append('avatar', file)
-
-  try {
-    const response = await apiClient.post(
-      `/api/characters/${selectedCharacter.value.id}/avatar`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    )
-
-    const result = response.data
-
-    if (result.success) {
-      // 更新当前角色头像
-      selectedCharacter.value.avatar = result.avatar
-      selectedCharacter.value.avatarKey = result.avatarKey
-
-      // 更新角色列表中的头像
-      const charIndex = characters.value.findIndex(c => c.id === selectedCharacter.value!.id)
-      if (charIndex !== -1) {
-        characters.value[charIndex].avatar = result.avatar
-      }
-
-      message.success('角色卡图片已设置为头像！')
-    }
-  } catch (error) {
-    console.error('头像上传失败:', error)
-    message.error('头像上传失败，请重试')
   }
 }
 
@@ -1647,6 +1562,15 @@ onMounted(async () => {
   position: relative;
   display: inline-block;
   cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.avatar-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.avatar-wrapper:active {
+  transform: scale(0.98);
 }
 
 .avatar-overlay {

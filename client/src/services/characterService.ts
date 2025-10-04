@@ -31,6 +31,8 @@ export interface CharacterUpdateData {
   skills?: string
   relationships?: Record<string, any>
   isLocked?: boolean
+  avatar?: string
+  avatarKey?: string
 }
 
 export interface CharacterEnhanceRequest {

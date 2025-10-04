@@ -174,6 +174,8 @@ router.put('/:id', async (req, res) => {
       skills,
       relationships,
       isLocked,
+      avatar,
+      avatarKey,
       // SillyTavern 字段
       firstMessage,
       messageExample,
@@ -201,6 +203,8 @@ router.put('/:id', async (req, res) => {
         skills,
         relationships: relationships ? JSON.stringify(relationships) : relationships,
         isLocked,
+        avatar,
+        avatarKey,
         // SillyTavern 字段
         firstMessage,
         messageExample,
@@ -692,7 +696,7 @@ router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
 // 导入 SillyTavern 角色卡
 router.post('/import-card', upload.single('card'), async (req, res) => {
   try {
-    const { novelId } = req.body;
+    const { novelId, existingFileUrl, existingFileKey } = req.body;
 
     if (!novelId) {
       return res.status(400).json({ error: 'Novel ID is required' });
@@ -743,28 +747,52 @@ router.post('/import-card', upload.single('card'), async (req, res) => {
       });
     }
 
-    // 上传头像图片
-    const uploadResult = await uploadService.uploadFile(
-      req.file.buffer,
-      `${characterData.name}_avatar.png`,
-      'image/png',
-      'avatars/characters'
-    );
+    // 处理头像：优先使用文件库中的图片，避免重复上传
+    let avatarUrl = null;
+    let avatarKey = null;
+    let avatarMetadata = null;
+
+    if (existingFileUrl && existingFileKey) {
+      // 使用文件库中已存在的图片
+      avatarUrl = existingFileUrl;
+      avatarKey = existingFileKey;
+      avatarMetadata = JSON.stringify({
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+        uploadedAt: new Date().toISOString(),
+        source: 'sillytavern_import_from_library'
+      });
+    } else {
+      // 上传新的头像图片
+      const uploadResult = await uploadService.uploadFile(
+        req.file.buffer,
+        `${characterData.name}_avatar.png`,
+        'image/png',
+        'avatars/characters'
+      );
+
+      if (uploadResult.success) {
+        avatarUrl = uploadResult.url;
+        avatarKey = uploadResult.key;
+        avatarMetadata = JSON.stringify({
+          originalName: req.file.originalname,
+          size: req.file.size,
+          mimeType: req.file.mimetype,
+          uploadedAt: new Date().toISOString(),
+          source: 'sillytavern_import'
+        });
+      }
+    }
 
     // 创建角色
     const character = await prisma.character.create({
       data: {
         novelId,
         ...characterData,
-        avatar: uploadResult.success ? uploadResult.url : null,
-        avatarKey: uploadResult.success ? uploadResult.key : null,
-        avatarMetadata: uploadResult.success ? JSON.stringify({
-          originalName: req.file.originalname,
-          size: req.file.size,
-          mimeType: req.file.mimetype,
-          uploadedAt: new Date().toISOString(),
-          source: 'sillytavern_import'
-        }) : null
+        avatar: avatarUrl,
+        avatarKey: avatarKey,
+        avatarMetadata: avatarMetadata
       }
     });
 
