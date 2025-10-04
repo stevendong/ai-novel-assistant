@@ -225,7 +225,9 @@ function convertToSillyTavernFormat(character) {
         age: character.age,
         identity: character.identity,
         appearance: character.appearance,
-        relationships: character.relationships,
+        relationships: character.relationships ?
+          (typeof character.relationships === 'string' ? JSON.parse(character.relationships) : character.relationships) :
+          null,
       }
     }
   };
@@ -301,7 +303,9 @@ function convertFromSillyTavernFormat(cardData) {
     fears: data.extensions?.fears || '',
     skills: data.extensions?.skills || '',
     relationships: data.extensions?.relationships ?
-      JSON.stringify(data.extensions.relationships) : null,
+      (typeof data.extensions.relationships === 'string' ?
+        data.extensions.relationships :
+        JSON.stringify(data.extensions.relationships)) : null,
 
     // 保存原始卡片数据
     originalCardData: JSON.stringify(cardData),

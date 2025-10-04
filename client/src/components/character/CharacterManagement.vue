@@ -9,13 +9,6 @@
         @add="showAddCharacterModal = true"
         @search="handleSearch"
       />
-
-      <div class="p-4 border-t theme-border">
-        <a-button block @click="showCardSelectorModal = true">
-          <template #icon><UploadOutlined /></template>
-          导入角色卡
-        </a-button>
-      </div>
     </div>
 
     <!-- Right: Character Details -->
@@ -82,7 +75,6 @@
     <FileSelectorModal
       v-model:visible="showAvatarSelectorModal"
       :accept="['image/*']"
-      :category="'character'"
       :novel-id="novelId"
       @select="handleAvatarFileSelect"
     />
@@ -90,9 +82,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { UploadOutlined } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
 import { useProjectStore } from '@/stores/project'
@@ -154,7 +145,17 @@ const filteredCharacters = computed(() => {
 
 // Lifecycle
 onMounted(() => {
-  loadCharacters()
+  if (novelId.value) {
+    loadCharacters()
+  }
+})
+
+// Watch for project changes to reload characters
+watch(novelId, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    loadCharacters()
+    selectedCharacter.value = null
+  }
 })
 
 // Character Selection
