@@ -723,8 +723,168 @@ router.post('/import-card', upload.single('card'), async (req, res) => {
       return res.status(400).json({ error: '无效的角色卡格式' });
     }
 
-    // 转换为系统格式
-    const characterData = characterCardUtils.convertFromSillyTavernFormat(cardData);
+    // 转换为系统格式（提取所有原始数据）
+    let characterData = characterCardUtils.convertFromSillyTavernFormat(cardData);
+
+    // 调试日志：输出原始数据结构
+    console.log('SillyTavern 角色卡原始数据预览:', {
+      name: characterData._rawData?.name,
+      hasDescription: !!characterData._rawData?.description,
+      hasPersonality: !!characterData._rawData?.personality,
+      hasScenario: !!characterData._rawData?.scenario,
+      hasExtensions: !!characterData._rawData?.extensions,
+      extensionKeys: characterData._rawData?.extensions ? Object.keys(characterData._rawData.extensions) : []
+    });
+
+    // 使用AI智能映射所有字段（如果AI服务可用）
+    try {
+      const aiService = require('../services/aiService');
+
+      // 构建完整的系统字段说明
+      const systemFieldsGuide = `
+## 本系统的人物设定字段定义：
+
+1. **name** (必填) - 角色姓名
+2. **description** - 角色总体描述，简要概括角色的核心特质和背景
+3. **age** - 年龄/年龄段，如"25岁"、"二十出头"、"中年"等
+4. **identity** - 身份/职业/地位，如"私人侦探"、"宫廷御医"、"流浪剑客"
+5. **appearance** - 外貌特征，详细描述身高、体型、五官、发型、穿着打扮、气质等
+6. **personality** - 性格特征，描述性格特点、行为习惯、说话方式、情绪表达等
+7. **values** - 核心价值观，角色的信念、道德准则、重要的人生观念
+8. **fears** - 恐惧与弱点，害怕什么、有什么弱点、内心的冲突和阴影
+9. **background** - 背景故事，出身、成长经历、重要事件、人生转折点
+10. **skills** - 技能与能力，专业技能、特殊能力、天赋、实用技巧
+11. **relationships** - 人际关系（JSON对象格式），如 {"张三": {"type": "朋友", "importance": "高", "description": "青梅竹马"}}
+
+## SillyTavern 特有字段（保留）：
+- firstMessage: 第一条消息/问候语
+- messageExample: 对话示例
+- systemPrompt: 系统提示词
+- tags: 标签
+- creator: 创作者
+等等...`;
+
+      // 准备完整的原始数据
+      const rawDataStr = JSON.stringify(characterData._rawData, null, 2);
+
+      // 构建AI映射提示
+      const mappingPrompt = `你是一个专业的角色卡数据映射助手。我会给你一个SillyTavern格式的角色卡原始数据，请将其准确映射到本系统的人物设定字段中。
+
+${systemFieldsGuide}
+
+## SillyTavern 角色卡原始数据：
+\`\`\`json
+${rawDataStr}
+\`\`\`
+
+## 任务要求：
+1. **准确提取**：从原始数据中提取信息，填充到对应的系统字段
+2. **智能补充**：如果某些字段在原始数据中没有直接对应，但可以从其他字段推断或提取，请智能补充
+3. **保持一致**：所有提取的信息必须与原始角色设定保持一致，不要编造
+4. **字段映射参考**：
+   - name ← name
+   - description ← description（如果太长可以提炼核心）
+   - age ← 从 description, personality, scenario 中提取年龄信息
+   - identity ← 从 description, scenario 中提取身份/职业信息
+   - appearance ← 从 description, creator_notes 中提取外貌描述
+   - personality ← personality（可以整合 creator_notes 中的性格部分）
+   - values ← 从 personality, scenario, creator_notes 中分析提取价值观
+   - fears ← 从 personality, creator_notes 中分析提取恐惧和弱点
+   - background ← scenario（背景故事、情境设定）
+   - skills ← 从 description, scenario, creator_notes 中提取技能能力
+   - relationships ← 从 character_book 的 entries 或 creator_notes 中提取人际关系
+
+5. **关系格式**：relationships 必须是对象格式，例如：
+   {
+     "角色A": {"type": "朋友", "importance": "高", "description": "关系描述"},
+     "角色B": {"type": "导师", "importance": "中", "description": "关系描述"}
+   }
+
+请以JSON格式返回映射后的结果：
+\`\`\`json
+{
+  "name": "角色姓名",
+  "description": "角色总体描述",
+  "age": "年龄",
+  "identity": "身份/职业",
+  "appearance": "外貌特征",
+  "personality": "性格特征",
+  "values": "核心价值观",
+  "fears": "恐惧与弱点",
+  "background": "背景故事",
+  "skills": "技能与能力",
+  "relationships": {}
+}
+\`\`\`
+
+注意：只返回JSON，不要有其他说明文字。`;
+
+      const messages = [
+        { role: 'system', content: '你是专业的角色卡数据映射助手，擅长准确提取和转换角色信息。' },
+        { role: 'user', content: mappingPrompt }
+      ];
+
+      const aiResponse = await aiService.chat(messages, {
+        temperature: 0.2, // 降低温度以提高准确性
+        maxTokens: 2000,
+        taskType: 'analysis'
+      });
+
+      // 解析AI响应
+      try {
+        const content = aiResponse.content;
+        // 提取JSON部分（支持代码块包裹）
+        const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/) || content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const jsonStr = jsonMatch[1] || jsonMatch[0];
+          const aiMappedData = JSON.parse(jsonStr);
+
+          // 用AI映射的数据覆盖基础提取的数据
+          Object.keys(aiMappedData).forEach(key => {
+            if (aiMappedData[key] && aiMappedData[key] !== '') {
+              // 特殊处理 relationships 字段
+              if (key === 'relationships') {
+                if (typeof aiMappedData[key] === 'object' && !Array.isArray(aiMappedData[key])) {
+                  characterData[key] = JSON.stringify(aiMappedData[key]);
+                } else if (typeof aiMappedData[key] === 'string') {
+                  try {
+                    // 验证是否为有效 JSON
+                    JSON.parse(aiMappedData[key]);
+                    characterData[key] = aiMappedData[key];
+                  } catch (e) {
+                    console.warn('relationships 字段格式无效，跳过');
+                  }
+                }
+              } else {
+                characterData[key] = aiMappedData[key];
+              }
+            }
+          });
+
+          console.log('AI字段映射成功:', {
+            name: aiMappedData.name,
+            hasAge: !!aiMappedData.age,
+            hasIdentity: !!aiMappedData.identity,
+            hasAppearance: !!aiMappedData.appearance,
+            hasPersonality: !!aiMappedData.personality,
+            hasValues: !!aiMappedData.values,
+            hasFears: !!aiMappedData.fears,
+            hasBackground: !!aiMappedData.background,
+            hasSkills: !!aiMappedData.skills,
+            hasRelationships: !!aiMappedData.relationships
+          });
+        } else {
+          console.warn('AI响应中未找到JSON数据，使用基础提取结果');
+        }
+      } catch (parseError) {
+        console.warn('AI字段解析失败，使用基础提取结果:', parseError.message);
+      }
+    } catch (aiError) {
+      console.warn('AI映射服务不可用，使用基础提取结果:', aiError.message);
+    }
+
+    // 移除内部字段
+    delete characterData._rawData;
 
     // 检查名称冲突
     const existingCharacter = await prisma.character.findFirst({

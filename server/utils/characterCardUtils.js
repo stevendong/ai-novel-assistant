@@ -232,20 +232,49 @@ function convertToSillyTavernFormat(character) {
 }
 
 /**
- * 将 SillyTavern 格式转换为系统角色数据
+ * 将 SillyTavern 格式转换为系统角色数据（提取所有原始数据）
  * @param {Object} cardData - SillyTavern 角色卡数据
- * @returns {Object} 系统角色数据对象
+ * @returns {Object} 包含原始数据和基础提取的对象
  */
 function convertFromSillyTavernFormat(cardData) {
   const data = cardData.data || cardData; // 兼容 V1 和 V2 格式
 
-  // 解析创建者注释
-  const creatorNotes = data.creator_notes || '';
-  const valuesMatch = creatorNotes.match(/核心价值观:\s*(.+?)(?=\n\n|$)/s);
-  const fearsMatch = creatorNotes.match(/恐惧与弱点:\s*(.+?)(?=\n\n|$)/s);
-  const skillsMatch = creatorNotes.match(/技能与能力:\s*(.+?)(?=\n\n|$)/s);
+  // 提取所有可用的原始数据
+  const rawData = {
+    // 基础字段
+    name: data.name || '',
+    description: data.description || '',
+    personality: data.personality || '',
+    scenario: data.scenario || '',
 
+    // 消息相关
+    first_mes: data.first_mes || '',
+    mes_example: data.mes_example || '',
+    alternate_greetings: data.alternate_greetings || [],
+
+    // 提示词
+    system_prompt: data.system_prompt || '',
+    post_history_instructions: data.post_history_instructions || '',
+    creator_notes: data.creator_notes || '',
+
+    // 元数据
+    tags: data.tags || [],
+    creator: data.creator || '',
+    character_version: data.character_version || '',
+
+    // 角色书
+    character_book: data.character_book || null,
+
+    // 扩展数据
+    extensions: data.extensions || {},
+  };
+
+  // 返回包含原始数据的对象，供 AI 解析
   return {
+    // 保存完整原始数据供 AI 分析
+    _rawData: rawData,
+
+    // 基础映射（作为后备）
     name: data.name || '',
     description: data.description || '',
     personality: data.personality || '',
@@ -264,16 +293,15 @@ function convertFromSillyTavernFormat(cardData) {
     characterBook: data.character_book ?
       JSON.stringify(data.character_book) : null,
 
-    // 从创建者注释中提取
-    values: valuesMatch ? valuesMatch[1].trim() : '',
-    fears: fearsMatch ? fearsMatch[1].trim() : '',
-    skills: skillsMatch ? skillsMatch[1].trim() : '',
-
-    // 从扩展数据中恢复
+    // 从扩展数据中提取
     age: data.extensions?.age || '',
     identity: data.extensions?.identity || '',
     appearance: data.extensions?.appearance || '',
-    relationships: data.extensions?.relationships || null,
+    values: data.extensions?.values || '',
+    fears: data.extensions?.fears || '',
+    skills: data.extensions?.skills || '',
+    relationships: data.extensions?.relationships ?
+      JSON.stringify(data.extensions.relationships) : null,
 
     // 保存原始卡片数据
     originalCardData: JSON.stringify(cardData),

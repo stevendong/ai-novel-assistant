@@ -819,6 +819,93 @@
       @select="handleAvatarFileSelect"
     />
 
+    <!-- 导入进度对话框 -->
+    <a-modal
+      v-model:open="showImportProgressModal"
+      title="导入角色卡"
+      :closable="false"
+      :maskClosable="false"
+      :footer="null"
+      width="600px"
+    >
+      <div class="import-progress-content">
+        <a-steps :current="importStep" size="small" class="mb-6">
+          <a-step title="读取文件" />
+          <a-step title="提取数据" />
+          <a-step title="AI解析" />
+          <a-step title="创建角色" />
+        </a-steps>
+
+        <div class="import-status">
+          <a-spin :spinning="importing">
+            <div class="status-message">
+              <CheckCircleOutlined v-if="importStep > 0" class="text-green-500 mr-2" />
+              <LoadingOutlined v-else class="mr-2" />
+              <span>{{ importStatusText }}</span>
+            </div>
+
+            <div v-if="importError" class="error-message mt-4">
+              <a-alert :message="importError" type="error" show-icon closable />
+            </div>
+
+            <div v-if="importPreviewData" class="preview-section mt-6">
+              <h4 class="text-sm font-medium mb-3 theme-text-primary">角色预览</h4>
+              <div class="preview-card">
+                <div class="flex items-start space-x-4">
+                  <a-avatar
+                    :size="64"
+                    shape="square"
+                    :src="importPreviewData.avatar"
+                  >
+                    {{ importPreviewData.name?.charAt(0) }}
+                  </a-avatar>
+                  <div class="flex-1">
+                    <h5 class="font-medium theme-text-primary">{{ importPreviewData.name }}</h5>
+                    <p class="text-xs theme-text-secondary mt-1">
+                      {{ importPreviewData.age || '年龄未知' }} · {{ importPreviewData.identity || '身份未知' }}
+                    </p>
+                    <p class="text-sm theme-text-primary mt-2 line-clamp-2">
+                      {{ importPreviewData.description }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="field-status mt-4 grid grid-cols-2 gap-2">
+                  <div class="field-item" :class="{ 'field-complete': importPreviewData.personality }">
+                    <span class="field-label">性格特征</span>
+                    <CheckCircleOutlined v-if="importPreviewData.personality" class="text-green-500" />
+                    <CloseCircleOutlined v-else class="text-gray-400" />
+                  </div>
+                  <div class="field-item" :class="{ 'field-complete': importPreviewData.appearance }">
+                    <span class="field-label">外貌特征</span>
+                    <CheckCircleOutlined v-if="importPreviewData.appearance" class="text-green-500" />
+                    <CloseCircleOutlined v-else class="text-gray-400" />
+                  </div>
+                  <div class="field-item" :class="{ 'field-complete': importPreviewData.background }">
+                    <span class="field-label">背景故事</span>
+                    <CheckCircleOutlined v-if="importPreviewData.background" class="text-green-500" />
+                    <CloseCircleOutlined v-else class="text-gray-400" />
+                  </div>
+                  <div class="field-item" :class="{ 'field-complete': importPreviewData.skills }">
+                    <span class="field-label">技能能力</span>
+                    <CheckCircleOutlined v-if="importPreviewData.skills" class="text-green-500" />
+                    <CloseCircleOutlined v-else class="text-gray-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a-spin>
+        </div>
+
+        <div v-if="importComplete" class="import-actions mt-6 text-center">
+          <a-space>
+            <a-button @click="closeImportProgress">关闭</a-button>
+            <a-button type="primary" @click="viewImportedCharacter">查看角色</a-button>
+          </a-space>
+        </div>
+      </div>
+    </a-modal>
+
     <!-- 完整AI预览模态框 -->
     <a-modal
       v-model:open="showFullAIPreview"
@@ -904,7 +991,10 @@ import {
   BulbOutlined,
   UploadOutlined,
   DownloadOutlined,
-  MoreOutlined
+  MoreOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  LoadingOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
@@ -954,6 +1044,15 @@ const importing = ref(false)
 
 // 角色卡选择相关
 const showCardSelectorModal = ref(false)
+
+// 导入进度相关
+const showImportProgressModal = ref(false)
+const importStep = ref(0) // 0: 读取文件, 1: 提取数据, 2: AI解析, 3: 创建角色
+const importStatusText = ref('准备导入...')
+const importPreviewData = ref<any>(null)
+const importError = ref('')
+const importComplete = ref(false)
+const importedCharacterId = ref('')
 
 const novelId = computed(() => projectStore.currentProject?.id || '')
 
@@ -1385,13 +1484,27 @@ const handleCardFileSelect = async (file: any) => {
     return
   }
 
+  // 初始化导入状态
+  showCardSelectorModal.value = false
+  showImportProgressModal.value = true
   importing.value = true
+  importStep.value = 0
+  importStatusText.value = '正在读取文件...'
+  importPreviewData.value = null
+  importError.value = ''
+  importComplete.value = false
+  importedCharacterId.value = ''
 
   try {
-    // 下载文件并转换为 Blob
+    // 步骤1: 读取文件
+    await new Promise(resolve => setTimeout(resolve, 300))
     const response = await fetch(file.fileUrl)
     const blob = await response.blob()
     const cardFile = new File([blob], file.fileName || 'character_card.png', { type: 'image/png' })
+
+    importStep.value = 1
+    importStatusText.value = '正在提取角色数据...'
+    await new Promise(resolve => setTimeout(resolve, 300))
 
     const formData = new FormData()
     formData.append('card', cardFile)
@@ -1399,6 +1512,10 @@ const handleCardFileSelect = async (file: any) => {
     // 传递文件库中的图片信息，避免重复上传
     formData.append('existingFileUrl', file.fileUrl)
     formData.append('existingFileKey', file.fileKey || '')
+
+    // 步骤2-3: 提取和AI解析（在服务端完成）
+    importStep.value = 2
+    importStatusText.value = 'AI 正在智能映射字段（姓名、外貌、性格、技能等）...'
 
     const importResponse = await apiClient.post(
       '/api/characters/import-card',
@@ -1413,26 +1530,52 @@ const handleCardFileSelect = async (file: any) => {
     const result = importResponse.data
 
     if (result.conflict) {
-      message.warning(`角色 "${result.existingCharacter.name}" 已存在，请重命名后再试`)
+      importError.value = `角色 "${result.existingCharacter.name}" 已存在，请重命名后再试`
+      importing.value = false
       return
     }
 
     if (result.success) {
-      message.success('角色卡导入成功！')
-      showCardSelectorModal.value = false
+      // 步骤4: 创建角色完成
+      importStep.value = 3
+      importStatusText.value = '角色创建成功！'
+      importPreviewData.value = {
+        ...result.character,
+        avatar: file.fileUrl
+      }
+      importedCharacterId.value = result.character.id
+      importComplete.value = true
+      importing.value = false
+
       // 重新加载角色列表
       await loadCharacters()
-      // 选择新导入的角色
-      if (result.character) {
-        await selectCharacter(result.character)
-      }
     }
   } catch (error) {
     console.error('角色卡导入失败:', error)
-    message.error('角色卡导入失败，请确保这是有效的 SillyTavern 角色卡')
-  } finally {
+    importError.value = '角色卡导入失败，请确保这是有效的 SillyTavern 角色卡'
     importing.value = false
   }
+}
+
+// 关闭导入进度对话框
+const closeImportProgress = () => {
+  showImportProgressModal.value = false
+  importStep.value = 0
+  importStatusText.value = '准备导入...'
+  importPreviewData.value = null
+  importError.value = ''
+  importComplete.value = false
+}
+
+// 查看导入的角色
+const viewImportedCharacter = async () => {
+  if (importedCharacterId.value) {
+    const character = characters.value.find(c => c.id === importedCharacterId.value)
+    if (character) {
+      await selectCharacter(character)
+    }
+  }
+  closeImportProgress()
 }
 
 // 导出角色卡函数
@@ -1630,6 +1773,58 @@ onMounted(async () => {
 /* Header Actions */
 .header-actions {
   flex-shrink: 0;
+}
+
+/* Import Progress Modal */
+.import-progress-content {
+  min-height: 300px;
+}
+
+.import-status {
+  padding: 20px;
+  border-radius: 8px;
+  background: var(--theme-bg-elevated);
+}
+
+.status-message {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--theme-text-primary);
+  font-weight: 500;
+}
+
+.preview-card {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-bg-container);
+}
+
+.field-status {
+  padding-top: 12px;
+  border-top: 1px solid var(--theme-border);
+}
+
+.field-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--theme-bg-elevated);
+  font-size: 13px;
+  color: var(--theme-text-secondary);
+  transition: all 0.3s;
+}
+
+.field-item.field-complete {
+  background: rgba(82, 196, 26, 0.1);
+  color: var(--theme-text-primary);
+}
+
+.field-label {
+  font-weight: 500;
 }
 
 /* Utility Classes */
