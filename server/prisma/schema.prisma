@@ -103,6 +103,19 @@ model Character {
   avatarKey      String? // 头像文件key
   avatarMetadata String? // 头像元数据(JSON)
   isLocked       Boolean @default(false)
+
+  // SillyTavern 角色卡特有字段
+  firstMessage            String? // 第一条消息/问候语
+  messageExample          String? // 对话示例
+  alternateGreetings      String? // 备用问候语（JSON数组）
+  systemPrompt            String? // 系统提示词
+  postHistoryInstructions String? // 历史后指令
+  tags                    String? // 标签（JSON数组）
+  creator                 String? // 创作者
+  characterVersion        String? // 版本号
+  characterBook           String? // 角色书/世界书（JSON）
+  originalCardData        String? // 原始卡片完整数据（JSON）
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

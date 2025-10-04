@@ -5,12 +5,27 @@
       <div class="p-4 border-b theme-border">
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-lg font-semibold theme-text-primary">角色库</h2>
-          <a-button type="primary" size="small" @click="showAddCharacterModal = true">
-            <template #icon>
-              <PlusOutlined />
-            </template>
-            新增
-          </a-button>
+          <a-space size="small">
+            <a-upload
+              :show-upload-list="false"
+              :before-upload="beforeCardImport"
+              :custom-request="handleCardImport"
+              accept="image/png"
+            >
+              <a-button size="small">
+                <template #icon>
+                  <UploadOutlined />
+                </template>
+                导入卡片
+              </a-button>
+            </a-upload>
+            <a-button type="primary" size="small" @click="showAddCharacterModal = true">
+              <template #icon>
+                <PlusOutlined />
+              </template>
+              新增
+            </a-button>
+          </a-space>
         </div>
 
         <a-input-search
@@ -31,8 +46,15 @@
             : 'theme-bg-container border theme-border theme-selected-hover'"
         >
           <div class="flex items-start space-x-3">
-            <a-avatar :size="40" :style="{ backgroundColor: getCharacterColor(character.id) }">
-              {{ character.name.charAt(0) }}
+            <a-avatar
+              :size="40"
+              shape="square"
+              :src="character.avatar"
+              :style="!character.avatar ? { backgroundColor: getCharacterColor(character.id) } : {}"
+            >
+              <template v-if="!character.avatar">
+                {{ character.name.charAt(0) }}
+              </template>
             </a-avatar>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between">
@@ -71,15 +93,49 @@
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
               <div class="flex items-center space-x-4">
-                <a-avatar :size="56" :style="{ backgroundColor: getCharacterColor(selectedCharacter.id) }">
-                  {{ selectedCharacter.name.charAt(0) }}
-                </a-avatar>
+                <a-upload
+                  :show-upload-list="false"
+                  :before-upload="beforeAvatarUpload"
+                  :custom-request="handleAvatarUpload"
+                  accept="image/*"
+                >
+                  <a-avatar
+                    :size="56"
+                    shape="square"
+                    :src="selectedCharacter.avatar"
+                    :style="!selectedCharacter.avatar ? { backgroundColor: getCharacterColor(selectedCharacter.id) } : {}"
+                    class="cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <template v-if="!selectedCharacter.avatar">
+                      {{ selectedCharacter.name.charAt(0) }}
+                    </template>
+                  </a-avatar>
+                </a-upload>
                 <div>
                   <h1 class="text-2xl font-bold theme-text-primary">{{ selectedCharacter.name }}</h1>
-                  <p class="text-sm theme-text-primary">角色详情编辑</p>
+                  <p class="text-sm theme-text-primary">角色详情编辑 · 点击头像上传</p>
                 </div>
               </div>
               <a-space>
+                <a-upload
+                  :show-upload-list="false"
+                  :before-upload="beforeCardImageUpload"
+                  :custom-request="handleCardImageUpload"
+                  accept="image/png"
+                >
+                  <a-button>
+                    <template #icon>
+                      <UploadOutlined />
+                    </template>
+                    上传卡片图作为头像
+                  </a-button>
+                </a-upload>
+                <a-button @click="exportCharacterCard" :loading="exporting">
+                  <template #icon>
+                    <DownloadOutlined />
+                  </template>
+                  导出卡片
+                </a-button>
                 <a-button @click="requestAIEnhancement" :loading="enhancing">
                   <template #icon>
                     <RobotOutlined />
@@ -291,6 +347,83 @@
                       添加关系
                     </a-button>
                   </div>
+                </a-tab-pane>
+
+                <!-- SillyTavern Fields Tab -->
+                <a-tab-pane key="sillytavern" tab="SillyTavern">
+                  <a-alert
+                    message="SillyTavern 扩展字段"
+                    description="这些字段用于 SillyTavern 角色卡导入/导出。如果不使用 SillyTavern，可以忽略这些字段。"
+                    type="info"
+                    show-icon
+                    closable
+                    class="mb-4"
+                  />
+
+                  <a-form-item label="第一条消息/问候语">
+                    <a-textarea
+                      v-model:value="editingCharacter.firstMessage"
+                      :rows="3"
+                      placeholder="角色的第一条问候消息..."
+                      :disabled="selectedCharacter.isLocked"
+                    />
+                  </a-form-item>
+
+                  <a-form-item label="对话示例">
+                    <a-textarea
+                      v-model:value="editingCharacter.messageExample"
+                      :rows="5"
+                      placeholder="示例对话，格式：&#10;{{user}}: 用户消息&#10;{{char}}: 角色回复"
+                      :disabled="selectedCharacter.isLocked"
+                    />
+                  </a-form-item>
+
+                  <a-form-item label="系统提示词">
+                    <a-textarea
+                      v-model:value="editingCharacter.systemPrompt"
+                      :rows="4"
+                      placeholder="系统级别的提示词，用于引导 AI 行为..."
+                      :disabled="selectedCharacter.isLocked"
+                    />
+                  </a-form-item>
+
+                  <a-form-item label="历史后指令">
+                    <a-textarea
+                      v-model:value="editingCharacter.postHistoryInstructions"
+                      :rows="3"
+                      placeholder="在对话历史之后的额外指令..."
+                      :disabled="selectedCharacter.isLocked"
+                    />
+                  </a-form-item>
+
+                  <a-form-item label="标签">
+                    <a-input
+                      v-model:value="editingCharacter.tags"
+                      placeholder="标签，用逗号分隔：例如 fantasy, adventure, hero"
+                      :disabled="selectedCharacter.isLocked"
+                    />
+                  </a-form-item>
+
+                  <a-row :gutter="16">
+                    <a-col :span="12">
+                      <a-form-item label="创作者">
+                        <a-input
+                          v-model:value="editingCharacter.creator"
+                          placeholder="创作者名称"
+                          :disabled="selectedCharacter.isLocked"
+                        />
+                      </a-form-item>
+                    </a-col>
+                    <a-col :span="12">
+                      <a-form-item label="版本号">
+                        <a-input
+                          v-model:value="editingCharacter.characterVersion"
+                          placeholder="例如：1.0"
+                          :disabled="selectedCharacter.isLocked"
+                        />
+                      </a-form-item>
+                    </a-col>
+                  </a-row>
                 </a-tab-pane>
               </a-tabs>
 
@@ -735,11 +868,14 @@ import {
   UnlockOutlined,
   DeleteOutlined,
   CloseOutlined,
-  BulbOutlined
+  BulbOutlined,
+  UploadOutlined,
+  DownloadOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
 import { useProjectStore } from '@/stores/project'
+import { apiClient } from '@/utils/api'
 
 // 使用项目Store
 const projectStore = useProjectStore()
@@ -778,6 +914,8 @@ const newCharacter = ref({
 
 const generatingCharacter = ref(false)
 const aiGeneratedCharacter = ref(null)
+const exporting = ref(false)
+const importing = ref(false)
 
 const hasAIGeneration = computed(() => !!aiGeneratedCharacter.value)
 
@@ -806,7 +944,18 @@ const selectCharacter = async (character: Character) => {
             type: data.type || '',
             importance: data.importance || '',
             description: data.description || ''
-          }))
+          })),
+      // SillyTavern 字段
+      firstMessage: fullCharacter.firstMessage || '',
+      messageExample: fullCharacter.messageExample || '',
+      alternateGreetings: fullCharacter.alternateGreetings || '',
+      systemPrompt: fullCharacter.systemPrompt || '',
+      postHistoryInstructions: fullCharacter.postHistoryInstructions || '',
+      tags: fullCharacter.tags || '',
+      creator: fullCharacter.creator || '',
+      characterVersion: fullCharacter.characterVersion || '',
+      characterBook: fullCharacter.characterBook || '',
+      originalCardData: fullCharacter.originalCardData || ''
     }
   }
 }
@@ -857,7 +1006,17 @@ const saveCharacter = async () => {
     fears: editingCharacter.value.fears,
     background: editingCharacter.value.background,
     skills: editingCharacter.value.skills,
-    relationships: relationshipsObject
+    relationships: relationshipsObject,
+    // SillyTavern 字段
+    firstMessage: editingCharacter.value.firstMessage,
+    messageExample: editingCharacter.value.messageExample,
+    alternateGreetings: editingCharacter.value.alternateGreetings,
+    systemPrompt: editingCharacter.value.systemPrompt,
+    postHistoryInstructions: editingCharacter.value.postHistoryInstructions,
+    tags: editingCharacter.value.tags,
+    creator: editingCharacter.value.creator,
+    characterVersion: editingCharacter.value.characterVersion,
+    characterBook: editingCharacter.value.characterBook
   }
 
   const updated = await updateCharacter(selectedCharacter.value.id, updateData)
@@ -1115,6 +1274,226 @@ const clearAIGeneration = () => {
   aiGeneratedCharacter.value = null
   newCharacter.value.aiPrompt = ''
   message.info('已清除AI生成内容')
+}
+
+// 头像上传相关函数
+const beforeAvatarUpload = (file: File) => {
+  const isImage = file.type.startsWith('image/')
+  if (!isImage) {
+    message.error('只能上传图片文件！')
+    return false
+  }
+
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    message.error('图片大小不能超过 10MB！')
+    return false
+  }
+
+  return true
+}
+
+const handleAvatarUpload = async ({ file }: any) => {
+  if (!selectedCharacter.value) return
+
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  try {
+    const response = await apiClient.post(
+      `/api/characters/${selectedCharacter.value.id}/avatar`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+
+    const result = response.data
+
+    if (result.success) {
+      // 更新当前角色头像
+      selectedCharacter.value.avatar = result.avatar
+      selectedCharacter.value.avatarKey = result.avatarKey
+
+      // 更新角色列表中的头像
+      const charIndex = characters.value.findIndex(c => c.id === selectedCharacter.value!.id)
+      if (charIndex !== -1) {
+        characters.value[charIndex].avatar = result.avatar
+      }
+
+      message.success('头像上传成功！')
+    }
+  } catch (error) {
+    console.error('头像上传失败:', error)
+    message.error('头像上传失败，请重试')
+  }
+}
+
+// 角色卡导入相关函数
+const beforeCardImport = (file: File) => {
+  const isPNG = file.type === 'image/png'
+  if (!isPNG) {
+    message.error('只支持 PNG 格式的角色卡！')
+    return false
+  }
+
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    message.error('文件大小不能超过 10MB！')
+    return false
+  }
+
+  return true
+}
+
+const handleCardImport = async ({ file }: any) => {
+  if (!projectStore.currentProject) {
+    message.error('请先选择一个项目')
+    return
+  }
+
+  importing.value = true
+
+  const formData = new FormData()
+  formData.append('card', file)
+  formData.append('novelId', projectStore.currentProject.id)
+
+  try {
+    const response = await apiClient.post(
+      '/api/characters/import-card',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+
+    const result = response.data
+
+    if (result.conflict) {
+      // 处理名称冲突
+      message.warning(`角色 "${result.existingCharacter.name}" 已存在，请重命名后再试`)
+      // TODO: 可以添加一个对话框让用户选择如何处理冲突
+      return
+    }
+
+    if (result.success) {
+      message.success('角色卡导入成功！')
+      // 重新加载角色列表
+      await loadCharacters()
+      // 选择新导入的角色
+      if (result.character) {
+        await selectCharacter(result.character)
+      }
+    }
+  } catch (error) {
+    console.error('角色卡导入失败:', error)
+    message.error('角色卡导入失败，请确保这是有效的 SillyTavern 角色卡')
+  } finally {
+    importing.value = false
+  }
+}
+
+// 上传角色卡图片作为头像
+const beforeCardImageUpload = (file: File) => {
+  const isPNG = file.type === 'image/png'
+  if (!isPNG) {
+    message.error('只支持 PNG 格式的角色卡图片！')
+    return false
+  }
+
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    message.error('图片大小不能超过 10MB！')
+    return false
+  }
+
+  return true
+}
+
+const handleCardImageUpload = async ({ file }: any) => {
+  if (!selectedCharacter.value) return
+
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  try {
+    const response = await apiClient.post(
+      `/api/characters/${selectedCharacter.value.id}/avatar`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+
+    const result = response.data
+
+    if (result.success) {
+      // 更新当前角色头像
+      selectedCharacter.value.avatar = result.avatar
+      selectedCharacter.value.avatarKey = result.avatarKey
+
+      // 更新角色列表中的头像
+      const charIndex = characters.value.findIndex(c => c.id === selectedCharacter.value!.id)
+      if (charIndex !== -1) {
+        characters.value[charIndex].avatar = result.avatar
+      }
+
+      message.success('角色卡图片已设置为头像！')
+    }
+  } catch (error) {
+    console.error('头像上传失败:', error)
+    message.error('头像上传失败，请重试')
+  }
+}
+
+// 导出角色卡函数
+const exportCharacterCard = async () => {
+  if (!selectedCharacter.value) return
+
+  exporting.value = true
+
+  try {
+    const response = await apiClient.getAxiosInstance().get(
+      `/api/characters/${selectedCharacter.value.id}/export-card`,
+      {
+        responseType: 'blob'
+      }
+    )
+
+    // 获取文件名
+    const contentDisposition = response.headers['content-disposition']
+    let fileName = `${selectedCharacter.value.name}_card.png`
+    if (contentDisposition) {
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition)
+      if (matches && matches[1]) {
+        fileName = decodeURIComponent(matches[1].replace(/['"]/g, ''))
+      }
+    }
+
+    // 下载文件
+    const blob = new Blob([response.data])
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    message.success('角色卡导出成功！')
+  } catch (error) {
+    console.error('角色卡导出失败:', error)
+    message.error('角色卡导出失败，请重试')
+  } finally {
+    exporting.value = false
+  }
 }
 
 // 防重复加载标志

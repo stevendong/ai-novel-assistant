@@ -1,8 +1,27 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const multer = require('multer');
+const uploadService = require('../services/uploadService');
+const characterCardUtils = require('../utils/characterCardUtils');
 const prisma = new PrismaClient();
 
 const router = express.Router();
+
+// 配置 multer 用于内存存储
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB 限制
+  },
+  fileFilter: (req, file, cb) => {
+    // 只接受图片文件
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('只支持图片文件上传'));
+    }
+  }
+});
 
 // 生成随机角色姓名的工具函数
 function generateRandomName(genre) {
@@ -154,7 +173,17 @@ router.put('/:id', async (req, res) => {
       background,
       skills,
       relationships,
-      isLocked
+      isLocked,
+      // SillyTavern 字段
+      firstMessage,
+      messageExample,
+      alternateGreetings,
+      systemPrompt,
+      postHistoryInstructions,
+      tags,
+      creator,
+      characterVersion,
+      characterBook
     } = req.body;
 
     const character = await prisma.character.update({
@@ -172,6 +201,16 @@ router.put('/:id', async (req, res) => {
         skills,
         relationships: relationships ? JSON.stringify(relationships) : relationships,
         isLocked,
+        // SillyTavern 字段
+        firstMessage,
+        messageExample,
+        alternateGreetings,
+        systemPrompt,
+        postHistoryInstructions,
+        tags,
+        creator,
+        characterVersion,
+        characterBook,
         updatedAt: new Date()
       }
     });
@@ -585,6 +624,216 @@ ${baseInfo?.description ? `\n现有描述：${baseInfo.description}` : ''}
   } catch (error) {
     console.error('Error generating character:', error);
     res.status(500).json({ error: 'Failed to generate character' });
+  }
+});
+
+// 上传角色头像
+router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({ error: '未找到上传的文件' });
+    }
+
+    // 获取角色信息
+    const character = await prisma.character.findUnique({
+      where: { id }
+    });
+
+    if (!character) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    // 删除旧头像（如果存在）
+    if (character.avatarKey) {
+      await uploadService.deleteFile(character.avatarKey);
+    }
+
+    // 上传新头像到 R2
+    const uploadResult = await uploadService.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      'avatars/characters'
+    );
+
+    if (!uploadResult.success) {
+      return res.status(500).json({ error: '头像上传失败', details: uploadResult.error });
+    }
+
+    // 更新角色头像信息
+    const updatedCharacter = await prisma.character.update({
+      where: { id },
+      data: {
+        avatar: uploadResult.url,
+        avatarKey: uploadResult.key,
+        avatarMetadata: JSON.stringify({
+          originalName: uploadResult.originalName,
+          size: req.file.size,
+          mimeType: req.file.mimetype,
+          uploadedAt: new Date().toISOString()
+        })
+      }
+    });
+
+    res.json({
+      success: true,
+      avatar: updatedCharacter.avatar,
+      avatarKey: updatedCharacter.avatarKey
+    });
+
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    res.status(500).json({ error: '头像上传失败' });
+  }
+});
+
+// 导入 SillyTavern 角色卡
+router.post('/import-card', upload.single('card'), async (req, res) => {
+  try {
+    const { novelId } = req.body;
+
+    if (!novelId) {
+      return res.status(400).json({ error: 'Novel ID is required' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: '未找到上传的角色卡文件' });
+    }
+
+    // 验证文件类型为 PNG
+    if (req.file.mimetype !== 'image/png') {
+      return res.status(400).json({ error: '只支持 PNG 格式的角色卡' });
+    }
+
+    // 从 PNG 中提取角色卡数据
+    const cardData = await characterCardUtils.extractCharacterCardFromPNG(req.file.buffer);
+
+    if (!cardData) {
+      return res.status(400).json({ error: '未能从图片中提取角色卡数据，请确保这是有效的 SillyTavern 角色卡' });
+    }
+
+    // 验证角色卡数据
+    if (!characterCardUtils.isValidCharacterCard(cardData)) {
+      return res.status(400).json({ error: '无效的角色卡格式' });
+    }
+
+    // 转换为系统格式
+    const characterData = characterCardUtils.convertFromSillyTavernFormat(cardData);
+
+    // 检查名称冲突
+    const existingCharacter = await prisma.character.findFirst({
+      where: {
+        novelId,
+        name: characterData.name
+      }
+    });
+
+    if (existingCharacter) {
+      // 返回冲突信息，让前端处理
+      return res.json({
+        conflict: true,
+        existingCharacter: {
+          id: existingCharacter.id,
+          name: existingCharacter.name
+        },
+        importedData: characterData,
+        cardImage: req.file.buffer.toString('base64') // 保存图片数据供后续使用
+      });
+    }
+
+    // 上传头像图片
+    const uploadResult = await uploadService.uploadFile(
+      req.file.buffer,
+      `${characterData.name}_avatar.png`,
+      'image/png',
+      'avatars/characters'
+    );
+
+    // 创建角色
+    const character = await prisma.character.create({
+      data: {
+        novelId,
+        ...characterData,
+        avatar: uploadResult.success ? uploadResult.url : null,
+        avatarKey: uploadResult.success ? uploadResult.key : null,
+        avatarMetadata: uploadResult.success ? JSON.stringify({
+          originalName: req.file.originalname,
+          size: req.file.size,
+          mimeType: req.file.mimetype,
+          uploadedAt: new Date().toISOString(),
+          source: 'sillytavern_import'
+        }) : null
+      }
+    });
+
+    // Parse relationships JSON string back to object for response
+    const parsedCharacter = {
+      ...character,
+      relationships: character.relationships ? JSON.parse(character.relationships) : null
+    };
+
+    res.json({
+      success: true,
+      character: parsedCharacter,
+      imported: true
+    });
+
+  } catch (error) {
+    console.error('Error importing character card:', error);
+    res.status(500).json({ error: '角色卡导入失败', details: error.message });
+  }
+});
+
+// 导出为 SillyTavern 角色卡
+router.get('/:id/export-card', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 获取角色完整信息
+    const character = await prisma.character.findUnique({
+      where: { id }
+    });
+
+    if (!character) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    // 转换为 SillyTavern 格式
+    const cardData = characterCardUtils.convertToSillyTavernFormat(character);
+
+    // 获取角色头像，如果没有则创建默认头像
+    let avatarBuffer;
+    if (character.avatar && character.avatarKey) {
+      try {
+        // 尝试从 R2 获取头像
+        const presignedUrl = await uploadService.generatePresignedUrl(character.avatarKey, 300);
+        const response = await fetch(presignedUrl);
+        avatarBuffer = Buffer.from(await response.arrayBuffer());
+      } catch (error) {
+        console.warn('Failed to fetch avatar, using default:', error);
+        avatarBuffer = await characterCardUtils.createDefaultAvatar(character.name);
+      }
+    } else {
+      // 创建默认头像
+      avatarBuffer = await characterCardUtils.createDefaultAvatar(character.name);
+    }
+
+    // 将角色卡数据嵌入到 PNG
+    const cardPNG = await characterCardUtils.embedCharacterCardToPNG(avatarBuffer, cardData);
+
+    // 设置响应头
+    const fileName = `${character.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}_card.png`;
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Content-Length', cardPNG.length);
+
+    res.send(cardPNG);
+
+  } catch (error) {
+    console.error('Error exporting character card:', error);
+    res.status(500).json({ error: '角色卡导出失败', details: error.message });
   }
 });
 
