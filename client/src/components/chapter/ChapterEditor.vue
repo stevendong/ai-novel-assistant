@@ -8,9 +8,64 @@
             {{ chapter.chapterNumber }}
           </a-avatar>
           <div>
-            <h1 class="text-xl font-bold theme-text-primary">
-              第{{ chapter.chapterNumber }}章：{{ chapter.title }}
-            </h1>
+            <div class="flex items-center space-x-3 mb-1">
+              <h1 class="text-xl font-bold theme-text-primary">
+                第{{ chapter.chapterNumber }}章：{{ chapter.title }}
+              </h1>
+              <!-- 章节导航控件 -->
+              <div class="flex items-center space-x-1">
+                <a-button
+                  size="small"
+                  :disabled="!previousChapter"
+                  @click="goToPreviousChapter"
+                  title="上一章 (Ctrl+Left)"
+                >
+                  <template #icon>
+                    <LeftOutlined />
+                  </template>
+                </a-button>
+                <a-dropdown v-model:open="showChapterList" trigger="click">
+                  <a-button size="small" :loading="loadingChapters">
+                    <template #icon>
+                      <MenuOutlined />
+                    </template>
+                    {{ currentChapterIndex + 1 }}/{{ totalChapters }}
+                  </a-button>
+                  <template #overlay>
+                    <a-menu class="chapter-list-menu" style="max-height: 400px; overflow-y: auto;">
+                      <a-menu-item
+                        v-for="chap in allChapters"
+                        :key="chap.id"
+                        @click="switchToChapter(chap.id)"
+                        :class="{ 'active-chapter': chap.id === chapter.id }"
+                      >
+                        <div class="flex items-center justify-between">
+                          <span>第{{ chap.chapterNumber }}章：{{ chap.title }}</span>
+                          <a-tag
+                            v-if="chap.id === chapter.id"
+                            color="blue"
+                            size="small"
+                            class="ml-2"
+                          >
+                            当前
+                          </a-tag>
+                        </div>
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
+                <a-button
+                  size="small"
+                  :disabled="!nextChapter"
+                  @click="goToNextChapter"
+                  title="下一章 (Ctrl+Right)"
+                >
+                  <template #icon>
+                    <RightOutlined />
+                  </template>
+                </a-button>
+              </div>
+            </div>
             <div class="flex items-center space-x-4 text-sm theme-text-primary">
               <span>状态：{{ statusText }}</span>
               <span>字数：{{ wordCount }}</span>
@@ -253,7 +308,7 @@
                   字数：{{ contentWordCount }} | 目标：{{ targetWordCount || 2000 }}字
                 </span>
               </div>
-              
+
               <a-space>
                 <a-dropdown>
                   <template #overlay>
@@ -289,9 +344,9 @@
                     <DownOutlined />
                   </a-button>
                 </a-dropdown>
-                
-                <a-button 
-                  @click="clearContent" 
+
+                <a-button
+                  @click="clearContent"
                   :disabled="!contentText"
                   title="清空内容"
                 >
@@ -300,17 +355,6 @@
                   </template>
                   清空
                 </a-button>
-                
-                <a-button
-                  @click="insertContentTemplate"
-                  title="插入段落模板"
-                >
-                  <template #icon>
-                    <PlusSquareOutlined />
-                  </template>
-                  模板
-                </a-button>
-
                 <a-button
                   @click="toggleFullscreen"
                   :title="isFullscreen ? '退出全屏' : '进入全屏'"
@@ -545,15 +589,15 @@
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-medium theme-text-primary">一致性检查</h3>
                 <a-space>
-                  <a-button 
-                    type="primary" 
+                  <a-button
+                    type="primary"
                     @click="performConsistencyCheck"
                     :loading="consistencyChecking"
                   >
                     <CheckCircleOutlined />
                     重新检查
                   </a-button>
-                  <a-button 
+                  <a-button
                     v-if="unresolvedIssuesCount > 0"
                     @click="batchResolveIssues"
                     :loading="batchResolving"
@@ -652,14 +696,14 @@
                     </div>
                   </div>
                   <div class="flex items-center space-x-2">
-                    <a-button 
-                      size="small" 
+                    <a-button
+                      size="small"
                       @click="viewIssueDetails(issue)"
                     >
                       <EyeOutlined />
                       详情
                     </a-button>
-                    <a-button 
+                    <a-button
                       size="small"
                       :type="issue.resolved ? 'default' : 'primary'"
                       @click="toggleIssueResolved(issue)"
@@ -667,9 +711,9 @@
                     >
                       {{ issue.resolved ? '标记未解决' : '标记已解决' }}
                     </a-button>
-                    <a-button 
-                      size="small" 
-                      danger 
+                    <a-button
+                      size="small"
+                      danger
                       @click="deleteIssue(issue)"
                       :loading="deletingIssues.has(issue.id)"
                     >
@@ -760,15 +804,15 @@
         <!-- 操作按钮 -->
         <div class="flex justify-between">
           <a-space>
-            <a-button 
+            <a-button
               :type="selectedIssue.resolved ? 'default' : 'primary'"
               @click="toggleIssueResolved(selectedIssue)"
               :loading="resolvingIssues.has(selectedIssue.id)"
             >
               {{ selectedIssue.resolved ? '标记未解决' : '标记已解决' }}
             </a-button>
-            <a-button 
-              danger 
+            <a-button
+              danger
               @click="deleteIssue(selectedIssue)"
               :loading="deletingIssues.has(selectedIssue.id)"
             >
@@ -866,7 +910,10 @@ import {
   ClearOutlined,
   PlusSquareOutlined,
   FullscreenOutlined,
-  FullscreenExitOutlined
+  FullscreenExitOutlined,
+  LeftOutlined,
+  RightOutlined,
+  MenuOutlined
 } from '@ant-design/icons-vue'
 import { useChapter } from '@/composables/useChapter'
 import { useMarkdown } from '@/composables/useMarkdown'
@@ -954,6 +1001,11 @@ const selectedSettingId = ref<string>()
 const availableCharacters = ref<Character[]>([])
 const availableSettings = ref<WorldSetting[]>([])
 
+// 章节导航相关
+const allChapters = ref<Chapter[]>([])
+const loadingChapters = ref(false)
+const showChapterList = ref(false)
+
 // 目标字数编辑相关
 const isEditingTargetWords = ref(false)
 const editingTargetWords = ref<number>(2000)
@@ -991,6 +1043,87 @@ const loadAvailableData = async () => {
   }
 }
 
+// 加载所有章节
+const loadAllChapters = async () => {
+  if (!chapter.value) return
+
+  try {
+    loadingChapters.value = true
+    const chapters = await chapterService.getChaptersByNovel(chapter.value.novelId)
+    allChapters.value = chapters.sort((a, b) => a.chapterNumber - b.chapterNumber)
+  } catch (err) {
+    console.error('Error loading chapters:', err)
+  } finally {
+    loadingChapters.value = false
+  }
+}
+
+// 计算当前章节位置信息
+const currentChapterIndex = computed(() => {
+  if (!chapter.value) return -1
+  return allChapters.value.findIndex(c => c.id === chapter.value!.id)
+})
+
+const previousChapter = computed(() => {
+  if (currentChapterIndex.value <= 0) return null
+  return allChapters.value[currentChapterIndex.value - 1]
+})
+
+const nextChapter = computed(() => {
+  if (currentChapterIndex.value === -1 || currentChapterIndex.value >= allChapters.value.length - 1) return null
+  return allChapters.value[currentChapterIndex.value + 1]
+})
+
+const totalChapters = computed(() => allChapters.value.length)
+
+// 切换到指定章节
+const switchToChapter = async (chapterId: string) => {
+  if (!chapterId || chapterId === chapter.value?.id) return
+
+  // 检查是否有未保存的更改
+  if (hasUnsavedChanges.value) {
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Modal.confirm({
+        title: '有未保存的更改',
+        content: '当前章节有未保存的更改，是否先保存？',
+        okText: '保存并切换',
+        cancelText: '放弃更改',
+        onOk: async () => {
+          await handleSaveChapter()
+          resolve(true)
+        },
+        onCancel: () => {
+          resolve(true)
+        }
+      })
+    })
+    if (!confirmed) return
+  }
+
+  // 加载新章节
+  await loadChapter(chapterId)
+
+  // 关闭章节列表
+  showChapterList.value = false
+
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// 切换到上一章
+const goToPreviousChapter = async () => {
+  if (previousChapter.value) {
+    await switchToChapter(previousChapter.value.id)
+  }
+}
+
+// 切换到下一章
+const goToNextChapter = async () => {
+  if (nextChapter.value) {
+    await switchToChapter(nextChapter.value.id)
+  }
+}
+
 // 一致性检查计算属性
 const filteredIssues = computed(() => {
   let filtered = consistencyIssues.value
@@ -1012,12 +1145,12 @@ const filteredIssues = computed(() => {
     const severityOrder = { high: 3, medium: 2, low: 1 }
     const severityDiff = severityOrder[b.severity] - severityOrder[a.severity]
     if (severityDiff !== 0) return severityDiff
-    
+
     // 按解决状态排序：未解决优先
     if (a.resolved !== b.resolved) {
       return a.resolved ? 1 : -1
     }
-    
+
     // 按创建时间排序：最新优先
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
@@ -1407,11 +1540,11 @@ const performConsistencyCheck = async () => {
   try {
     consistencyChecking.value = true
     const result = await consistencyService.checkChapter(chapter.value.id)
-    
+
     if (result.success) {
       await loadConsistencyIssues()
       message.success(`一致性检查完成，发现 ${result.issuesFound} 个问题`)
-      
+
       // 如果有严重问题，自动切换到一致性检查标签页
       if (result.issues.some(issue => issue.severity === 'high')) {
         activeTab.value = 'consistency'
@@ -1561,7 +1694,7 @@ const generateAIContent = async (targetLength: number = 2000) => {
     // 获取相关角色和设定信息
     const chapterCharacters = chapter.value.characters || []
     const chapterSettings = chapter.value.settings || []
-    
+
     const characterDetails = chapterCharacters.map(cc => {
       const char = availableCharacters.value.find(c => c.id === cc.characterId)
       return char ? {
@@ -1571,7 +1704,7 @@ const generateAIContent = async (targetLength: number = 2000) => {
         background: char.background
       } : null
     }).filter(Boolean)
-    
+
     const settingDetails = chapterSettings.map(cs => {
       const setting = availableSettings.value.find(s => s.id === cs.settingId)
       return setting ? {
@@ -1636,7 +1769,7 @@ const generateAIContent = async (targetLength: number = 2000) => {
     }
 
     message.success({ content: `AI正文生成完成！已生成约${generatedContent.length}字`, key: 'ai-content' })
-    
+
     // 触发保存
     if (chapter.value) {
       updateChapter('content', contentText.value)
@@ -1737,6 +1870,22 @@ const handleKeydown = (event: KeyboardEvent) => {
     }
   }
 
+  // Ctrl+Left 上一章
+  if ((event.ctrlKey || event.metaKey) && event.key === 'ArrowLeft') {
+    event.preventDefault()
+    if (previousChapter.value) {
+      goToPreviousChapter()
+    }
+  }
+
+  // Ctrl+Right 下一章
+  if ((event.ctrlKey || event.metaKey) && event.key === 'ArrowRight') {
+    event.preventDefault()
+    if (nextChapter.value) {
+      goToNextChapter()
+    }
+  }
+
   // F11 键切换全屏
   if (event.key === 'F11') {
     event.preventDefault()
@@ -1776,8 +1925,8 @@ const insertContentTemplate = () => {
     title: '选择内容模板',
     width: 500,
     content: h('div', { class: 'space-y-3' }, [
-      ...templates.map(template => 
-        h('div', { 
+      ...templates.map(template =>
+        h('div', {
           class: 'p-3 border rounded cursor-pointer hover:bg-gray-50',
           onClick: () => {
             if (contentEditor.value) {
@@ -1849,7 +1998,7 @@ watch(() => chapter.value?.content, (newValue) => {
   // 避免不必要的更新，特别是在内容只有微小差异时
   const currentContent = contentText.value || ''
   const newContent = newValue || ''
-  
+
   // 如果内容确实不同，才进行更新
   if (newContent !== currentContent) {
     contentText.value = newContent
@@ -1863,6 +2012,8 @@ onMounted(async () => {
     await loadChapter(chapterId.value)
     // 加载可用角色和设定
     await loadAvailableData()
+    // 加载所有章节（用于导航）
+    await loadAllChapters()
     // 加载一致性检查结果
     await loadConsistencyIssues()
   }
@@ -1887,10 +2038,14 @@ onUnmounted(() => {
 // 标签页切换处理（如果需要可以添加其他逻辑）
 
 // 监听章节变化，重新加载可用数据
-watch(() => chapter.value?.id, async (newChapterId) => {
-  if (newChapterId) {
+watch(() => chapter.value?.id, async (newChapterId, oldChapterId) => {
+  if (newChapterId && newChapterId !== oldChapterId) {
     await loadAvailableData()
     await loadConsistencyIssues()
+    // 如果章节列表为空或小说ID变化，重新加载章节列表
+    if (allChapters.value.length === 0) {
+      await loadAllChapters()
+    }
   }
 })
 
@@ -2008,5 +2163,34 @@ const filteredAvailableSettings = computed(() => {
 
 .fullscreen-content :deep(.tiptap-editor) {
   height: calc(100vh - 60px) !important; /* 减去工具栏高度 */
+}
+
+/* 章节列表菜单样式 */
+.chapter-list-menu :deep(.ant-menu-item) {
+  padding: 8px 16px !important;
+  transition: background-color 0.2s ease;
+}
+
+.chapter-list-menu :deep(.ant-menu-item:hover) {
+  background-color: var(--theme-bg-elevated) !important;
+}
+
+.chapter-list-menu :deep(.ant-menu-item.active-chapter) {
+  background-color: rgba(24, 144, 255, 0.1) !important;
+  font-weight: 500;
+}
+
+.chapter-list-menu :deep(.ant-menu-item > div) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100%;
+}
+
+.chapter-list-menu :deep(.ant-menu-item > div > span:first-child) {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

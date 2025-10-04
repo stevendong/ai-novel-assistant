@@ -225,7 +225,7 @@ const columns = [
   {
     title: '章节进度',
     key: 'chapters',
-    width: '12%'
+    width: '15%'
   },
   {
     title: '创建时间',
