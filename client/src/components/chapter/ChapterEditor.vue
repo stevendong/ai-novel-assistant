@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full flex flex-col" v-if="chapter">
+  <div class="h-screen overflow-hidden flex flex-col" v-if="chapter">
     <!-- Chapter Header -->
-    <div class="theme-bg-container border-b theme-border p-4">
+    <div class="theme-bg-container border-b theme-border p-4 flex-shrink-0">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
           <a-avatar :size="40" class="theme-chapter-avatar">
@@ -127,7 +127,7 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div class="theme-bg-container border-b theme-border">
+    <div class="theme-bg-container border-b theme-border flex-shrink-0">
       <a-tabs v-model:activeKey="activeTab" type="card" class="px-4">
         <a-tab-pane key="outline" tab="大纲">
           <template #tab>
@@ -145,35 +145,11 @@
             </span>
           </template>
         </a-tab-pane>
-        <a-tab-pane key="characters" tab="角色">
-          <template #tab>
-            <span class="flex items-center" title="角色 (Ctrl+3)">
-              <TeamOutlined class="mr-2" />
-              角色
-            </span>
-          </template>
-        </a-tab-pane>
-        <a-tab-pane key="settings" tab="设定">
-          <template #tab>
-            <span class="flex items-center" title="设定 (Ctrl+4)">
-              <SettingOutlined class="mr-2" />
-              设定
-            </span>
-          </template>
-        </a-tab-pane>
         <a-tab-pane key="workflow" tab="状态流转">
           <template #tab>
-            <span class="flex items-center" title="状态流转 (Ctrl+5)">
+            <span class="flex items-center" title="状态流转 (Ctrl+3)">
               <BranchesOutlined class="mr-2" />
               状态流转
-            </span>
-          </template>
-        </a-tab-pane>
-        <a-tab-pane key="illustrations" tab="插图">
-          <template #tab>
-            <span class="flex items-center" title="插图 (Ctrl+6)">
-              <PictureOutlined class="mr-2" />
-              插图
             </span>
           </template>
         </a-tab-pane>
@@ -195,111 +171,115 @@
     </div>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex">
-      <!-- Editor Area (70%) -->
-      <div class="flex-1 theme-bg-container">
-        <!-- Outline Tab -->
-        <div v-if="activeTab === 'outline'" class="h-full flex">
-          <!-- 编辑区 -->
-          <div class="flex-1 p-6 overflow-y-auto border-r theme-border">
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-lg font-medium theme-text-primary">章节大纲</h3>
-                <div class="space-x-2">
-                  <a-button size="small" @click="applyOutlineTemplate">
-                    <template #icon>
-                      <FileTextOutlined />
-                    </template>
-                    模板
-                  </a-button>
-                  <a-button size="small" :type="isOutlinePreviewMode ? 'primary' : 'default'" @click="toggleOutlinePreview">
-                    <template #icon>
-                      <EyeOutlined v-if="!isOutlinePreviewMode" />
-                      <EditOutlined v-else />
-                    </template>
-                    {{ isOutlinePreviewMode ? '编辑' : '预览' }}
-                  </a-button>
-                </div>
-              </div>
-              <a-textarea
-                v-model:value="outlineMarkdown"
-                :rows="15"
-                placeholder="在这里编写章节内容大纲...&#10;&#10;支持Markdown语法，例如：&#10;## 章节开头&#10;- 时间地点设定&#10;- 人物状态描述&#10;&#10;## 内容发展&#10;1. **开端** - 情况引入&#10;2. **发展** - 矛盾展开&#10;3. **转折** - 意外变化&#10;4. **结尾** - 解决冲突"
-                class="font-mono"
-              />
-            </div>
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Left Sidebar -->
+      <div class="w-80 border-r theme-border overflow-y-auto theme-bg-container">
+        <div class="p-4">
+          <h3 class="text-lg font-medium theme-text-primary mb-4">章节信息</h3>
 
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <h4 class="text-md font-medium theme-text-primary">情节要点</h4>
-                <a-button type="primary" size="small" @click="handleAddPlotPoint">
+          <!-- 章节角色 -->
+          <a-collapse :bordered="false" class="mb-4" default-active-key="characters">
+            <a-collapse-panel key="characters" header="章节角色">
+              <div class="space-y-2">
+                <div
+                  v-for="chapterChar in chapter.characters"
+                  :key="chapterChar.characterId"
+                  class="p-2 border theme-border rounded"
+                >
+                  <div class="flex items-center space-x-2 mb-1">
+                    <a-avatar :size="24">{{ chapterChar.character.name.charAt(0) }}</a-avatar>
+                    <span class="text-sm font-medium theme-text-primary">{{ chapterChar.character.name }}</span>
+                  </div>
+                  <a-tag :color="getRoleColor(chapterChar.role)" size="small">
+                    {{ getRoleText(chapterChar.role) }}
+                  </a-tag>
+                </div>
+                <a-button type="dashed" block @click="showAddCharacterModal = true" size="small">
+                  <PlusOutlined />
+                  添加角色
+                </a-button>
+              </div>
+            </a-collapse-panel>
+          </a-collapse>
+
+          <!-- 相关设定 -->
+          <a-collapse :bordered="false" class="mb-4" default-active-key="settings">
+            <a-collapse-panel key="settings" header="相关设定">
+              <div class="space-y-2">
+                <div
+                  v-for="chapterSetting in chapter.settings"
+                  :key="chapterSetting.settingId"
+                  class="p-2 border theme-border rounded"
+                >
+                  <a-tag :color="getSettingTypeColor(chapterSetting.setting.type)" size="small">
+                    {{ getSettingTypeText(chapterSetting.setting.type) }}
+                  </a-tag>
+                  <div class="text-sm font-medium theme-text-primary mt-1">{{ chapterSetting.setting.name }}</div>
+                </div>
+                <a-button type="dashed" block @click="showAddSettingModal = true" size="small">
+                  <PlusOutlined />
+                  添加设定
+                </a-button>
+              </div>
+            </a-collapse-panel>
+          </a-collapse>
+
+          <!-- 情节要点 -->
+          <a-collapse :bordered="false" default-active-key="plotPoints">
+            <a-collapse-panel key="plotPoints" header="情节要点">
+              <div class="space-y-2">
+                <div
+                  v-for="(point, index) in chapter.plotPoints"
+                  :key="index"
+                  class="p-2 border theme-border rounded"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <a-tag size="small">{{ point.type }}</a-tag>
+                    <a-button type="text" danger size="small" @click="removePlotPoint(index)">
+                      <DeleteOutlined />
+                    </a-button>
+                  </div>
+                  <div class="text-xs theme-text-primary">{{ point.description }}</div>
+                </div>
+                <a-button type="dashed" block @click="handleAddPlotPoint" size="small">
                   <PlusOutlined />
                   添加要点
                 </a-button>
               </div>
-              <div class="space-y-3">
-                <div
-                  v-for="(point, index) in chapter.plotPoints"
-                  :key="index"
-                  class="p-3 border theme-border rounded-lg"
-                >
-                  <a-row :gutter="16" align="middle">
-                    <a-col :span="4">
-                      <a-select
-                        :value="point.type"
-                        @change="(value: string) => updatePlotPoint(index, { ...point, type: value as PlotPoint['type'] })"
-                        placeholder="类型"
-                      >
-                        <a-select-option value="conflict">冲突</a-select-option>
-                        <a-select-option value="discovery">发现</a-select-option>
-                        <a-select-option value="emotion">情感</a-select-option>
-                        <a-select-option value="action">行动</a-select-option>
-                        <a-select-option value="dialogue">对话</a-select-option>
-                      </a-select>
-                    </a-col>
-                    <a-col :span="18">
-                      <a-input
-                        :value="point.description"
-                        @input="(e: Event) => updatePlotPoint(index, { ...point, description: (e.target as HTMLInputElement).value })"
-                        placeholder="描述这个情节要点..."
-                      />
-                    </a-col>
-                    <a-col :span="2">
-                      <a-button type="text" danger @click="removePlotPoint(index)">
-                        <DeleteOutlined />
-                      </a-button>
-                    </a-col>
-                  </a-row>
-                </div>
-                <div v-if="chapter.plotPoints.length === 0" class="text-center py-8 theme-text-primary">
-                  <FileTextOutlined style="font-size: 48px; margin-bottom: 16px;" />
-                  <p>暂无情节要点</p>
-                </div>
+            </a-collapse-panel>
+          </a-collapse>
+        </div>
+      </div>
+
+      <!-- Main Editor Area -->
+      <div class="flex-1 overflow-y-auto theme-bg-container">
+        <!-- Outline Tab -->
+        <div v-if="activeTab === 'outline'" class="p-6">
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-medium theme-text-primary">章节大纲</h3>
+              <div class="space-x-2">
+                <a-button size="small" @click="applyOutlineTemplate">
+                  <template #icon>
+                    <FileTextOutlined />
+                  </template>
+                  模板
+                </a-button>
               </div>
             </div>
-          </div>
-
-          <!-- 预览区 -->
-          <div class="flex-1 p-6 overflow-y-auto theme-bg-elevated" v-if="isOutlinePreviewMode">
-            <div class="theme-bg-container rounded-lg p-6 shadow-sm">
-              <div class="markdown-novel" v-html="outlineRenderedHtml"></div>
-            </div>
-
-            <!-- 统计信息 -->
-            <div class="mt-4 p-4 theme-bg-container rounded-lg shadow-sm">
-              <div class="text-sm theme-text-primary space-y-1">
-                <div>字数统计: {{ outlineWordCount }}</div>
-                <div>段落数: {{ outlineParagraphCount }}</div>
-                <div v-if="outlineHeadings.length > 0">标题数: {{ outlineHeadings.length }}</div>
-              </div>
-            </div>
+            <a-textarea
+              v-model:value="outlineMarkdown"
+              :rows="20"
+              placeholder="在这里编写章节内容大纲...&#10;&#10;支持Markdown语法，例如：&#10;## 章节开头&#10;- 时间地点设定&#10;- 人物状态描述&#10;&#10;## 内容发展&#10;1. **开端** - 情况引入&#10;2. **发展** - 矛盾展开&#10;3. **转折** - 意外变化&#10;4. **结尾** - 解决冲突"
+              class="font-mono"
+            />
           </div>
         </div>
 
         <!-- Content Tab -->
         <div v-else-if="activeTab === 'content'" class="h-full flex flex-col" :class="{ 'fullscreen-content': isFullscreen }">
           <!-- 正文工具栏 -->
-          <div class="content-toolbar theme-bg-container border-b theme-border p-3">
+          <div class="content-toolbar theme-bg-container border-b theme-border p-3 flex-shrink-0">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
                 <span class="text-sm theme-text-primary">正文编辑</span>
@@ -370,7 +350,7 @@
           </div>
 
           <!-- 编辑器区域 -->
-          <div class="flex-1">
+          <div class="flex-1 overflow-hidden">
             <TiptapEditor
               ref="contentEditor"
               v-model="contentText"
@@ -383,206 +363,21 @@
           </div>
         </div>
 
-        <!-- Characters Tab -->
-        <div v-else-if="activeTab === 'characters'" class="h-full p-6 overflow-y-auto">
-          <div class="max-w-4xl mx-auto">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium theme-text-primary">章节角色</h3>
-              <a-button type="primary" @click="showAddCharacterModal = true">
-                <PlusOutlined />
-                添加角色
-              </a-button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div
-                v-for="chapterChar in chapter.characters"
-                :key="chapterChar.characterId"
-                class="p-4 border theme-border rounded-lg"
-              >
-                <div class="flex items-start space-x-3">
-                  <a-avatar :size="48">{{ chapterChar.character.name.charAt(0) }}</a-avatar>
-                  <div class="flex-1">
-                    <div class="flex items-center space-x-2 mb-1">
-                      <h4 class="font-medium theme-text-primary">{{ chapterChar.character.name }}</h4>
-                      <a-tag :color="getRoleColor(chapterChar.role)">
-                        {{ getRoleText(chapterChar.role) }}
-                      </a-tag>
-                    </div>
-                    <p class="text-sm theme-text-primary mb-3">{{ chapterChar.character.description }}</p>
-                    <a-select
-                      :value="chapterChar.role"
-                      @change="(value: string) => updateCharacterRole(chapterChar.characterId, value)"
-                      size="small"
-                      style="width: 100px"
-                    >
-                      <a-select-option value="main">主要</a-select-option>
-                      <a-select-option value="supporting">配角</a-select-option>
-                      <a-select-option value="mentioned">提及</a-select-option>
-                    </a-select>
-                  </div>
-                  <a-button type="text" danger @click="removeCharacterFromChapter(chapterChar.characterId)">
-                    <DeleteOutlined />
-                  </a-button>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="chapter.characters.length === 0" class="text-center py-8 theme-text-primary">
-              <TeamOutlined style="font-size: 48px; margin-bottom: 16px;" />
-              <p>暂无章节角色</p>
-              <a-button type="link" @click="showAddCharacterModal = true">
-                添加第一个角色
-              </a-button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Settings Tab -->
-        <div v-else-if="activeTab === 'settings'" class="h-full p-6 overflow-y-auto">
-          <div class="max-w-4xl mx-auto">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium theme-text-primary">相关设定</h3>
-              <a-button type="primary" @click="showAddSettingModal = true">
-                <PlusOutlined />
-                添加设定
-              </a-button>
-            </div>
-
-            <div class="space-y-4">
-              <div
-                v-for="chapterSetting in chapter.settings"
-                :key="chapterSetting.settingId"
-                class="p-4 border theme-border rounded-lg"
-              >
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center space-x-2 mb-1">
-                      <a-tag :color="getSettingTypeColor(chapterSetting.setting.type)">
-                        {{ getSettingTypeText(chapterSetting.setting.type) }}
-                      </a-tag>
-                      <h4 class="font-medium theme-text-primary">{{ chapterSetting.setting.name }}</h4>
-                    </div>
-                    <p class="text-sm theme-text-primary mb-3">{{ chapterSetting.setting.description }}</p>
-                    <div>
-                      <h5 class="text-xs font-medium theme-text-primary mb-1">使用说明</h5>
-                      <a-textarea
-                        :value="chapterSetting.usage"
-                        @input="(e: Event) => updateSettingUsage(chapterSetting.settingId, (e.target as HTMLTextAreaElement).value)"
-                        :rows="2"
-                        placeholder="说明如何在本章节中使用这个设定..."
-                        size="small"
-                      />
-                    </div>
-                  </div>
-                  <a-button type="text" danger @click="removeSettingFromChapter(chapterSetting.settingId)">
-                    <DeleteOutlined />
-                  </a-button>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="chapter.settings.length === 0" class="text-center py-8 theme-text-primary">
-              <GlobalOutlined style="font-size: 48px; margin-bottom: 16px;" />
-              <p>暂无相关设定</p>
-              <a-button type="link" @click="showAddSettingModal = true">
-                添加第一个设定
-              </a-button>
-            </div>
-          </div>
-        </div>
-
         <!-- Workflow Tab -->
-        <div v-show="activeTab === 'workflow'" class="h-full p-6 overflow-y-auto">
-          <div class="max-w-4xl mx-auto">
-            <StatusFlowControl
-              entity-type="chapter"
-              :entity-id="chapter.id"
-              :current-status="chapter.status"
-              :novel-id="chapter.novelId"
-              :show-batch-actions="false"
-              :show-manual-change="true"
-              @status-changed="handleStatusChanged"
-            />
-          </div>
-        </div>
-
-        <!-- Illustrations Tab -->
-        <div v-if="activeTab === 'default'" class="h-full p-6 overflow-y-auto">
-          <!-- Default content -->
-        </div>
-        <div v-else-if="activeTab === 'illustrations'" class="h-full p-6 overflow-y-auto">
-          <div class="max-w-4xl mx-auto">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-medium theme-text-primary">插图标记</h3>
-              <a-button type="primary" @click="handleAddIllustration">
-                <PlusOutlined />
-                添加插图
-              </a-button>
-            </div>
-
-            <div class="space-y-4">
-              <div
-                v-for="(illustration, index) in chapter.illustrations"
-                :key="index"
-                class="p-4 border theme-border rounded-lg"
-              >
-                <a-row :gutter="16">
-                  <a-col :span="6">
-                    <a-form-item label="位置">
-                      <a-select
-                        :value="illustration.position"
-                        @change="(value: string) => updateIllustration(index, { ...illustration, position: value as Illustration['position'] })"
-                        placeholder="选择位置"
-                      >
-                        <a-select-option value="beginning">章节开头</a-select-option>
-                        <a-select-option value="middle">章节中间</a-select-option>
-                        <a-select-option value="end">章节结尾</a-select-option>
-                        <a-select-option value="custom">自定义</a-select-option>
-                      </a-select>
-                    </a-form-item>
-                  </a-col>
-                  <a-col :span="16">
-                    <a-form-item label="描述">
-                      <a-textarea
-                        :value="illustration.description"
-                        @input="(e: Event) => updateIllustration(index, { ...illustration, description: (e.target as HTMLTextAreaElement).value })"
-                        :rows="2"
-                        placeholder="描述插图内容..."
-                      />
-                    </a-form-item>
-                  </a-col>
-                  <a-col :span="2" class="flex items-end">
-                    <a-button type="text" danger @click="removeIllustration(index)">
-                      <DeleteOutlined />
-                    </a-button>
-                  </a-col>
-                </a-row>
-                <div v-if="illustration.position === 'custom'" class="mt-2">
-                  <a-form-item label="段落位置">
-                    <a-input-number
-                      :value="illustration.customPosition"
-                      @change="(value: number) => updateIllustration(index, { ...illustration, customPosition: value })"
-                      placeholder="段落号"
-                      :min="1"
-                    />
-                  </a-form-item>
-                </div>
-              </div>
-
-              <div v-if="chapter.illustrations.length === 0" class="text-center py-8 theme-text-primary">
-                <PictureOutlined style="font-size: 48px; margin-bottom: 16px;" />
-                <p>暂无插图标记</p>
-                <a-button type="link" @click="handleAddIllustration">
-                  添加第一个插图
-                </a-button>
-              </div>
-            </div>
-          </div>
+        <div v-else-if="activeTab === 'workflow'" class="p-6">
+          <StatusFlowControl
+            entity-type="chapter"
+            :entity-id="chapter.id"
+            :current-status="chapter.status"
+            :novel-id="chapter.novelId"
+            :show-batch-actions="false"
+            :show-manual-change="true"
+            @status-changed="handleStatusChanged"
+          />
         </div>
 
         <!-- Consistency Check Tab -->
-        <div v-else-if="activeTab === 'consistency'" class="h-full p-6 overflow-y-auto">
+        <div v-else-if="activeTab === 'consistency'" class="p-6">
           <div class="max-w-6xl mx-auto">
             <!-- 检查操作栏 -->
             <div class="theme-bg-container border theme-border rounded-lg p-4 mb-6">
@@ -735,6 +530,86 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <div class="w-80 border-l theme-border overflow-y-auto theme-bg-container">
+        <div class="p-4">
+          <h3 class="text-lg font-medium theme-text-primary mb-4">预览与统计</h3>
+
+          <!-- 大纲预览 -->
+          <a-collapse :bordered="false" class="mb-4" default-active-key="outlinePreview">
+            <a-collapse-panel key="outlinePreview" header="大纲预览">
+              <div class="markdown-novel text-sm" v-html="outlineRenderedHtml"></div>
+              <div class="mt-3 p-2 theme-bg-elevated rounded text-xs">
+                <div class="space-y-1">
+                  <div>字数：{{ outlineWordCount }}</div>
+                  <div>段落：{{ outlineParagraphCount }}</div>
+                  <div v-if="outlineHeadings.length > 0">标题：{{ outlineHeadings.length }}</div>
+                </div>
+              </div>
+            </a-collapse-panel>
+          </a-collapse>
+
+          <!-- 正文统计 -->
+          <a-collapse :bordered="false" class="mb-4" default-active-key="contentStats">
+            <a-collapse-panel key="contentStats" header="正文统计">
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-sm theme-text-primary">当前字数</span>
+                  <span class="font-medium">{{ contentWordCount }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-sm theme-text-primary">目标字数</span>
+                  <span class="font-medium">{{ targetWordCount }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-sm theme-text-primary">完成度</span>
+                  <span class="font-medium">{{ Math.min(100, Math.round((contentWordCount / targetWordCount) * 100)) }}%</span>
+                </div>
+                <div class="mt-2">
+                  <a-progress
+                    :percent="Math.min(100, Math.round((contentWordCount / targetWordCount) * 100))"
+                    :show-info="false"
+                    size="small"
+                  />
+                </div>
+              </div>
+            </a-collapse-panel>
+          </a-collapse>
+
+          <!-- 一致性检查 -->
+          <a-collapse :bordered="false" default-active-key="consistency">
+            <a-collapse-panel key="consistency" header="一致性检查">
+              <div class="space-y-2">
+                <div class="text-center p-2 theme-bg-elevated rounded">
+                  <div class="text-lg font-bold" :style="{ color: healthGrade.color }">
+                    {{ healthScore }}
+                  </div>
+                  <div class="text-xs theme-text-primary">健康度评分</div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div class="p-2 rounded consistency-stat-high">
+                    <div class="text-sm font-bold consistency-high-text">{{ severityCounts.high }}</div>
+                    <div class="text-xs">严重</div>
+                  </div>
+                  <div class="p-2 rounded consistency-stat-medium">
+                    <div class="text-sm font-bold consistency-medium-text">{{ severityCounts.medium }}</div>
+                    <div class="text-xs">中等</div>
+                  </div>
+                  <div class="p-2 rounded consistency-stat-low">
+                    <div class="text-sm font-bold consistency-low-text">{{ severityCounts.low }}</div>
+                    <div class="text-xs">轻微</div>
+                  </div>
+                </div>
+                <a-button block size="small" @click="performConsistencyCheck" :loading="consistencyChecking">
+                  <CheckCircleOutlined />
+                  重新检查
+                </a-button>
+              </div>
+            </a-collapse-panel>
+          </a-collapse>
         </div>
       </div>
     </div>
@@ -1860,10 +1735,10 @@ const handleKeydown = (event: KeyboardEvent) => {
     }
   }
 
-  // Ctrl+1-6 切换标签页
-  if ((event.ctrlKey || event.metaKey) && event.key >= '1' && event.key <= '6') {
+  // Ctrl+1-4 切换标签页
+  if ((event.ctrlKey || event.metaKey) && event.key >= '1' && event.key <= '4') {
     event.preventDefault()
-    const tabKeys = ['outline', 'content', 'characters', 'settings', 'workflow', 'illustrations']
+    const tabKeys = ['outline', 'content', 'workflow', 'consistency']
     const tabIndex = parseInt(event.key) - 1
     if (tabIndex < tabKeys.length) {
       activeTab.value = tabKeys[tabIndex]

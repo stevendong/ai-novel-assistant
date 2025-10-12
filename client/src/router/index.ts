@@ -7,7 +7,7 @@ import InviteVerification from '@/views/InviteVerification.vue'
 import ProjectManagement from '@/components/novel/ProjectManagement.vue'
 import CharacterManagement from '@/components/character/CharacterManagement.vue'
 import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
-import ChapterEditor from '@/components/chapter/ChapterEditor.vue'
+import ChapterEditor from '@/components/chapter/ChapterEditorNotion.vue'
 import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
 import FileManagement from '@/components/file/FileManagement.vue'
@@ -163,14 +163,14 @@ router.beforeEach(async (to, from, next) => {
   const requiresGuest = to.matched.some(record => record.meta.requiresGuest)
   const requiresUnverified = to.matched.some(record => record.meta.requiresUnverified)
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
-  
+
   console.log('[Router] Navigation guard - Auth state:', {
     to: to.path,
     isAuthenticated: authStore.isAuthenticated,
-    user: authStore.user ? { 
-      id: authStore.user.id, 
+    user: authStore.user ? {
+      id: authStore.user.id,
       username: authStore.user.username,
-      inviteVerified: authStore.user.inviteVerified 
+      inviteVerified: authStore.user.inviteVerified
     } : null,
     requiresAuth,
     requiresGuest,
