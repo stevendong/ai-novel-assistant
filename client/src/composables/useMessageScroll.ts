@@ -71,20 +71,9 @@ export function useMessageScroll() {
    */
   const handleScroll = () => {
     if (!messagesContainer.value) return
-
     // 标记用户正在滚动
-    isUserScrolling.value = true
-
-    // 清除之前的定时器
-    if (scrollTimer.value) {
-      clearTimeout(scrollTimer.value)
-    }
-
-    // 防抖：50ms 后更新按钮状态
-    scrollTimer.value = setTimeout(() => {
-      updateButtonState()
-      isUserScrolling.value = false
-    }, 50)
+    updateButtonState()
+    isUserScrolling.value = false
   }
 
   /**
