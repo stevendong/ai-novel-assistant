@@ -28,6 +28,7 @@ export interface Character {
   personality?: string
   background?: string
   age?: string
+  gender?: string
   identity?: string
   values?: string
   fears?: string

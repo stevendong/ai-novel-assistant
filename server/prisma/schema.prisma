@@ -91,6 +91,7 @@ model Character {
   name           String
   description    String?
   age            String? // 年龄
+  gender         String? // 性别
   identity       String? // 身份/职业
   appearance     String?
   personality    String?

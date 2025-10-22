@@ -90,6 +90,9 @@
               <a-descriptions-item label="姓名">
                 {{ aiResult.name }}
               </a-descriptions-item>
+              <a-descriptions-item v-if="aiResult.gender" label="性别">
+                {{ aiResult.gender }}
+              </a-descriptions-item>
               <a-descriptions-item label="年龄">
                 {{ aiResult.age }}
               </a-descriptions-item>

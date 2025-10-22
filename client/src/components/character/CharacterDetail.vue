@@ -34,12 +34,16 @@
               <h1 class="header-title">{{ character.name }}</h1>
               <div class="header-meta">
                 <a-space :size="8">
-                  <span v-if="character.identity" class="meta-item">
-                    {{ character.identity }}
+                  <span v-if="character.gender" class="meta-item">
+                    {{ character.gender }}
                   </span>
-                  <a-divider v-if="character.identity && character.age" type="vertical" />
+                  <a-divider v-if="character.gender && character.age" type="vertical" />
                   <span v-if="character.age" class="meta-item">
                     {{ character.age }}
+                  </span>
+                  <a-divider v-if="(character.gender || character.age) && character.identity" type="vertical" />
+                  <span v-if="character.identity" class="meta-item">
+                    {{ character.identity }}
                   </span>
                 </a-space>
               </div>
@@ -96,7 +100,7 @@
           <!-- Basic Info Tab -->
           <a-tab-pane key="basic" tab="基本信息">
             <a-row :gutter="16">
-              <a-col :span="8">
+              <a-col :span="6">
                 <a-form-item label="角色姓名" required>
                   <a-input
                     v-model:value="formData.name"
@@ -106,7 +110,22 @@
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="8">
+              <a-col :span="6">
+                <a-form-item label="性别">
+                  <a-select
+                    v-model:value="formData.gender"
+                    placeholder="选择性别"
+                    :disabled="character.isLocked"
+                    @change="handleChange"
+                    allow-clear
+                  >
+                    <a-select-option value="男">男</a-select-option>
+                    <a-select-option value="女">女</a-select-option>
+                    <a-select-option value="其他">其他</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="6">
                 <a-form-item label="年龄">
                   <a-input
                     v-model:value="formData.age"
@@ -116,7 +135,7 @@
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="8">
+              <a-col :span="6">
                 <a-form-item label="身份/职业">
                   <a-input
                     v-model:value="formData.identity"
@@ -256,6 +275,7 @@ watch(() => props.character, (newChar) => {
     formData.value = {
       name: newChar.name,
       age: newChar.age,
+      gender: newChar.gender,
       identity: newChar.identity,
       description: newChar.description,
       appearance: newChar.appearance,

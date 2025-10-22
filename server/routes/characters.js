@@ -113,6 +113,7 @@ router.post('/', async (req, res) => {
       name,
       description,
       age,
+      gender,
       identity,
       appearance,
       personality,
@@ -133,6 +134,7 @@ router.post('/', async (req, res) => {
         name,
         description,
         age,
+        gender,
         identity,
         appearance,
         personality,
@@ -165,6 +167,7 @@ router.put('/:id', async (req, res) => {
       name,
       description,
       age,
+      gender,
       identity,
       appearance,
       personality,
@@ -194,6 +197,7 @@ router.put('/:id', async (req, res) => {
         name,
         description,
         age,
+        gender,
         identity,
         appearance,
         personality,
@@ -295,6 +299,7 @@ router.post('/:id/enhance', async (req, res) => {
 
 角色当前信息：
 - 姓名：${character.name}
+- 性别：${character.gender || '暂无'}
 - 年龄/身份：${character.age || '暂无'}
 - 描述：${character.description || '暂无'}
 - 外貌：${character.appearance || '暂无'}
@@ -308,6 +313,7 @@ router.post('/:id/enhance', async (req, res) => {
 请生成以下所有方面的完善建议（以JSON格式返回）：
 {
   "suggestions": {
+    "gender": "性别建议（如果未设定，根据角色名字和设定给出建议）",
     "age": "年龄设定或身份定位建议（50-100字）",
     "description": "角色总体描述建议（100-150字）",
     "appearance": "详细外貌特征建议（150-200字）",
@@ -364,6 +370,7 @@ ${enhanceAspects?.length > 0 ? `重点完善方面：${enhanceAspects.join('、'
         // 降级处理：提取文本内容
         enhancement = {
           suggestions: {
+            gender: character.gender || '建议根据角色姓名和设定明确性别',
             age: character.age || '建议设定具体年龄和身份定位',
             description: character.description || '建议添加角色总体描述',
             appearance: character.appearance || '建议添加详细外貌特征描述',
@@ -393,6 +400,9 @@ ${enhanceAspects?.length > 0 ? `重点完善方面：${enhanceAspects.join('、'
       // AI服务失败时的降级响应
       const fallbackEnhancement = {
         suggestions: {
+          gender: character.gender ?
+            `${character.gender}` :
+            '建议根据角色姓名和设定明确性别（男/女/其他）。',
           age: character.age ?
             `${character.age}\n\n建议完善：可以更具体地描述角色的社会地位、职业特点或人生阶段。` :
             '建议设定具体年龄和身份定位，考虑角色在故事中的作用。',
@@ -518,6 +528,7 @@ ${baseInfo?.description ? `已有描述：${baseInfo.description}` : ''}
 {
   "character": {
     "name": "建议的角色姓名（如果用户未提供或提供的姓名可以优化）",
+    "gender": "性别（男/女/其他，根据角色设定和名字判断）",
     "age": "具体年龄（如：25岁、三十有八、不详等）",
     "identity": "身份/职业/地位（如：私人侦探、青霄剑宗内门弟子、宫廷御医等）",
     "description": "角色总体描述，突出核心特质（80-120字）",
@@ -583,6 +594,7 @@ ${baseInfo?.description ? `\n现有描述：${baseInfo.description}` : ''}
         generationResult = {
           character: {
             name: baseInfo?.name || '待定角色',
+            gender: '男',
             age: '25岁',
             identity: '年轻且富有活力的冒险者',
             description: baseInfo?.description || '一个拥有独特魅力和复杂内心的角色',
@@ -607,6 +619,7 @@ ${baseInfo?.description ? `\n现有描述：${baseInfo.description}` : ''}
       const fallbackCharacter = {
         character: {
           name: baseInfo?.name || '待命名角色',
+          gender: '男',
           age: `${Math.floor(Math.random() * 30) + 20}岁`,
           identity: '正值人生的关键阶段',
           description: baseInfo?.description || '一个具有独特背景和鲜明个性的角色，在故事中扮演重要角色',
@@ -745,16 +758,17 @@ router.post('/import-card', upload.single('card'), async (req, res) => {
 ## 本系统的人物设定字段定义：
 
 1. **name** (必填) - 角色姓名
-2. **description** - 角色总体描述，简要概括角色的核心特质和背景
-3. **age** - 年龄/年龄段，如"25岁"、"二十出头"、"中年"等
-4. **identity** - 身份/职业/地位，如"私人侦探"、"宫廷御医"、"流浪剑客"
-5. **appearance** - 外貌特征，详细描述身高、体型、五官、发型、穿着打扮、气质等
-6. **personality** - 性格特征，描述性格特点、行为习惯、说话方式、情绪表达等
-7. **values** - 核心价值观，角色的信念、道德准则、重要的人生观念
-8. **fears** - 恐惧与弱点，害怕什么、有什么弱点、内心的冲突和阴影
-9. **background** - 背景故事，出身、成长经历、重要事件、人生转折点
-10. **skills** - 技能与能力，专业技能、特殊能力、天赋、实用技巧
-11. **relationships** - 人际关系（JSON对象格式），如 {"张三": {"type": "朋友", "importance": "高", "description": "青梅竹马"}}
+2. **gender** - 性别，男/女/其他
+3. **description** - 角色总体描述，简要概括角色的核心特质和背景
+4. **age** - 年龄/年龄段，如"25岁"、"二十出头"、"中年"等
+5. **identity** - 身份/职业/地位，如"私人侦探"、"宫廷御医"、"流浪剑客"
+6. **appearance** - 外貌特征，详细描述身高、体型、五官、发型、穿着打扮、气质等
+7. **personality** - 性格特征，描述性格特点、行为习惯、说话方式、情绪表达等
+8. **values** - 核心价值观，角色的信念、道德准则、重要的人生观念
+9. **fears** - 恐惧与弱点，害怕什么、有什么弱点、内心的冲突和阴影
+10. **background** - 背景故事，出身、成长经历、重要事件、人生转折点
+11. **skills** - 技能与能力，专业技能、特殊能力、天赋、实用技巧
+12. **relationships** - 人际关系（JSON对象格式），如 {"张三": {"type": "朋友", "importance": "高", "description": "青梅竹马"}}
 
 ## SillyTavern 特有字段（保留）：
 - firstMessage: 第一条消息/问候语
@@ -783,6 +797,7 @@ ${rawDataStr}
 3. **保持一致**：所有提取的信息必须与原始角色设定保持一致，不要编造
 4. **字段映射参考**：
    - name ← name
+   - gender ← 从 name, description, personality 中推断性别，或从 tags 中查找
    - description ← description（如果太长可以提炼核心）
    - age ← 从 description, personality, scenario 中提取年龄信息
    - identity ← 从 description, scenario 中提取身份/职业信息
@@ -804,6 +819,7 @@ ${rawDataStr}
 \`\`\`json
 {
   "name": "角色姓名",
+  "gender": "性别（男/女/其他）",
   "description": "角色总体描述",
   "age": "年龄",
   "identity": "身份/职业",

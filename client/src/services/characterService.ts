@@ -8,6 +8,7 @@ export interface CharacterCreateData {
   name: string
   description?: string
   age?: string
+  gender?: string
   identity?: string
   appearance?: string
   personality?: string
@@ -22,6 +23,7 @@ export interface CharacterUpdateData {
   name?: string
   description?: string
   age?: string
+  gender?: string
   identity?: string
   appearance?: string
   personality?: string
@@ -82,6 +84,7 @@ export interface CharacterGenerateResponse {
   character: {
     name?: string
     age?: string
+    gender?: string
     identity?: string
     description: string
     appearance: string

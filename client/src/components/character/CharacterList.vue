@@ -35,6 +35,13 @@
             {{ character.name }}
             <LockOutlined v-if="character.isLocked" class="lock-icon" />
           </div>
+          <div v-if="character.gender || character.age || character.identity" class="character-meta">
+            <span v-if="character.gender">{{ character.gender }}</span>
+            <span v-if="character.gender && character.age"> · </span>
+            <span v-if="character.age">{{ character.age }}</span>
+            <span v-if="(character.gender || character.age) && character.identity"> · </span>
+            <span v-if="character.identity">{{ character.identity }}</span>
+          </div>
           <div class="character-desc">
             {{ character.description || '暂无描述' }}
           </div>
@@ -150,6 +157,15 @@ const handleAddCharacter = () => {
 .lock-icon {
   font-size: 12px;
   color: var(--theme-text-secondary);
+}
+
+.character-meta {
+  font-size: 11px;
+  color: var(--theme-text-tertiary);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .character-desc {
