@@ -1,7 +1,7 @@
 <template>
   <div class="editor-main-area flex-1 flex flex-col overflow-hidden theme-bg-layout">
     <!-- 标题区域 (固定，不滚动) -->
-    <div class="title-area flex-shrink-0 px-8 pt-8 pb-6" :class="{ 'max-w-4xl mx-auto w-full': !isFocusMode }">
+    <div class="title-area flex-shrink-0 px-8 pt-8 pb-6" :class="{ 'mx-auto w-full': !isFocusMode }">
       <div class="flex items-center space-x-3 mb-4">
         <a-avatar size="large" class="bg-blue-500 shadow-sm">
           <FileTextOutlined />
@@ -44,7 +44,7 @@
 
     <!-- 编辑器区域 (可滚动) -->
     <div class="editor-container flex-1 overflow-y-auto">
-      <div class="editor-wrapper" :class="{ 'max-w-4xl mx-auto w-full px-8': !isFocusMode, 'px-16': isFocusMode }">
+      <div class="editor-wrapper" :class="{ 'mx-auto w-full px-8': !isFocusMode, 'px-16': isFocusMode }">
         <TiptapEditor
           ref="editor"
           v-model="localContent"
@@ -88,21 +88,6 @@
         </a-tooltip>
       </a-space>
     </div>
-
-    <!-- 专注模式切换 (非专注模式时显示) -->
-    <a-button
-      v-if="!isFocusMode"
-      class="focus-mode-toggle"
-      type="primary"
-      shape="circle"
-      size="large"
-      @click="$emit('toggle-focus')"
-      title="进入专注模式 (Ctrl+Enter)"
-    >
-      <template #icon>
-        <FullscreenOutlined />
-      </template>
-    </a-button>
   </div>
 </template>
 

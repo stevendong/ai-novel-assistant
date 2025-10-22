@@ -5,19 +5,19 @@
       <div class="toolbar-section">
         <!-- 基础格式工具 -->
         <div class="tool-group">
-          <a-button size="small" @click="editor?.chain().focus().toggleBold().run()" 
+          <a-button size="small" @click="editor?.chain().focus().toggleBold().run()"
             :class="{ 'is-active': editor?.isActive('bold') }" title="加粗 (Ctrl+B)">
             <template #icon><BoldOutlined /></template>
           </a-button>
-          <a-button size="small" @click="editor?.chain().focus().toggleItalic().run()" 
+          <a-button size="small" @click="editor?.chain().focus().toggleItalic().run()"
             :class="{ 'is-active': editor?.isActive('italic') }" title="斜体 (Ctrl+I)">
             <template #icon><ItalicOutlined /></template>
           </a-button>
-          <a-button size="small" @click="editor?.chain().focus().toggleUnderline().run()" 
+          <a-button size="small" @click="editor?.chain().focus().toggleUnderline().run()"
             :class="{ 'is-active': editor?.isActive('underline') }" title="下划线 (Ctrl+U)">
             <template #icon><UnderlineOutlined /></template>
           </a-button>
-          <a-button size="small" @click="editor?.chain().focus().toggleStrike().run()" 
+          <a-button size="small" @click="editor?.chain().focus().toggleStrike().run()"
             :class="{ 'is-active': editor?.isActive('strike') }" title="删除线">
             <template #icon><StrikethroughOutlined /></template>
           </a-button>
@@ -25,47 +25,31 @@
 
         <!-- 段落工具 -->
         <div class="tool-group">
-          <a-button size="small" @click="editor?.chain().focus().setParagraph().run()" 
+          <a-button size="small" @click="editor?.chain().focus().setParagraph().run()"
             :class="{ 'is-active': editor?.isActive('paragraph') }" title="段落">
             <template #icon><AlignLeftOutlined /></template>
           </a-button>
-          <a-button size="small" @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()" 
+          <a-button size="small" @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()"
             :class="{ 'is-active': editor?.isActive('heading', { level: 1 }) }" title="标题1">
             H1
           </a-button>
-          <a-button size="small" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()" 
+          <a-button size="small" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"
             :class="{ 'is-active': editor?.isActive('heading', { level: 2 }) }" title="标题2">
             H2
           </a-button>
-          <a-button size="small" @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()" 
+          <a-button size="small" @click="editor?.chain().focus().toggleHeading({ level: 3 }).run()"
             :class="{ 'is-active': editor?.isActive('heading', { level: 3 }) }" title="标题3">
             H3
           </a-button>
         </div>
 
-        <!-- 小说专用工具 -->
-        <div class="tool-group">
-          <a-button size="small" @click="insertDialogue" title="对话 (Ctrl+D)">
-            <template #icon><CommentOutlined /></template>
-          </a-button>
-          <a-button size="small" @click="insertSceneBreak" title="场景分隔 (Ctrl+Shift+B)">
-            <template #icon><BorderOutlined /></template>
-          </a-button>
-          <a-button size="small" @click="insertThought" title="内心独白 (Ctrl+T)">
-            <template #icon><BulbOutlined /></template>
-          </a-button>
-          <a-button size="small" @click="insertParagraphBreak" title="段落分隔 (Enter)">
-            <template #icon><EnterOutlined /></template>
-          </a-button>
-        </div>
-
         <!-- 编辑工具 -->
         <div class="tool-group">
-          <a-button size="small" @click="editor?.chain().focus().undo().run()" 
+          <a-button size="small" @click="editor?.chain().focus().undo().run()"
             :disabled="!editor?.can().undo()" title="撤销 (Ctrl+Z)">
             <template #icon><UndoOutlined /></template>
           </a-button>
-          <a-button size="small" @click="editor?.chain().focus().redo().run()" 
+          <a-button size="small" @click="editor?.chain().focus().redo().run()"
             :disabled="!editor?.can().redo()" title="重做 (Ctrl+Y)">
             <template #icon><RedoOutlined /></template>
           </a-button>
@@ -85,32 +69,13 @@
             {{ characterCount }} 字符
           </span>
         </div>
-
-        <!-- 视图控制 -->
-        <div class="tool-group">
-          <a-button 
-            size="small" 
-            :type="focusMode ? 'primary' : 'default'"
-            @click="toggleFocusMode" 
-            title="专注模式 (F11)"
-          >
-            <template #icon><EyeInvisibleOutlined /></template>
-          </a-button>
-          <a-button 
-            size="small" 
-            @click="formatDocument" 
-            title="格式化文档"
-          >
-            <template #icon><FormatPainterOutlined /></template>
-          </a-button>
-        </div>
       </div>
     </div>
 
     <!-- 编辑器主体 -->
     <div class="editor-container" :class="{ 'focus-mode': focusMode }">
-      <EditorContent 
-        :editor="editor" 
+      <EditorContent
+        :editor="editor"
         class="editor-content"
         :class="{
           'novel-writing-mode': true,
@@ -235,7 +200,7 @@ const editor = useEditor({
   onUpdate: ({ editor }) => {
     // 如果正在程序化更新，不触发change事件
     if (isUpdating.value) return
-    
+
     const content = editor.getHTML()
     hasUnsavedChanges.value = true
     emit('update:modelValue', content)
@@ -287,7 +252,7 @@ const writingProgress = computed(() => {
 // 方法
 const insertDialogue = () => {
   if (!editor.value) return
-  
+
   editor.value
     .chain()
     .focus()
@@ -297,7 +262,7 @@ const insertDialogue = () => {
 
 const insertSceneBreak = () => {
   if (!editor.value) return
-  
+
   editor.value
     .chain()
     .focus()
@@ -307,7 +272,7 @@ const insertSceneBreak = () => {
 
 const insertThought = () => {
   if (!editor.value) return
-  
+
   editor.value
     .chain()
     .focus()
@@ -317,7 +282,7 @@ const insertThought = () => {
 
 const insertParagraphBreak = () => {
   if (!editor.value) return
-  
+
   editor.value
     .chain()
     .focus()
@@ -528,7 +493,7 @@ const updateCursorPosition = () => {
 // 写作时间统计
 const startWritingTimer = () => {
   if (writingTimer.value) return
-  
+
   writingTimer.value = setInterval(() => {
     writingTime.value += 1
   }, 1000)
@@ -545,7 +510,7 @@ const formatTime = (seconds: number) => {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const secs = seconds % 60
-  
+
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
@@ -575,7 +540,7 @@ watch(() => props.modelValue, (newValue) => {
   if (editor.value && newValue !== undefined) {
     // 获取当前编辑器内容
     const currentContent = editor.value.getHTML()
-    
+
     // 标准化内容进行比较，避免空格、换行等微小差异导致的误判
     const normalizeHTML = (html: string) => {
       return html
@@ -586,19 +551,19 @@ watch(() => props.modelValue, (newValue) => {
         .replace(/\n\s*/g, ' ') // 将换行和后续空格替换为单个空格
         .trim()
     }
-    
+
     const normalizedNew = normalizeHTML(newValue || '')
     const normalizedCurrent = normalizeHTML(currentContent)
-    
+
     // 只有在内容真正不同时才更新
     if (normalizedNew !== normalizedCurrent) {
       // 暂时关闭更新事件，避免循环更新
       const wasUpdating = isUpdating.value
       isUpdating.value = true
-      
+
       // 设置内容，第二个参数false表示不触发onUpdate回调
       editor.value.commands.setContent(newValue || '', false)
-      
+
       // 恢复更新事件
       setTimeout(() => {
         isUpdating.value = wasUpdating
@@ -985,16 +950,16 @@ defineExpose({
   .tool-stats {
     display: none;
   }
-  
+
   :deep(.ProseMirror) {
     padding: 16px 20px;
     font-size: 14px;
   }
-  
+
   .editor-container.focus-mode {
     padding: 0 5%;
   }
-  
+
   :deep(.ProseMirror.focus-mode) {
     padding: 5% 8%;
   }

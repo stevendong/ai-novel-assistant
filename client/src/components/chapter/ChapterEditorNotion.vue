@@ -1,38 +1,7 @@
 <template>
-  <div class="notion-editor h-screen flex flex-col" :class="{ 'focus-mode-active': isFocusMode }" v-if="chapter">
-    <!-- 顶部栏 (专注模式时隐藏) -->
-    <EditorTopBar
-      v-if="!isFocusMode"
-      :chapter="chapter"
-      :has-unsaved-changes="hasUnsavedChanges"
-      :saving="saving"
-      :all-chapters="allChapters"
-      :current-index="currentChapterIndex"
-      @go-back="handleGoBack"
-      @go-previous="goToPreviousChapter"
-      @go-next="goToNextChapter"
-      @switch-chapter="switchToChapter"
-      @save="handleSaveChapter"
-      @toggle-focus="toggleFocusMode"
-    />
-
+  <div class="notion-editor flex flex-col" :class="{ 'focus-mode-active': isFocusMode }" v-if="chapter">
     <!-- 主内容区 -->
     <div class="flex-1 flex overflow-hidden">
-      <!-- 左侧栏 (专注模式时隐藏) -->
-      <EditorLeftSidebar
-        v-if="!isFocusMode"
-        v-model:visible="leftSidebarVisible"
-        :chapter="chapter"
-        :outline-markdown="outlineMarkdown"
-        @update:outline="setOutlineMarkdown"
-        @add-plot-point="handleAddPlotPoint"
-        @update-plot-point="updatePlotPoint"
-        @remove-plot-point="removePlotPoint"
-        @ai-outline="requestAIOutline"
-        @ai-content="handleAIGenerate"
-        @consistency-check="runConsistencyCheck"
-      />
-
       <!-- 主编辑区 -->
       <EditorMainArea
         ref="editorArea"
@@ -46,48 +15,7 @@
         @update:title="handleTitleChange"
         @toggle-focus="toggleFocusMode"
       />
-
-      <!-- 右侧栏 (专注模式时隐藏) -->
-      <EditorRightSidebar
-        v-if="!isFocusMode"
-        v-model:visible="rightSidebarVisible"
-        :chapter="chapter"
-        :active-panel="rightActivePanel"
-        :available-characters="availableCharacters"
-        :available-settings="availableSettings"
-        :consistency-issues="consistencyIssues"
-        @update:active-panel="rightActivePanel = $event"
-        @update-target-words="handleUpdateTargetWords"
-        @add-character="handleAddCharacter"
-        @remove-character="removeCharacterFromChapter"
-        @update-character-role="updateCharacterRole"
-        @add-setting="handleAddSetting"
-        @remove-setting="removeSettingFromChapter"
-        @update-setting-usage="updateSettingUsage"
-        @ai-action="handleAIAction"
-        @toggle-issue="toggleIssueResolved"
-      />
     </div>
-
-    <!-- 专注模式退出按钮 -->
-    <transition name="fade">
-      <div v-if="isFocusMode" class="focus-mode-exit">
-        <a-button
-          type="primary"
-          shape="circle"
-          size="large"
-          @click="toggleFocusMode"
-          title="退出专注模式 (Ctrl+Enter 或 Esc)"
-        >
-          <template #icon>
-            <FullscreenExitOutlined />
-          </template>
-        </a-button>
-        <div class="text-xs theme-text-secondary mt-2 text-center">
-          按 Esc 或 Ctrl+Enter 退出
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -554,7 +482,6 @@ onUnmounted(() => {
 .notion-editor {
   background-color: var(--theme-bg-container);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  height: 100vh;
   overflow: hidden;
 }
 
