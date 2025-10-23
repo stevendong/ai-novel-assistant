@@ -525,7 +525,7 @@ onBeforeUnmount(() => {
 .ai-text kbd {
   display: inline-block;
   padding: 2px 6px;
-  background: white;
+  background: var(--theme-bg-elevated);
   border: 1px solid #d9d9d9;
   border-radius: 3px;
   font-size: 11px;

@@ -11,37 +11,40 @@
 
     <!-- 建议列表 -->
     <div class="suggestion-items">
-      <div
-        v-for="(item, index) in items"
-        :key="item.id"
-        :class="['suggestion-item', { selected: index === selectedIndex }]"
-        @click="selectItem(index)"
-        @mouseenter="selectedIndex = index"
-      >
-        <!-- 序号 -->
-        <div class="item-number">{{ index + 1 }}</div>
+      <!-- 实际建议列表 -->
+      <template v-if="!loading && validItems.length > 0">
+        <div
+          v-for="(item, index) in validItems"
+          :key="item.id"
+          :class="['suggestion-item', { selected: index === selectedIndex }]"
+          @click="selectItem(index)"
+          @mouseenter="selectedIndex = index"
+        >
+          <!-- 序号 -->
+          <div class="item-number">{{ index + 1 }}</div>
 
-        <!-- 文本内容 -->
-        <div class="item-content">
-          <div class="item-text">{{ item.text }}</div>
+          <!-- 文本内容 -->
+          <div class="item-content">
+            <div class="item-text">{{ item.text }}</div>
 
-          <!-- 置信度指示器 -->
-          <div class="item-meta">
-            <div class="confidence-bar">
-              <div
-                class="confidence-fill"
-                :style="{ width: `${item.confidence * 100}%` }"
-              ></div>
+            <!-- 置信度指示器 -->
+            <div class="item-meta">
+              <div class="confidence-bar">
+                <div
+                  class="confidence-fill"
+                  :style="{ width: `${item.confidence * 100}%` }"
+                ></div>
+              </div>
+              <span class="confidence-text">
+                {{ Math.round(item.confidence * 100) }}%
+              </span>
             </div>
-            <span class="confidence-text">
-              {{ Math.round(item.confidence * 100) }}%
-            </span>
           </div>
         </div>
-      </div>
+      </template>
 
       <!-- 空状态 -->
-      <div v-if="!loading && items.length === 0" class="empty-state">
+      <div v-if="!loading && validItems.length === 0" class="empty-state">
         <a-empty
           :image="emptyImage"
           description="暂无建议"
@@ -92,14 +95,16 @@ const props = withDefaults(defineProps<Props>(), {
 const selectedIndex = ref(0)
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 
-// 选择项目
+const validItems = computed(() => {
+  return props.items.filter(item => item.id !== 'loading')
+})
+
 const selectItem = (index: number) => {
-  if (props.items[index]) {
-    props.command(props.items[index])
+  if (validItems.value[index]) {
+    props.command(validItems.value[index])
   }
 }
 
-// 键盘事件处理
 const onKeyDown = ({ event }: { event: KeyboardEvent }) => {
   if (event.key === 'ArrowUp') {
     event.preventDefault()
@@ -110,7 +115,7 @@ const onKeyDown = ({ event }: { event: KeyboardEvent }) => {
   if (event.key === 'ArrowDown') {
     event.preventDefault()
     selectedIndex.value = Math.min(
-      props.items.length - 1,
+      validItems.value.length - 1,
       selectedIndex.value + 1
     )
     return true
@@ -336,35 +341,164 @@ kbd {
   background: #bfbfbf;
 }
 
-/* 暗色主题 */
-:deep(.dark) .ai-suggestion-list {
+/* 暗色模式 */
+@media (prefers-color-scheme: dark) {
+  .ai-suggestion-list {
+    background: #1f1f1f;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.6),
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .suggestion-header {
+    background: linear-gradient(135deg, #5568d3 0%, #6a4c93 100%);
+  }
+
+  .suggestion-item {
+    border-bottom-color: #2a2a2a;
+  }
+
+  .suggestion-item:hover {
+    background: #2a2a2a;
+  }
+
+  .suggestion-item.selected {
+    background: linear-gradient(90deg, #252837 0%, #2a2a3a 100%);
+    border-left-color: #7c8adb;
+  }
+
+  .item-number {
+    background: #2a2d45;
+    color: #8b96eb;
+  }
+
+  .suggestion-item.selected .item-number {
+    background: #7c8adb;
+    color: white;
+  }
+
+  .item-text {
+    color: #e8e8e8;
+  }
+
+  .confidence-bar {
+    background: #2a2a2a;
+  }
+
+  .confidence-text {
+    color: #888;
+  }
+
+  .loading-state {
+    color: #888;
+  }
+
+  .suggestion-footer {
+    background: #1a1a1a;
+    border-top-color: #2a2a2a;
+  }
+
+  .hints {
+    color: #888;
+  }
+
+  kbd {
+    background: #2a2a2a;
+    border-color: #404040;
+    color: #e8e8e8;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .suggestion-items::-webkit-scrollbar-track {
+    background: #2a2a2a;
+  }
+
+  .suggestion-items::-webkit-scrollbar-thumb {
+    background: #404040;
+  }
+
+  .suggestion-items::-webkit-scrollbar-thumb:hover {
+    background: #505050;
+  }
+}
+
+.dark .ai-suggestion-list {
   background: #1f1f1f;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.2);
+    0 4px 16px rgba(0, 0, 0, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
-:deep(.dark) .suggestion-item {
-  border-bottom-color: #333;
+.dark .suggestion-header {
+  background: linear-gradient(135deg, #5568d3 0%, #6a4c93 100%);
 }
 
-:deep(.dark) .suggestion-item:hover,
-:deep(.dark) .suggestion-item.selected {
+.dark .suggestion-item {
+  border-bottom-color: #2a2a2a;
+}
+
+.dark .suggestion-item:hover {
   background: #2a2a2a;
 }
 
-:deep(.dark) .item-text {
+.dark .suggestion-item.selected {
+  background: linear-gradient(90deg, #252837 0%, #2a2a3a 100%);
+  border-left-color: #7c8adb;
+}
+
+.dark .item-number {
+  background: #2a2d45;
+  color: #8b96eb;
+}
+
+.dark .suggestion-item.selected .item-number {
+  background: #7c8adb;
+  color: white;
+}
+
+.dark .item-text {
   color: #e8e8e8;
 }
 
-:deep(.dark) .suggestion-footer {
+.dark .confidence-bar {
+  background: #2a2a2a;
+}
+
+.dark .confidence-text {
+  color: #888;
+}
+
+.dark .loading-state {
+  color: #888;
+}
+
+.dark .suggestion-footer {
   background: #1a1a1a;
-  border-top-color: #333;
+  border-top-color: #2a2a2a;
 }
 
-:deep(.dark) kbd {
+.dark .hints {
+  color: #888;
+}
+
+.dark kbd {
   background: #2a2a2a;
-  border-color: #444;
+  border-color: #404040;
   color: #e8e8e8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dark .suggestion-items::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+.dark .suggestion-items::-webkit-scrollbar-thumb {
+  background: #404040;
+}
+
+.dark .suggestion-items::-webkit-scrollbar-thumb:hover {
+  background: #505050;
 }
 </style>

@@ -40,7 +40,9 @@ interface CachedSuggestion {
 
 // 请求控制
 let abortController: AbortController | null = null
-let debounceTimer: NodeJS.Timeout | null = null
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+let isLoadingSuggestions = false
+let currentComponent: any = null
 
 export const AISuggestion = Extension.create<AISuggestionOptions>({
   name: 'aiSuggestion',
@@ -245,7 +247,6 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
         console.log('📡 开始获取AI建议...', { query })
 
         try {
-          // 获取当前文档内容作为上下文
           const context = editor.getText()
           const { from } = editor.state.selection
 
@@ -255,29 +256,55 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
             query
           })
 
-          // 检查缓存
           const cached = getCachedSuggestions(context)
           if (cached) {
             console.log('💾 使用缓存的建议:', cached.length, '条')
+            isLoadingSuggestions = false
             return cached
           }
 
-          // 调用 AI 服务获取建议
-          console.log('🌐 调用AI服务获取建议...')
-          const suggestions = await fetchSuggestions(
-            context,
-            from,
-            extension.options
-          )
+          console.log('✅ 设置加载状态并返回占位符')
+          isLoadingSuggestions = true
+          
+          const loadingItem: SuggestionItem = {
+            id: 'loading',
+            text: '正在生成建议...',
+            confidence: 0,
+            type: 'continuation'
+          }
 
-          console.log('✅ 获取到建议:', suggestions.length, '条', suggestions)
+          fetchSuggestions(context, from, extension.options).then(suggestions => {
+            console.log('✅ 获取到建议:', suggestions.length, '条', suggestions)
+            
+            if (suggestions.length > 0) {
+              cacheSuggestions(context, suggestions)
+              
+              isLoadingSuggestions = false
+              
+              if (currentComponent) {
+                console.log('🔄 直接更新组件 props')
+                currentComponent.updateProps({
+                  items: suggestions,
+                  loading: false
+                })
+              }
+            }
+          }).catch(error => {
+            console.error('❌ 获取AI建议失败:', error)
+            isLoadingSuggestions = false
+            
+            if (currentComponent) {
+              currentComponent.updateProps({
+                items: [],
+                loading: false
+              })
+            }
+          })
 
-          // 缓存结果
-          cacheSuggestions(context, suggestions)
-
-          return suggestions
+          return [loadingItem]
         } catch (error) {
           console.error('❌ 获取AI建议失败:', error)
+          isLoadingSuggestions = false
           return []
         }
       },
@@ -294,33 +321,47 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
               console.log('📍 触发范围:', props.range)
               console.log('📍 clientRect:', props.clientRect)
 
+              const isLoading = props.items?.length === 1 && props.items[0]?.id === 'loading'
+              console.log('🔄 加载状态:', isLoading)
+
               component = new VueRenderer(SuggestionList, {
                 props: {
                   items: props.items,
                   command: (item: SuggestionItem) => {
+                    if (item.id === 'loading') {
+                      console.log('⚠️ 加载中，忽略点击')
+                      return
+                    }
+
                     console.log('✨ 用户选择了建议:', item.text)
                     console.log('📍 Range 信息:', props.range)
 
-                    // 删除触发字符（斜杠）并插入建议文本
                     extension.editor.chain()
                       .focus()
                       .deleteRange(props.range)
                       .insertContent(item.text)
                       .run()
                   },
-                  loading: false
+                  loading: isLoading
                 },
                 editor: props.editor
               })
+
+              currentComponent = component
 
               if (!props.clientRect) {
                 console.warn('⚠️ clientRect 为空，无法显示弹窗')
                 return
               }
 
+              if (!component?.element) {
+                console.warn('⚠️ 组件元素为空，无法显示弹窗')
+                return
+              }
+
               // 创建 tippy 实例
               try {
-                popup = tippy('body', {
+                popup = tippy(document.body, {
                   getReferenceClientRect: props.clientRect,
                   appendTo: () => document.body,
                   content: component.element,
@@ -350,9 +391,12 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
               }
 
               try {
+                const isLoading = props.items?.length === 1 && props.items[0]?.id === 'loading'
+                console.log('🔄 更新建议列表, 数量:', props.items?.length, '加载状态:', isLoading)
+
                 component.updateProps({
                   items: props.items,
-                  loading: false
+                  loading: isLoading
                 })
 
                 if (!props.clientRect) return
@@ -362,7 +406,7 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
                   getReferenceClientRect: props.clientRect
                 })
 
-                console.log('🔄 建议列表已更新, 新数量:', props.items?.length)
+                console.log('✅ 建议列表已更新')
               } catch (error) {
                 console.error('❌ 更新弹窗失败:', error)
               }
@@ -402,6 +446,9 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
                   console.error('❌ 销毁组件失败:', error)
                 }
               }
+
+              currentComponent = null
+              isLoadingSuggestions = false
             }
           }
         }
@@ -515,3 +562,4 @@ function cacheSuggestions(context: string, suggestions: SuggestionItem[]) {
     suggestionCache.delete(entries[0][0])
   }
 }
+

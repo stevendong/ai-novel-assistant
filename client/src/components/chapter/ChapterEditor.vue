@@ -41,14 +41,16 @@
                 {{ getChapterStatusText(chapter.status) }}
               </a-tag>
 
-              <a-button
-                type="primary"
-                @click="handleSave"
-                :loading="saving"
-              >
-                <template #icon><SaveOutlined /></template>
-                保存
-              </a-button>
+              <a-tooltip :title="isMac ? '⌘+S' : 'Ctrl+S'">
+                <a-button
+                  type="primary"
+                  @click="handleSave"
+                  :loading="saving"
+                >
+                  <template #icon><SaveOutlined /></template>
+                  {{ saveButtonText }}
+                </a-button>
+              </a-tooltip>
 
               <a-dropdown>
                 <a-button>
@@ -459,7 +461,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -508,6 +510,14 @@ const activeTab = ref('basic')
 const saving = ref(false)
 const showStatusModal = ref(false)
 const selectedStatus = ref<ChapterStatus | undefined>(undefined)
+
+// 自动保存相关
+const autoSaveEnabled = ref(true)
+const autoSaveInterval = 30000 // 30秒
+const lastSavedData = ref<string>('')
+const saveButtonText = ref('保存')
+const isMac = ref(false)
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 // 角色相关
 const showAddCharacterModal = ref(false)
@@ -565,13 +575,26 @@ const loadAvailableData = async () => {
 }
 
 // 保存章节
-const handleSave = async () => {
+const handleSave = async (isAutoSave = false) => {
   if (!formData.value.title.trim()) {
-    message.error('请输入章节标题')
+    if (!isAutoSave) {
+      message.error('请输入章节标题')
+    }
+    return
+  }
+
+  // 检查数据是否有变化
+  const currentData = JSON.stringify(formData.value)
+  if (currentData === lastSavedData.value) {
+    if (!isAutoSave) {
+      message.info('没有需要保存的更改')
+    }
     return
   }
 
   saving.value = true
+  saveButtonText.value = '保存中...'
+  
   try {
     const updated = await chapterService.updateChapter(props.chapterId, {
       title: formData.value.title,
@@ -583,11 +606,25 @@ const handleSave = async () => {
     })
 
     chapter.value = updated
-    message.success('保存成功')
+    lastSavedData.value = currentData
+    
+    if (isAutoSave) {
+      saveButtonText.value = '已自动保存'
+      setTimeout(() => {
+        saveButtonText.value = '保存'
+      }, 2000)
+    } else {
+      message.success('保存成功')
+      saveButtonText.value = '保存'
+    }
+    
     emit('saved', updated)
   } catch (error) {
     console.error('Failed to save chapter:', error)
-    message.error('保存失败')
+    if (!isAutoSave) {
+      message.error('保存失败')
+    }
+    saveButtonText.value = '保存'
   } finally {
     saving.value = false
   }
@@ -821,10 +858,69 @@ const getConsistencyTypeText = (type: string) => {
   return texts[type as keyof typeof texts] || type
 }
 
+// 自动保存逻辑
+const startAutoSave = () => {
+  if (!autoSaveEnabled.value) return
+  
+  // 清除之前的定时器
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer)
+  }
+  
+  // 设置新的定时器
+  autoSaveTimer = setTimeout(() => {
+    handleSave(true)
+  }, autoSaveInterval)
+}
+
+// 监听数据变化，触发自动保存
+watch(
+  () => formData.value,
+  () => {
+    if (autoSaveEnabled.value && lastSavedData.value) {
+      startAutoSave()
+    }
+  },
+  { deep: true }
+)
+
+// 键盘快捷键保存
+const handleKeyDown = (e: KeyboardEvent) => {
+  // Ctrl+S (Windows/Linux) 或 Cmd+S (Mac)
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault()
+    handleSave(false)
+  }
+}
+
+// 检测操作系统
+const detectOS = () => {
+  isMac.value = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+}
+
 // 生命周期
 onMounted(() => {
   loadChapter()
   loadAvailableData()
+  detectOS()
+  
+  // 添加键盘事件监听
+  window.addEventListener('keydown', handleKeyDown)
+  
+  // 初始化最后保存的数据
+  setTimeout(() => {
+    lastSavedData.value = JSON.stringify(formData.value)
+  }, 1000)
+})
+
+onBeforeUnmount(() => {
+  // 清除定时器
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer)
+  }
+  
+  // 移除键盘事件监听
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
