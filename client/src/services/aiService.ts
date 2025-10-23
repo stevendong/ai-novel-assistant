@@ -29,6 +29,7 @@ export interface OutlineGenerationParams {
   style?: string
   pacing?: string
   conflict?: string
+  signal?: AbortSignal
 }
 
 export interface OutlineData {
@@ -52,6 +53,7 @@ export interface ChapterOutlineParams {
   targetWords?: number
   previousChapterSummary?: string
   nextChapterPlan?: string
+  signal?: AbortSignal
 }
 
 // 内容段落结构
@@ -105,6 +107,7 @@ export interface SuggestionParams {
   cursorPosition: number
   count?: number
   maxLength?: number
+  signal?: AbortSignal
 }
 
 // AI建议响应
@@ -123,6 +126,12 @@ export interface SuggestionResponse {
 class AIService {
   // 通用AI对话
   async chat(novelId: string, message: string, context = {}, options = {}): Promise<AIResponse> {
+    const config: any = {}
+    
+    if ((options as any).signal) {
+      config.signal = (options as any).signal
+    }
+
     const response = await api.post(`${API_BASE}/ai/chat`, {
       novelId,
       message,
@@ -130,7 +139,7 @@ class AIService {
       type: (options as any).type || 'general',
       provider: (options as any).provider,
       model: (options as any).model
-    })
+    }, config)
 
     return response.data
   }
@@ -227,7 +236,8 @@ class AIService {
       settings = [],
       style = 'modern',
       pacing = 'medium',
-      conflict = 'medium'
+      conflict = 'medium',
+      signal
     } = params
 
     const prompt = this.buildOutlinePrompt({
@@ -248,7 +258,8 @@ class AIService {
       outlineGeneration: true
     }, {
       type: 'creative',
-      taskType: 'creative'
+      taskType: 'creative',
+      signal
     })
 
     console.log('AI响应结构:', response)
@@ -280,7 +291,8 @@ class AIService {
       settings = [],
       targetWords = 2000,
       previousChapterSummary = '',
-      nextChapterPlan = ''
+      nextChapterPlan = '',
+      signal
     } = params
 
     const prompt = this.buildChapterOutlinePrompt({
@@ -300,7 +312,8 @@ class AIService {
       chapterOutlineGeneration: true
     }, {
       type: 'creative',
-      taskType: 'creative'
+      taskType: 'creative',
+      signal
     })
 
     console.log('章节大纲AI响应:', response)
@@ -871,6 +884,7 @@ ${description}
     style?: string
     characters?: any[]
     settings?: any[]
+    signal?: AbortSignal
   }): Promise<AIResponse> {
     const {
       novelId,
@@ -880,7 +894,8 @@ ${description}
       targetLength = 2000,
       style = 'modern',
       characters = [],
-      settings = []
+      settings = [],
+      signal
     } = params
 
     const prompt = this.buildContentPrompt({
@@ -899,7 +914,8 @@ ${description}
       contentGeneration: true
     }, {
       type: 'creative',
-      taskType: 'content_generation'
+      taskType: 'content_generation',
+      signal
     })
 
     return response
@@ -989,7 +1005,8 @@ ${existingContent.slice(0, 500)}...
       context,
       cursorPosition,
       count = 3,
-      maxLength = 100
+      maxLength = 100,
+      signal
     } = params
 
     const startTime = Date.now()
@@ -1002,7 +1019,8 @@ ${existingContent.slice(0, 500)}...
         suggestionGeneration: true
       }, {
         type: 'creative',
-        taskType: 'suggestion'
+        taskType: 'suggestion',
+        signal
       })
 
       const parsed = this.parseSuggestionResponse(response, count)

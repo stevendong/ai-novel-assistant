@@ -98,8 +98,8 @@ class ApiClient {
           return Promise.reject(error)
         }
 
-        // 统一错误处理
-        if (!originalRequest?.skipErrorHandler) {
+        // 统一错误处理（跳过 AbortError）
+        if (!originalRequest?.skipErrorHandler && error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
           this.handleError(error)
         }
 
@@ -122,6 +122,11 @@ class ApiClient {
 
   // 统一错误处理
   private handleError(error: AxiosError<ApiErrorResponse>): void {
+    // 跳过用户主动取消的请求
+    if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+      return
+    }
+
     let errorMessage = '请求失败'
 
     if (error.response) {

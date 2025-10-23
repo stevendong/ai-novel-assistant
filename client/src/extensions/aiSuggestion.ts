@@ -209,8 +209,8 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
       // 允许空格
       allowSpaces: false,
 
-      // 不要求在行首
-      startOfLine: true,
+      // 允许在任意位置触发
+      startOfLine: false,
 
       // 决定何时显示建议
       allow: ({ editor, state, range }: any) => {
@@ -219,22 +219,28 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
           editorState: state.doc.content.size
         })
 
-        // 如果功能未启用，不显示
         if (!extension.options.enabled) {
           console.warn('❌ allow检查: 功能未启用')
           return false
         }
 
-        // 检查是否有足够的上下文
+        if (!editor.isEditable) {
+          console.warn('❌ allow检查: 编辑器不可编辑')
+          return false
+        }
+
         const text = state.doc.textBetween(0, range.from, '\n')
+        
         if (text.length < extension.options.minContextLength) {
           console.warn('❌ allow检查: 上下文长度不足', text.length, '<', extension.options.minContextLength)
           return false
         }
 
-        // 检查是否在编辑状态
-        if (!editor.isEditable) {
-          console.warn('❌ allow检查: 编辑器不可编辑')
+        const charBefore = text.slice(-1)
+        console.log('📝 斜杠前的字符:', charBefore ? `"${charBefore}"` : '(无)')
+        
+        if (charBefore && /[a-zA-Z0-9\u4e00-\u9fa5]/.test(charBefore)) {
+          console.warn('❌ allow检查: 斜杠前是字母或数字，不触发')
           return false
         }
 

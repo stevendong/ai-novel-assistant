@@ -64,6 +64,16 @@
           <span class="generating-subtitle">{{ generatingText }}</span>
         </div>
         <div class="progress-percentage">{{ progress }}%</div>
+        <a-button
+          type="default"
+          size="small"
+          danger
+          @click="handleCancel"
+          class="cancel-button"
+        >
+          <template #icon><CloseCircleOutlined /></template>
+          取消
+        </a-button>
       </div>
 
       <!-- 自定义进度条 -->
@@ -157,7 +167,8 @@ import {
   ThunderboltOutlined,
   ForwardOutlined,
   SettingOutlined,
-  ClearOutlined
+  ClearOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons-vue'
 import { aiService } from '@/services/aiService'
 
@@ -197,6 +208,8 @@ const generating = ref(false)
 const generatingText = ref('AI正在准备创作...')
 const progress = ref(0)
 const showOptionsModal = ref(false)
+const abortController = ref<AbortController | null>(null)
+const isCancelled = ref(false)
 
 const options = ref<GenerateOptions>({
   targetLength: props.targetWordCount || 2000,
@@ -236,7 +249,9 @@ const handleGenerate = async () => {
       content: '当前已有内容，生成新内容将覆盖现有内容，是否继续？',
       okText: '确定',
       cancelText: '取消',
-      onOk: () => performGenerate(false)
+      onOk() {
+        performGenerate(false)
+      }
     })
   } else {
     await performGenerate(false)
@@ -257,10 +272,12 @@ const handleContinue = async () => {
 const performGenerate = async (isContinue: boolean) => {
   try {
     generating.value = true
+    isCancelled.value = false
     progress.value = 0
     generatingText.value = 'AI正在分析章节信息...'
 
-    // 准备参数
+    abortController.value = new AbortController()
+
     const params = {
       novelId: props.novelId,
       chapterId: props.chapterId,
@@ -269,19 +286,22 @@ const performGenerate = async (isContinue: boolean) => {
       targetLength: options.value.targetLength,
       style: options.value.style,
       characters: props.characters || [],
-      settings: props.settings || []
+      settings: props.settings || [],
+      signal: abortController.value.signal
     }
 
     progress.value = 20
     generatingText.value = 'AI正在构思情节...'
 
-    // 调用AI服务
+    if (isCancelled.value) return
+
     const response = await aiService.generateContent(params)
+
+    if (isCancelled.value) return
 
     progress.value = 60
     generatingText.value = '正在生成文字...'
 
-    // 处理响应
     let content = ''
     if (typeof response === 'string') {
       content = response
@@ -296,35 +316,43 @@ const performGenerate = async (isContinue: boolean) => {
       throw new Error('生成的内容为空')
     }
 
+    if (isCancelled.value) return
+
     progress.value = 80
     generatingText.value = '正在格式化内容...'
 
-    // 格式化内容
     const formattedContent = formatGeneratedContent(content)
+
+    if (isCancelled.value) return
 
     progress.value = 90
     generatingText.value = '正在呈现内容...'
 
-    // 根据是否续写决定如何更新内容
     const finalContent = isContinue
       ? props.existingContent + '\n\n' + formattedContent
       : formattedContent
 
-    // 使用打字机效果显示（可选）
     await typewriterEffect(finalContent, isContinue)
+
+    if (isCancelled.value) return
 
     progress.value = 100
 
-    // 发送生成完成事件
     emit('generated', finalContent)
 
     message.success(`内容${isContinue ? '续写' : '生成'}成功！`)
-  } catch (error) {
-    console.error('Failed to generate content:', error)
-    message.error(`内容${isContinue ? '续写' : '生成'}失败，请重试`)
+  } catch (error: any) {
+    if (error.name === 'AbortError' || isCancelled.value) {
+      console.log('Content generation cancelled')
+    } else {
+      console.error('Failed to generate content:', error)
+      message.error(`内容${isContinue ? '续写' : '生成'}失败，请重试`)
+    }
   } finally {
     generating.value = false
     progress.value = 0
+    abortController.value = null
+    isCancelled.value = false
   }
 }
 
@@ -348,25 +376,34 @@ const formatGeneratedContent = (content: string): string => {
 // 打字机效果
 const typewriterEffect = async (text: string, append: boolean = false): Promise<void> => {
   const chars = text.split('')
-  const delayPerChar = 10 // 较快的速度，适合长文本
+  const delayPerChar = 10
 
-  // 如果不是追加模式，先清空
   if (!append) {
     emit('update:content', '')
   }
 
   let currentText = append ? props.existingContent + '\n\n' : ''
 
-  // 为了避免太慢，每次添加多个字符
   const charsPerBatch = 5
   for (let i = 0; i < chars.length; i += charsPerBatch) {
+    if (isCancelled.value) {
+      break
+    }
+
     const batch = chars.slice(i, i + charsPerBatch).join('')
     currentText += batch
     emit('update:content', currentText)
 
-    // 每批次之间暂停一下
     await new Promise(resolve => setTimeout(resolve, delayPerChar))
   }
+}
+
+const handleCancel = () => {
+  if (abortController.value) {
+    abortController.value.abort()
+  }
+  isCancelled.value = true
+  generatingText.value = '正在取消...'
 }
 
 // 清空内容
@@ -385,11 +422,11 @@ const handleClear = () => {
   })
 }
 
-// 暴露方法供父组件调用
 defineExpose({
   generate: handleGenerate,
   continue: handleContinue,
-  clear: handleClear
+  clear: handleClear,
+  cancel: handleCancel
 })
 </script>
 
@@ -557,6 +594,27 @@ defineExpose({
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   min-width: 60px;
   text-align: right;
+}
+
+.cancel-button {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 77, 79, 0.9) !important;
+  border-color: rgba(255, 77, 79, 1) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4);
+}
+
+.cancel-button:active {
+  transform: translateY(0);
 }
 
 /* 自定义进度条 */
