@@ -132,56 +132,12 @@
           <!-- 角色关联 Tab -->
           <a-tab-pane key="characters" tab="角色关联">
             <div class="relations-section">
-              <div class="relations-header">
-                <h3>相关角色</h3>
-                <a-button
-                  type="primary"
-                  @click="showAddCharacterModal = true"
-                >
-                  <template #icon><PlusOutlined /></template>
-                  添加角色
-                </a-button>
-              </div>
-
-              <a-list
-                v-if="formData.characters.length > 0"
-                :data-source="formData.characters"
-                class="relations-list"
-              >
-                <template #renderItem="{ item }">
-                  <a-list-item>
-                    <a-list-item-meta
-                      :title="item.character.name"
-                      :description="item.character.description"
-                    >
-                      <template #avatar>
-                        <a-avatar :src="item.character.avatar">
-                          {{ item.character.name?.charAt(0) }}
-                        </a-avatar>
-                      </template>
-                    </a-list-item-meta>
-                    <template #actions>
-                      <a-select
-                        v-model:value="item.role"
-                        style="width: 100px"
-                        @change="handleCharacterRoleChange(item)"
-                      >
-                        <a-select-option value="main">主要</a-select-option>
-                        <a-select-option value="supporting">配角</a-select-option>
-                        <a-select-option value="mentioned">提及</a-select-option>
-                      </a-select>
-                      <a-button
-                        type="text"
-                        danger
-                        @click="removeCharacter(item.characterId)"
-                      >
-                        移除
-                      </a-button>
-                    </template>
-                  </a-list-item>
-                </template>
-              </a-list>
-              <a-empty v-else description="暂无关联角色" />
+              <ChapterCharacters
+                v-model="formData.characters"
+                :novel-id="chapter?.novelId || ''"
+                :chapter-id="props.chapterId"
+                @refresh="loadChapter"
+              />
             </div>
           </a-tab-pane>
 
@@ -279,40 +235,6 @@
       </a-card>
     </div>
 
-    <!-- 添加角色 Modal -->
-    <a-modal
-      v-model:open="showAddCharacterModal"
-      title="添加角色"
-      @ok="handleAddCharacter"
-    >
-      <a-form layout="vertical">
-        <a-form-item label="选择角色">
-          <a-select
-            v-model:value="selectedCharacterId"
-            placeholder="请选择角色"
-            show-search
-            option-filter-prop="label"
-          >
-            <a-select-option
-              v-for="char in availableCharacters"
-              :key="char.id"
-              :value="char.id"
-              :label="char.name"
-            >
-              {{ char.name }}
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="角色类型">
-          <a-select v-model:value="selectedCharacterRole">
-            <a-select-option value="main">主要</a-select-option>
-            <a-select-option value="supporting">配角</a-select-option>
-            <a-select-option value="mentioned">提及</a-select-option>
-          </a-select>
-        </a-form-item>
-      </a-form>
-    </a-modal>
-
     <!-- 添加设定 Modal -->
     <a-modal
       v-model:open="showAddSettingModal"
@@ -393,6 +315,7 @@ import TiptapEditor from './TiptapEditor.vue'
 import ContentAIGenerator from './ContentAIGenerator.vue'
 import ChapterBasicInfo from './ChapterBasicInfo.vue'
 import ChapterPlotPoints from './ChapterPlotPoints.vue'
+import ChapterCharacters from './ChapterCharacters.vue'
 import type { ChapterOutlineData } from '@/services/aiService'
 
 interface Props {
@@ -429,12 +352,6 @@ const lastSavedData = ref<string>('')
 const saveButtonText = ref('保存')
 const isMac = ref(false)
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
-
-// 角色相关
-const showAddCharacterModal = ref(false)
-const selectedCharacterId = ref<string>()
-const selectedCharacterRole = ref('mentioned')
-const availableCharacters = ref<Character[]>([])
 
 // 设定相关
 const showAddSettingModal = ref(false)
@@ -486,18 +403,6 @@ const loadChapter = async () => {
   } catch (error) {
     console.error('Failed to load chapter:', error)
     message.error('加载章节失败')
-  }
-}
-
-// 加载可用角色和设定
-const loadAvailableData = async () => {
-  if (!chapter.value) return
-
-  try {
-    // TODO: 从 API 加载小说的所有角色和设定
-    // 这里需要调用 characterService 和 settingService
-  } catch (error) {
-    console.error('Failed to load available data:', error)
   }
 }
 
@@ -595,54 +500,6 @@ const handleChangeStatus = async () => {
   } catch (error) {
     console.error('Failed to change status:', error)
     message.error('状态更新失败')
-  }
-}
-
-// 角色管理
-const handleAddCharacter = async () => {
-  if (!selectedCharacterId.value) {
-    message.error('请选择角色')
-    return
-  }
-
-  try {
-    await chapterService.addCharacterToChapter(
-      props.chapterId,
-      selectedCharacterId.value,
-      selectedCharacterRole.value
-    )
-    await loadChapter()
-    message.success('添加成功')
-    showAddCharacterModal.value = false
-    selectedCharacterId.value = undefined
-  } catch (error) {
-    console.error('Failed to add character:', error)
-    message.error('添加失败')
-  }
-}
-
-const handleCharacterRoleChange = async (item: ChapterCharacter) => {
-  try {
-    await chapterService.updateCharacterRole(
-      props.chapterId,
-      item.characterId,
-      item.role
-    )
-    message.success('更新成功')
-  } catch (error) {
-    console.error('Failed to update character role:', error)
-    message.error('更新失败')
-  }
-}
-
-const removeCharacter = async (characterId: string) => {
-  try {
-    await chapterService.removeCharacterFromChapter(props.chapterId, characterId)
-    await loadChapter()
-    message.success('移除成功')
-  } catch (error) {
-    console.error('Failed to remove character:', error)
-    message.error('移除失败')
   }
 }
 
@@ -816,12 +673,11 @@ const detectOS = () => {
 // 生命周期
 onMounted(() => {
   loadChapter()
-  loadAvailableData()
   detectOS()
-  
+
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown)
-  
+
   // 初始化最后保存的数据
   setTimeout(() => {
     lastSavedData.value = JSON.stringify(formData.value)
