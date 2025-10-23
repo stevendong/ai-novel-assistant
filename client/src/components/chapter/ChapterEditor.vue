@@ -156,44 +156,11 @@
           <!-- 一致性检查 Tab -->
           <a-tab-pane key="consistency" tab="一致性检查">
             <div class="consistency-section">
-              <div class="consistency-header">
-                <h3>一致性问题</h3>
-                <a-button type="primary" @click="handleCheckConsistency">
-                  <template #icon><CheckCircleOutlined /></template>
-                  检查一致性
-                </a-button>
-              </div>
-
-              <a-list
-                v-if="chapter.consistencyLog && chapter.consistencyLog.length > 0"
-                :data-source="chapter.consistencyLog"
-                class="consistency-list"
-              >
-                <template #renderItem="{ item }">
-                  <a-list-item>
-                    <a-list-item-meta :description="item.issue">
-                      <template #title>
-                        <a-space>
-                          <a-tag :color="getSeverityColor(item.severity)">
-                            {{ getSeverityText(item.severity) }}
-                          </a-tag>
-                          <span>{{ getConsistencyTypeText(item.type) }}</span>
-                        </a-space>
-                      </template>
-                    </a-list-item-meta>
-                    <template #actions>
-                      <a-button
-                        type="text"
-                        :disabled="item.resolved"
-                        @click="markResolved(item.id)"
-                      >
-                        {{ item.resolved ? '已解决' : '标记解决' }}
-                      </a-button>
-                    </template>
-                  </a-list-item>
-                </template>
-              </a-list>
-              <a-empty v-else description="暂无一致性问题" />
+              <ChapterConsistency
+                :model-value="chapter?.consistencyLog || []"
+                :chapter-id="props.chapterId"
+                @refresh="loadChapter"
+              />
             </div>
           </a-tab-pane>
         </a-tabs>
@@ -248,6 +215,7 @@ import ChapterBasicInfo from './ChapterBasicInfo.vue'
 import ChapterPlotPoints from './ChapterPlotPoints.vue'
 import ChapterCharacters from './ChapterCharacters.vue'
 import ChapterSettings from './ChapterSettings.vue'
+import ChapterConsistency from './ChapterConsistency.vue'
 import type { ChapterOutlineData } from '@/services/aiService'
 
 interface Props {
@@ -429,17 +397,6 @@ const handleChangeStatus = async () => {
   }
 }
 
-// 一致性检查
-const handleCheckConsistency = () => {
-  // TODO: 调用 AI 检查一致性
-  message.info('一致性检查功能开发中...')
-}
-
-const markResolved = async (issueId: string) => {
-  // TODO: 标记一致性问题为已解决
-  message.success('已标记为解决')
-}
-
 // 初始加载时计算字数
 watch(() => chapter.value, (newChapter) => {
   if (newChapter && newChapter.content) {
@@ -471,34 +428,6 @@ const handleContentGenerated = (content: string) => {
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN')
-}
-
-const getSeverityColor = (severity: string) => {
-  const colors = {
-    'low': 'default',
-    'medium': 'warning',
-    'high': 'error'
-  }
-  return colors[severity as keyof typeof colors] || 'default'
-}
-
-const getSeverityText = (severity: string) => {
-  const texts = {
-    'low': '低',
-    'medium': '中',
-    'high': '高'
-  }
-  return texts[severity as keyof typeof texts] || severity
-}
-
-const getConsistencyTypeText = (type: string) => {
-  const texts = {
-    'character': '角色一致性',
-    'setting': '设定一致性',
-    'timeline': '时间线',
-    'logic': '逻辑'
-  }
-  return texts[type as keyof typeof texts] || type
 }
 
 // 自动保存逻辑
@@ -688,23 +617,6 @@ onBeforeUnmount(() => {
 /* Consistency Section */
 .consistency-section {
   padding: 24px;
-}
-
-.consistency-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.consistency-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.consistency-list {
-  background: transparent;
 }
 
 /* Responsive */
