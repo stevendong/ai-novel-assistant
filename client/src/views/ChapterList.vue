@@ -85,36 +85,36 @@
                 </a-typography-link>
               </div>
             </template>
-            
+
             <template v-else-if="column.key === 'status'">
               <div class="status-cell">
                 <a-tag :color="getStatusColor(record.status)">
                   {{ getStatusText(record.status) }}
                 </a-tag>
-                <consistency-indicator 
+                <consistency-indicator
                   :chapter-id="record.id"
                   size="small"
                   class="ml-2"
                 />
               </div>
             </template>
-            
+
             <template v-else-if="column.key === 'wordCount'">
               <span class="word-count">
                 {{ getWordCount(record.content) }}
               </span>
             </template>
-            
+
             <template v-else-if="column.key === 'updatedAt'">
               <span class="update-time">
                 {{ formatDate(record.updatedAt) }}
               </span>
             </template>
-            
+
             <template v-else-if="column.key === 'actions'">
               <a-space>
-                <a-button 
-                  type="text" 
+                <a-button
+                  type="text"
                   size="small"
                   @click="editChapterInfo(record)"
                 >
@@ -123,8 +123,8 @@
                   </template>
                   编辑
                 </a-button>
-                <a-button 
-                  type="text" 
+                <a-button
+                  type="text"
                   size="small"
                   @click="duplicateChapter(record)"
                 >
@@ -139,8 +139,8 @@
                   cancel-text="取消"
                   @confirm="deleteChapterConfirm(record.id)"
                 >
-                  <a-button 
-                    type="text" 
+                  <a-button
+                    type="text"
                     size="small"
                     danger
                   >
@@ -166,32 +166,32 @@
       :confirm-loading="chaptersLoading"
     >
       <a-form layout="vertical" :model="addChapterForm">
-        <a-form-item 
-          label="章节标题" 
+        <a-form-item
+          label="章节标题"
           name="title"
           :rules="[{ required: true, message: '请输入章节标题' }]"
         >
-          <a-input 
-            v-model:value="addChapterForm.title" 
-            placeholder="请输入章节标题" 
+          <a-input
+            v-model:value="addChapterForm.title"
+            placeholder="请输入章节标题"
             :maxlength="100"
             show-count
           />
         </a-form-item>
-        
-        <a-form-item 
-          label="章节大纲" 
+
+        <a-form-item
+          label="章节大纲"
           name="outline"
         >
-          <a-textarea 
-            v-model:value="addChapterForm.outline" 
+          <a-textarea
+            v-model:value="addChapterForm.outline"
             placeholder="请输入章节大纲（可选）"
             :rows="4"
             :maxlength="500"
             show-count
           />
         </a-form-item>
-        
+
         <div class="chapter-info">
           <a-descriptions :column="2" size="small">
             <a-descriptions-item label="章节号">
@@ -214,34 +214,34 @@
       :confirm-loading="chaptersLoading"
     >
       <a-form layout="vertical" :model="editChapterForm" v-if="editChapterForm">
-        <a-form-item 
-          label="章节标题" 
+        <a-form-item
+          label="章节标题"
           name="title"
           :rules="[{ required: true, message: '请输入章节标题' }]"
         >
-          <a-input 
-            v-model:value="editChapterForm.title" 
-            placeholder="请输入章节标题" 
+          <a-input
+            v-model:value="editChapterForm.title"
+            placeholder="请输入章节标题"
             :maxlength="100"
             show-count
           />
         </a-form-item>
-        
-        <a-form-item 
-          label="章节大纲" 
+
+        <a-form-item
+          label="章节大纲"
           name="outline"
         >
-          <a-textarea 
-            v-model:value="editChapterForm.outline" 
+          <a-textarea
+            v-model:value="editChapterForm.outline"
             placeholder="请输入章节大纲（可选）"
             :rows="4"
             :maxlength="500"
             show-count
           />
         </a-form-item>
-        
-        <a-form-item 
-          label="状态" 
+
+        <a-form-item
+          label="状态"
           name="status"
         >
           <a-select v-model:value="editChapterForm.status">
@@ -251,7 +251,7 @@
             <a-select-option value="completed">已完成</a-select-option>
           </a-select>
         </a-form-item>
-        
+
         <div class="chapter-info">
           <a-descriptions :column="2" size="small">
             <a-descriptions-item label="章节号">
@@ -297,17 +297,16 @@ import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
 import { countValidWords } from '@/utils/textUtils'
 import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
-import BatchChapterCreator from '@/components/chapter/BatchChapterCreator.vue'
 
 const router = useRouter()
 const projectStore = useProjectStore()
-const { 
-  chapters, 
-  loading: chaptersLoading, 
+const {
+  chapters,
+  loading: chaptersLoading,
   pagination,
   nextChapterNumber,
-  loadChapters, 
-  createChapter, 
+  loadChapters,
+  createChapter,
   updateChapter,
   deleteChapter,
   changePage,
@@ -435,12 +434,12 @@ const handleAddChapter = async () => {
     message.error('请输入章节标题')
     return
   }
-  
+
   const newChapter = await createChapter({
     title: addChapterForm.value.title.trim(),
     outline: addChapterForm.value.outline.trim()
   })
-  
+
   if (newChapter) {
     addChapterVisible.value = false
     addChapterForm.value = {
@@ -464,18 +463,18 @@ const editChapterInfo = (chapter: Chapter) => {
 
 const handleEditChapter = async () => {
   if (!editChapterForm.value) return
-  
+
   if (!editChapterForm.value.title.trim()) {
     message.error('请输入章节标题')
     return
   }
-  
+
   const updated = await updateChapter(editChapterForm.value.id, {
     title: editChapterForm.value.title.trim(),
     outline: editChapterForm.value.outline || '',
     status: editChapterForm.value.status
   })
-  
+
   if (updated) {
     editChapterVisible.value = false
     editChapterForm.value = null
@@ -488,7 +487,7 @@ const duplicateChapter = async (chapter: Chapter) => {
     title: `${chapter.title}（副本）`,
     outline: chapter.outline || ''
   })
-  
+
   if (newChapter) {
     message.success('章节复制成功')
   }
@@ -535,7 +534,7 @@ const formatDate = (dateString: string) => {
   const date = new Date(dateString)
   const now = new Date()
   const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-  
+
   if (diffInHours < 1) {
     return '刚刚'
   } else if (diffInHours < 24) {
@@ -564,7 +563,7 @@ const handleTableChange = (pagination: any, filters: any, sorter: any) => {
   if (sorter && sorter.field) {
     const sortOrder = sorter.order === 'ascend' ? 'asc' : 'desc'
     let sortBy = sorter.field
-    
+
     // 映射前端字段到后端字段
     if (sortBy === 'title') {
       sortBy = 'title'
@@ -573,7 +572,7 @@ const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     } else if (sortBy === 'updatedAt') {
       sortBy = 'updatedAt'
     }
-    
+
     changeSort(sortBy, sortOrder)
   }
 }
@@ -706,13 +705,13 @@ const handleStatusFilter = (value: string) => {
   .chapter-list-page {
     padding: 16px;
   }
-  
+
   .header-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .header-actions {
     width: 100%;
     justify-content: flex-end;

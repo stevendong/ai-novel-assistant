@@ -1,4 +1,5 @@
 import type { Chapter, PlotPoint, Illustration, ChapterCharacter, ChapterSetting } from '@/types'
+import { ChapterStatus } from '@/constants/status'
 import { api, type ApiResponse } from '@/utils/api'
 
 const API_BASE = '/api'
@@ -17,7 +18,8 @@ export interface ChapterUpdateData {
   content?: string
   plotPoints?: PlotPoint[]
   illustrations?: Illustration[]
-  status?: 'planning' | 'writing' | 'reviewing' | 'completed'
+  status?: ChapterStatus
+  targetWordCount?: number
 }
 
 export interface AIOutlineRequest {

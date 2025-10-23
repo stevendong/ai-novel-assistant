@@ -7,7 +7,7 @@ import InviteVerification from '@/views/InviteVerification.vue'
 import ProjectManagement from '@/components/novel/ProjectManagement.vue'
 import CharacterManagement from '@/components/character/CharacterManagement.vue'
 import WorldSettingManagement from '@/components/worldsetting/WorldSettingManagement.vue'
-import ChapterEditor from '@/components/chapter/ChapterEditorNotion.vue'
+import ChapterEditorView from '@/views/ChapterEditorView.vue'
 import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
 import FileManagement from '@/components/file/FileManagement.vue'
@@ -80,9 +80,9 @@ const router = createRouter({
           }
         },
         {
-          path: '/chapter/:id?',
+          path: '/chapter/:id',
           name: 'chapter',
-          component: ChapterEditor,
+          component: ChapterEditorView,
           meta: {
             title: '章节编辑',
             icon: 'FileTextOutlined',
