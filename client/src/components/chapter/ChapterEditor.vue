@@ -144,47 +144,12 @@
           <!-- 设定关联 Tab -->
           <a-tab-pane key="settings" tab="设定关联">
             <div class="relations-section">
-              <div class="relations-header">
-                <h3>相关设定</h3>
-                <a-button
-                  type="primary"
-                  @click="showAddSettingModal = true"
-                >
-                  <template #icon><PlusOutlined /></template>
-                  添加设定
-                </a-button>
-              </div>
-
-              <a-list
-                v-if="formData.settings.length > 0"
-                :data-source="formData.settings"
-                class="relations-list"
-              >
-                <template #renderItem="{ item }">
-                  <a-list-item>
-                    <a-list-item-meta
-                      :title="item.setting.name"
-                      :description="item.usage || item.setting.description"
-                    >
-                      <template #avatar>
-                        <a-avatar :style="{ backgroundColor: getSettingTypeColor(item.setting.type) }">
-                          {{ getSettingTypeIcon(item.setting.type) }}
-                        </a-avatar>
-                      </template>
-                    </a-list-item-meta>
-                    <template #actions>
-                      <a-button
-                        type="text"
-                        danger
-                        @click="removeSetting(item.settingId)"
-                      >
-                        移除
-                      </a-button>
-                    </template>
-                  </a-list-item>
-                </template>
-              </a-list>
-              <a-empty v-else description="暂无关联设定" />
+              <ChapterSettings
+                v-model="formData.settings"
+                :novel-id="chapter?.novelId || ''"
+                :chapter-id="props.chapterId"
+                @refresh="loadChapter"
+              />
             </div>
           </a-tab-pane>
 
@@ -235,40 +200,6 @@
       </a-card>
     </div>
 
-    <!-- 添加设定 Modal -->
-    <a-modal
-      v-model:open="showAddSettingModal"
-      title="添加设定"
-      @ok="handleAddSetting"
-    >
-      <a-form layout="vertical">
-        <a-form-item label="选择设定">
-          <a-select
-            v-model:value="selectedSettingId"
-            placeholder="请选择设定"
-            show-search
-            option-filter-prop="label"
-          >
-            <a-select-option
-              v-for="setting in availableSettings"
-              :key="setting.id"
-              :value="setting.id"
-              :label="setting.name"
-            >
-              {{ setting.name }}
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="使用说明">
-          <a-textarea
-            v-model:value="selectedSettingUsage"
-            placeholder="描述如何在本章节中使用这个设定（可选）"
-            :rows="3"
-          />
-        </a-form-item>
-      </a-form>
-    </a-modal>
-
     <!-- 更改状态 Modal -->
     <a-modal
       v-model:open="showStatusModal"
@@ -316,6 +247,7 @@ import ContentAIGenerator from './ContentAIGenerator.vue'
 import ChapterBasicInfo from './ChapterBasicInfo.vue'
 import ChapterPlotPoints from './ChapterPlotPoints.vue'
 import ChapterCharacters from './ChapterCharacters.vue'
+import ChapterSettings from './ChapterSettings.vue'
 import type { ChapterOutlineData } from '@/services/aiService'
 
 interface Props {
@@ -352,12 +284,6 @@ const lastSavedData = ref<string>('')
 const saveButtonText = ref('保存')
 const isMac = ref(false)
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
-
-// 设定相关
-const showAddSettingModal = ref(false)
-const selectedSettingId = ref<string>()
-const selectedSettingUsage = ref('')
-const availableSettings = ref<WorldSetting[]>([])
 
 // 字数统计
 const wordCount = ref(0)
@@ -503,41 +429,6 @@ const handleChangeStatus = async () => {
   }
 }
 
-// 设定管理
-const handleAddSetting = async () => {
-  if (!selectedSettingId.value) {
-    message.error('请选择设定')
-    return
-  }
-
-  try {
-    await chapterService.addSettingToChapter(
-      props.chapterId,
-      selectedSettingId.value,
-      selectedSettingUsage.value
-    )
-    await loadChapter()
-    message.success('添加成功')
-    showAddSettingModal.value = false
-    selectedSettingId.value = undefined
-    selectedSettingUsage.value = ''
-  } catch (error) {
-    console.error('Failed to add setting:', error)
-    message.error('添加失败')
-  }
-}
-
-const removeSetting = async (settingId: string) => {
-  try {
-    await chapterService.removeSettingFromChapter(props.chapterId, settingId)
-    await loadChapter()
-    message.success('移除成功')
-  } catch (error) {
-    console.error('Failed to remove setting:', error)
-    message.error('移除失败')
-  }
-}
-
 // 一致性检查
 const handleCheckConsistency = () => {
   // TODO: 调用 AI 检查一致性
@@ -580,26 +471,6 @@ const handleContentGenerated = (content: string) => {
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
   return date.toLocaleString('zh-CN')
-}
-
-const getSettingTypeColor = (type: string) => {
-  const colors = {
-    'worldview': '#1890ff',
-    'location': '#52c41a',
-    'rule': '#faad14',
-    'culture': '#722ed1'
-  }
-  return colors[type as keyof typeof colors] || '#1890ff'
-}
-
-const getSettingTypeIcon = (type: string) => {
-  const icons = {
-    'worldview': '世',
-    'location': '地',
-    'rule': '规',
-    'culture': '文'
-  }
-  return icons[type as keyof typeof icons] || '设'
 }
 
 const getSeverityColor = (severity: string) => {
