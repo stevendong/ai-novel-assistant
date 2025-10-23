@@ -296,7 +296,6 @@ import type { Chapter } from '@/types'
 import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
 import { countValidWords } from '@/utils/textUtils'
-import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
 
 const router = useRouter()
 const projectStore = useProjectStore()

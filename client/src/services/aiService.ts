@@ -97,6 +97,29 @@ export interface PlotPoint {
   description: string
 }
 
+// AI建议生成参数
+export interface SuggestionParams {
+  novelId: string
+  chapterId: string
+  context: string
+  cursorPosition: number
+  count?: number
+  maxLength?: number
+}
+
+// AI建议响应
+export interface SuggestionResponse {
+  suggestions: Array<{
+    text: string
+    confidence: number
+    type: 'continuation' | 'completion' | 'alternative'
+  }>
+  metadata: {
+    processingTime: number
+    model: string
+  }
+}
+
 class AIService {
   // 通用AI对话
   async chat(novelId: string, message: string, context = {}, options = {}): Promise<AIResponse> {
@@ -954,6 +977,176 @@ ${existingContent.slice(0, 500)}...
 请直接输出小说正文内容，不要添加任何说明性文字或格式标记。内容应该可以直接插入到小说编辑器中使用。`
 
     return prompt
+  }
+
+  /**
+   * 生成智能续写建议
+   */
+  async generateSuggestions(params: SuggestionParams): Promise<SuggestionResponse> {
+    const {
+      novelId,
+      chapterId,
+      context,
+      cursorPosition,
+      count = 3,
+      maxLength = 100
+    } = params
+
+    const startTime = Date.now()
+
+    try {
+      const prompt = this.buildSuggestionPrompt(context, maxLength, count)
+
+      const response = await this.chat(novelId, prompt, {
+        chapterId,
+        suggestionGeneration: true
+      }, {
+        type: 'creative',
+        taskType: 'suggestion'
+      })
+
+      const parsed = this.parseSuggestionResponse(response, count)
+
+      return {
+        ...parsed,
+        metadata: {
+          ...parsed.metadata,
+          processingTime: Date.now() - startTime
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate suggestions:', error)
+      return {
+        suggestions: [],
+        metadata: {
+          processingTime: Date.now() - startTime,
+          model: 'error'
+        }
+      }
+    }
+  }
+
+  /**
+   * 构建建议生成提示词
+   */
+  private buildSuggestionPrompt(context: string, maxLength: number, count: number): string {
+    return `你是一个智能写作助手。请基于以下文本内容，生成${count}个可能的续写建议。
+
+**当前文本：**
+${context}
+
+**要求：**
+1. 每个建议不超过${maxLength}字
+2. 建议应该自然衔接上文
+3. 保持文风一致
+4. 提供不同风格的选项（如：情节推进、环境描写、对话等）
+5. 返回JSON格式
+
+**输出格式：**
+\`\`\`json
+{
+  "suggestions": [
+    {
+      "text": "续写内容1",
+      "type": "continuation",
+      "confidence": 0.9
+    },
+    {
+      "text": "续写内容2",
+      "type": "dialogue",
+      "confidence": 0.85
+    },
+    {
+      "text": "续写内容3",
+      "type": "description",
+      "confidence": 0.8
+    }
+  ]
+}
+\`\`\`
+
+请直接返回JSON，不要添加其他说明。`
+  }
+
+  /**
+   * 解析建议响应
+   */
+  private parseSuggestionResponse(response: any, count: number): SuggestionResponse {
+    try {
+      let content = ''
+      if (typeof response === 'string') {
+        content = response
+      } else if (response && typeof response === 'object') {
+        content = response.content || response.message || response.data || ''
+        if (typeof content !== 'string') {
+          content = JSON.stringify(response)
+        }
+      }
+
+      // 提取JSON
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) ||
+                       content.match(/\{[\s\S]*\}/)
+
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[1] || jsonMatch[0])
+
+        return {
+          suggestions: (parsed.suggestions || []).slice(0, count).map((s: any) => ({
+            text: s.text || '',
+            confidence: s.confidence || 0.8,
+            type: s.type || 'continuation'
+          })),
+          metadata: {
+            processingTime: 0,
+            model: 'default'
+          }
+        }
+      }
+
+      // 降级：如果无法解析JSON，尝试从文本中提取
+      // 按行分割，每行作为一个建议
+      const lines = content
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0 && !line.startsWith('#') && !line.startsWith('*'))
+        .slice(0, count)
+
+      if (lines.length > 0) {
+        return {
+          suggestions: lines.map(text => ({
+            text,
+            confidence: 0.7,
+            type: 'continuation' as const
+          })),
+          metadata: {
+            processingTime: 0,
+            model: 'fallback'
+          }
+        }
+      }
+
+      // 如果还是无法提取，将整个响应作为单个建议
+      return {
+        suggestions: [{
+          text: content.slice(0, maxLength).trim(),
+          confidence: 0.6,
+          type: 'continuation'
+        }],
+        metadata: {
+          processingTime: 0,
+          model: 'fallback'
+        }
+      }
+    } catch (error) {
+      console.error('Failed to parse suggestion response:', error)
+      return {
+        suggestions: [],
+        metadata: {
+          processingTime: 0,
+          model: 'error'
+        }
+      }
+    }
   }
 }
 

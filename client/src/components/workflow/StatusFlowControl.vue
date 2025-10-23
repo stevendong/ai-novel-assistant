@@ -1,4 +1,4 @@
-<template>
+1<template>
   <div class="status-flow-control">
     <!-- 状态进度显示 -->
     <div class="status-progress mb-4">

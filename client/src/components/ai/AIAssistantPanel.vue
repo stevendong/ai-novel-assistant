@@ -26,18 +26,8 @@
 
     <!-- Content Container -->
     <div v-if="!isMinimized" class="content-container">
-
-      <!-- Outline Generation Mode -->
-      <div v-if="currentMode === 'outline'" class="outline-mode">
-        <outline-generator
-            :novel-id="currentProject?.id"
-            @outline-applied="handleOutlineApplied"
-            @close="currentMode = 'chat'"
-        />
-      </div>
-
       <!-- Chat Container (for other modes) -->
-      <div v-else class="chat-container">
+      <div class="chat-container">
         <!-- No Session State -->
         <WelcomeScreen
             v-if="!chatStore.hasActiveSession"

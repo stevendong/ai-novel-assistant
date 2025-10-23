@@ -205,8 +205,12 @@
                 @generated="handleContentGenerated"
               />
               <TiptapEditor
+                v-if="chapter"
                 v-model="formData.content"
+                :novel-id="chapter.novelId"
+                :chapter-id="chapter.id"
                 :target-word-count="formData.targetWordCount"
+                :enable-ai-suggestion="true"
                 placeholder="开始编写章节内容..."
                 @update:word-count="handleWordCountUpdate"
               />

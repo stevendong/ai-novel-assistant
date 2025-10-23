@@ -1,0 +1,43 @@
+/* Tippy.js AI Suggestion Theme */
+
+/* AI建议主题 */
+.tippy-box[data-theme~='ai-suggestion'] {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.tippy-box[data-theme~='ai-suggestion'] .tippy-content {
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tippy-box[data-theme~='ai-suggestion'] .tippy-arrow {
+  display: none;
+}
+
+/* 进入动画 */
+.tippy-box[data-theme~='ai-suggestion'][data-animation='shift-away'][data-state='hidden'] {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.tippy-box[data-theme~='ai-suggestion'][data-animation='shift-away'][data-state='visible'] {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+/* 退出动画 */
+.tippy-box[data-theme~='ai-suggestion'][data-state='hidden'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .tippy-box[data-theme~='ai-suggestion'] {
+    max-width: 90vw !important;
+  }
+}

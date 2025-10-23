@@ -1,4 +1,6 @@
 import './assets/main.css'
+import 'tippy.js/dist/tippy.css'
+import './assets/tippy-theme.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

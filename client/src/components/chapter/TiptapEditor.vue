@@ -173,17 +173,24 @@
           进度: {{ Math.round((wordCount / targetWordCount) * 100) }}%
         </span>
       </div>
+
+      <!-- AI续写提示 -->
+      <div class="ai-hint" v-if="enableAiSuggestion && novelId && chapterId">
+        <ThunderboltOutlined class="ai-icon" />
+        <span class="ai-text">输入 <kbd>/</kbd> 查看建议，按 <kbd>Ctrl/Cmd+Enter</kbd> 快速续写</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, computed } from 'vue'
+import { ref, watch, onBeforeUnmount, computed, onMounted } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import Typography from '@tiptap/extension-typography'
+import { AISuggestion } from '@/extensions/aiSuggestion'
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -196,7 +203,8 @@ import {
   UndoOutlined,
   RedoOutlined,
   ClearOutlined,
-  FileWordOutlined
+  FileWordOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons-vue'
 import { countValidWords } from '@/utils/textUtils'
 
@@ -205,17 +213,30 @@ interface Props {
   placeholder?: string
   targetWordCount?: number
   editable?: boolean
+  novelId?: string
+  chapterId?: string
+  enableAiSuggestion?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
   placeholder: '开始编写章节内容...',
-  editable: true
+  editable: true,
+  novelId: '',
+  chapterId: '',
+  enableAiSuggestion: true
 })
 
 const emit = defineEmits(['update:modelValue', 'update:wordCount'])
 
 // 初始化编辑器
+console.log('📝 开始初始化 TiptapEditor')
+console.log('📝 AI建议配置:', {
+  novelId: props.novelId,
+  chapterId: props.chapterId,
+  enableAiSuggestion: props.enableAiSuggestion
+})
+
 const editor = useEditor({
   content: props.modelValue,
   editable: props.editable,
@@ -229,16 +250,39 @@ const editor = useEditor({
       placeholder: props.placeholder
     }),
     CharacterCount,
-    Typography
+    Typography,
+    // AI智能续写建议
+    AISuggestion.configure({
+      novelId: props.novelId || '',
+      chapterId: props.chapterId || '',
+      enabled: props.enableAiSuggestion,
+      autoTrigger: true,
+      triggerDelay: 800,
+      maxSuggestions: 3,
+      minContextLength: 50,
+      hotkey: 'Mod-Enter'  // 改为 Ctrl/Cmd+Enter
+    })
   ],
   onUpdate: ({ editor }) => {
     const html = editor.getHTML()
     emit('update:modelValue', html)
     emit('update:wordCount', wordCount.value)
   },
+  onCreate: ({ editor }) => {
+    console.log('✅ TiptapEditor 编辑器创建成功')
+    console.log('📋 已加载的扩展:', editor.extensionManager.extensions.map(ext => ext.name))
+  },
   editorProps: {
     attributes: {
       class: 'prose prose-sm max-w-none focus:outline-none'
+    },
+    handleKeyDown: (view, event) => {
+      console.log('⌨️ 按键事件:', event.key, 'Ctrl:', event.ctrlKey, 'Meta:', event.metaKey)
+      return false // 让 Tiptap 处理
+    },
+    handleTextInput: (view, from, to, text) => {
+      console.log('💬 文本输入:', text, 'from:', from, 'to:', to)
+      return false // 让 Tiptap 处理
     }
   }
 })
@@ -271,6 +315,17 @@ watch(() => props.editable, (value) => {
   if (editor.value) {
     editor.value.setEditable(value)
   }
+})
+
+// 组件挂载时输出调试信息
+onMounted(() => {
+  console.log('🎯 TiptapEditor 组件已挂载')
+  console.log('📋 Props 配置:', {
+    novelId: props.novelId,
+    chapterId: props.chapterId,
+    enableAiSuggestion: props.enableAiSuggestion,
+    editable: props.editable
+  })
 })
 
 // 清理
@@ -431,6 +486,54 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 
+/* AI续写提示 */
+.editor-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--theme-text-tertiary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(102, 126, 234, 0.05);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  transition: all 0.2s ease;
+}
+
+.ai-hint:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.2);
+}
+
+.ai-icon {
+  color: #667eea;
+  font-size: 14px;
+}
+
+.ai-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-text kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: monospace;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin: 0 2px;
+}
+
 /* 暗色主题支持 */
 :deep(.dark) .editor-content .ProseMirror {
   color: #e8e8e8;
@@ -439,5 +542,16 @@ onBeforeUnmount(() => {
 :deep(.dark) .editor-toolbar .is-active {
   background: #1f1f1f;
   color: #1890ff;
+}
+
+:deep(.dark) .ai-hint {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: rgba(102, 126, 234, 0.2);
+}
+
+:deep(.dark) .ai-text kbd {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e8e8e8;
 }
 </style>
