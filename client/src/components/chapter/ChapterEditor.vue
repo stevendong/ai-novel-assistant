@@ -80,115 +80,25 @@
         <a-tabs v-model:activeKey="activeTab" type="card">
           <!-- 基本信息 Tab -->
           <a-tab-pane key="basic" tab="基本信息">
-            <a-form
-              :model="formData"
-              layout="vertical"
-              class="editor-form"
-            >
-              <a-row :gutter="16">
-                <a-col :span="12">
-                  <a-form-item label="章节标题" required>
-                    <a-input
-                      v-model:value="formData.title"
-                      placeholder="请输入章节标题"
-                      :maxlength="100"
-                      show-count
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="6">
-                  <a-form-item label="章节号">
-                    <a-input-number
-                      v-model:value="formData.chapterNumber"
-                      :min="1"
-                      disabled
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-                <a-col :span="6">
-                  <a-form-item label="目标字数">
-                    <a-input-number
-                      v-model:value="formData.targetWordCount"
-                      :min="0"
-                      placeholder="不限"
-                      style="width: 100%"
-                    />
-                  </a-form-item>
-                </a-col>
-              </a-row>
+            <div class="editor-form">
+              <!-- 基本信息组件 -->
+              <ChapterBasicInfo
+                v-model="basicInfoData"
+                :novel-id="chapter?.novelId"
+                :chapter-id="chapter?.id"
+                :characters="formData.characters.map(c => c.character)"
+                :settings="formData.settings.map(s => s.setting)"
+                @update:plot-points="formData.plotPoints = $event"
+                @outline-generated="handleOutlineGenerated"
+              />
 
-              <a-form-item label="章节大纲">
-                <div class="outline-editor-wrapper">
-                  <OutlineAIGenerator
-                    v-if="chapter"
-                    :novel-id="chapter.novelId"
-                    :chapter-id="chapter.id"
-                    :chapter-number="formData.chapterNumber"
-                    :chapter-title="formData.title"
-                    :existing-outline="formData.outline"
-                    :characters="formData.characters.map(c => c.character)"
-                    :settings="formData.settings.map(s => s.setting)"
-                    :target-word-count="formData.targetWordCount"
-                    @update:outline="formData.outline = $event"
-                    @update:plot-points="formData.plotPoints = $event"
-                    @generated="handleOutlineGenerated"
-                  />
-                  <a-textarea
-                    v-model:value="formData.outline"
-                    placeholder="请输入章节大纲，或点击AI生成按钮一键生成"
-                    :rows="6"
-                    :maxlength="2000"
-                    show-count
-                  />
-                </div>
-              </a-form-item>
+              <a-divider />
 
-              <!-- 剧情要点 -->
-              <a-form-item label="剧情要点">
-                <div class="plot-points-section">
-                  <div
-                    v-for="(point, index) in formData.plotPoints"
-                    :key="index"
-                    class="plot-point-item"
-                  >
-                    <a-space style="width: 100%" align="start">
-                      <a-select
-                        v-model:value="point.type"
-                        style="width: 120px"
-                      >
-                        <a-select-option value="conflict">冲突</a-select-option>
-                        <a-select-option value="discovery">发现</a-select-option>
-                        <a-select-option value="emotion">情感</a-select-option>
-                        <a-select-option value="action">动作</a-select-option>
-                        <a-select-option value="dialogue">对话</a-select-option>
-                      </a-select>
-                      <a-input
-                        v-model:value="point.description"
-                        placeholder="描述这个情节要点"
-                        style="flex: 1"
-                      />
-                      <a-button
-                        type="text"
-                        danger
-                        @click="removePlotPoint(index)"
-                      >
-                        <template #icon><DeleteOutlined /></template>
-                      </a-button>
-                    </a-space>
-                  </div>
-                  <a-button
-                    type="dashed"
-                    block
-                    @click="addPlotPoint"
-                    class="add-plot-point-btn"
-                  >
-                    <template #icon><PlusOutlined /></template>
-                    添加剧情要点
-                  </a-button>
-                </div>
-              </a-form-item>
-            </a-form>
+              <!-- 剧情要点组件 -->
+              <ChapterPlotPoints
+                v-model="formData.plotPoints"
+              />
+            </div>
           </a-tab-pane>
 
           <!-- 正文内容 Tab -->
@@ -480,8 +390,9 @@ import { chapterService } from '@/services/chapterService'
 import { countValidWords } from '@/utils/textUtils'
 import { ChapterStatus, getChapterStatusText, getChapterStatusColor, getAllChapterStatuses } from '@/constants/status'
 import TiptapEditor from './TiptapEditor.vue'
-import OutlineAIGenerator from './OutlineAIGenerator.vue'
 import ContentAIGenerator from './ContentAIGenerator.vue'
+import ChapterBasicInfo from './ChapterBasicInfo.vue'
+import ChapterPlotPoints from './ChapterPlotPoints.vue'
 import type { ChapterOutlineData } from '@/services/aiService'
 
 interface Props {
@@ -537,6 +448,22 @@ const wordCount = ref(0)
 const handleWordCountUpdate = (count: number) => {
   wordCount.value = count
 }
+
+// 基本信息计算属性(用于双向绑定)
+const basicInfoData = computed({
+  get: () => ({
+    title: formData.value.title,
+    chapterNumber: formData.value.chapterNumber,
+    targetWordCount: formData.value.targetWordCount,
+    outline: formData.value.outline
+  }),
+  set: (value) => {
+    formData.value.title = value.title
+    formData.value.chapterNumber = value.chapterNumber
+    formData.value.targetWordCount = value.targetWordCount
+    formData.value.outline = value.outline
+  }
+})
 
 // 加载章节数据
 const loadChapter = async () => {
@@ -669,18 +596,6 @@ const handleChangeStatus = async () => {
     console.error('Failed to change status:', error)
     message.error('状态更新失败')
   }
-}
-
-// 剧情要点管理
-const addPlotPoint = () => {
-  formData.value.plotPoints.push({
-    type: 'action',
-    description: ''
-  })
-}
-
-const removePlotPoint = (index: number) => {
-  formData.value.plotPoints.splice(index, 1)
 }
 
 // 角色管理
@@ -1014,30 +929,6 @@ onBeforeUnmount(() => {
 
 .editor-form {
   padding: 24px;
-}
-
-/* Plot Points */
-.plot-points-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.plot-point-item {
-  width: 100%;
-}
-
-.add-plot-point-btn {
-  margin-top: 8px;
-}
-
-/* Outline Editor */
-.outline-editor-wrapper {
-  position: relative;
-}
-
-.outline-editor-wrapper :deep(.outline-ai-generator) {
-  margin-bottom: 8px;
 }
 
 /* Content Editor */
