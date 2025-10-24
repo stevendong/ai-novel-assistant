@@ -292,13 +292,34 @@ async function triggerInlineSuggestion(
   }
 
   const { state } = editor
+  const { doc } = state
   const text = state.doc.textBetween(0, position, '\n')
+
+  // 获取当前光标所在的节点（通常是段落）
+  const $pos = state.doc.resolve(position)
+  const currentNode = $pos.parent
+
+  // 计算当前节点内光标位置
+  const nodeStart = $pos.start($pos.depth)
+  const positionInNode = position - nodeStart
+
+  // 获取当前行光标后面的文本
+  const textAfterCursorInLine = currentNode.textContent.substring(positionInNode).trim()
 
   console.log('🚀 触发内联建议', {
     position,
     textLength: text.length,
+    currentNodeText: currentNode.textContent,
+    positionInNode,
+    textAfterCursorInLine,
     minContextLength: options.minContextLength
   })
+
+  // 如果当前行光标后面有文本，不触发建议
+  if (textAfterCursorInLine.length > 0) {
+    console.log('⏸️ 当前行光标后面有文本，跳过内联建议')
+    return
+  }
 
   // 检查上下文长度
   if (text.length < options.minContextLength) {
