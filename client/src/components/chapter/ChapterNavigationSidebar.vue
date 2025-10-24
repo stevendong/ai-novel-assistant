@@ -19,6 +19,20 @@
       </a-button>
     </div>
 
+    <!-- 新增按钮区域（固定，不滚动） -->
+    <div class="sidebar-add-section" v-if="!isCollapsed">
+      <a-button
+        type="primary"
+        size="small"
+        block
+        @click="showAddChapterModal"
+        class="create-chapter-btn"
+      >
+        <template #icon><PlusOutlined /></template>
+        新增章节
+      </a-button>
+    </div>
+
     <!-- 工具栏 -->
     <div class="sidebar-toolbar" v-if="!isCollapsed">
       <a-space direction="vertical" :size="8" style="width: 100%">
@@ -109,8 +123,20 @@
       </div>
     </div>
 
-    <!-- 折叠状态下的缩略列表 -->
-    <div class="chapter-mini-list" v-else>
+    <!-- 折叠状态下的新增按钮（固定） -->
+    <div class="sidebar-mini-add-section" v-else>
+      <a-tooltip :title="`新增章节 (${addChapterShortcut})`" placement="right">
+        <div
+          class="chapter-mini-add-btn"
+          @click="showAddChapterModal"
+        >
+          <PlusOutlined />
+        </div>
+      </a-tooltip>
+    </div>
+
+    <!-- 折叠状态下的章节列表 -->
+    <div class="chapter-mini-list" v-if="isCollapsed">
       <a-tooltip
         v-for="chapter in filteredChapters"
         :key="chapter.id"
@@ -128,12 +154,57 @@
         </div>
       </a-tooltip>
     </div>
+
+    <!-- 新增章节对话框 -->
+    <a-modal
+      v-model:open="addChapterVisible"
+      title="新增章节"
+      width="500px"
+      @ok="handleAddChapter"
+      :confirm-loading="creating"
+      @cancel="handleCancelAdd"
+    >
+      <a-form layout="vertical">
+        <a-form-item
+          label="章节标题"
+          :required="true"
+          :validate-status="titleError ? 'error' : ''"
+          :help="titleError"
+        >
+          <a-input
+            v-model:value="newChapterForm.title"
+            placeholder="请输入章节标题"
+            :maxlength="100"
+            show-count
+            @pressEnter="handleAddChapter"
+          />
+        </a-form-item>
+
+        <a-form-item label="章节大纲">
+          <a-textarea
+            v-model:value="newChapterForm.outline"
+            placeholder="请输入章节大纲（可选）"
+            :rows="4"
+            :maxlength="500"
+            show-count
+          />
+        </a-form-item>
+
+        <a-alert
+          message="提示"
+          :description="`新章节将自动编号为第 ${nextChapterNumber} 章，状态为'规划中'`"
+          type="info"
+          show-icon
+          style="margin-top: 8px"
+        />
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { Empty } from 'ant-design-vue'
+import { message, Empty } from 'ant-design-vue'
 import {
   BookOutlined,
   MenuFoldOutlined,
@@ -142,16 +213,20 @@ import {
   PlusOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
+import { chapterService } from '@/services/chapterService'
 
 interface Props {
   chapters: Chapter[]
   currentChapterId?: string
   loading?: boolean
+  novelId?: string
 }
 
 interface Emits {
   (e: 'select', chapter: Chapter): void
   (e: 'create'): void
+  (e: 'created', chapter: Chapter): void
+  (e: 'refresh'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -180,6 +255,25 @@ const searchText = ref('')
 const statusFilter = ref('')
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
 
+// 检测操作系统
+const isMac = computed(() => {
+  return navigator.platform.toUpperCase().indexOf('MAC') >= 0
+})
+
+// 快捷键提示文本
+const addChapterShortcut = computed(() => {
+  return isMac.value ? '⌘+N' : 'Ctrl+N'
+})
+
+// 新增章节相关状态
+const addChapterVisible = ref(false)
+const creating = ref(false)
+const titleError = ref('')
+const newChapterForm = ref({
+  title: '',
+  outline: ''
+})
+
 // 过滤后的章节列表
 const filteredChapters = computed(() => {
   let result = [...props.chapters]
@@ -203,6 +297,13 @@ const filteredChapters = computed(() => {
   }
 
   return result
+})
+
+// 下一个章节号
+const nextChapterNumber = computed(() => {
+  if (props.chapters.length === 0) return 1
+  const maxNumber = Math.max(...props.chapters.map(c => c.chapterNumber))
+  return maxNumber + 1
 })
 
 // 保存状态到 localStorage
@@ -238,6 +339,75 @@ const handleCreateChapter = () => {
   emit('create')
 }
 
+// 显示新增章节对话框
+const showAddChapterModal = () => {
+  if (!props.novelId) {
+    message.error('请先选择作品')
+    return
+  }
+
+  addChapterVisible.value = true
+  newChapterForm.value = {
+    title: '',
+    outline: ''
+  }
+  titleError.value = ''
+}
+
+// 取消新增
+const handleCancelAdd = () => {
+  addChapterVisible.value = false
+  newChapterForm.value = {
+    title: '',
+    outline: ''
+  }
+  titleError.value = ''
+}
+
+// 新增章节
+const handleAddChapter = async () => {
+  // 验证标题
+  if (!newChapterForm.value.title.trim()) {
+    titleError.value = '请输入章节标题'
+    return
+  }
+
+  if (!props.novelId) {
+    message.error('未找到作品ID')
+    return
+  }
+
+  creating.value = true
+  titleError.value = ''
+
+  try {
+    const newChapter = await chapterService.createChapter({
+      novelId: props.novelId,
+      title: newChapterForm.value.title.trim(),
+      chapterNumber: nextChapterNumber.value,
+      outline: newChapterForm.value.outline.trim()
+    })
+
+    message.success('章节创建成功')
+    addChapterVisible.value = false
+
+    // 重置表单
+    newChapterForm.value = {
+      title: '',
+      outline: ''
+    }
+
+    // 触发创建成功事件
+    emit('created', newChapter)
+    emit('refresh')
+  } catch (error) {
+    console.error('Failed to create chapter:', error)
+    message.error('章节创建失败')
+  } finally {
+    creating.value = false
+  }
+}
+
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
     planning: 'blue',
@@ -270,6 +440,11 @@ const getProgress = (chapter: Chapter) => {
   const current = getWordCount(chapter.content)
   return Math.min(100, Math.round((current / chapter.targetWordCount) * 100))
 }
+
+// 暴露方法供父组件调用
+defineExpose({
+  showAddChapterModal
+})
 </script>
 
 <style scoped>
@@ -372,17 +547,18 @@ const getProgress = (chapter: Chapter) => {
 }
 
 /* ============================================
-   工具栏区域
+   新增按钮区域（固定，不滚动）
    ============================================ */
-.sidebar-toolbar {
+.sidebar-add-section {
   padding: 12px;
   background: var(--theme-bg-container);
   border-bottom: 1px solid var(--theme-border);
+  flex-shrink: 0;
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* 新建章节按钮样式 */
-.sidebar-toolbar :deep(.create-chapter-btn) {
+.sidebar-add-section :deep(.create-chapter-btn) {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-active) 100%);
   border-color: transparent;
   color: #ffffff;
@@ -391,27 +567,38 @@ const getProgress = (chapter: Chapter) => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebar-toolbar :deep(.create-chapter-btn:hover) {
+.sidebar-add-section :deep(.create-chapter-btn:hover) {
   background: linear-gradient(135deg, var(--brand-primary-hover) 0%, var(--brand-primary) 100%);
   box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
   transform: translateY(-1px);
   border-color: transparent;
 }
 
-.sidebar-toolbar :deep(.create-chapter-btn:active) {
+.sidebar-add-section :deep(.create-chapter-btn:active) {
   background: linear-gradient(135deg, var(--brand-primary-active) 0%, var(--brand-primary) 100%);
   box-shadow: 0 2px 4px rgba(24, 144, 255, 0.25);
   transform: translateY(0);
   border-color: transparent;
 }
 
-.sidebar-toolbar :deep(.create-chapter-btn .anticon) {
+.sidebar-add-section :deep(.create-chapter-btn .anticon) {
   font-size: 14px;
   transition: transform 0.3s ease;
 }
 
-.sidebar-toolbar :deep(.create-chapter-btn:hover .anticon) {
+.sidebar-add-section :deep(.create-chapter-btn:hover .anticon) {
   transform: rotate(90deg);
+}
+
+/* ============================================
+   工具栏区域
+   ============================================ */
+.sidebar-toolbar {
+  padding: 12px;
+  background: var(--theme-bg-container);
+  border-bottom: 1px solid var(--theme-border);
+  flex-shrink: 0;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* ============================================
@@ -517,6 +704,55 @@ const getProgress = (chapter: Chapter) => {
 /* ============================================
    折叠状态 - 缩略视图
    ============================================ */
+
+/* 折叠状态下的新增按钮区域（固定） */
+.sidebar-mini-add-section {
+  padding: 8px;
+  background: var(--theme-bg-container);
+  border-bottom: 1px solid var(--theme-border);
+  flex-shrink: 0;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 折叠状态下的新增按钮 */
+.chapter-mini-add-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-active) 100%);
+  border: 2px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 16px;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.3);
+}
+
+.chapter-mini-add-btn:hover {
+  background: linear-gradient(135deg, var(--brand-primary-hover) 0%, var(--brand-primary) 100%);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.chapter-mini-add-btn:active {
+  background: linear-gradient(135deg, var(--brand-primary-active) 0%, var(--brand-primary) 100%);
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.35);
+  transform: scale(1.05);
+}
+
+.chapter-mini-add-btn .anticon {
+  transition: transform 0.3s ease;
+}
+
+.chapter-mini-add-btn:hover .anticon {
+  transform: rotate(90deg);
+}
+
+/* 折叠状态下的章节列表 */
 .chapter-mini-list {
   flex: 1;
   overflow-y: auto;
@@ -557,28 +793,25 @@ const getProgress = (chapter: Chapter) => {
 }
 
 /* ============================================
-   滚动条样式
+   滚动条样式 - 隐藏
    ============================================ */
 .chapter-list::-webkit-scrollbar,
 .chapter-mini-list::-webkit-scrollbar {
-  width: 6px;
+  width: 0px;
+  display: none;
 }
 
-.chapter-list::-webkit-scrollbar-track,
-.chapter-mini-list::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-  border-radius: 3px;
+.chapter-list {
+  /* Firefox */
+  scrollbar-width: none;
+  /* IE 和 Edge */
+  -ms-overflow-style: none;
 }
 
-.chapter-list::-webkit-scrollbar-thumb,
-.chapter-mini-list::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 3px;
-  transition: background 0.2s ease;
-}
-
-.chapter-list::-webkit-scrollbar-thumb:hover,
-.chapter-mini-list::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
+.chapter-mini-list {
+  /* Firefox */
+  scrollbar-width: none;
+  /* IE 和 Edge */
+  -ms-overflow-style: none;
 }
 </style>

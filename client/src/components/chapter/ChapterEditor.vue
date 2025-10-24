@@ -3,11 +3,15 @@
     <!-- 章节导航侧边栏 -->
     <ChapterNavigationSidebar
       v-if="!isFullscreen"
+      ref="sidebarRef"
       :chapters="allChapters"
       :current-chapter-id="props.chapterId"
+      :novel-id="chapter?.novelId"
       :loading="chaptersLoading"
       @select="handleChapterSelect"
       @create="handleCreateChapter"
+      @created="handleChapterCreated"
+      @refresh="loadAllChapters"
     />
 
     <!-- 主编辑区域 -->
@@ -331,6 +335,7 @@ const allChapters = ref<Chapter[]>([])
 const chaptersLoading = ref(false)
 const switching = ref(false)
 const topNavRef = ref<InstanceType<typeof ChapterTopNavigation> | null>(null)
+const sidebarRef = ref<InstanceType<typeof ChapterNavigationSidebar> | null>(null)
 
 const formData = ref({
   title: '',
@@ -479,6 +484,17 @@ const handleCreateChapter = () => {
   router.push({ name: 'chapters' })
 }
 
+// 章节创建成功处理
+const handleChapterCreated = async (newChapter: Chapter) => {
+  console.log('新章节创建成功:', newChapter)
+
+  // 刷新章节列表
+  await loadAllChapters()
+
+  // 跳转到新创建的章节
+  navigateToChapter(newChapter.id)
+}
+
 // 保存章节
 const handleSave = async (isAutoSave = false) => {
   if (!formData.value.title.trim()) {
@@ -512,6 +528,9 @@ const handleSave = async (isAutoSave = false) => {
 
     chapter.value = updated
     lastSavedData.value = currentData
+
+    // 刷新章节列表以更新导航栏显示
+    await loadAllChapters()
 
     if (isAutoSave) {
       saveButtonText.value = '已自动保存'
@@ -568,6 +587,10 @@ const handleChangeStatus = async () => {
     if (chapter.value) {
       chapter.value.status = selectedStatus.value
     }
+
+    // 刷新章节列表以更新导航栏显示的状态
+    await loadAllChapters()
+
     message.success('状态更新成功')
     showStatusModal.value = false
   } catch (error) {
@@ -658,6 +681,25 @@ const handleKeyDown = (e: KeyboardEvent) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
     e.preventDefault()
     handleSave(false)
+    return
+  }
+
+  // Ctrl+N (Windows/Linux) 或 Cmd+N (Mac) - 新增章节
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+    e.preventDefault()
+    console.log('[快捷键] 触发新增章节')
+    // 如果在全屏模式，先退出全屏
+    if (isFullscreen.value) {
+      exitFullscreen()
+      // 等待侧边栏渲染后再打开对话框
+      setTimeout(() => {
+        sidebarRef.value?.showAddChapterModal()
+      }, 100)
+    } else {
+      // 非全屏模式直接调用
+      sidebarRef.value?.showAddChapterModal()
+    }
+    return
   }
 
   // Ctrl+Shift+F (Windows/Linux) 或 Cmd+Shift+F (Mac) - 全屏切换
@@ -665,6 +707,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault()
     console.log('[全屏快捷键] 触发全屏切换')
     toggleFullscreen()
+    return
   }
 
   // Esc - 退出全屏
@@ -672,6 +715,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     e.preventDefault()
     console.log('[全屏快捷键] 退出全屏')
     exitFullscreen()
+    return
   }
 
   // Ctrl+PageUp/PageDown 或 Cmd+Left/Right - 章节导航
@@ -710,6 +754,8 @@ onMounted(async () => {
 watch(() => props.chapterId, async () => {
   switching.value = true
   await loadChapter()
+  // 切换章节后也刷新章节列表，确保导航栏数据最新
+  await loadAllChapters()
   switching.value = false
 })
 
@@ -721,6 +767,13 @@ onBeforeUnmount(() => {
 
   // 移除键盘事件监听
   window.removeEventListener('keydown', handleKeyDown)
+})
+
+// 暴露方法供外部调用
+defineExpose({
+  loadChapter,
+  loadAllChapters,
+  handleSave
 })
 </script>
 
