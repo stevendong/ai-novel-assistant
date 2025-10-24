@@ -2,7 +2,6 @@
   <a-menu
     v-model:selectedKeys="selectedKeys"
     mode="inline"
-    :inline-collapsed="collapsed"
     class="border-0"
   >
     <!-- Main navigation items -->
@@ -34,14 +33,6 @@ import {
   UserOutlined
 } from '@ant-design/icons-vue'
 import { usePermissions } from '@/composables/usePermissions'
-
-interface Props {
-  collapsed?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  collapsed: false
-})
 
 const router = useRouter()
 const route = useRoute()

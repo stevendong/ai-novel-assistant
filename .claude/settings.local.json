@@ -43,7 +43,15 @@
       "Bash(python init_skill.py test-skill)",
       "Bash(python scripts/validate_character.py examples/example-fantasy-warrior.json)",
       "Bash(python scripts/validate_character.py examples/example-scifi-scientist.json)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "mcp__playwright__browser_navigate",
+      "WebFetch(domain:radio.garden)",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_evaluate"
     ],
     "deny": [],
     "ask": []

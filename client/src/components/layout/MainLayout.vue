@@ -151,9 +151,7 @@
         class="sidebar"
         theme="light"
       >
-        <NavigationMenu
-          :collapsed="collapsed"
-        />
+        <NavigationMenu />
       </a-layout-sider>
 
       <!-- Main Content Area -->

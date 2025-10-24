@@ -1,10 +1,31 @@
 <template>
-  <div class="chapter-editor">
-    <div v-if="!chapter" class="loading-state">
-      <a-spin size="large" tip="加载中..." />
-    </div>
+  <div class="chapter-editor-container">
+    <!-- 章节导航侧边栏 -->
+    <ChapterNavigationSidebar
+      :chapters="allChapters"
+      :current-chapter-id="props.chapterId"
+      :loading="chaptersLoading"
+      @select="handleChapterSelect"
+      @create="handleCreateChapter"
+    />
 
-    <div v-else class="editor-content">
+    <!-- 主编辑区域 -->
+    <div class="chapter-editor">
+      <div v-if="!chapter || switching" class="loading-state">
+        <a-spin size="large" :tip="switching ? '切换章节中...' : '加载中...'" />
+      </div>
+
+      <div v-else class="editor-content">
+      <!-- 顶部章节导航 -->
+      <ChapterTopNavigation
+        ref="topNavRef"
+        :current-chapter="chapter"
+        :all-chapters="allChapters"
+        @navigate="handleNavigate"
+        @prev="handlePrevChapter"
+        @next="handleNextChapter"
+      />
+
       <!-- Header -->
       <div class="editor-header">
         <div class="header-wrapper">
@@ -187,6 +208,7 @@
         </a-form-item>
       </a-form>
     </a-modal>
+    </div>
   </div>
 </template>
 
@@ -216,6 +238,8 @@ import ChapterPlotPoints from './ChapterPlotPoints.vue'
 import ChapterCharacters from './ChapterCharacters.vue'
 import ChapterSettings from './ChapterSettings.vue'
 import ChapterConsistency from './ChapterConsistency.vue'
+import ChapterNavigationSidebar from './ChapterNavigationSidebar.vue'
+import ChapterTopNavigation from './ChapterTopNavigation.vue'
 import type { ChapterOutlineData } from '@/services/aiService'
 
 interface Props {
@@ -223,12 +247,17 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const emit = defineEmits(['saved', 'deleted'])
+const emit = defineEmits(['saved', 'deleted', 'navigate'])
 
 const router = useRouter()
 
 // 状态
 const chapter = ref<Chapter | null>(null)
+const allChapters = ref<Chapter[]>([])
+const chaptersLoading = ref(false)
+const switching = ref(false)
+const topNavRef = ref<InstanceType<typeof ChapterTopNavigation> | null>(null)
+
 const formData = ref({
   title: '',
   chapterNumber: 1,
@@ -294,10 +323,83 @@ const loadChapter = async () => {
     }
 
     selectedStatus.value = data.status
+
+    // 更新已保存数据快照
+    lastSavedData.value = JSON.stringify(formData.value)
   } catch (error) {
     console.error('Failed to load chapter:', error)
     message.error('加载章节失败')
   }
+}
+
+// 加载所有章节（用于导航）
+const loadAllChapters = async () => {
+  if (!chapter.value?.novelId) return
+
+  chaptersLoading.value = true
+  try {
+    const data = await chapterService.getChaptersByNovel(chapter.value.novelId)
+    allChapters.value = data
+  } catch (error) {
+    console.error('Failed to load chapters:', error)
+  } finally {
+    chaptersLoading.value = false
+  }
+}
+
+// 章节选择处理
+const handleChapterSelect = async (selectedChapter: Chapter) => {
+  if (selectedChapter.id === props.chapterId) return
+
+  // 检查是否有未保存的更改
+  const currentData = JSON.stringify(formData.value)
+  if (currentData !== lastSavedData.value) {
+    Modal.confirm({
+      title: '有未保存的更改',
+      content: '切换章节前是否保存当前更改？',
+      okText: '保存并切换',
+      cancelText: '放弃更改',
+      async onOk() {
+        await handleSave()
+        navigateToChapter(selectedChapter.id)
+      },
+      onCancel() {
+        navigateToChapter(selectedChapter.id)
+      }
+    })
+  } else {
+    navigateToChapter(selectedChapter.id)
+  }
+}
+
+// 导航到指定章节
+const navigateToChapter = (chapterId: string) => {
+  switching.value = true
+  emit('navigate', chapterId)
+  router.push({ name: 'chapter', params: { id: chapterId } })
+}
+
+// 快捷键导航处理
+const handleNavigate = (chapterId: string) => {
+  const selectedChapter = allChapters.value.find(c => c.id === chapterId)
+  if (selectedChapter) {
+    handleChapterSelect(selectedChapter)
+  }
+}
+
+// 上一章
+const handlePrevChapter = () => {
+  console.log('切换到上一章')
+}
+
+// 下一章
+const handleNextChapter = () => {
+  console.log('切换到下一章')
+}
+
+// 创建新章节
+const handleCreateChapter = () => {
+  router.push({ name: 'chapters' })
 }
 
 // 保存章节
@@ -456,12 +558,23 @@ watch(
   { deep: true }
 )
 
-// 键盘快捷键保存
+// 键盘快捷键
 const handleKeyDown = (e: KeyboardEvent) => {
-  // Ctrl+S (Windows/Linux) 或 Cmd+S (Mac)
+  // Ctrl+S (Windows/Linux) 或 Cmd+S (Mac) - 保存
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault()
     handleSave(false)
+  }
+
+  // Ctrl+PageUp/PageDown 或 Cmd+Left/Right - 章节导航
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'PageUp' || e.key === 'ArrowLeft') {
+      e.preventDefault()
+      topNavRef.value?.handlePrev()
+    } else if (e.key === 'PageDown' || e.key === 'ArrowRight') {
+      e.preventDefault()
+      topNavRef.value?.handleNext()
+    }
   }
 }
 
@@ -471,17 +584,23 @@ const detectOS = () => {
 }
 
 // 生命周期
-onMounted(() => {
-  loadChapter()
+onMounted(async () => {
+  await loadChapter()
+  await loadAllChapters()
   detectOS()
 
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown)
 
-  // 初始化最后保存的数据
-  setTimeout(() => {
-    lastSavedData.value = JSON.stringify(formData.value)
-  }, 1000)
+  // 重置切换状态
+  switching.value = false
+})
+
+// 监听 chapterId 变化重新加载
+watch(() => props.chapterId, async () => {
+  switching.value = true
+  await loadChapter()
+  switching.value = false
 })
 
 onBeforeUnmount(() => {
@@ -496,8 +615,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.chapter-editor {
+/* 容器布局 */
+.chapter-editor-container {
+  display: flex;
   height: 100%;
+  overflow: hidden;
+}
+
+.chapter-editor {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
   background: var(--theme-bg-base);
 }
 
