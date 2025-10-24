@@ -114,6 +114,16 @@
             <template v-else-if="column.key === 'actions'">
               <a-space>
                 <a-button
+                    type="text"
+                    size="small"
+                    @click="editChapter(record)"
+                >
+                  <template #icon>
+                    <EditOutlined />
+                  </template>
+                  写作
+                </a-button>
+                <a-button
                   type="text"
                   size="small"
                   @click="editChapterInfo(record)"
@@ -272,9 +282,13 @@
       width="1200px"
       :footer="null"
       :maskClosable="false"
+      :destroyOnClose="true"
       centered
     >
-      <BatchChapterCreator @close="handleBatchCreatorClose" />
+      <BatchChapterCreator
+        @close="handleBatchCreatorClose"
+        @success="handleBatchCreatorSuccess"
+      />
     </a-modal>
   </div>
 </template>
@@ -296,6 +310,8 @@ import type { Chapter } from '@/types'
 import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
 import { countValidWords } from '@/utils/textUtils'
+import BatchChapterCreator from '@/components/chapter/BatchChapterCreator.vue'
+import ConsistencyIndicator from "@/components/consistency/ConsistencyIndicator.vue";
 
 const router = useRouter()
 const projectStore = useProjectStore()
@@ -420,8 +436,14 @@ const showBatchChapterDialog = () => {
   batchChapterVisible.value = true
 }
 
-const handleBatchCreatorClose = async () => {
+const handleBatchCreatorClose = () => {
   batchChapterVisible.value = false
+}
+
+const handleBatchCreatorSuccess = async (result: any) => {
+  batchChapterVisible.value = false
+  message.success(`成功创建 ${result.createdChapters} 个章节`)
+
   // 刷新章节列表以显示新创建的章节
   if (projectStore.currentProject) {
     await loadChapters(projectStore.currentProject.id)
