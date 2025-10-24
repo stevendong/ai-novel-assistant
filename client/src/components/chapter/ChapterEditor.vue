@@ -1,7 +1,8 @@
 <template>
-  <div class="chapter-editor-container">
+  <div :class="['chapter-editor-container', { 'fullscreen-mode': isFullscreen }]">
     <!-- 章节导航侧边栏 -->
     <ChapterNavigationSidebar
+      v-if="!isFullscreen"
       :chapters="allChapters"
       :current-chapter-id="props.chapterId"
       :loading="chaptersLoading"
@@ -16,8 +17,51 @@
       </div>
 
       <div v-else class="editor-content">
+      <!-- 全屏工具栏 -->
+      <div v-if="isFullscreen" class="fullscreen-toolbar">
+        <div class="toolbar-left">
+          <h3 class="toolbar-title">
+            <FileTextOutlined />
+            第{{ chapter.chapterNumber }}章：{{ chapter.title }}
+          </h3>
+        </div>
+        <div class="toolbar-center">
+          <span class="word-count-display">
+            <FileWordOutlined />
+            {{ wordCount.toLocaleString() }}
+            <span v-if="chapter.targetWordCount"> / {{ chapter.targetWordCount.toLocaleString() }}</span>
+            字
+          </span>
+        </div>
+        <div class="toolbar-right">
+          <a-space :size="8">
+            <a-tooltip :title="isMac ? '⌘+S' : 'Ctrl+S'">
+              <a-button
+                type="primary"
+                size="small"
+                @click="handleSave"
+                :loading="saving"
+              >
+                <template #icon><SaveOutlined /></template>
+                {{ saveButtonText }}
+              </a-button>
+            </a-tooltip>
+            <a-tooltip :title="isMac ? '⌘+Shift+F 或 Esc' : 'Ctrl+Shift+F 或 Esc'">
+              <a-button
+                size="small"
+                @click="exitFullscreen"
+              >
+                <template #icon><FullscreenExitOutlined /></template>
+                退出全屏
+              </a-button>
+            </a-tooltip>
+          </a-space>
+        </div>
+      </div>
+
       <!-- 顶部章节导航 -->
       <ChapterTopNavigation
+        v-if="!isFullscreen"
         ref="topNavRef"
         :current-chapter="chapter"
         :all-chapters="allChapters"
@@ -27,14 +71,10 @@
       />
 
       <!-- Header -->
-      <div class="editor-header">
+      <div v-if="!isFullscreen" class="editor-header">
         <div class="header-wrapper">
           <div class="header-main">
             <div class="header-info">
-              <h1 class="header-title">
-                <FileTextOutlined class="title-icon" />
-                第{{ chapter.chapterNumber }}章：{{ chapter.title }}
-              </h1>
               <div class="header-meta">
                 <a-space :size="8">
                   <span class="meta-item">
@@ -97,8 +137,56 @@
       </div>
 
       <!-- Content Tabs -->
-      <a-card class="editor-card">
+      <a-card class="editor-card" v-if="!isFullscreen">
         <a-tabs v-model:activeKey="activeTab" type="card">
+          <!-- 正文内容 Tab -->
+          <a-tab-pane key="content" tab="正文内容">
+            <div class="content-editor">
+              <!-- 工具栏：AI生成器 + 全屏按钮 -->
+              <div class="content-editor-toolbar">
+                <div class="toolbar-left">
+                  <ContentAIGenerator
+                    v-if="chapter"
+                    :novel-id="chapter.novelId"
+                    :chapter-id="chapter.id"
+                    :outline="formData.outline"
+                    :existing-content="formData.content"
+                    :target-word-count="formData.targetWordCount"
+                    :characters="formData.characters.map(c => c.character)"
+                    :settings="formData.settings.map(s => s.setting)"
+                    @update:content="formData.content = $event"
+                    @generated="handleContentGenerated"
+                  />
+                </div>
+                <div class="toolbar-right">
+                  <a-tooltip :title="isMac ? '⌘+Shift+F' : 'Ctrl+Shift+F'">
+                    <a-button
+                      type="text"
+                      size="small"
+                      @click="toggleFullscreen"
+                      class="fullscreen-toggle-btn"
+                    >
+                      <template #icon><FullscreenOutlined /></template>
+                      全屏编辑
+                    </a-button>
+                  </a-tooltip>
+                </div>
+              </div>
+
+              <!-- 编辑器 -->
+              <TiptapEditor
+                v-if="chapter"
+                v-model="formData.content"
+                :novel-id="chapter.novelId"
+                :chapter-id="chapter.id"
+                :target-word-count="formData.targetWordCount"
+                :enable-ai-suggestion="true"
+                placeholder="开始编写章节内容..."
+                @update:word-count="handleWordCountUpdate"
+              />
+            </div>
+          </a-tab-pane>
+
           <!-- 基本信息 Tab -->
           <a-tab-pane key="basic" tab="基本信息">
             <div class="editor-form">
@@ -118,34 +206,6 @@
               <!-- 剧情要点组件 -->
               <ChapterPlotPoints
                 v-model="formData.plotPoints"
-              />
-            </div>
-          </a-tab-pane>
-
-          <!-- 正文内容 Tab -->
-          <a-tab-pane key="content" tab="正文内容">
-            <div class="content-editor">
-              <ContentAIGenerator
-                v-if="chapter"
-                :novel-id="chapter.novelId"
-                :chapter-id="chapter.id"
-                :outline="formData.outline"
-                :existing-content="formData.content"
-                :target-word-count="formData.targetWordCount"
-                :characters="formData.characters.map(c => c.character)"
-                :settings="formData.settings.map(s => s.setting)"
-                @update:content="formData.content = $event"
-                @generated="handleContentGenerated"
-              />
-              <TiptapEditor
-                v-if="chapter"
-                v-model="formData.content"
-                :novel-id="chapter.novelId"
-                :chapter-id="chapter.id"
-                :target-word-count="formData.targetWordCount"
-                :enable-ai-suggestion="true"
-                placeholder="开始编写章节内容..."
-                @update:word-count="handleWordCountUpdate"
               />
             </div>
           </a-tab-pane>
@@ -186,6 +246,20 @@
           </a-tab-pane>
         </a-tabs>
       </a-card>
+
+      <!-- 全屏模式编辑器 -->
+      <div v-if="isFullscreen" class="fullscreen-editor">
+        <TiptapEditor
+          v-if="chapter"
+          v-model="formData.content"
+          :novel-id="chapter.novelId"
+          :chapter-id="chapter.id"
+          :target-word-count="formData.targetWordCount"
+          :enable-ai-suggestion="true"
+          placeholder="开始编写章节内容..."
+          @update:word-count="handleWordCountUpdate"
+        />
+      </div>
     </div>
 
     <!-- 更改状态 Modal -->
@@ -224,10 +298,10 @@ import {
   MoreOutlined,
   SwapOutlined,
   DeleteOutlined,
-  PlusOutlined,
-  CheckCircleOutlined
+  FullscreenOutlined,
+  FullscreenExitOutlined
 } from '@ant-design/icons-vue'
-import type { Chapter, PlotPoint, Character, WorldSetting, ChapterCharacter, ChapterSetting } from '@/types'
+import type { Chapter, PlotPoint, ChapterCharacter, ChapterSetting } from '@/types'
 import { chapterService } from '@/services/chapterService'
 import { countValidWords } from '@/utils/textUtils'
 import { ChapterStatus, getChapterStatusText, getChapterStatusColor, getAllChapterStatuses } from '@/constants/status'
@@ -269,10 +343,13 @@ const formData = ref({
   settings: [] as ChapterSetting[]
 })
 
-const activeTab = ref('basic')
+const activeTab = ref('content')
 const saving = ref(false)
 const showStatusModal = ref(false)
 const selectedStatus = ref<ChapterStatus | undefined>(undefined)
+
+// 全屏相关
+const isFullscreen = ref(false)
 
 // 自动保存相关
 const autoSaveEnabled = ref(true)
@@ -422,7 +499,7 @@ const handleSave = async (isAutoSave = false) => {
 
   saving.value = true
   saveButtonText.value = '保存中...'
-  
+
   try {
     const updated = await chapterService.updateChapter(props.chapterId, {
       title: formData.value.title,
@@ -435,7 +512,7 @@ const handleSave = async (isAutoSave = false) => {
 
     chapter.value = updated
     lastSavedData.value = currentData
-    
+
     if (isAutoSave) {
       saveButtonText.value = '已自动保存'
       setTimeout(() => {
@@ -445,7 +522,7 @@ const handleSave = async (isAutoSave = false) => {
       message.success('保存成功')
       saveButtonText.value = '保存'
     }
-    
+
     emit('saved', updated)
   } catch (error) {
     console.error('Failed to save chapter:', error)
@@ -535,12 +612,12 @@ const formatDate = (dateString: string) => {
 // 自动保存逻辑
 const startAutoSave = () => {
   if (!autoSaveEnabled.value) return
-  
+
   // 清除之前的定时器
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
   }
-  
+
   // 设置新的定时器
   autoSaveTimer = setTimeout(() => {
     handleSave(true)
@@ -558,12 +635,43 @@ watch(
   { deep: true }
 )
 
+// 全屏切换
+const toggleFullscreen = () => {
+  console.log('[全屏] 切换全屏模式，当前状态:', isFullscreen.value, '→', !isFullscreen.value)
+  isFullscreen.value = !isFullscreen.value
+
+  // 全屏时自动切换到正文内容 tab
+  if (isFullscreen.value) {
+    activeTab.value = 'content'
+    console.log('[全屏] 已切换到正文内容 tab')
+  }
+}
+
+// 退出全屏
+const exitFullscreen = () => {
+  isFullscreen.value = false
+}
+
 // 键盘快捷键
 const handleKeyDown = (e: KeyboardEvent) => {
   // Ctrl+S (Windows/Linux) 或 Cmd+S (Mac) - 保存
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
     e.preventDefault()
     handleSave(false)
+  }
+
+  // Ctrl+Shift+F (Windows/Linux) 或 Cmd+Shift+F (Mac) - 全屏切换
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault()
+    console.log('[全屏快捷键] 触发全屏切换')
+    toggleFullscreen()
+  }
+
+  // Esc - 退出全屏
+  if (e.key === 'Escape' && isFullscreen.value) {
+    e.preventDefault()
+    console.log('[全屏快捷键] 退出全屏')
+    exitFullscreen()
   }
 
   // Ctrl+PageUp/PageDown 或 Cmd+Left/Right - 章节导航
@@ -591,6 +699,8 @@ onMounted(async () => {
 
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown)
+  console.log('[全屏] 已注册快捷键监听器, 检测到的系统:', isMac.value ? 'macOS' : 'Windows/Linux')
+  console.log('[全屏] 全屏快捷键:', isMac.value ? 'Cmd+Shift+F' : 'Ctrl+Shift+F')
 
   // 重置切换状态
   switching.value = false
@@ -608,7 +718,7 @@ onBeforeUnmount(() => {
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer)
   }
-  
+
   // 移除键盘事件监听
   window.removeEventListener('keydown', handleKeyDown)
 })
@@ -717,7 +827,7 @@ onBeforeUnmount(() => {
 
 /* Content Editor */
 .content-editor {
-  padding: 24px;
+  padding: 0 24px 24px 24px;
 }
 
 /* Relations Section */
@@ -747,6 +857,177 @@ onBeforeUnmount(() => {
   padding: 24px;
 }
 
+/* ============================================
+   全屏模式样式
+   ============================================ */
+
+/* 全屏容器 */
+.chapter-editor-container.fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: var(--theme-bg-base);
+}
+
+.chapter-editor-container.fullscreen-mode .chapter-editor {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 全屏工具栏 */
+.fullscreen-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--theme-bg-container);
+  border-bottom: 1px solid var(--theme-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.fullscreen-toolbar .toolbar-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.fullscreen-toolbar .toolbar-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--theme-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s ease;
+}
+
+.fullscreen-toolbar .toolbar-title :deep(.anticon) {
+  font-size: 18px;
+  color: var(--theme-icon-text);
+}
+
+.fullscreen-toolbar .toolbar-center {
+  flex: 0 0 auto;
+  padding: 0 24px;
+}
+
+.fullscreen-toolbar .word-count-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+.fullscreen-toolbar .word-count-display :deep(.anticon) {
+  font-size: 16px;
+}
+
+.fullscreen-toolbar .toolbar-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+/* 全屏编辑器容器 */
+.fullscreen-editor {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  padding: 24px;
+  background: var(--theme-bg-base);
+  transition: background-color 0.3s ease;
+}
+
+.fullscreen-editor :deep(.tiptap-editor) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--theme-bg-container);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.fullscreen-editor :deep(.editor-toolbar) {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-bg-elevated);
+}
+
+.fullscreen-editor :deep(.ProseMirror) {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  padding: 32px !important;
+  font-size: 16px !important;
+  line-height: 1.8 !important;
+}
+
+/* 内容编辑器工具栏 */
+.content-editor-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.content-editor-toolbar .toolbar-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.content-editor-toolbar .toolbar-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.fullscreen-toggle-btn {
+  color: var(--theme-text-secondary);
+  transition: all 0.3s ease;
+  height: 32px;
+  padding: 4px 15px;
+}
+
+.fullscreen-toggle-btn:hover {
+  color: var(--theme-icon-text);
+  background: var(--theme-icon-bg);
+  transform: scale(1.05);
+}
+
+/* 全屏动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.chapter-editor-container.fullscreen-mode {
+  animation: fadeIn 0.3s ease;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .editor-header {
@@ -769,6 +1050,35 @@ onBeforeUnmount(() => {
   .relations-section,
   .consistency-section {
     padding: 16px;
+  }
+
+  /* 移动端工具栏垂直布局 */
+  .content-editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .content-editor-toolbar .toolbar-right {
+    padding-top: 0;
+    justify-content: flex-end;
+  }
+
+  /* 全屏工具栏移动端优化 */
+  .fullscreen-toolbar {
+    padding: 8px 12px;
+  }
+
+  .fullscreen-toolbar .toolbar-center {
+    padding: 0 12px;
+  }
+
+  .fullscreen-toolbar .toolbar-title {
+    font-size: 14px;
+  }
+
+  .fullscreen-toolbar .word-count-display {
+    font-size: 12px;
   }
 }
 </style>

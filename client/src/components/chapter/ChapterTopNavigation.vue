@@ -186,7 +186,6 @@ defineExpose({
   justify-content: space-between;
   padding: 12px 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 8px 8px 0 0;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
