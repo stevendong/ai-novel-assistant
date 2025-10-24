@@ -132,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { Empty } from 'ant-design-vue'
 import {
   BookOutlined,
@@ -160,8 +160,22 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+// localStorage key
+const STORAGE_KEY = 'chapter-nav-sidebar-collapsed'
+
+// 从 localStorage 读取初始状态
+const getInitialCollapsedState = (): boolean => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    return saved !== null ? JSON.parse(saved) : false
+  } catch (error) {
+    console.error('Failed to read sidebar state from localStorage:', error)
+    return false
+  }
+}
+
 // 状态
-const isCollapsed = ref(false)
+const isCollapsed = ref(getInitialCollapsedState())
 const searchText = ref('')
 const statusFilter = ref('')
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
@@ -191,10 +205,30 @@ const filteredChapters = computed(() => {
   return result
 })
 
+// 保存状态到 localStorage
+const saveCollapsedState = (collapsed: boolean) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsed))
+    console.log('[章节导航] 状态已保存:', collapsed ? '收起' : '展开')
+  } catch (error) {
+    console.error('[章节导航] Failed to save sidebar state to localStorage:', error)
+  }
+}
+
 // 方法
 const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value
 }
+
+// 监听状态变化并自动保存
+watch(isCollapsed, (newValue) => {
+  saveCollapsedState(newValue)
+})
+
+// 生命周期
+onMounted(() => {
+  console.log('[章节导航] 侧边栏初始状态:', isCollapsed.value ? '收起' : '展开')
+})
 
 const handleSelectChapter = (chapter: Chapter) => {
   emit('select', chapter)
