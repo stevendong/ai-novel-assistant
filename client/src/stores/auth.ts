@@ -136,7 +136,7 @@ export const useAuthStore = defineStore('auth', () => {
   const register = async (userData: RegisterData): Promise<{ success: boolean; data?: AuthResponse; error?: string }> => {
     isLoading.value = true
     try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/register', userData)
+      const response = await apiClient.post<AuthResponse>('/api/auth/register', userData, { skipErrorHandler: true })
       setAuthData(response.data)
       message.success(response.data.message || 'Account created successfully!')
       return { success: true, data: response.data }
@@ -155,7 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // 发送给服务器的登录数据（不包含rememberMe，这是前端功能）
       const { rememberMe, ...loginData } = credentials
-      const response = await apiClient.post<AuthResponse>('/api/auth/login', loginData)
+      const response = await apiClient.post<AuthResponse>('/api/auth/login', loginData, { skipErrorHandler: true })
       setAuthData(response.data)
       message.success(response.data.message || '登录成功!')
       return { success: true, data: response.data }

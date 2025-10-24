@@ -168,15 +168,17 @@ router.post('/login', async (req, res) => {
 
     if (!user) {
       return res.status(400).json({
-        error: 'Invalid Credentials',
-        message: 'Invalid email/username',
+        error: 'User Not Found',
+        message: '用户名或邮箱不存在',
+        code: 'USER_NOT_FOUND'
       });
     }
 
     if (!user.isActive) {
-      return res.status(401).json({
+      return res.status(403).json({
         error: 'Account Disabled',
-        message: 'Your account has been disabled. Please contact support.',
+        message: '您的账户已被禁用，请联系管理员',
+        code: 'ACCOUNT_DISABLED'
       });
     }
 
@@ -184,8 +186,9 @@ router.post('/login', async (req, res) => {
 
     if (!isValidPassword) {
       return res.status(401).json({
-        error: 'Invalid Credentials',
-        message: 'Invalid email/username or password',
+        error: 'Invalid Password',
+        message: '密码错误，请重新输入',
+        code: 'INVALID_PASSWORD'
       });
     }
 

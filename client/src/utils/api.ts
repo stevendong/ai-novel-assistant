@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios'
 import { message } from 'ant-design-vue'
+import { requestDeduplicator } from './requestDeduplicator'
 
 // API响应数据的基础接口
 export interface ApiResponse<T = any> {
@@ -19,6 +20,7 @@ export interface ApiErrorResponse {
 export interface RequestConfig extends AxiosRequestConfig {
   skipAuth?: boolean
   skipErrorHandler?: boolean
+  skipDeduplication?: boolean // 是否跳过请求去重
   _retry?: boolean
 }
 
@@ -92,9 +94,8 @@ class ApiClient {
             console.error('Token refresh failed:', refreshError)
           }
 
-          // 如果刷新失败，清除认证并重定向
+          // 如果刷新失败，清除认证并抛出错误（不重定向）
           this.clearAuth()
-          window.location.href = '/login'
           return Promise.reject(error)
         }
 
@@ -182,29 +183,82 @@ class ApiClient {
     delete this.axiosInstance.defaults.headers.common['Authorization']
   }
 
-  // GET请求
+  // GET请求（带去重）
   async get<T = any>(url: string, config?: RequestConfig): Promise<AxiosResponse<T>> {
-    return this.axiosInstance.get<T>(url, config)
+    // 如果配置了跳过去重，直接请求
+    if (config?.skipDeduplication) {
+      return this.axiosInstance.get<T>(url, config)
+    }
+
+    // 使用去重器
+    return requestDeduplicator.deduplicate(
+      'GET',
+      url,
+      (signal) => this.axiosInstance.get<T>(url, { ...config, signal })
+    )
   }
 
-  // POST请求
+  // POST请求（带去重）
   async post<T = any>(url: string, data?: any, config?: RequestConfig): Promise<AxiosResponse<T>> {
-    return this.axiosInstance.post<T>(url, data, config)
+    // 如果配置了跳过去重，直接请求
+    if (config?.skipDeduplication) {
+      return this.axiosInstance.post<T>(url, data, config)
+    }
+
+    // 使用去重器
+    return requestDeduplicator.deduplicate(
+      'POST',
+      url,
+      (signal) => this.axiosInstance.post<T>(url, data, { ...config, signal }),
+      data
+    )
   }
 
-  // PUT请求
+  // PUT请求（带去重）
   async put<T = any>(url: string, data?: any, config?: RequestConfig): Promise<AxiosResponse<T>> {
-    return this.axiosInstance.put<T>(url, data, config)
+    // 如果配置了跳过去重，直接请求
+    if (config?.skipDeduplication) {
+      return this.axiosInstance.put<T>(url, data, config)
+    }
+
+    // 使用去重器
+    return requestDeduplicator.deduplicate(
+      'PUT',
+      url,
+      (signal) => this.axiosInstance.put<T>(url, data, { ...config, signal }),
+      data
+    )
   }
 
-  // PATCH请求
+  // PATCH请求（带去重）
   async patch<T = any>(url: string, data?: any, config?: RequestConfig): Promise<AxiosResponse<T>> {
-    return this.axiosInstance.patch<T>(url, data, config)
+    // 如果配置了跳过去重，直接请求
+    if (config?.skipDeduplication) {
+      return this.axiosInstance.patch<T>(url, data, config)
+    }
+
+    // 使用去重器
+    return requestDeduplicator.deduplicate(
+      'PATCH',
+      url,
+      (signal) => this.axiosInstance.patch<T>(url, data, { ...config, signal }),
+      data
+    )
   }
 
-  // DELETE请求
+  // DELETE请求（带去重）
   async delete<T = any>(url: string, config?: RequestConfig): Promise<AxiosResponse<T>> {
-    return this.axiosInstance.delete<T>(url, config)
+    // 如果配置了跳过去重，直接请求
+    if (config?.skipDeduplication) {
+      return this.axiosInstance.delete<T>(url, config)
+    }
+
+    // 使用去重器
+    return requestDeduplicator.deduplicate(
+      'DELETE',
+      url,
+      (signal) => this.axiosInstance.delete<T>(url, { ...config, signal })
+    )
   }
 
   // 文件上传

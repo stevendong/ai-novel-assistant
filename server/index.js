@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
 const path = require('path');
 require('dotenv').config();
 
@@ -10,6 +9,19 @@ const prisma = new PrismaClient();
 // 导入端口管理工具和日志工具
 const { ensurePortAvailable } = require('./utils/portManager');
 const logger = require('./utils/logger');
+
+// 导入安全中间件
+const {
+  helmetConfig,
+  globalLimiter,
+  speedLimiter,
+  authLimiter,
+  apiLimiter,
+  aiLimiter,
+  uploadLimiter,
+  registerLimiter,
+  exportLimiter
+} = require('./middleware/security');
 
 // 导入路由
 const authRoutes = require('./routes/auth');
@@ -39,42 +51,63 @@ const PORT = process.env.PORT || 3001;
 // 这对于部署在Nginx、Apache等反向代理后的应用很重要
 app.set('trust proxy', true);
 
-// 中间件
-app.use(helmet());
+// ========== 安全中间件 ==========
+// 1. Helmet - 设置安全 HTTP 头
+app.use(helmetConfig);
+
+// 2. CORS - 跨域配置
 app.use(cors({
   origin: process.env.NODE_ENV === 'development' ? true : process.env.ALLOWED_ORIGINS?.split(','),
   credentials: true
 }));
 
+// 3. 全局速率限制 - 防止 DDOS
+app.use(globalLimiter);
+
+// 4. 速度降低 - 逐渐减慢请求速度
+app.use(speedLimiter);
+
+// ========== Body Parser 中间件 ==========
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// 添加请求日志中间件（在body parser之后）
+// ========== 日志中间件 ==========
 app.use(logger.createRequestLogger());
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// API路由
+// ========== API 路由（带速率限制）==========
+// 认证路由 - 严格的速率限制
+app.use('/api/auth/login', authLimiter); // 登录接口特殊限制
+app.use('/api/auth/register', registerLimiter); // 注册接口特殊限制
 app.use('/api/auth', authRoutes);
-app.use('/api/novels', novelRoutes);
-app.use('/api/characters', characterRoutes);
-app.use('/api/settings', settingRoutes);
-app.use('/api/chapters', chapterRoutes);
-app.use('/api/chapters/batch', batchChapterRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/ai', aiProviderRoutes);
-app.use('/api/ai', aiConfigRoutes);
-app.use('/api/export', exportRoutes);
-app.use('/api/statistics', statisticsRoutes);
-app.use('/api/goals', goalsRoutes);
-app.use('/api/workflow', workflowRoutes);
-app.use('/api/consistency', consistencyRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/conversations', conversationRoutes);
-app.use('/api', statsRoutes);
-app.use('/api/invites', inviteRoutes);
-app.use('/api/admin', adminRoutes);
+
+// AI 相关路由 - 较严格的速率限制
+app.use('/api/ai', aiLimiter, aiRoutes);
+app.use('/api/ai', aiLimiter, aiProviderRoutes);
+app.use('/api/ai', aiLimiter, aiConfigRoutes);
+
+// 文件上传路由 - 上传限制
+app.use('/api/upload', uploadLimiter, uploadRoutes);
+
+// 导出路由 - 导出限制
+app.use('/api/export', exportLimiter, exportRoutes);
+
+// 其他 API 路由 - 标准 API 限制
+app.use('/api/novels', apiLimiter, novelRoutes);
+app.use('/api/characters', apiLimiter, characterRoutes);
+app.use('/api/settings', apiLimiter, settingRoutes);
+app.use('/api/chapters', apiLimiter, chapterRoutes);
+app.use('/api/chapters/batch', apiLimiter, batchChapterRoutes);
+app.use('/api/statistics', apiLimiter, statisticsRoutes);
+app.use('/api/goals', apiLimiter, goalsRoutes);
+app.use('/api/workflow', apiLimiter, workflowRoutes);
+app.use('/api/consistency', apiLimiter, consistencyRoutes);
+app.use('/api/conversations', apiLimiter, conversationRoutes);
+app.use('/api', apiLimiter, statsRoutes);
+app.use('/api/invites', apiLimiter, inviteRoutes);
+app.use('/api/admin', apiLimiter, adminRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {
