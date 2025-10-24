@@ -1,5 +1,17 @@
 <template>
   <div class="chapter-top-navigation">
+    <!-- 返回章节列表按钮 -->
+    <a-tooltip title="返回章节列表">
+      <a-button
+        type="text"
+        @click="handleBackToList"
+        class="nav-button back-button"
+      >
+        <template #icon><UnorderedListOutlined /></template>
+        <span class="nav-text">章节列表</span>
+      </a-button>
+    </a-tooltip>
+
     <!-- 上一章按钮 -->
     <a-tooltip :title="prevChapter ? `上一章：${prevChapter.title}` : '没有上一章'">
       <a-button
@@ -82,10 +94,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   LeftOutlined,
   RightOutlined,
-  DownOutlined
+  DownOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 
@@ -102,6 +116,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const router = useRouter()
 
 // 是否是 Mac 系统
 const isMac = computed(() => {
@@ -134,6 +149,10 @@ const nextChapter = computed(() => {
 })
 
 // 方法
+const handleBackToList = () => {
+  router.push({ name: 'chapters' })
+}
+
 const handlePrev = () => {
   if (prevChapter.value) {
     emit('navigate', prevChapter.value.id)
@@ -205,6 +224,17 @@ defineExpose({
 .nav-button:disabled {
   color: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 返回按钮特殊样式 */
+.back-button {
+  margin-right: 12px;
+  font-weight: 500;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-2px);
 }
 
 .nav-text {
