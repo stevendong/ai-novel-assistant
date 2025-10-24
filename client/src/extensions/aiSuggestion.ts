@@ -1,13 +1,11 @@
 import { Extension } from '@tiptap/core'
-import Suggestion from '@tiptap/suggestion'
-import { PluginKey } from '@tiptap/pm/state'
 import { VueRenderer } from '@tiptap/vue-3'
 import tippy from 'tippy.js'
+import type { Instance as TippyInstance } from 'tippy.js'
+// @ts-ignore - Vue SFC import
 import SuggestionList from '@/components/editor/SuggestionList.vue'
 import { aiService } from '@/services/aiService'
-
-// 插件唯一标识
-export const AISuggestionPluginKey = new PluginKey('aiSuggestion')
+import { AIInlineSuggestionPluginKey } from './aiInlineSuggestion'
 
 // 建议项接口
 export interface SuggestionItem {
@@ -40,9 +38,16 @@ interface CachedSuggestion {
 
 // 请求控制
 let abortController: AbortController | null = null
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
-let isLoadingSuggestions = false
-let currentComponent: any = null
+
+// 弹窗管理
+let currentPopup: TippyInstance | null = null
+let currentComponent: VueRenderer | null = null
+let isShowingSuggestions = false
+
+// 导出状态供其他扩展使用
+export function isSuggestionListVisible(): boolean {
+  return isShowingSuggestions
+}
 
 export const AISuggestion = Extension.create<AISuggestionOptions>({
   name: 'aiSuggestion',
@@ -57,7 +62,7 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
       triggerDelay: 800,
       maxSuggestions: 3,
       minContextLength: 50,
-      hotkey: 'Mod-Space'
+      hotkey: 'Mod-h'
     }
   },
 
@@ -72,16 +77,9 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
     const extension = this
 
     return {
-      // 快捷键触发建议
+      // 快捷键触发建议列表
       [this.options.hotkey]: () => {
         console.log('🔥 AI快捷键被按下:', extension.options.hotkey)
-
-        console.log('📋 当前配置:', {
-          enabled: extension.options.enabled,
-          novelId: extension.options.novelId,
-          chapterId: extension.options.chapterId,
-          minContextLength: extension.options.minContextLength
-        })
 
         if (!extension.options.enabled) {
           console.warn('❌ AI建议功能未启用')
@@ -97,373 +95,66 @@ export const AISuggestion = Extension.create<AISuggestionOptions>({
         const { from } = state.selection
         const text = state.doc.textBetween(0, from, '\n')
 
-        console.log('📝 当前文本长度:', text.length, '最小要求:', extension.options.minContextLength)
-        console.log('📝 文本内容预览:', text.slice(-100))
-
         // 检查上下文长度
         if (text.length < extension.options.minContextLength) {
           console.warn('❌ 上下文太短，无法触发AI建议')
           return false
         }
 
-        console.log('✅ 所有条件满足，直接获取AI建议')
+        console.log('✅ 显示建议列表面板')
 
-        // 异步获取并插入建议（不阻塞快捷键处理）
-        const context = extension.editor.getText()
-        console.log('📄 获取编辑器文本，长度:', context.length)
-
-        // 检查缓存
-        const cached = getCachedSuggestions(context)
-        if (cached && cached.length > 0) {
-          console.log('💾 使用缓存的建议:', cached.length, '条')
-          // 直接插入第一条建议
-          extension.editor.commands.insertContent(cached[0].text)
-          return true
-        }
-
-        // 异步获取建议
-        console.log('🌐 调用 fetchSuggestions 获取新建议...')
-        fetchSuggestions(context, from, extension.options)
-          .then(suggestions => {
-            console.log('✅ 获取到建议:', suggestions.length, '条')
-
-            if (suggestions.length > 0) {
-              // 缓存结果
-              cacheSuggestions(context, suggestions)
-
-              // 插入第一条建议
-              console.log('📝 插入第一条建议:', suggestions[0].text)
-              extension.editor.commands.insertContent(suggestions[0].text)
-            } else {
-              console.warn('⚠️ 没有获取到建议')
-            }
-          })
-          .catch(error => {
-            console.error('❌ 快捷键触发建议失败:', error)
-          })
+        // 显示建议列表
+        showSuggestionList(extension.editor, extension.options)
 
         return true
       },
 
       // Tab 接受建议
       Tab: () => {
-        const { state } = this.editor
-        const suggestionState = AISuggestionPluginKey.getState(state)
-
-        if (suggestionState?.active && suggestionState.items?.length > 0) {
-          // 接受当前选中的建议
-          const selectedIndex = suggestionState.index ?? 0
-          const suggestion = suggestionState.items[selectedIndex]
-
-          if (suggestion) {
-            const { from } = state.selection
-            this.editor.chain()
-              .focus()
-              .insertContentAt(from, suggestion.text)
-              .run()
-
+        if (isShowingSuggestions && currentComponent?.ref) {
+          const event = new KeyboardEvent('keydown', { key: 'Tab' })
+          const handled = currentComponent.ref.onKeyDown({ event })
+          if (handled) {
+            hideSuggestionList()
             return true
           }
         }
-
         return false
       },
 
       // Escape 关闭建议
       Escape: () => {
-        const { state } = this.editor
-        const suggestionState = AISuggestionPluginKey.getState(state)
-
-        if (suggestionState?.active) {
-          const tr = state.tr.setMeta(AISuggestionPluginKey, {
-            dismiss: true
-          })
-          this.editor.view.dispatch(tr)
+        if (isShowingSuggestions) {
+          hideSuggestionList()
           return true
         }
+        return false
+      },
 
+      // 上箭头
+      ArrowUp: () => {
+        if (isShowingSuggestions && currentComponent?.ref) {
+          const event = new KeyboardEvent('keydown', { key: 'ArrowUp' })
+          return currentComponent.ref.onKeyDown({ event }) ?? false
+        }
+        return false
+      },
+
+      // 下箭头
+      ArrowDown: () => {
+        if (isShowingSuggestions && currentComponent?.ref) {
+          const event = new KeyboardEvent('keydown', { key: 'ArrowDown' })
+          return currentComponent.ref.onKeyDown({ event }) ?? false
+        }
         return false
       }
     }
   },
 
-  // 添加 Suggestion 插件
+  // ProseMirror 插件（已移除 / 触发逻辑，仅使用快捷键触发）
   addProseMirrorPlugins() {
-    const extension = this
-
-    console.log('🔌 正在添加 ProseMirror 插件...')
-    console.log('🔌 Suggestion 插件配置:', {
-      char: '/',
-      pluginKey: AISuggestionPluginKey,
-      enabled: extension.options.enabled
-    })
-    console.log('🔌 Suggestion 函数类型:', typeof Suggestion)
-
-    const suggestionPlugin = Suggestion({
-      editor: this.editor,
-      pluginKey: AISuggestionPluginKey,
-
-      // 使用 / 作为触发字符
-      char: '/',
-
-      // 允许空格
-      allowSpaces: false,
-
-      // 允许在任意位置触发
-      startOfLine: false,
-
-      // 决定何时显示建议
-      allow: ({ editor, state, range }: any) => {
-        console.log('🔍 [斜杠触发] 检查是否允许显示建议', {
-          range,
-          editorState: state.doc.content.size
-        })
-
-        if (!extension.options.enabled) {
-          console.warn('❌ allow检查: 功能未启用')
-          return false
-        }
-
-        if (!editor.isEditable) {
-          console.warn('❌ allow检查: 编辑器不可编辑')
-          return false
-        }
-
-        const text = state.doc.textBetween(0, range.from, '\n')
-        
-        if (text.length < extension.options.minContextLength) {
-          console.warn('❌ allow检查: 上下文长度不足', text.length, '<', extension.options.minContextLength)
-          return false
-        }
-
-        const charBefore = text.slice(-1)
-        console.log('📝 斜杠前的字符:', charBefore ? `"${charBefore}"` : '(无)')
-        
-        if (charBefore && /[a-zA-Z0-9\u4e00-\u9fa5]/.test(charBefore)) {
-          console.warn('❌ allow检查: 斜杠前是字母或数字，不触发')
-          return false
-        }
-
-        console.log('✅ allow检查通过')
-        return true
-      },
-
-      // 获取建议项
-      items: async ({ query, editor }: any) => {
-        console.log('📡 开始获取AI建议...', { query })
-
-        try {
-          const context = editor.getText()
-          const { from } = editor.state.selection
-
-          console.log('📄 上下文信息:', {
-            contextLength: context.length,
-            cursorPosition: from,
-            query
-          })
-
-          const cached = getCachedSuggestions(context)
-          if (cached) {
-            console.log('💾 使用缓存的建议:', cached.length, '条')
-            isLoadingSuggestions = false
-            return cached
-          }
-
-          console.log('✅ 设置加载状态并返回占位符')
-          isLoadingSuggestions = true
-          
-          const loadingItem: SuggestionItem = {
-            id: 'loading',
-            text: '正在生成建议...',
-            confidence: 0,
-            type: 'continuation'
-          }
-
-          fetchSuggestions(context, from, extension.options).then(suggestions => {
-            console.log('✅ 获取到建议:', suggestions.length, '条', suggestions)
-            
-            if (suggestions.length > 0) {
-              cacheSuggestions(context, suggestions)
-              
-              isLoadingSuggestions = false
-              
-              if (currentComponent) {
-                console.log('🔄 直接更新组件 props')
-                currentComponent.updateProps({
-                  items: suggestions,
-                  loading: false
-                })
-              }
-            }
-          }).catch(error => {
-            console.error('❌ 获取AI建议失败:', error)
-            isLoadingSuggestions = false
-            
-            if (currentComponent) {
-              currentComponent.updateProps({
-                items: [],
-                loading: false
-              })
-            }
-          })
-
-          return [loadingItem]
-        } catch (error) {
-          console.error('❌ 获取AI建议失败:', error)
-          isLoadingSuggestions = false
-          return []
-        }
-      },
-
-      // 渲染建议 UI
-      render: () => {
-        let component: VueRenderer | null = null
-        let popup: any = null
-
-        return {
-          // 建议开始显示
-          onStart: (props: any) => {
-              console.log('🎨 开始渲染建议UI, 建议数量:', props.items?.length)
-              console.log('📍 触发范围:', props.range)
-              console.log('📍 clientRect:', props.clientRect)
-
-              const isLoading = props.items?.length === 1 && props.items[0]?.id === 'loading'
-              console.log('🔄 加载状态:', isLoading)
-
-              component = new VueRenderer(SuggestionList, {
-                props: {
-                  items: props.items,
-                  command: (item: SuggestionItem) => {
-                    if (item.id === 'loading') {
-                      console.log('⚠️ 加载中，忽略点击')
-                      return
-                    }
-
-                    console.log('✨ 用户选择了建议:', item.text)
-                    console.log('📍 Range 信息:', props.range)
-
-                    extension.editor.chain()
-                      .focus()
-                      .deleteRange(props.range)
-                      .insertContent(item.text)
-                      .run()
-                  },
-                  loading: isLoading
-                },
-                editor: props.editor
-              })
-
-              currentComponent = component
-
-              if (!props.clientRect) {
-                console.warn('⚠️ clientRect 为空，无法显示弹窗')
-                return
-              }
-
-              if (!component?.element) {
-                console.warn('⚠️ 组件元素为空，无法显示弹窗')
-                return
-              }
-
-              // 创建 tippy 实例
-              try {
-                popup = tippy(document.body, {
-                  getReferenceClientRect: props.clientRect,
-                  appendTo: () => document.body,
-                  content: component.element,
-                  showOnCreate: true,
-                  interactive: true,
-                  trigger: 'manual',
-                  placement: 'bottom-start',
-                  theme: 'ai-suggestion',
-                  maxWidth: 600,
-                  offset: [0, 8],
-                  zIndex: 9999,
-                  animation: 'shift-away',
-                  duration: [200, 150]
-                })
-
-                console.log('✅ 弹窗已创建', popup)
-              } catch (error) {
-                console.error('❌ 创建弹窗失败:', error)
-              }
-            },
-
-            // 建议更新
-            onUpdate: (props) => {
-              if (!component || !popup) {
-                console.warn('⚠️ 组件或弹窗不存在，无法更新')
-                return
-              }
-
-              try {
-                const isLoading = props.items?.length === 1 && props.items[0]?.id === 'loading'
-                console.log('🔄 更新建议列表, 数量:', props.items?.length, '加载状态:', isLoading)
-
-                component.updateProps({
-                  items: props.items,
-                  loading: isLoading
-                })
-
-                if (!props.clientRect) return
-
-                const instances = Array.isArray(popup) ? popup : [popup]
-                instances[0]?.setProps({
-                  getReferenceClientRect: props.clientRect
-                })
-
-                console.log('✅ 建议列表已更新')
-              } catch (error) {
-                console.error('❌ 更新弹窗失败:', error)
-              }
-            },
-
-            // 键盘事件处理
-            onKeyDown: (props) => {
-              if (!component || !popup) return false
-
-              if (props.event.key === 'Escape') {
-                const instances = Array.isArray(popup) ? popup : [popup]
-                instances[0]?.hide()
-                return true
-              }
-
-              // 将键盘事件传递给组件
-              return component.ref?.onKeyDown?.(props) ?? false
-            },
-
-            // 建议结束
-            onExit: () => {
-              console.log('👋 建议UI关闭')
-
-              if (popup) {
-                try {
-                  const instances = Array.isArray(popup) ? popup : [popup]
-                  instances.forEach((instance: any) => instance.destroy())
-                } catch (error) {
-                  console.error('❌ 销毁弹窗失败:', error)
-                }
-              }
-
-              if (component) {
-                try {
-                  component.destroy()
-                } catch (error) {
-                  console.error('❌ 销毁组件失败:', error)
-                }
-              }
-
-              currentComponent = null
-              isLoadingSuggestions = false
-            }
-          }
-        }
-      })
-
-    console.log('✅ Suggestion 插件已创建:', suggestionPlugin)
-    console.log('✅ 插件类型:', suggestionPlugin?.constructor?.name)
-
-    return [suggestionPlugin]
+    console.log('✅ ProseMirror 插件已加载（无 / 触发）')
+    return []
   }
 })
 
@@ -569,3 +260,143 @@ function cacheSuggestions(context: string, suggestions: SuggestionItem[]) {
   }
 }
 
+// 显示建议列表
+function showSuggestionList(editor: any, options: AISuggestionOptions) {
+  // 如果已经在显示，先隐藏
+  if (isShowingSuggestions) {
+    hideSuggestionList()
+  }
+
+  const { state, view } = editor
+  const { from } = state.selection
+  const context = editor.getText()
+
+  console.log('📍 显示建议列表，位置:', from)
+
+  // 清除内联建议
+  const clearInlineTr = state.tr.setMeta(AIInlineSuggestionPluginKey, {
+    type: 'clear'
+  })
+  editor.view.dispatch(clearInlineTr)
+
+  // 获取光标位置
+  const coords = view.coordsAtPos(from)
+
+  const clientRect = () => ({
+    top: coords.top,
+    bottom: coords.bottom,
+    left: coords.left,
+    right: coords.left,
+    width: 0,
+    height: coords.bottom - coords.top
+  })
+
+  // 检查缓存
+  const cached = getCachedSuggestions(context)
+  const initialItems: SuggestionItem[] = cached || [{
+    id: 'loading',
+    text: '正在生成建议...',
+    confidence: 0,
+    type: 'continuation'
+  }]
+
+  // 创建 Vue 组件
+  currentComponent = new VueRenderer(SuggestionList, {
+    props: {
+      items: initialItems,
+      loading: !cached,
+      command: (item: SuggestionItem) => {
+        console.log('✨ 用户选择了建议:', item.text)
+        editor.commands.insertContent(item.text)
+        hideSuggestionList()
+      }
+    },
+    editor
+  })
+
+  // 创建一个临时元素作为 tippy 的锚点
+  const anchorElement = document.createElement('div')
+  anchorElement.style.position = 'absolute'
+  anchorElement.style.top = '0'
+  anchorElement.style.left = '0'
+  document.body.appendChild(anchorElement)
+
+  // 创建 tippy 弹窗
+  currentPopup = (tippy as any)(anchorElement, {
+    getReferenceClientRect: clientRect,
+    content: currentComponent.element,
+    showOnCreate: true,
+    interactive: true,
+    trigger: 'manual',
+    placement: 'bottom-start',
+    theme: 'ai-suggestion',
+    maxWidth: 600,
+    offset: [0, 8],
+    zIndex: 9999,
+    animation: 'shift-away',
+    duration: [200, 150],
+    onDestroy: () => {
+      // 清理锚点元素
+      if (anchorElement.parentNode) {
+        anchorElement.parentNode.removeChild(anchorElement)
+      }
+    }
+  }) as TippyInstance
+
+  isShowingSuggestions = true
+
+  // 如果没有缓存，异步获取建议
+  if (!cached) {
+    console.log('🌐 异步获取AI建议...')
+    fetchSuggestions(context, from, options)
+      .then(suggestions => {
+        console.log('✅ 获取到建议:', suggestions.length, '条')
+
+        if (suggestions.length > 0) {
+          cacheSuggestions(context, suggestions)
+
+          // 更新组件
+          if (currentComponent) {
+            currentComponent.updateProps({
+              items: suggestions,
+              loading: false
+            })
+          }
+        } else {
+          // 没有建议，显示空状态
+          if (currentComponent) {
+            currentComponent.updateProps({
+              items: [],
+              loading: false
+            })
+          }
+        }
+      })
+      .catch(error => {
+        console.error('❌ 获取AI建议失败:', error)
+        if (currentComponent) {
+          currentComponent.updateProps({
+            items: [],
+            loading: false
+          })
+        }
+      })
+  }
+}
+
+// 隐藏建议列表
+function hideSuggestionList() {
+  console.log('👋 隐藏建议列表')
+
+  if (currentPopup) {
+    currentPopup.destroy()
+    currentPopup = null
+  }
+
+  if (currentComponent) {
+    currentComponent.destroy()
+    currentComponent = null
+  }
+
+  isShowingSuggestions = false
+}

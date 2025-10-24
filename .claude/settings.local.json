@@ -42,7 +42,8 @@
       "Bash(chmod +x ~/.claude/skills/skill-creator/scripts/init_skill.py)",
       "Bash(python init_skill.py test-skill)",
       "Bash(python scripts/validate_character.py examples/example-fantasy-warrior.json)",
-      "Bash(python scripts/validate_character.py examples/example-scifi-scientist.json)"
+      "Bash(python scripts/validate_character.py examples/example-scifi-scientist.json)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

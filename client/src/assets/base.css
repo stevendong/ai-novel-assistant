@@ -42,6 +42,7 @@
   --theme-border: #f0f0f0;
   --theme-text: rgba(0, 0, 0, 0.85);
   --theme-text-secondary: rgba(0, 0, 0, 0.65);
+  --theme-text-tertiary: rgba(0, 0, 0, 0.95);
 
   /* 选中状态主题变量 */
   --theme-selected-bg: #e6f7ff;
@@ -109,6 +110,11 @@
 
 .theme-text-secondary {
   color: var(--theme-text-secondary);
+  transition: color 0.3s ease;
+}
+
+.theme-text-tertiary {
+  color: var(--theme-text-tertiary);
   transition: color 0.3s ease;
 }
 
@@ -270,6 +276,7 @@
     --theme-border: #434343;
     --theme-text: rgba(255, 255, 255, 0.85);
     --theme-text-secondary: rgba(255, 255, 255, 0.65);
+    --theme-text-tertiary: rgba(255, 255, 255, 0.95);
 
     /* 选中状态主题变量 */
     --theme-selected-bg: #111b26;

@@ -177,7 +177,10 @@
       <!-- AI续写提示 -->
       <div class="ai-hint" v-if="enableAiSuggestion && novelId && chapterId">
         <ThunderboltOutlined class="ai-icon" />
-        <span class="ai-text">输入 <kbd>/</kbd> 查看建议，按 <kbd>Ctrl/Cmd+Enter</kbd> 快速续写</span>
+        <span class="ai-text">
+          光标停留3秒自动显示续写建议，按 <kbd>Tab</kbd> 接受 |
+          按 <kbd>Cmd/Ctrl+H</kbd> 立即查看建议
+        </span>
       </div>
     </div>
   </div>
@@ -191,6 +194,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import Typography from '@tiptap/extension-typography'
 import { AISuggestion } from '@/extensions/aiSuggestion'
+import { AIInlineSuggestion } from '@/extensions/aiInlineSuggestion'
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -251,7 +255,7 @@ const editor = useEditor({
     }),
     CharacterCount,
     Typography,
-    // AI智能续写建议
+    // AI智能续写建议 (Cmd+H 手动触发)
     AISuggestion.configure({
       novelId: props.novelId || '',
       chapterId: props.chapterId || '',
@@ -260,7 +264,15 @@ const editor = useEditor({
       triggerDelay: 800,
       maxSuggestions: 3,
       minContextLength: 50,
-      hotkey: 'Mod-Enter'  // 改为 Ctrl/Cmd+Enter
+      hotkey: 'Mod-h'  // Ctrl/Cmd+H 查看建议
+    }),
+    // AI内联建议 (光标空闲3秒自动触发)
+    AIInlineSuggestion.configure({
+      novelId: props.novelId || '',
+      chapterId: props.chapterId || '',
+      enabled: props.enableAiSuggestion,
+      idleDelay: 3000,  // 3秒空闲触发
+      minContextLength: 50
     })
   ],
   onUpdate: ({ editor }) => {
@@ -520,16 +532,18 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+  color: var(--theme-text);
 }
 
 .ai-text kbd {
   display: inline-block;
   padding: 2px 6px;
   background: var(--theme-bg-elevated);
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--theme-border);
   border-radius: 3px;
   font-size: 11px;
   font-family: monospace;
+  color: var(--theme-text);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   margin: 0 2px;
 }
@@ -553,5 +567,20 @@ onBeforeUnmount(() => {
   background: #2a2a2a;
   border-color: #444;
   color: #e8e8e8;
+}
+
+/* AI内联建议样式 */
+:deep(.ai-inline-suggestion) {
+  color: #999999;
+  opacity: 0.6;
+  font-style: italic;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 暗色模式下的内联建议 */
+:deep(.dark) .ai-inline-suggestion {
+  color: #666666;
+  opacity: 0.7;
 }
 </style>
