@@ -735,7 +735,7 @@ onBeforeUnmount(() => {
 .chapter-editor {
   flex: 1;
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden; /* 不在此层滚动，让内部组件自己处理 */
   background: var(--theme-bg-base);
 }
 
@@ -815,24 +815,64 @@ onBeforeUnmount(() => {
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 避免溢出 */
 }
 
 .editor-card :deep(.ant-card-body) {
   padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-card :deep(.ant-tabs) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-card :deep(.ant-tabs-content-holder) {
+  flex: 1;
+  overflow: hidden;
+}
+
+.editor-card :deep(.ant-tabs-content) {
+  height: 100%;
+}
+
+.editor-card :deep(.ant-tabs-tabpane) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-form {
   padding: 24px;
+  overflow-y: auto;
 }
 
 /* Content Editor */
 .content-editor {
   padding: 0 24px 24px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.content-editor :deep(.tiptap-editor) {
+  flex: 1;
+  min-height: 0;
 }
 
 /* Relations Section */
 .relations-section {
   padding: 24px;
+  overflow-y: auto;
 }
 
 .relations-header {
@@ -855,6 +895,7 @@ onBeforeUnmount(() => {
 /* Consistency Section */
 .consistency-section {
   padding: 24px;
+  overflow-y: auto;
 }
 
 /* ============================================
@@ -1045,8 +1086,14 @@ onBeforeUnmount(() => {
     justify-content: flex-end;
   }
 
-  .editor-form,
-  .content-editor,
+  .editor-form {
+    padding: 16px;
+  }
+
+  .content-editor {
+    padding: 0 16px 16px 16px;
+  }
+
   .relations-section,
   .consistency-section {
     padding: 16px;

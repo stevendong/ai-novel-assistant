@@ -381,8 +381,7 @@ onBeforeUnmount(() => {
 .editor-wrapper {
   flex: 1;
   overflow-y: auto;
-  min-height: 400px;
-  max-height: 600px;
+  min-height: 0; /* 允许 flex 缩小 */
 }
 
 .editor-content {
@@ -391,7 +390,7 @@ onBeforeUnmount(() => {
 
 .editor-content :deep(.ProseMirror) {
   padding: 24px;
-  min-height: 400px;
+  min-height: 100%; /* 至少填满容器 */
   font-size: 15px;
   line-height: 2;
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
