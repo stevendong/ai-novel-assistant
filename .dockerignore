@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+*/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Development files
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment files (should be provided at runtime)
+.env
+.env.*
+!.env.example
+
+# Build outputs
+client/dist
+*/dist
+
+# Database
+server/prisma/*.db
+server/prisma/*.db-journal
+server/prisma/data
+
+# Uploads
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Logs
+logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Testing
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+__tests__
+test
+
+# Development
+nodemon.json
+.editorconfig
+.eslintrc*
+.prettierrc*

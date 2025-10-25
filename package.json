@@ -24,7 +24,13 @@
     "install:all": "npm install",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
     "lint": "npm run lint --workspaces --if-present",
-    "type-check": "npm run type-check --workspaces --if-present"
+    "type-check": "npm run type-check --workspaces --if-present",
+    "deploy:check": "bash scripts/pre-deploy-check.sh",
+    "deploy:railway": "bash scripts/deploy.sh railway",
+    "deploy:render": "bash scripts/deploy.sh render",
+    "deploy:docker": "bash scripts/deploy.sh docker",
+    "deploy:local": "bash scripts/deploy.sh local",
+    "backup": "bash scripts/backup.sh"
   },
   "keywords": [
     "ai",
