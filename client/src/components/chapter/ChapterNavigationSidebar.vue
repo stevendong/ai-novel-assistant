@@ -66,7 +66,7 @@
     </div>
 
     <!-- 章节列表 -->
-    <div class="chapter-list" v-if="!isCollapsed">
+    <div class="chapter-list" v-if="!isCollapsed" ref="chapterListRef">
       <div
         v-for="chapter in filteredChapters"
         :key="chapter.id"
@@ -114,8 +114,16 @@
         </div>
       </div>
 
+      <!-- 加载更多指示器 -->
+      <div v-if="loading || hasMore" class="load-more-indicator">
+        <a-spin v-if="loading" size="small" />
+        <span v-if="!loading && hasMore" class="load-more-text">
+          已加载 {{ chapters.length }} / {{ total }} 章
+        </span>
+      </div>
+
       <!-- 空状态 -->
-      <div v-if="filteredChapters.length === 0" class="empty-state">
+      <div v-if="filteredChapters.length === 0 && !loading" class="empty-state">
         <a-empty
           :image="emptyImage"
           description="暂无章节"
@@ -136,7 +144,7 @@
     </div>
 
     <!-- 折叠状态下的章节列表 -->
-    <div class="chapter-mini-list" v-if="isCollapsed">
+    <div class="chapter-mini-list" v-if="isCollapsed" ref="chapterMiniListRef">
       <a-tooltip
         v-for="chapter in filteredChapters"
         :key="chapter.id"
@@ -153,6 +161,14 @@
           {{ chapter.chapterNumber }}
         </div>
       </a-tooltip>
+
+      <!-- 加载更多指示器（折叠状态） -->
+      <div v-if="loading || hasMore" class="load-more-mini-indicator">
+        <a-spin v-if="loading" size="small" />
+        <a-tooltip v-else-if="hasMore" :title="`${chapters.length}/${total}`" placement="right">
+          <div class="load-more-mini-dot">···</div>
+        </a-tooltip>
+      </div>
     </div>
 
     <!-- 新增章节对话框 -->
@@ -203,7 +219,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { message, Empty } from 'ant-design-vue'
 import {
   BookOutlined,
@@ -220,6 +236,9 @@ interface Props {
   currentChapterId?: string
   loading?: boolean
   novelId?: string
+  hasMore?: boolean
+  total?: number
+  maxChapterNumber?: number
 }
 
 interface Emits {
@@ -227,10 +246,14 @@ interface Emits {
   (e: 'create'): void
   (e: 'created', chapter: Chapter): void
   (e: 'refresh'): void
+  (e: 'load-more'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  loading: false
+  loading: false,
+  hasMore: false,
+  total: 0,
+  maxChapterNumber: 0
 })
 
 const emit = defineEmits<Emits>()
@@ -254,6 +277,10 @@ const isCollapsed = ref(getInitialCollapsedState())
 const searchText = ref('')
 const statusFilter = ref('')
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
+
+// 列表容器 ref
+const chapterListRef = ref<HTMLElement | null>(null)
+const chapterMiniListRef = ref<HTMLElement | null>(null)
 
 // 检测操作系统
 const isMac = computed(() => {
@@ -299,8 +326,14 @@ const filteredChapters = computed(() => {
   return result
 })
 
-// 下一个章节号
+// 下一个章节号（使用服务端返回的最大章节号）
 const nextChapterNumber = computed(() => {
+  // 优先使用服务端返回的 maxChapterNumber
+  if (props.maxChapterNumber !== undefined && props.maxChapterNumber > 0) {
+    return props.maxChapterNumber + 1
+  }
+
+  // 降级方案：从已加载章节中计算
   if (props.chapters.length === 0) return 1
   const maxNumber = Math.max(...props.chapters.map(c => c.chapterNumber))
   return maxNumber + 1
@@ -326,9 +359,42 @@ watch(isCollapsed, (newValue) => {
   saveCollapsedState(newValue)
 })
 
+// 滚动加载
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (!target) return
+
+  const { scrollTop, scrollHeight, clientHeight } = target
+  const scrollBottom = scrollHeight - scrollTop - clientHeight
+
+  // 距离底部小于 50px 时触发加载
+  if (scrollBottom < 50 && props.hasMore && !props.loading) {
+    console.log('[章节导航] 触发加载更多')
+    emit('load-more')
+  }
+}
+
 // 生命周期
 onMounted(() => {
   console.log('[章节导航] 侧边栏初始状态:', isCollapsed.value ? '收起' : '展开')
+
+  // 添加滚动监听
+  if (chapterListRef.value) {
+    chapterListRef.value.addEventListener('scroll', handleScroll)
+  }
+  if (chapterMiniListRef.value) {
+    chapterMiniListRef.value.addEventListener('scroll', handleScroll)
+  }
+})
+
+// 清理
+onBeforeUnmount(() => {
+  if (chapterListRef.value) {
+    chapterListRef.value.removeEventListener('scroll', handleScroll)
+  }
+  if (chapterMiniListRef.value) {
+    chapterMiniListRef.value.removeEventListener('scroll', handleScroll)
+  }
 })
 
 const handleSelectChapter = (chapter: Chapter) => {
@@ -701,6 +767,23 @@ defineExpose({
   text-align: center;
 }
 
+/* 加载更多指示器 */
+.load-more-indicator {
+  padding: 16px;
+  text-align: center;
+  color: var(--theme-text-secondary);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.load-more-text {
+  opacity: 0.7;
+  font-weight: 500;
+}
+
 /* ============================================
    折叠状态 - 缩略视图
    ============================================ */
@@ -790,6 +873,32 @@ defineExpose({
   background: var(--brand-primary);
   color: #ffffff;
   box-shadow: var(--active-shadow);
+}
+
+/* 折叠状态加载指示器 */
+.load-more-mini-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+  margin-top: 8px;
+}
+
+.load-more-mini-dot {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  background: var(--theme-bg-container);
+  border: 2px solid var(--theme-border);
+  border-radius: 6px;
+  color: var(--theme-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: default;
+  opacity: 0.6;
 }
 
 /* ============================================

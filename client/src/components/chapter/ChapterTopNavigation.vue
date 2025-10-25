@@ -36,38 +36,46 @@
       </div>
 
       <!-- 快速跳转下拉菜单 -->
-      <a-dropdown :trigger="['click']">
+      <a-dropdown v-model:open="dropdownVisible" :trigger="['click']">
         <a-button type="text" size="small" class="quick-jump-btn">
           <template #icon><DownOutlined /></template>
         </a-button>
         <template #overlay>
-          <a-menu
-            class="chapter-jump-menu"
-            :selected-keys="currentChapter ? [currentChapter.id] : []"
-            @click="handleMenuClick"
-          >
-            <a-menu-item-group title="快速跳转">
-              <a-menu-item
-                v-for="chapter in allChapters"
+          <div class="chapter-jump-menu-container">
+            <div class="menu-header">快速跳转</div>
+            <div class="menu-list" ref="menuListRef">
+              <div
+                v-for="chapter in sortedChapters"
                 :key="chapter.id"
+                :class="[
+                  'menu-chapter-item',
+                  { active: currentChapter?.id === chapter.id }
+                ]"
+                @click="handleMenuClick(chapter.id)"
               >
-                <div class="menu-chapter-item">
-                  <span class="menu-chapter-number">
-                    第{{ chapter.chapterNumber }}章
-                  </span>
-                  <span class="menu-chapter-title">
-                    {{ chapter.title }}
-                  </span>
-                  <a-tag
-                    :color="getStatusColor(chapter.status)"
-                    size="small"
-                  >
-                    {{ getStatusText(chapter.status) }}
-                  </a-tag>
-                </div>
-              </a-menu-item>
-            </a-menu-item-group>
-          </a-menu>
+                <span class="menu-chapter-number">
+                  第{{ chapter.chapterNumber }}章
+                </span>
+                <span class="menu-chapter-title">
+                  {{ chapter.title }}
+                </span>
+                <a-tag
+                  :color="getStatusColor(chapter.status)"
+                  size="small"
+                >
+                  {{ getStatusText(chapter.status) }}
+                </a-tag>
+              </div>
+
+              <!-- 加载更多指示器 -->
+              <div v-if="loading || hasMore" class="menu-load-more">
+                <a-spin v-if="loading" size="small" />
+                <span v-else class="load-more-text">
+                  已加载 {{ allChapters.length }} / {{ total }} 章
+                </span>
+              </div>
+            </div>
+          </div>
         </template>
       </a-dropdown>
     </div>
@@ -93,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   LeftOutlined,
@@ -106,17 +114,31 @@ import type { Chapter } from '@/types'
 interface Props {
   currentChapter?: Chapter
   allChapters: Chapter[]
+  loading?: boolean
+  hasMore?: boolean
+  total?: number
 }
 
 interface Emits {
   (e: 'navigate', chapterId: string): void
   (e: 'prev'): void
   (e: 'next'): void
+  (e: 'load-more'): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false,
+  hasMore: false,
+  total: 0
+})
+
 const emit = defineEmits<Emits>()
 const router = useRouter()
+
+// 菜单容器 ref
+const menuListRef = ref<HTMLElement | null>(null)
+// 下拉菜单可见状态
+const dropdownVisible = ref(false)
 
 // 是否是 Mac 系统
 const isMac = computed(() => {
@@ -167,9 +189,51 @@ const handleNext = () => {
   }
 }
 
-const handleMenuClick = ({ key }: { key: string }) => {
-  emit('navigate', key)
+const handleMenuClick = (chapterId: string) => {
+  emit('navigate', chapterId)
 }
+
+// 滚动加载
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (!target) return
+
+  const { scrollTop, scrollHeight, clientHeight } = target
+  const scrollBottom = scrollHeight - scrollTop - clientHeight
+
+  console.log('[章节顶部导航] 滚动检测', {
+    scrollTop,
+    scrollHeight,
+    clientHeight,
+    scrollBottom,
+    hasMore: props.hasMore,
+    loading: props.loading
+  })
+
+  // 距离底部小于 30px 时触发加载
+  if (scrollBottom < 30 && props.hasMore && !props.loading) {
+    console.log('[章节顶部导航] 触发加载更多')
+    emit('load-more')
+  }
+}
+
+// 监听下拉菜单可见性变化，动态绑定/解绑滚动监听
+watch(dropdownVisible, async (visible) => {
+  if (visible) {
+    // 下拉菜单打开时，等待 DOM 渲染完成后绑定滚动监听
+    await nextTick()
+    if (menuListRef.value) {
+      console.log('[章节顶部导航] 绑定滚动监听器')
+      menuListRef.value.addEventListener('scroll', handleScroll)
+    }
+  } else {
+    // 下拉菜单关闭时，解绑滚动监听
+    if (menuListRef.value) {
+      console.log('[章节顶部导航] 解绑滚动监听器')
+      menuListRef.value.removeEventListener('scroll', handleScroll)
+    }
+  }
+})
 
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
@@ -290,31 +354,91 @@ defineExpose({
   gap: 8px;
 }
 
-/* 下拉菜单样式 */
-.chapter-jump-menu {
+/* 下拉菜单容器 */
+.chapter-jump-menu-container {
+  min-width: 320px;
+  background: var(--theme-bg-container);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.menu-header {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-text-secondary);
+  background: var(--theme-bg-elevated);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.menu-list {
   max-height: 400px;
   overflow-y: auto;
-  min-width: 300px;
+  padding: 4px;
+}
+
+/* 隐藏滚动条 */
+.menu-list::-webkit-scrollbar {
+  width: 0px;
+  display: none;
+}
+
+.menu-list {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .menu-chapter-item {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.menu-chapter-item:hover {
+  background: var(--theme-bg-elevated);
+}
+
+.menu-chapter-item.active {
+  background: var(--theme-selected-bg);
+  border-left: 3px solid var(--theme-primary-color, #1890ff);
 }
 
 .menu-chapter-number {
   font-size: 12px;
-  color: #999;
+  color: var(--theme-text-secondary);
   white-space: nowrap;
+  min-width: 60px;
 }
 
 .menu-chapter-title {
   flex: 1;
   font-size: 13px;
+  color: var(--theme-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.menu-chapter-item.active .menu-chapter-title {
+  font-weight: 600;
+  color: var(--theme-primary-color, #1890ff);
+}
+
+.menu-load-more {
+  padding: 12px;
+  text-align: center;
+  color: var(--theme-text-secondary);
+  font-size: 12px;
+}
+
+.load-more-text {
+  opacity: 0.7;
 }
 
 /* 响应式设计 */

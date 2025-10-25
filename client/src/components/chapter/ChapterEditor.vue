@@ -8,10 +8,14 @@
       :current-chapter-id="props.chapterId"
       :novel-id="chapter?.novelId"
       :loading="chaptersLoading"
+      :has-more="hasMoreChapters"
+      :total="totalChapters"
+      :max-chapter-number="maxChapterNumber"
       @select="handleChapterSelect"
       @create="handleCreateChapter"
       @created="handleChapterCreated"
-      @refresh="loadAllChapters"
+      @refresh="() => loadAllChapters(true)"
+      @load-more="loadMoreChapters"
     />
 
     <!-- 主编辑区域 -->
@@ -69,9 +73,13 @@
         ref="topNavRef"
         :current-chapter="chapter"
         :all-chapters="allChapters"
+        :loading="chaptersLoading"
+        :has-more="hasMoreChapters"
+        :total="totalChapters"
         @navigate="handleNavigate"
         @prev="handlePrevChapter"
         @next="handleNextChapter"
+        @load-more="loadMoreChapters"
       />
 
       <!-- Header -->
@@ -337,6 +345,13 @@ const switching = ref(false)
 const topNavRef = ref<InstanceType<typeof ChapterTopNavigation> | null>(null)
 const sidebarRef = ref<InstanceType<typeof ChapterNavigationSidebar> | null>(null)
 
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalChapters = ref(0)
+const maxChapterNumber = ref(0)
+const hasMoreChapters = computed(() => allChapters.value.length < totalChapters.value)
+
 const formData = ref({
   title: '',
   chapterNumber: 1,
@@ -414,19 +429,54 @@ const loadChapter = async () => {
   }
 }
 
-// 加载所有章节（用于导航）
-const loadAllChapters = async () => {
+// 加载章节（分页）
+const loadAllChapters = async (reset = false) => {
   if (!chapter.value?.novelId) return
+
+  // 如果重置，清空已加载数据
+  if (reset) {
+    currentPage.value = 1
+    allChapters.value = []
+  }
 
   chaptersLoading.value = true
   try {
-    const data = await chapterService.getChaptersByNovel(chapter.value.novelId)
-    allChapters.value = data
+    const result = await chapterService.getChaptersByNovelPaginated(
+      chapter.value.novelId,
+      {
+        page: currentPage.value,
+        pageSize: pageSize.value,
+        sortBy: 'chapterNumber',
+        sortOrder: 'asc'
+      }
+    )
+
+    if (reset) {
+      allChapters.value = result.chapters
+    } else {
+      // 追加新章节，去重
+      const newChapters = result.chapters.filter(
+        newChapter => !allChapters.value.some(existing => existing.id === newChapter.id)
+      )
+      allChapters.value = [...allChapters.value, ...newChapters]
+    }
+
+    totalChapters.value = result.total
+    maxChapterNumber.value = result.maxChapterNumber || 0
+    console.log(`[章节加载] 已加载 ${allChapters.value.length}/${result.total} 章节，最大章节号: ${maxChapterNumber.value}`)
   } catch (error) {
     console.error('Failed to load chapters:', error)
   } finally {
     chaptersLoading.value = false
   }
+}
+
+// 加载更多章节
+const loadMoreChapters = async () => {
+  if (chaptersLoading.value || !hasMoreChapters.value) return
+
+  currentPage.value++
+  await loadAllChapters(false)
 }
 
 // 章节选择处理
@@ -738,7 +788,7 @@ const detectOS = () => {
 // 生命周期
 onMounted(async () => {
   await loadChapter()
-  await loadAllChapters()
+  await loadAllChapters(true) // 重置并加载第一页
   detectOS()
 
   // 添加键盘事件监听
