@@ -113,31 +113,70 @@ export function useChapterList() {
   }
   
   // 创建新章节
-  const createChapter = async (data: Omit<ChapterCreateData, 'novelId' | 'chapterNumber'>) => {
+  const createChapter = async (
+    data: Omit<ChapterCreateData, 'novelId' | 'chapterNumber'> & {
+      chapterNumber?: number
+      insertMode?: boolean
+    }
+  ) => {
     const currentProject = projectStore.currentProject
     if (!currentProject) {
       message.error('请先选择项目')
       return null
     }
-    
+
     try {
       loading.value = true
+
+      // 如果没有指定章节号，使用下一个章节号；否则使用指定的章节号
+      const chapterNumber = data.chapterNumber !== undefined ? data.chapterNumber : nextChapterNumber.value
+      const insertMode = data.insertMode !== undefined ? data.insertMode : false
+
       const newChapter = await chapterService.createChapter({
-        ...data,
+        title: data.title,
+        outline: data.outline,
+        plotPoints: data.plotPoints,
         novelId: currentProject.id,
-        chapterNumber: nextChapterNumber.value
+        chapterNumber,
+        insertMode
       })
-      
-      message.success('章节创建成功')
-      
+
+      message.success(insertMode ? '章节插入成功' : '章节创建成功')
+
       // 重新加载当前页数据
       await loadChapters(currentProject.id)
-      
+
       return newChapter
     } catch (error) {
       console.error('Failed to create chapter:', error)
       message.error('创建章节失败')
       return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 重新排序章节
+  const reorderChapters = async () => {
+    const currentProject = projectStore.currentProject
+    if (!currentProject) {
+      message.error('请先选择项目')
+      return false
+    }
+
+    try {
+      loading.value = true
+      await chapterService.reorderChapters(currentProject.id)
+      message.success('章节序号已重新排列')
+
+      // 重新加载数据
+      await loadChapters(currentProject.id)
+
+      return true
+    } catch (error) {
+      console.error('Failed to reorder chapters:', error)
+      message.error('重新排序失败')
+      return false
     } finally {
       loading.value = false
     }
@@ -277,6 +316,7 @@ export function useChapterList() {
     searchChapters,
     changePage,
     changeSort,
-    filterByStatus
+    filterByStatus,
+    reorderChapters
   }
 }

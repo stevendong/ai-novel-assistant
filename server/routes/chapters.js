@@ -198,8 +198,8 @@ router.get('/:id', async (req, res) => {
 // 创建新章节
 router.post('/', async (req, res) => {
   try {
-    const { novelId, title, chapterNumber, outline, plotPoints } = req.body;
-    
+    const { novelId, title, chapterNumber, outline, plotPoints, insertMode = false } = req.body;
+
     if (!novelId || !title || chapterNumber === undefined) {
       return res.status(400).json({ error: 'Novel ID, title, and chapter number are required' });
     }
@@ -210,9 +210,33 @@ router.post('/', async (req, res) => {
     });
 
     if (existingChapter) {
-      return res.status(400).json({ error: 'Chapter number already exists' });
+      // 如果是插入模式，则将该章节号及之后的章节号都加1
+      if (insertMode) {
+        // 使用事务确保数据一致性
+        await prisma.$transaction(async (tx) => {
+          // 获取需要调整的章节（章节号 >= 指定章节号）
+          const chaptersToUpdate = await tx.chapter.findMany({
+            where: {
+              novelId,
+              chapterNumber: { gte: chapterNumber }
+            },
+            orderBy: { chapterNumber: 'desc' } // 倒序更新，避免唯一约束冲突
+          });
+
+          // 更新章节号（每个章节号+1）
+          for (const chapter of chaptersToUpdate) {
+            await tx.chapter.update({
+              where: { id: chapter.id },
+              data: { chapterNumber: chapter.chapterNumber + 1 }
+            });
+          }
+        });
+      } else {
+        return res.status(400).json({ error: 'Chapter number already exists' });
+      }
     }
 
+    // 创建新章节
     const chapter = await prisma.chapter.create({
       data: {
         novelId,
@@ -511,6 +535,41 @@ router.post('/:id/settings', async (req, res) => {
     }
     console.error('Error adding setting to chapter:', error);
     res.status(500).json({ error: 'Failed to add setting to chapter' });
+  }
+});
+
+// 重新排序章节（自动修复章节号）
+router.post('/novel/:novelId/reorder', async (req, res) => {
+  try {
+    const { novelId } = req.params;
+
+    // 使用事务确保数据一致性
+    await prisma.$transaction(async (tx) => {
+      // 获取该小说的所有章节，按当前章节号排序
+      const chapters = await tx.chapter.findMany({
+        where: { novelId },
+        orderBy: { chapterNumber: 'asc' }
+      });
+
+      // 重新分配章节号（从1开始）
+      for (let i = 0; i < chapters.length; i++) {
+        const chapter = chapters[i];
+        const newChapterNumber = i + 1;
+
+        // 只有当章节号需要更新时才更新
+        if (chapter.chapterNumber !== newChapterNumber) {
+          await tx.chapter.update({
+            where: { id: chapter.id },
+            data: { chapterNumber: newChapterNumber }
+          });
+        }
+      }
+    });
+
+    res.json({ message: 'Chapters reordered successfully' });
+  } catch (error) {
+    console.error('Error reordering chapters:', error);
+    res.status(500).json({ error: 'Failed to reorder chapters' });
   }
 });
 

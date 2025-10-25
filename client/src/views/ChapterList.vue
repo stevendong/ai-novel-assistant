@@ -190,6 +190,34 @@
         </a-form-item>
 
         <a-form-item
+          label="添加方式"
+          name="insertMode"
+        >
+          <a-radio-group v-model:value="addChapterForm.insertMode">
+            <a-radio value="append">添加到末尾（第 {{ nextChapterNumber }} 章）</a-radio>
+            <a-radio value="insert">插入到指定位置</a-radio>
+          </a-radio-group>
+        </a-form-item>
+
+        <a-form-item
+          v-if="addChapterForm.insertMode === 'insert'"
+          label="章节号"
+          name="chapterNumber"
+          :rules="[{ required: true, message: '请输入章节号' }]"
+        >
+          <a-input-number
+            v-model:value="addChapterForm.chapterNumber"
+            :min="1"
+            :max="nextChapterNumber"
+            placeholder="请输入章节号"
+            style="width: 200px"
+          />
+          <span style="margin-left: 8px; color: #8c8c8c; font-size: 12px;">
+            插入到该位置，后续章节自动后移
+          </span>
+        </a-form-item>
+
+        <a-form-item
           label="章节大纲"
           name="outline"
         >
@@ -204,10 +232,15 @@
 
         <div class="chapter-info">
           <a-descriptions :column="2" size="small">
-            <a-descriptions-item label="章节号">
-              第 {{ nextChapterNumber }} 章
+            <a-descriptions-item label="将创建为">
+              <span v-if="addChapterForm.insertMode === 'append'">
+                第 {{ nextChapterNumber }} 章
+              </span>
+              <span v-else>
+                第 {{ addChapterForm.chapterNumber }} 章（插入模式）
+              </span>
             </a-descriptions-item>
-            <a-descriptions-item label="状态">
+            <a-descriptions-item label="初始状态">
               规划中
             </a-descriptions-item>
           </a-descriptions>
@@ -336,7 +369,9 @@ const editChapterVisible = ref(false)
 const batchChapterVisible = ref(false)
 const addChapterForm = ref({
   title: '',
-  outline: ''
+  outline: '',
+  insertMode: 'append', // 'append' 添加到末尾, 'insert' 插入到指定位置
+  chapterNumber: 1
 })
 const editChapterForm = ref<Chapter | null>(null)
 
@@ -423,7 +458,9 @@ const showAddChapterDialog = () => {
   addChapterVisible.value = true
   addChapterForm.value = {
     title: '',
-    outline: ''
+    outline: '',
+    insertMode: 'append',
+    chapterNumber: nextChapterNumber.value
   }
 }
 
@@ -456,16 +493,23 @@ const handleAddChapter = async () => {
     return
   }
 
+  const isInsertMode = addChapterForm.value.insertMode === 'insert'
+  const chapterNumber = isInsertMode ? addChapterForm.value.chapterNumber : undefined
+
   const newChapter = await createChapter({
     title: addChapterForm.value.title.trim(),
-    outline: addChapterForm.value.outline.trim()
+    outline: addChapterForm.value.outline.trim(),
+    chapterNumber,
+    insertMode: isInsertMode
   })
 
   if (newChapter) {
     addChapterVisible.value = false
     addChapterForm.value = {
       title: '',
-      outline: ''
+      outline: '',
+      insertMode: 'append',
+      chapterNumber: 1
     }
   }
 }

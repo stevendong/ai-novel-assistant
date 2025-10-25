@@ -10,6 +10,7 @@ export interface ChapterCreateData {
   chapterNumber: number
   outline?: string
   plotPoints?: PlotPoint[]
+  insertMode?: boolean // 是否为插入模式（插入到指定位置，自动调整后续章节号）
 }
 
 export interface ChapterUpdateData {
@@ -127,11 +128,17 @@ class ChapterService {
   async createChapter(data: ChapterCreateData): Promise<Chapter> {
     const response = await api.post(`${API_BASE}/chapters`, {
       ...data,
-      plotPoints: data.plotPoints ? JSON.stringify(data.plotPoints) : null
+      plotPoints: data.plotPoints ? JSON.stringify(data.plotPoints) : null,
+      insertMode: data.insertMode || false
     })
 
     const chapter = response.data
     return this.parseChapterData(chapter)
+  }
+
+  // 重新排序章节（自动修复章节号）
+  async reorderChapters(novelId: string): Promise<void> {
+    await api.post(`${API_BASE}/chapters/novel/${novelId}/reorder`)
   }
 
   // 更新章节
