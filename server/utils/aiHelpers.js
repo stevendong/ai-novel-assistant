@@ -110,13 +110,50 @@ function shouldRetry(error) {
  */
 function buildRequestParams(provider, task = 'default', overrides = {}) {
   const baseParams = getTaskParams(provider, task)
-  
-  return {
+
+  // 合并参数
+  const mergedParams = {
     ...baseParams,
-    ...overrides,
-    // 确保某些参数格式正确
-    temperature: Math.min(2, Math.max(0, overrides.temperature || baseParams.temperature || 0.7)),
-    max_tokens: Math.min(32000, Math.max(1, overrides.maxTokens || overrides.max_tokens || baseParams.maxTokens || 2000))
+    ...overrides
+  }
+
+  // 根据提供商转换参数名称
+  if (provider === 'openai') {
+    return {
+      model: mergedParams.model,
+      temperature: Math.min(2, Math.max(0, mergedParams.temperature || 0.7)),
+      max_tokens: Math.min(32000, Math.max(1, mergedParams.maxTokens || mergedParams.max_tokens || 2000)),
+      top_p: mergedParams.topP || mergedParams.top_p || 1,
+      frequency_penalty: mergedParams.frequencyPenalty || mergedParams.frequency_penalty || 0,
+      presence_penalty: mergedParams.presencePenalty || mergedParams.presence_penalty || 0,
+      stream: mergedParams.stream || false
+    }
+  } else if (provider === 'claude') {
+    return {
+      model: mergedParams.model,
+      temperature: Math.min(1, Math.max(0, mergedParams.temperature || 0.7)),
+      max_tokens: Math.min(4096, Math.max(1, mergedParams.maxTokens || mergedParams.max_tokens || 2000)),
+      stream: mergedParams.stream || false
+    }
+  } else if (provider === 'gemini') {
+    return {
+      model: mergedParams.model,
+      temperature: Math.min(2, Math.max(0, mergedParams.temperature || 0.7)),
+      maxOutputTokens: Math.min(8192, Math.max(1, mergedParams.maxTokens || mergedParams.maxOutputTokens || 2048)),
+      topP: mergedParams.topP || mergedParams.top_p || 0.95,
+      topK: mergedParams.topK || mergedParams.top_k || 40
+    }
+  } else {
+    // 默认返回通用格式（OpenAI兼容）
+    return {
+      model: mergedParams.model,
+      temperature: Math.min(2, Math.max(0, mergedParams.temperature || 0.7)),
+      max_tokens: Math.min(32000, Math.max(1, mergedParams.maxTokens || mergedParams.max_tokens || 2000)),
+      top_p: mergedParams.topP || mergedParams.top_p || 1,
+      frequency_penalty: mergedParams.frequencyPenalty || mergedParams.frequency_penalty || 0,
+      presence_penalty: mergedParams.presencePenalty || mergedParams.presence_penalty || 0,
+      stream: mergedParams.stream || false
+    }
   }
 }
 

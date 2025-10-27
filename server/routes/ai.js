@@ -166,8 +166,52 @@ router.post('/chat/stream', requireAuth, async (req, res) => {
             }
           }
         }
+      } else if (provider === 'gemini') {
+        // Gemini streaming
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const eventData = JSON.parse(line.slice(6));
+                // Gemini格式: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
+                const text = eventData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                  const data = {
+                    type: 'chunk',
+                    content: text
+                  };
+                  res.write(`data: ${JSON.stringify(data)}\n\n`);
+                }
+
+                // 检查是否完成
+                const finishReason = eventData.candidates?.[0]?.finishReason;
+                if (finishReason) {
+                  const data = {
+                    type: 'finish',
+                    reason: finishReason
+                  };
+                  res.write(`data: ${JSON.stringify(data)}\n\n`);
+                  break;
+                }
+              } catch (parseError) {
+                // Skip malformed JSON
+                continue;
+              }
+            }
+          }
+        }
       }
-      
+
       // 发送完成信号
       res.write('data: {"type":"done"}\n\n');
     } catch (streamError) {

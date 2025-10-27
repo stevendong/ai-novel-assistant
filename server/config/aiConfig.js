@@ -60,6 +60,43 @@ const aiConfig = {
     timeout: parseInt(process.env.CLAUDE_TIMEOUT) || 60000
   },
 
+  // Gemini配置 (Google)
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY,
+    baseURL: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta',
+    model: process.env.GEMINI_MODEL || 'gemini-pro',
+    defaultParams: {
+      temperature: parseFloat(process.env.GEMINI_TEMPERATURE) || 0.7,
+      maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS) || 2048,
+      topP: parseFloat(process.env.GEMINI_TOP_P) || 0.95,
+      topK: parseInt(process.env.GEMINI_TOP_K) || 40
+    },
+    taskParams: {
+      consistency: {
+        temperature: parseFloat(process.env.GEMINI_CONSISTENCY_TEMPERATURE) || 0.3,
+        maxTokens: parseInt(process.env.GEMINI_CONSISTENCY_MAX_TOKENS) || 1500
+      },
+      creative: {
+        temperature: parseFloat(process.env.GEMINI_CREATIVE_TEMPERATURE) || 0.9,
+        maxTokens: parseInt(process.env.GEMINI_CREATIVE_MAX_TOKENS) || 4096
+      },
+      analysis: {
+        temperature: parseFloat(process.env.GEMINI_ANALYSIS_TEMPERATURE) || 0.2,
+        maxTokens: parseInt(process.env.GEMINI_ANALYSIS_MAX_TOKENS) || 2048
+      },
+      content_generation: {
+        temperature: parseFloat(process.env.GEMINI_CONTENT_TEMPERATURE) || 0.8,
+        maxTokens: parseInt(process.env.GEMINI_CONTENT_MAX_TOKENS) || 8192
+      }
+    },
+    retry: {
+      maxAttempts: parseInt(process.env.GEMINI_RETRY_ATTEMPTS) || 3,
+      backoffMultiplier: parseFloat(process.env.GEMINI_BACKOFF_MULTIPLIER) || 2,
+      initialDelay: parseInt(process.env.GEMINI_INITIAL_DELAY) || 1000
+    },
+    timeout: parseInt(process.env.GEMINI_TIMEOUT) || 60000
+  },
+
   // 自定义提供商配置
   custom: {
     name: process.env.CUSTOM_PROVIDER_NAME,
@@ -94,10 +131,11 @@ function validateConfig() {
   // 检查至少有一个提供商配置
   const hasOpenAI = aiConfig.openai.apiKey
   const hasClaude = aiConfig.claude.apiKey
+  const hasGemini = aiConfig.gemini.apiKey
   const hasCustom = aiConfig.custom.apiKey && aiConfig.custom.baseURL
 
-  if (!hasOpenAI && !hasClaude && !hasCustom) {
-    errors.push('至少需要配置一个AI提供商 (OpenAI, Claude, 或自定义提供商)')
+  if (!hasOpenAI && !hasClaude && !hasGemini && !hasCustom) {
+    errors.push('至少需要配置一个AI提供商 (OpenAI, Claude, Gemini, 或自定义提供商)')
   }
 
   // 检查默认提供商是否可用
@@ -107,6 +145,9 @@ function validateConfig() {
   }
   if (defaultProvider === 'claude' && !hasClaude) {
     errors.push('默认提供商设置为Claude但未配置CLAUDE_API_KEY')
+  }
+  if (defaultProvider === 'gemini' && !hasGemini) {
+    errors.push('默认提供商设置为Gemini但未配置GEMINI_API_KEY')
   }
   if (defaultProvider === 'custom' && !hasCustom) {
     errors.push('默认提供商设置为自定义但未配置相关参数')

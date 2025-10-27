@@ -55,6 +55,22 @@ class AIService {
       });
     }
 
+    // Initialize Gemini provider
+    if (aiConfig.gemini.apiKey) {
+      this.providers.set('gemini', {
+        client: null, // Will be initialized when needed
+        config: {
+          apiKey: aiConfig.gemini.apiKey,
+          baseURL: aiConfig.gemini.baseURL,
+          timeout: aiConfig.gemini.timeout
+        },
+        type: 'gemini',
+        models: {
+          chat: aiConfig.gemini.model
+        }
+      });
+    }
+
     // Support for custom OpenAI-compatible providers
     if (aiConfig.custom.name && aiConfig.custom.apiKey && aiConfig.custom.baseURL) {
       this.providers.set(aiConfig.custom.name, {
@@ -86,8 +102,10 @@ class AIService {
       return await this.openaiChat(provider, messages, options);
     } else if (provider.type === 'claude') {
       return await this.claudeChat(provider, messages, options);
+    } else if (provider.type === 'gemini') {
+      return await this.geminiChat(provider, messages, options);
     }
-    
+
     throw new Error(`Unsupported provider type: ${provider.type}`);
   }
 
@@ -102,8 +120,10 @@ class AIService {
       return await this.openaiChatStream(provider, messages, options);
     } else if (provider.type === 'claude') {
       return await this.claudeChatStream(provider, messages, options);
+    } else if (provider.type === 'gemini') {
+      return await this.geminiChatStream(provider, messages, options);
     }
-    
+
     throw new Error(`Unsupported provider type: ${provider.type}`);
   }
 
@@ -222,6 +242,91 @@ class AIService {
     }
   }
 
+  async geminiChat(provider, messages, options) {
+    const startTime = Date.now();
+    const taskType = options.taskType || 'default';
+
+    try {
+      // Convert OpenAI format messages to Gemini format
+      const systemMessage = messages.find(m => m.role === 'system')?.content || '';
+      const userMessages = messages.filter(m => m.role !== 'system');
+
+      // Gemini uses "contents" array with "parts"
+      const contents = userMessages.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
+
+      // Add system instruction if present
+      const requestData = {
+        contents: contents,
+        generationConfig: {
+          temperature: options.temperature || 0.7,
+          maxOutputTokens: options.maxTokens || 2048,
+          topP: options.topP || 0.95,
+          topK: options.topK || 40
+        }
+      };
+
+      // Add system instruction if available
+      if (systemMessage) {
+        requestData.systemInstruction = {
+          parts: [{ text: systemMessage }]
+        };
+      }
+
+      const model = options.model || provider.models.chat;
+      const url = `${provider.config.baseURL}/models/${model}:generateContent?key=${provider.config.apiKey}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData),
+        signal: options.signal
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const duration = Date.now() - startTime;
+        const error = new Error(`Gemini API Error: ${response.status} ${response.statusText} - ${errorText}`);
+        logger.logApiCall('gemini', `/models/${model}:generateContent`, requestData, null, duration, error);
+        throw error;
+      }
+
+      const data = await response.json();
+
+      // Log successful API call
+      const duration = Date.now() - startTime;
+      logger.logApiCall('gemini', `/models/${model}:generateContent`, requestData, data, duration);
+
+      // Extract content from Gemini response
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      return {
+        content: content,
+        usage: {
+          promptTokens: data.usageMetadata?.promptTokenCount || 0,
+          completionTokens: data.usageMetadata?.candidatesTokenCount || 0,
+          totalTokens: data.usageMetadata?.totalTokenCount || 0
+        },
+        provider: 'gemini',
+        model: model,
+        finishReason: data.candidates?.[0]?.finishReason || 'stop'
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('Gemini API Error:', {
+        error: error.message,
+        stack: error.stack,
+        model: options.model || provider.models.chat,
+        messageCount: messages.length
+      });
+      throw new Error(`Gemini API Error: ${error.message}`);
+    }
+  }
+
   async openaiChatStream(provider, messages, options) {
     const taskType = options.taskType || 'default';
 
@@ -295,6 +400,68 @@ class AIService {
         messageCount: messages.length
       });
       throw new Error(`Claude Stream Error: ${error.message}`);
+    }
+  }
+
+  async geminiChatStream(provider, messages, options) {
+    const startTime = Date.now();
+
+    try {
+      // Convert OpenAI format messages to Gemini format
+      const systemMessage = messages.find(m => m.role === 'system')?.content || '';
+      const userMessages = messages.filter(m => m.role !== 'system');
+
+      // Gemini uses "contents" array with "parts"
+      const contents = userMessages.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }));
+
+      const requestData = {
+        contents: contents,
+        generationConfig: {
+          temperature: options.temperature || 0.7,
+          maxOutputTokens: options.maxTokens || 2048,
+          topP: options.topP || 0.95,
+          topK: options.topK || 40
+        }
+      };
+
+      // Add system instruction if available
+      if (systemMessage) {
+        requestData.systemInstruction = {
+          parts: [{ text: systemMessage }]
+        };
+      }
+
+      const model = options.model || provider.models.chat;
+      const url = `${provider.config.baseURL}/models/${model}:streamGenerateContent?key=${provider.config.apiKey}&alt=sse`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData),
+        signal: options.signal
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const error = new Error(`Gemini Stream Error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw error;
+      }
+
+      // Return readable stream that can be consumed by the route handler
+      return response.body;
+    } catch (error) {
+      logger.error('Gemini Stream Error:', {
+        error: error.message,
+        stack: error.stack,
+        model: options.model || provider.models.chat,
+        messageCount: messages.length
+      });
+      throw new Error(`Gemini Stream Error: ${error.message}`);
     }
   }
 
