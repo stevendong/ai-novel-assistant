@@ -71,6 +71,11 @@
       </div>
     </div>
 
+    <!-- 自定义AI配置 -->
+    <div class="settings-section">
+      <CustomAIConfig v-model="aiSettings.customConfigs" />
+    </div>
+
     <div class="settings-section">
       <h4>快速操作</h4>
       <a-row :gutter="12">
@@ -97,6 +102,7 @@ import { message } from 'ant-design-vue'
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
 import { useAIChatStore } from '@/stores/aiChat'
 import { apiClient } from '@/utils/api'
+import CustomAIConfig from './CustomAIConfig.vue'
 
 // Stores
 const aiChatStore = useAIChatStore()
@@ -107,7 +113,8 @@ const aiSettings = reactive({
   model: 'gpt-3.5-turbo',
   autoSave: true,
   maxHistoryLength: 50,
-  taskPreferences: {}
+  taskPreferences: {},
+  customConfigs: []
 })
 
 const availableProviders = ref([])
@@ -156,7 +163,8 @@ const loadAIConfig = async () => {
         model: preferences.preferredModel || config.defaultModel,
         autoSave: preferences.autoSave ?? true,
         maxHistoryLength: preferences.maxHistoryLength || 50,
-        taskPreferences: preferences.taskPreferences || {}
+        taskPreferences: preferences.taskPreferences || {},
+        customConfigs: preferences.customConfigs || []
       })
     } catch (error) {
       console.warn('加载用户偏好失败,使用默认设置:', error)
@@ -165,7 +173,8 @@ const loadAIConfig = async () => {
         model: config.defaultModel,
         autoSave: true,
         maxHistoryLength: 50,
-        taskPreferences: {}
+        taskPreferences: {},
+        customConfigs: []
       })
     }
 
@@ -179,29 +188,50 @@ const loadAIConfig = async () => {
   }
 }
 
-const updateAvailableModels = () => {
+const updateAvailableModels = async () => {
   const selectedProvider = availableProviders.value.find(p => p.value === aiSettings.provider)
   if (!selectedProvider) {
     availableModels.value = []
     return
   }
 
-  // 这里应该根据实际的API返回的provider信息来设置模型列表
-  // 暂时使用简化的逻辑
-  const modelMap = {
-    'openai': [
-      { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo' },
-      { label: 'GPT-4', value: 'gpt-4' },
-      { label: 'Kimi K2 Instruct', value: 'kimi-k2-instruct' }
-    ],
-    'claude': [
-      { label: 'Claude 3 Haiku', value: 'claude-3-haiku-20240307' },
-      { label: 'Claude 3 Sonnet', value: 'claude-3-sonnet-20240229' },
-      { label: 'Claude 3 Opus', value: 'claude-3-opus-20240229' }
-    ]
-  }
+  // 从 API 动态获取模型列表
+  try {
+    const response = await apiClient.post('/api/ai/models/list', {
+      provider: aiSettings.provider
+    })
 
-  availableModels.value = modelMap[aiSettings.provider] || []
+    const models = response.data.models || []
+    availableModels.value = models.map(model => ({
+      label: model.name + (model.description ? ` - ${model.description}` : ''),
+      value: model.id
+    }))
+
+    // 如果当前选择的模型不在列表中，清除选择
+    if (aiSettings.model && !availableModels.value.find(m => m.value === aiSettings.model)) {
+      aiSettings.model = availableModels.value[0]?.value || ''
+    }
+  } catch (error) {
+    console.error('Failed to load models:', error)
+    // 降级到默认模型列表
+    const modelMap = {
+      'openai': [
+        { label: 'GPT-4', value: 'gpt-4' },
+        { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo' }
+      ],
+      'claude': [
+        { label: 'Claude 3 Opus', value: 'claude-3-opus-20240229' },
+        { label: 'Claude 3 Sonnet', value: 'claude-3-sonnet-20240229' },
+        { label: 'Claude 3 Haiku', value: 'claude-3-haiku-20240307' }
+      ],
+      'gemini': [
+        { label: 'Gemini Pro', value: 'gemini-pro' },
+        { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro' }
+      ]
+    }
+
+    availableModels.value = modelMap[aiSettings.provider] || []
+  }
 }
 
 const onProviderChange = (value) => {
@@ -259,7 +289,8 @@ const saveAISettings = async () => {
       preferredModel: aiSettings.model,
       autoSave: aiSettings.autoSave,
       maxHistoryLength: aiSettings.maxHistoryLength,
-      taskPreferences: aiSettings.taskPreferences
+      taskPreferences: aiSettings.taskPreferences,
+      customConfigs: aiSettings.customConfigs
     })
 
     // 同步到AI Chat Store
@@ -349,10 +380,6 @@ onMounted(() => {
   color: var(--theme-text-secondary);
   font-size: 12px;
   transition: color 0.3s ease;
-}
-
-.task-preferences {
-  space-y: 12px;
 }
 
 .task-item {

@@ -4,9 +4,29 @@ const { aiConfig } = require('../config/aiConfig');
 const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
+// 模型列表缓存 (TTL: 1小时)
+const modelCache = new Map();
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+function getCachedModels(cacheKey) {
+  const cached = modelCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.models;
+  }
+  return null;
+}
+
+function setCachedModels(cacheKey, models) {
+  modelCache.set(cacheKey, {
+    models,
+    timestamp: Date.now()
+  });
+}
+
 // 获取当前AI配置信息
-router.get('/config', (req, res) => {
+router.get('/config', requireAuth, async (req, res) => {
   try {
+    const userId = req.user?.id;
     const defaultProvider = aiService.getDefaultProvider();
     const availableProviders = [];
 
@@ -16,8 +36,35 @@ router.get('/config', (req, res) => {
         name,
         type: provider.type,
         models: provider.models,
-        available: !!(provider.client || (provider.config && provider.config.apiKey))
+        available: !!(provider.client || (provider.config && provider.config.apiKey)),
+        isCustom: false
       });
+    }
+
+    // 如果用户已登录,添加用户自定义的提供商
+    if (userId) {
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+
+      const preferences = await prisma.userAIPreferences.findUnique({
+        where: { userId }
+      });
+
+      if (preferences && preferences.customConfigs) {
+        const customConfigs = JSON.parse(preferences.customConfigs || '[]');
+        customConfigs.forEach(config => {
+          availableProviders.push({
+            name: config.name,
+            type: config.type || 'openai',
+            models: {
+              chat: config.model || 'custom-model'
+            },
+            available: true,
+            isCustom: true,
+            baseURL: config.baseURL
+          });
+        });
+      }
     }
 
     res.json({
@@ -64,7 +111,8 @@ router.get('/preferences', requireAuth, async (req, res) => {
         preferredModel: defaultProvider?.models?.chat || null,
         taskPreferences: {},
         autoSave: true,
-        maxHistoryLength: 50
+        maxHistoryLength: 50,
+        customConfigs: []
       });
     }
 
@@ -73,7 +121,8 @@ router.get('/preferences', requireAuth, async (req, res) => {
       preferredModel: preferences.preferredModel,
       taskPreferences: JSON.parse(preferences.taskPreferences || '{}'),
       autoSave: preferences.autoSave ?? true,
-      maxHistoryLength: preferences.maxHistoryLength ?? 50
+      maxHistoryLength: preferences.maxHistoryLength ?? 50,
+      customConfigs: JSON.parse(preferences.customConfigs || '[]')
     });
   } catch (error) {
     console.error('Error getting user AI preferences:', error);
@@ -90,7 +139,8 @@ router.put('/preferences', requireAuth, async (req, res) => {
       preferredModel,
       taskPreferences,
       autoSave,
-      maxHistoryLength
+      maxHistoryLength,
+      customConfigs
     } = req.body;
 
     const { PrismaClient } = require('@prisma/client');
@@ -113,6 +163,7 @@ router.put('/preferences', requireAuth, async (req, res) => {
         taskPreferences: JSON.stringify(taskPreferences || {}),
         autoSave: autoSave ?? true,
         maxHistoryLength: Math.max(10, Math.min(maxHistoryLength || 50, 200)),
+        customConfigs: JSON.stringify(customConfigs || []),
         updatedAt: new Date()
       },
       create: {
@@ -122,6 +173,7 @@ router.put('/preferences', requireAuth, async (req, res) => {
         taskPreferences: JSON.stringify(taskPreferences || {}),
         autoSave: autoSave ?? true,
         maxHistoryLength: Math.max(10, Math.min(maxHistoryLength || 50, 200)),
+        customConfigs: JSON.stringify(customConfigs || []),
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -135,7 +187,8 @@ router.put('/preferences', requireAuth, async (req, res) => {
         preferredModel: preferences.preferredModel,
         taskPreferences: JSON.parse(preferences.taskPreferences || '{}'),
         autoSave: preferences.autoSave,
-        maxHistoryLength: preferences.maxHistoryLength
+        maxHistoryLength: preferences.maxHistoryLength,
+        customConfigs: JSON.parse(preferences.customConfigs || '[]')
       }
     });
   } catch (error) {
@@ -143,6 +196,174 @@ router.put('/preferences', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'Failed to update user preferences' });
   }
 });
+
+// 获取指定提供商的可用模型列表
+router.post('/models/list', requireAuth, async (req, res) => {
+  try {
+    const { provider, apiKey, baseURL } = req.body;
+    const userId = req.user?.id;
+
+    if (!provider) {
+      return res.status(400).json({ error: 'Provider is required' });
+    }
+
+    // 生成缓存键
+    const cacheKey = apiKey ? `custom:${baseURL}:${apiKey.substring(0, 10)}` : `system:${provider}`;
+
+    // 检查缓存
+    const cachedModels = getCachedModels(cacheKey);
+    if (cachedModels) {
+      return res.json({
+        provider,
+        models: cachedModels,
+        count: cachedModels.length,
+        cached: true
+      });
+    }
+
+    let models = [];
+
+    // 如果是系统提供商
+    if (aiService.providers.has(provider)) {
+      const providerInfo = aiService.providers.get(provider);
+
+      if (providerInfo.type === 'openai') {
+        // 对于 OpenAI 兼容的提供商，尝试从 API 获取模型列表
+        try {
+          const client = providerInfo.client;
+          if (client && client.models) {
+            const modelList = await client.models.list();
+            models = modelList.data
+              .filter(m => m.id.includes('gpt') || m.id.includes('turbo') || m.id.includes('instruct'))
+              .map(m => ({
+                id: m.id,
+                name: m.id,
+                description: `Created: ${new Date(m.created * 1000).toLocaleDateString()}`,
+                owned_by: m.owned_by
+              }));
+          }
+        } catch (error) {
+          console.warn('Failed to fetch models from API:', error.message);
+          // 如果 API 调用失败，返回预定义的模型列表
+          models = getDefaultModels(providerInfo.type);
+        }
+      } else {
+        // 对于非 OpenAI 的提供商，返回预定义的模型列表
+        models = getDefaultModels(providerInfo.type);
+      }
+    }
+    // 如果是用户自定义提供商
+    else if (apiKey && baseURL) {
+      try {
+        const OpenAI = require('openai');
+        const customClient = new OpenAI({
+          apiKey: apiKey,
+          baseURL: baseURL,
+          timeout: 10000
+        });
+
+        const modelList = await customClient.models.list();
+        models = modelList.data.map(m => ({
+          id: m.id,
+          name: m.id,
+          description: m.owned_by ? `Owned by: ${m.owned_by}` : '',
+          owned_by: m.owned_by
+        }));
+      } catch (error) {
+        console.error('Failed to fetch models from custom provider:', error);
+        return res.status(500).json({
+          error: 'Failed to fetch models',
+          message: 'Unable to connect to the API. Please check your API key and base URL.'
+        });
+      }
+    }
+    // 如果是用户保存的自定义配置
+    else if (userId) {
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+
+      const preferences = await prisma.userAIPreferences.findUnique({
+        where: { userId }
+      });
+
+      if (preferences && preferences.customConfigs) {
+        const customConfigs = JSON.parse(preferences.customConfigs || '[]');
+        const customConfig = customConfigs.find(c => c.name === provider);
+
+        if (customConfig) {
+          try {
+            const OpenAI = require('openai');
+            const customClient = new OpenAI({
+              apiKey: customConfig.apiKey,
+              baseURL: customConfig.baseURL,
+              timeout: 10000
+            });
+
+            const modelList = await customClient.models.list();
+            models = modelList.data.map(m => ({
+              id: m.id,
+              name: m.id,
+              description: m.owned_by ? `Owned by: ${m.owned_by}` : '',
+              owned_by: m.owned_by
+            }));
+          } catch (error) {
+            console.error('Failed to fetch models from saved custom provider:', error);
+            // 返回配置中保存的模型作为备选
+            models = [{
+              id: customConfig.model,
+              name: customConfig.model,
+              description: 'Saved model'
+            }];
+          }
+        }
+      }
+    }
+
+    // 缓存结果
+    if (models.length > 0) {
+      setCachedModels(cacheKey, models);
+    }
+
+    res.json({
+      provider,
+      models,
+      count: models.length,
+      cached: false
+    });
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    res.status(500).json({
+      error: 'Failed to fetch models',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// 获取预定义的模型列表
+function getDefaultModels(type) {
+  const modelMaps = {
+    'openai': [
+      { id: 'gpt-4', name: 'GPT-4', description: 'Most capable model, best for complex tasks' },
+      { id: 'gpt-4-turbo-preview', name: 'GPT-4 Turbo', description: 'Latest GPT-4 model with improved performance' },
+      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Fast and efficient for most tasks' },
+      { id: 'gpt-3.5-turbo-16k', name: 'GPT-3.5 Turbo 16K', description: 'Extended context window' }
+    ],
+    'claude': [
+      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: 'Most capable Claude model' },
+      { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', description: 'Balanced performance and speed' },
+      { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', description: 'Fastest Claude model' },
+      { id: 'claude-2.1', name: 'Claude 2.1', description: 'Previous generation model' }
+    ],
+    'gemini': [
+      { id: 'gemini-pro', name: 'Gemini Pro', description: 'Best for text tasks' },
+      { id: 'gemini-pro-vision', name: 'Gemini Pro Vision', description: 'Supports images' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Latest model with extended context' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Faster responses' }
+    ]
+  };
+
+  return modelMaps[type] || [];
+}
 
 // 获取推荐的模型（基于任务类型）
 router.post('/recommend-model', (req, res) => {

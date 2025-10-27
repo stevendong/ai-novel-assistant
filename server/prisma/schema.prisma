@@ -472,6 +472,10 @@ model UserAIPreferences {
   taskPreferences    String   @default("{}") // 任务特定偏好设置(JSON)
   autoSave           Boolean  @default(true)
   maxHistoryLength   Int      @default(50)
+
+  // 自定义AI配置
+  customConfigs      String   @default("[]") // 自定义AI提供商配置列表(JSON数组)
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
