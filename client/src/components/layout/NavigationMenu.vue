@@ -33,10 +33,12 @@ import {
   UserOutlined
 } from '@ant-design/icons-vue'
 import { usePermissions } from '@/composables/usePermissions'
+import { useProjectStore } from '@/stores/project'
 
 const router = useRouter()
 const route = useRoute()
 const { hasAdminAccess } = usePermissions()
+const projectStore = useProjectStore()
 
 const selectedKeys = ref<string[]>([])
 
@@ -124,12 +126,22 @@ const adminRoutes = [
   }
 ]
 
-// 根据权限动态生成导航路由
+// 根据权限和项目状态动态生成导航路由
 const navigationRoutes = computed(() => {
-  const routes = [...baseRoutes]
+  let routes = [...baseRoutes]
+
+  // 如果没有选中项目,过滤掉需要项目的菜单项
+  if (!projectStore.currentProject) {
+    routes = routes.filter(route =>
+      !['characters', 'worldSettings', 'chapters'].includes(route.name)
+    )
+  }
+
+  // 添加管理员路由
   if (hasAdminAccess.value) {
     routes.push(...adminRoutes)
   }
+
   return routes
 })
 

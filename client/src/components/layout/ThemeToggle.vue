@@ -16,10 +16,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useThemeStore, type ThemeSetting } from '@/stores/theme'
-import {
-  SunOutlined,
-  SyncOutlined
-} from '@ant-design/icons-vue'
+import { SyncOutlined } from '@ant-design/icons-vue'
+import SunIcon from '@/components/icons/SunIcon.vue'
 import MoonIcon from '@/components/icons/MoonIcon.vue'
 
 const themeStore = useThemeStore()
@@ -31,13 +29,13 @@ const themeOrder: ThemeSetting[] = ['light', 'dark', 'system']
 const getCurrentIcon = computed(() => {
   switch (themeStore.themeSetting) {
     case 'light':
-      return SunOutlined   // 太阳图标表示亮色
+      return SunIcon       // 太阳图标表示亮色
     case 'dark':
       return MoonIcon      // 月亮图标表示暗色
     case 'system':
       return SyncOutlined  // 同步图标表示跟随系统
     default:
-      return SunOutlined
+      return SunIcon
   }
 })
 
