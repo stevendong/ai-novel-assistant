@@ -1,0 +1,50 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run type check
+        run: npm run type-check
+        continue-on-error: true
+
+      - name: Deploy to Railway
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_NAME || 'ai-novel-assistant' }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deployment notification
+        if: success()
+        run: |
+          echo "✅ Successfully deployed to Railway!"
+          echo "Service: ${{ secrets.RAILWAY_SERVICE_NAME || 'ai-novel-assistant' }}"
+
+      - name: Deployment failure notification
+        if: failure()
+        run: echo "❌ Deployment to Railway failed. Please check the logs."

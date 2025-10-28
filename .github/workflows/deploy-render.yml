@@ -1,0 +1,51 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Run type check
+        run: npm run type-check
+        continue-on-error: true
+
+      - name: Trigger Render deployment
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+            echo "✅ Deployment triggered on Render"
+          else
+            echo "⚠️  RENDER_DEPLOY_HOOK_URL not set. Render will auto-deploy from git push."
+            echo "To manually trigger, add RENDER_DEPLOY_HOOK_URL to GitHub secrets."
+          fi
+
+      - name: Deployment summary
+        run: |
+          echo "### Render Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Deployment initiated" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Monitor deployment at: https://dashboard.render.com/" >> $GITHUB_STEP_SUMMARY

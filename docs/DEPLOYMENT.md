@@ -1,491 +1,292 @@
-# AI Novel Assistant 部署指南
+# AI Novel Assistant - 部署指南
 
-本文档提供多种低成本部署方案，适合个人和小团队使用。
+本文档提供完整的 GitHub Actions 自动部署配置说明。
 
-## 📋 目录
+## 目录
 
-- [部署需求](#部署需求)
-- [方案对比](#方案对比)
-- [方案一：Railway（推荐）](#方案一railway推荐)
-- [方案二：Render](#方案二render)
-- [方案三：Zeabur](#方案三zeabur)
-- [方案四：腾讯云/阿里云](#方案四腾讯云阿里云)
-- [方案五：Docker自托管](#方案五docker自托管)
+- [部署方案概览](#部署方案概览)
+- [Railway 部署](#railway-部署)
+- [Render 部署](#render-部署)
+- [Docker 镜像发布](#docker-镜像发布)
 - [环境变量配置](#环境变量配置)
-- [数据库迁移](#数据库迁移)
 - [故障排查](#故障排查)
 
 ---
 
-## 部署需求
+## 部署方案概览
 
-### 最低硬件要求
-- CPU: 1 核
-- 内存: 512MB (推荐 1GB)
-- 磁盘: 2GB (含数据库和上传文件)
-- Node.js: 20.19.0+ 或 22.12.0+
+本项目支持三种自动部署方式:
 
-### 必需服务
-- SQLite 数据库（文件存储）
-- 持久化存储（用于数据库和上传文件）
-- OpenAI API 密钥
-
-### 网络要求
-- 支持 HTTPS（推荐）
-- 能够访问 OpenAI API（需要海外网络或代理）
+| 方案 | 适用场景 | 优势 | 成本 |
+|------|---------|------|------|
+| **Railway** | 需要持久化存储的生产环境 | 简单易用,支持持久化磁盘 | 免费额度:$5/月 |
+| **Render** | 中小型项目,稳定运行 | 完全托管,免费计划包含数据库 | 免费计划可用 |
+| **Docker** | 自托管或 VPS 部署 | 完全控制,可部署到任何支持 Docker 的环境 | 取决于服务器 |
 
 ---
 
-## 方案对比
+## Railway 部署
 
-| 方案 | 月成本 | 免费额度 | 部署难度 | 持久化存储 | 国内访问 | 推荐指数 |
-|------|--------|----------|----------|------------|----------|----------|
-| Railway | $0-5 | $5/月 | ⭐ | ✅ (1GB) | 较快 | ⭐⭐⭐⭐⭐ |
-| Render | $0 | 免费层 | ⭐⭐ | ✅ (1GB) | 较慢 | ⭐⭐⭐⭐ |
-| Zeabur | $0-5 | $5/月 | ⭐ | ✅ | 快 | ⭐⭐⭐⭐⭐ |
-| 腾讯云轻量 | ¥50+ | - | ⭐⭐⭐ | ✅ | 很快 | ⭐⭐⭐ |
-| Docker自托管 | 服务器成本 | - | ⭐⭐⭐⭐ | ✅ | 取决于服务器 | ⭐⭐⭐ |
+### 1. Railway 项目设置
 
----
-
-## 方案一：Railway（推荐）
-
-Railway 提供每月 $5 免费额度，支持持久化存储，部署简单，速度快。
-
-### 成本估算
-- **免费额度**: $5/月
-- **预计使用**: $2-4/月（轻度使用）
-- **超出后**: 按使用量计费
-
-### 部署步骤
-
-#### 1. 准备工作
-
+#### 1.1 创建 Railway 项目
 ```bash
-# 确保代码已提交到 Git 仓库
-git add .
-git commit -m "Ready for deployment"
-git push
-```
+# 安装 Railway CLI
+npm install -g @railway/cli
 
-#### 2. 创建 Railway 项目
-
-1. 访问 [Railway.app](https://railway.app/)
-2. 使用 GitHub 账号登录
-3. 点击 "New Project" → "Deploy from GitHub repo"
-4. 选择 `ai-novel-assistant` 仓库
-5. Railway 会自动检测项目类型
-
-#### 3. 配置环境变量
-
-在 Railway 项目设置中添加以下环境变量：
-
-```bash
-NODE_ENV=production
-PORT=3001
-DATABASE_URL=file:/app/server/prisma/data/novels.db
-OPENAI_API_KEY=sk-your-openai-api-key
-JWT_SECRET=your-random-secret-key-min-32-chars
-ALLOWED_ORIGINS=https://your-app.up.railway.app
-```
-
-#### 4. 添加持久化卷
-
-1. 进入项目设置 → "Volumes"
-2. 点击 "Add Volume"
-3. 挂载路径: `/app/server/prisma/data`
-4. 大小: 1GB
-5. 再添加一个卷用于上传文件:
-   - 挂载路径: `/app/server/uploads`
-   - 大小: 1GB
-
-#### 5. 配置构建命令
-
-Railway 会自动检测，但你可以手动配置：
-
-```toml
-# railway.toml (已创建)
-[build]
-builder = "nixpacks"
-buildCommand = "npm run build"
-
-[deploy]
-startCommand = "npm start"
-healthcheckPath = "/api/health"
-```
-
-#### 6. 部署
-
-点击 "Deploy"，Railway 会自动：
-1. 安装依赖
-2. 构建前端
-3. 生成 Prisma Client
-4. 启动服务
-
-#### 7. 获取域名
-
-部署成功后，Railway 会提供一个域名，格式：
-```
-https://your-app.up.railway.app
-```
-
-你也可以绑定自定义域名。
-
-#### 8. 初始化数据库
-
-```bash
-# 使用 Railway CLI
+# 登录 Railway
 railway login
+
+# 在项目根目录初始化
+railway init
+
+# 关联到现有项目 (如果已创建)
 railway link
-railway run npm run db:push
 ```
 
-或者访问应用，首次访问会自动初始化数据库。
+#### 1.2 配置环境变量
 
----
-
-## 方案二：Render
-
-Render 提供完全免费的托管服务，适合测试和小流量应用。
-
-### 限制
-- 免费实例在 15 分钟无活动后会休眠
-- 冷启动时间 30-60 秒
-- 每月 750 小时免费运行时间
-
-### 部署步骤
-
-#### 1. 准备代码
-
-确保 `render.yaml` 已创建（已完成）。
-
-#### 2. 创建 Render 服务
-
-1. 访问 [Render.com](https://render.com/)
-2. 使用 GitHub 登录
-3. 点击 "New" → "Blueprint"
-4. 连接 GitHub 仓库
-5. Render 会自动读取 `render.yaml`
-
-#### 3. 配置环境变量
-
-在 Render 控制台设置：
+在 Railway 控制台或使用 CLI 设置以下环境变量:
 
 ```bash
-OPENAI_API_KEY=sk-your-openai-api-key
+# 必需的环境变量
+railway variables set OPENAI_API_KEY=sk-your-openai-api-key
+railway variables set JWT_SECRET=your-super-secret-jwt-key-change-in-production
+railway variables set NODE_ENV=production
+railway variables set PORT=3001
+
+# 可选配置
+railway variables set ALLOWED_ORIGINS=https://your-app.railway.app
 ```
 
-其他变量已在 `render.yaml` 中配置。
+### 2. GitHub Actions 配置
 
-#### 4. 部署
+#### 2.1 获取 Railway Token
 
-点击 "Apply"，Render 会自动部署。
+1. 访问 [Railway Dashboard](https://railway.app/account/tokens)
+2. 创建新的 Project Token
+3. 复制 token 值
 
-#### 5. 获取域名
+#### 2.2 配置 GitHub Secrets
 
-```
-https://ai-novel-assistant.onrender.com
-```
+在 GitHub 仓库中设置 Secrets:
 
-#### 6. 保持活跃（可选）
+1. 进入仓库 Settings → Secrets and variables → Actions
+2. 添加以下 secrets:
 
-为避免休眠，可以使用 Cron 服务定期 ping：
+| Secret Name | 说明 | 必需 |
+|------------|------|------|
+| `RAILWAY_TOKEN` | Railway API Token | ✅ |
+| `RAILWAY_SERVICE_NAME` | 服务名称 (默认: ai-novel-assistant) | ❌ |
+
+#### 2.3 触发部署
+
+部署会在以下情况自动触发:
+- 推送到 `master` 或 `main` 分支
+- 手动触发 (Actions → Deploy to Railway → Run workflow)
 
 ```bash
-# 使用 UptimeRobot 或类似服务
-# 每 10 分钟访问一次
-https://ai-novel-assistant.onrender.com/api/health
+# 推送代码触发部署
+git add .
+git commit -m "Deploy to Railway"
+git push origin main
 ```
 
----
-
-## 方案三：Zeabur
-
-Zeabur 是国内团队开发的 PaaS 平台，对中文用户友好，访问速度快。
-
-### 成本
-- 免费额度: $5/月
-- 中国香港节点，访问速度快
-
-### 部署步骤
-
-1. 访问 [Zeabur.com](https://zeabur.com/)
-2. GitHub 登录
-3. 创建新项目 → 从 GitHub 导入
-4. 选择仓库和分支
-5. Zeabur 自动检测并部署
-6. 配置环境变量（同 Railway）
-7. 添加持久化存储卷
-
-### 优势
-- 中文界面
-- 国内访问快
-- 支持多种数据库
-- 免费 SSL 证书
-
----
-
-## 方案四：腾讯云/阿里云
-
-适合需要稳定性和国内访问速度的生产环境。
-
-### 成本
-- 轻量应用服务器: ¥50-100/月
-- 对象存储 COS/OSS: ¥1-10/月
-
-### 部署步骤
-
-#### 1. 购买服务器
-
-选择配置：
-- CPU: 1核 或 2核
-- 内存: 2GB
-- 带宽: 3-5Mbps
-- 系统: Ubuntu 22.04 LTS
-
-#### 2. 安装环境
+### 3. 验证部署
 
 ```bash
-# SSH 连接服务器
-ssh root@your-server-ip
-
-# 更新系统
-apt update && apt upgrade -y
-
-# 安装 Node.js 20
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install -y nodejs
-
-# 安装 PM2（进程管理）
-npm install -g pm2
-
-# 安装 Nginx
-apt install -y nginx
-
-# 安装 Git
-apt install -y git
-```
-
-#### 3. 部署应用
-
-```bash
-# 克隆代码
-cd /var/www
-git clone https://github.com/yourusername/ai-novel-assistant.git
-cd ai-novel-assistant
-
-# 安装依赖
-npm install
-
-# 配置环境变量
-cp .env.example server/.env
-nano server/.env  # 编辑环境变量
-
-# 构建前端
-npm run build
-
-# 初始化数据库
-cd server
-npx prisma generate
-npx prisma db push
-
-# 使用 PM2 启动
-pm2 start index.js --name ai-novel-assistant
-pm2 save
-pm2 startup
-```
-
-#### 4. 配置 Nginx
-
-```bash
-nano /etc/nginx/sites-available/ai-novel-assistant
-```
-
-添加以下配置：
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # 前端静态文件
-    location / {
-        root /var/www/ai-novel-assistant/client/dist;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # API 代理
-    location /api {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-启用配置：
-
-```bash
-ln -s /etc/nginx/sites-available/ai-novel-assistant /etc/nginx/sites-enabled/
-nginx -t
-systemctl restart nginx
-```
-
-#### 5. 配置 SSL（可选但推荐）
-
-```bash
-# 安装 Certbot
-apt install -y certbot python3-certbot-nginx
-
-# 获取证书
-certbot --nginx -d your-domain.com
-
-# 自动续期
-certbot renew --dry-run
-```
-
----
-
-## 方案五：Docker 自托管
-
-使用 Docker 容器化部署，适合有 VPS 或本地服务器的用户。
-
-### 部署步骤
-
-#### 1. 安装 Docker
-
-```bash
-# Ubuntu/Debian
-curl -fsSL https://get.docker.com -o get-docker.sh
-sh get-docker.sh
-
-# 安装 Docker Compose
-apt install -y docker-compose
-```
-
-#### 2. 配置环境变量
-
-```bash
-# 创建 .env 文件
-cp .env.example .env
-nano .env
-```
-
-编辑 `.env` 文件，设置必要的环境变量。
-
-#### 3. 构建和启动
-
-```bash
-# 构建镜像
-docker-compose build
-
-# 启动服务
-docker-compose up -d
+# 查看部署状态
+railway status
 
 # 查看日志
-docker-compose logs -f
+railway logs
 
-# 初始化数据库
-docker-compose exec app npx prisma db push
+# 获取部署 URL
+railway domain
 ```
 
-#### 4. 管理服务
+---
+
+## Render 部署
+
+### 1. Render 项目设置
+
+#### 1.1 连接 GitHub 仓库
+
+1. 访问 [Render Dashboard](https://dashboard.render.com/)
+2. 点击 "New +" → "Web Service"
+3. 连接你的 GitHub 仓库
+4. 选择 `ai-novel-assistant` 项目
+
+#### 1.2 配置服务
+
+Render 会自动读取项目根目录的 `render.yaml` 配置文件。
+
+手动配置选项:
+- **Name**: ai-novel-assistant
+- **Region**: Singapore (距离中国较近)
+- **Branch**: main
+- **Build Command**: `npm install && npm run build`
+- **Start Command**: `npm start`
+- **Plan**: Free
+
+#### 1.3 配置环境变量
+
+在 Render 控制台设置环境变量:
+
+| 变量名 | 值 | 说明 |
+|--------|---|------|
+| `NODE_ENV` | production | 生产环境 |
+| `PORT` | 3001 | 服务端口 |
+| `OPENAI_API_KEY` | sk-xxx | OpenAI API 密钥 |
+| `JWT_SECRET` | (自动生成) | JWT 签名密钥 |
+| `ALLOWED_ORIGINS` | https://your-app.onrender.com | CORS 允许的源 |
+
+#### 1.4 配置持久化存储
+
+1. 在服务设置中添加 Disk:
+   - **Name**: novel-data
+   - **Mount Path**: /app/server/prisma/data
+   - **Size**: 1 GB (免费)
+
+### 2. GitHub Actions 配置 (可选)
+
+#### 2.1 获取 Deploy Hook
+
+1. 进入 Render 服务设置
+2. 找到 "Deploy Hooks" 部分
+3. 创建新的 Deploy Hook
+4. 复制 Hook URL
+
+#### 2.2 配置 GitHub Secrets
+
+| Secret Name | 说明 | 必需 |
+|------------|------|------|
+| `RENDER_DEPLOY_HOOK_URL` | Render Deploy Hook URL | ❌ |
+
+> 注意: Render 默认会在 git push 时自动部署,Deploy Hook 是可选的。
+
+#### 2.3 触发部署
 
 ```bash
-# 停止服务
-docker-compose down
+# 推送代码自动触发部署
+git push origin main
 
-# 重启服务
-docker-compose restart
-
-# 查看状态
-docker-compose ps
-
-# 进入容器
-docker-compose exec app sh
+# 或手动触发 GitHub Action
+# Actions → Deploy to Render → Run workflow
 ```
 
-#### 5. 数据备份
+### 3. 验证部署
+
+- 访问 Render Dashboard 查看部署日志
+- 部署完成后访问分配的 URL (https://your-app.onrender.com)
+- 检查 `/api/health` 端点确认服务运行正常
+
+---
+
+## Docker 镜像发布
+
+### 1. GitHub Container Registry (推荐)
+
+Docker 镜像会自动发布到 GitHub Container Registry (ghcr.io)。
+
+#### 1.1 自动构建触发条件
+
+- 推送到 `master` 或 `main` 分支
+- 创建版本标签 (如 `v1.0.0`)
+- Pull Request (仅构建,不推送)
+
+#### 1.2 镜像标签规则
+
+| 触发事件 | 生成的标签 |
+|---------|-----------|
+| 推送到 main | `ghcr.io/your-username/ai-novel-assistant:latest` |
+| 推送到 main | `ghcr.io/your-username/ai-novel-assistant:main` |
+| 创建标签 v1.2.3 | `ghcr.io/your-username/ai-novel-assistant:1.2.3` |
+| | `ghcr.io/your-username/ai-novel-assistant:1.2` |
+| | `ghcr.io/your-username/ai-novel-assistant:1` |
+| 提交 sha123 | `ghcr.io/your-username/ai-novel-assistant:main-sha123` |
+
+#### 1.3 拉取和使用镜像
 
 ```bash
-# 备份数据库
-docker-compose exec app tar -czf /tmp/backup.tar.gz /app/server/prisma/data /app/server/uploads
-docker cp ai-novel-assistant:/tmp/backup.tar.gz ./backup-$(date +%Y%m%d).tar.gz
+# 拉取最新镜像
+docker pull ghcr.io/YOUR_GITHUB_USERNAME/ai-novel-assistant:latest
 
-# 恢复数据库
-docker cp ./backup.tar.gz ai-novel-assistant:/tmp/
-docker-compose exec app tar -xzf /tmp/backup.tar.gz -C /
+# 运行容器
+docker run -d \
+  -p 3001:3001 \
+  -e OPENAI_API_KEY=your_key \
+  -e JWT_SECRET=your_secret \
+  -v novel-data:/app/server/prisma/data \
+  -v novel-uploads:/app/server/uploads \
+  ghcr.io/YOUR_GITHUB_USERNAME/ai-novel-assistant:latest
+```
+
+### 2. Docker Hub (可选)
+
+#### 2.1 配置 Docker Hub
+
+在 GitHub Secrets 中添加:
+
+| Secret Name | 说明 |
+|------------|------|
+| `DOCKERHUB_USERNAME` | Docker Hub 用户名 |
+| `DOCKERHUB_TOKEN` | Docker Hub Access Token |
+
+#### 2.2 拉取镜像
+
+```bash
+docker pull YOUR_DOCKERHUB_USERNAME/ai-novel-assistant:latest
+```
+
+### 3. 使用 Docker Compose 部署
+
+创建 `.env` 文件:
+```env
+OPENAI_API_KEY=sk-your-key
+JWT_SECRET=your-secret-key
+```
+
+运行服务:
+```bash
+# 使用本地构建
+docker-compose up -d
+
+# 使用发布的镜像
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ---
 
 ## 环境变量配置
 
-### 必需变量
+### 必需的环境变量
 
 | 变量名 | 说明 | 示例 |
 |--------|------|------|
-| `NODE_ENV` | 环境 | `production` |
-| `PORT` | 端口 | `3001` |
-| `DATABASE_URL` | 数据库路径 | `file:./prisma/data/novels.db` |
-| `OPENAI_API_KEY` | OpenAI API 密钥 | `sk-...` |
-| `JWT_SECRET` | JWT 密钥（32字符以上） | 随机生成的字符串 |
-| `ALLOWED_ORIGINS` | CORS 允许的域名 | `https://your-app.com` |
+| `NODE_ENV` | 运行环境 | production |
+| `PORT` | 服务端口 | 3001 |
+| `DATABASE_URL` | 数据库连接 | file:./prisma/data/novels.db |
+| `OPENAI_API_KEY` | OpenAI API 密钥 | sk-proj-xxx |
+| `JWT_SECRET` | JWT 签名密钥 | 至少 32 字符的随机字符串 |
 
-### 可选变量
+### 可选的环境变量
 
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
-| `AWS_ACCESS_KEY_ID` | AWS 访问密钥 | - |
-| `AWS_SECRET_ACCESS_KEY` | AWS 密钥 | - |
-| `AWS_S3_BUCKET` | S3 存储桶 | - |
-| `MEM0_API_KEY` | Mem0 API 密钥 | - |
+| `ALLOWED_ORIGINS` | CORS 允许的源 | http://localhost:5173 |
+| `VITE_API_BASE_URL` | 前端 API 地址 | http://localhost:3001 |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk 认证密钥 | - |
+| `GEMINI_API_KEY` | Gemini API 密钥 | - |
 
-### 生成 JWT_SECRET
+### 安全最佳实践
 
-```bash
-# 使用 Node.js 生成
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# 或使用 OpenSSL
-openssl rand -hex 32
-```
-
----
-
-## 数据库迁移
-
-### 导出数据
-
-```bash
-# 从开发环境导出
-cd server
-npx prisma db push --force-reset  # 确保 schema 是最新的
-cp prisma/novels.db /path/to/backup/
-
-# 导出为 SQL
-sqlite3 prisma/novels.db .dump > backup.sql
-```
-
-### 导入数据
-
-```bash
-# 方式1: 直接复制数据库文件
-# 上传到服务器的 /app/server/prisma/data/novels.db
-
-# 方式2: 使用 SQL 文件
-sqlite3 /app/server/prisma/data/novels.db < backup.sql
-
-# 方式3: 使用 Prisma
-npx prisma db push  # 创建表结构
-# 然后使用应用的导入功能导入数据
-```
+1. **永远不要**将 API 密钥提交到代码仓库
+2. 使用强随机字符串作为 JWT_SECRET
+3. 在生产环境中使用环境变量或密钥管理服务
+4. 定期轮换 API 密钥和密钥
+5. 限制 CORS 允许的源为实际部署的域名
 
 ---
 
@@ -493,157 +294,165 @@ npx prisma db push  # 创建表结构
 
 ### 常见问题
 
-#### 1. 数据库连接失败
+#### 1. Railway 部署失败
 
+**错误**: `Railway token not found`
+
+**解决**:
 ```bash
-Error: ENOENT: no such file or directory
+# 确认 RAILWAY_TOKEN 已设置
+echo $RAILWAY_TOKEN
+
+# 重新设置 GitHub Secret
+# Settings → Secrets → RAILWAY_TOKEN
 ```
 
-**解决方案**:
-- 确保挂载了持久化卷
-- 检查 `DATABASE_URL` 路径是否正确
-- 运行 `npx prisma generate` 和 `npx prisma db push`
+#### 2. Render 部署失败
 
-#### 2. OpenAI API 超时
+**错误**: `Build failed: npm install`
 
+**解决**:
+1. 检查 `package.json` 中的依赖是否正确
+2. 确认 Node.js 版本兼容 (需要 20.x)
+3. 查看 Render 日志获取详细错误信息
+
+#### 3. Docker 镜像构建失败
+
+**错误**: `COPY failed: no such file or directory`
+
+**解决**:
 ```bash
-Error: Request timeout
+# 确保文件结构正确
+ls -la client/ server/
+
+# 检查 .dockerignore 是否排除了必需的文件
+cat .dockerignore
 ```
 
-**解决方案**:
-- 检查服务器是否能访问 OpenAI API
-- 配置代理（如使用国内服务器）
-- 使用 OpenAI 代理服务
+#### 4. 数据库连接失败
 
-#### 3. 内存不足
+**错误**: `Can't reach database server`
 
+**解决**:
+1. 确认 DATABASE_URL 配置正确
+2. 对于 Railway/Render,确保持久化磁盘已挂载
+3. 检查文件权限: `ls -la server/prisma/data/`
+
+#### 5. API 密钥无效
+
+**错误**: `Invalid API key`
+
+**解决**:
 ```bash
-JavaScript heap out of memory
+# 验证环境变量
+railway variables get OPENAI_API_KEY
+
+# 重新设置正确的密钥
+railway variables set OPENAI_API_KEY=sk-new-key
 ```
 
-**解决方案**:
-```bash
-# 增加 Node.js 内存限制
-NODE_OPTIONS="--max-old-space-size=1024" node index.js
-```
+### 调试技巧
 
-#### 4. 文件上传失败
-
-**解决方案**:
-- 检查 `uploads` 目录权限
-- 确保持久化卷已挂载
-- 检查磁盘空间
-
-### 查看日志
+#### 查看部署日志
 
 **Railway**:
 ```bash
-railway logs
+railway logs --tail
 ```
 
 **Render**:
-在 Render 控制台查看实时日志
+- Dashboard → 选择服务 → Logs 标签
 
 **Docker**:
 ```bash
-docker-compose logs -f app
+docker logs -f container-name
 ```
 
-**PM2**:
+#### 健康检查
+
 ```bash
-pm2 logs ai-novel-assistant
+# 检查服务状态
+curl https://your-app.com/api/health
+
+# 预期响应
+{"status":"ok","timestamp":"2025-10-28T..."}
+```
+
+#### 数据库检查
+
+```bash
+# Railway
+railway connect
+
+# 进入容器检查数据库
+docker exec -it container-name sh
+cd /app/server/prisma/data
+ls -la novels.db
+```
+
+### 性能优化
+
+1. **启用 CDN**: 使用 Cloudflare 或其他 CDN 加速静态资源
+2. **数据库优化**: 定期清理旧数据,添加适当索引
+3. **缓存策略**: 启用 Redis 缓存频繁访问的数据
+4. **日志级别**: 生产环境设置为 `error` 级别
+5. **监控告警**: 配置 UptimeRobot 或 Sentry 监控服务状态
+
+---
+
+## 版本发布流程
+
+### 创建新版本
+
+```bash
+# 1. 更新版本号
+npm version patch  # 1.0.0 → 1.0.1
+npm version minor  # 1.0.0 → 1.1.0
+npm version major  # 1.0.0 → 2.0.0
+
+# 2. 推送标签
+git push origin main --tags
+
+# 3. GitHub Actions 会自动:
+#    - 构建 Docker 镜像
+#    - 推送到 ghcr.io 和 Docker Hub
+#    - 创建 GitHub Release (如果配置)
+```
+
+### 回滚版本
+
+**Railway**:
+```bash
+# 查看部署历史
+railway deployments
+
+# 回滚到指定版本
+railway rollback <deployment-id>
+```
+
+**Render**:
+- Dashboard → 选择服务 → Deploys → 选择历史版本 → Redeploy
+
+**Docker**:
+```bash
+# 拉取特定版本
+docker pull ghcr.io/your-username/ai-novel-assistant:1.0.0
+
+# 更新运行的容器
+docker-compose down
+docker-compose up -d
 ```
 
 ---
 
-## 性能优化
+## 支持与反馈
 
-### 1. 启用 Gzip 压缩
-
-在 Nginx 配置中添加：
-
-```nginx
-gzip on;
-gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-```
-
-### 2. 配置缓存
-
-```nginx
-location /assets {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-}
-```
-
-### 3. 使用 CDN
-
-- 将前端静态资源上传到 CDN
-- 配置 `VITE_CDN_URL` 环境变量
-
-### 4. 数据库优化
-
-```bash
-# 定期清理和优化 SQLite
-sqlite3 novels.db "VACUUM;"
-sqlite3 novels.db "ANALYZE;"
-```
+- **文档**: [README.md](./README.md)
+- **Issues**: [GitHub Issues](https://github.com/your-username/ai-novel-assistant/issues)
+- **讨论**: [GitHub Discussions](https://github.com/your-username/ai-novel-assistant/discussions)
 
 ---
 
-## 监控和维护
+## 许可证
 
-### 设置健康检查
-
-所有部署方案都支持健康检查端点：
-
-```
-GET /api/health
-```
-
-### 定期备份
-
-建议每天自动备份数据库：
-
-```bash
-# 添加到 crontab
-0 2 * * * /path/to/backup-script.sh
-```
-
-备份脚本示例：
-
-```bash
-#!/bin/bash
-DATE=$(date +%Y%m%d)
-BACKUP_DIR=/backups
-DB_PATH=/app/server/prisma/data/novels.db
-
-# 创建备份
-cp $DB_PATH $BACKUP_DIR/novels-$DATE.db
-gzip $BACKUP_DIR/novels-$DATE.db
-
-# 删除 7 天前的备份
-find $BACKUP_DIR -name "novels-*.db.gz" -mtime +7 -delete
-```
-
----
-
-## 总结
-
-### 推荐方案
-
-1. **个人项目/测试**: Railway 或 Zeabur（免费额度充足）
-2. **小团队**: Railway 或 Render（成本可控）
-3. **生产环境**: 腾讯云/阿里云（稳定可靠）
-4. **技术团队**: Docker 自托管（完全控制）
-
-### 下一步
-
-- [ ] 选择部署方案
-- [ ] 准备 OpenAI API 密钥
-- [ ] 配置环境变量
-- [ ] 执行部署
-- [ ] 测试功能
-- [ ] 设置备份策略
-
-如有问题，请查看项目 [GitHub Issues](https://github.com/yourusername/ai-novel-assistant/issues)。
+MIT License - 详见 [LICENSE](./LICENSE) 文件

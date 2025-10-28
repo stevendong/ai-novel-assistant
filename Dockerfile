@@ -7,8 +7,8 @@ WORKDIR /app/client
 # Copy client package files
 COPY client/package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies for build)
+RUN npm ci
 
 # Copy client source
 COPY client/ ./
@@ -25,7 +25,9 @@ WORKDIR /app/server
 COPY server/package*.json ./
 
 # Install dependencies including prisma
-RUN npm ci --only=production
+# Note: We need all deps initially to generate Prisma client
+# Using npm install instead of npm ci due to mem0ai's optional peer dependencies
+RUN npm install --legacy-peer-deps
 
 # Copy server source and prisma schema
 COPY server/ ./
@@ -33,13 +35,16 @@ COPY server/ ./
 # Generate Prisma Client
 RUN npx prisma generate
 
+# Clean up dev dependencies for smaller image
+RUN npm prune --production
+
 # Stage 3: Production image
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init and OpenSSL for Prisma
+RUN apk add --no-cache dumb-init openssl
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
