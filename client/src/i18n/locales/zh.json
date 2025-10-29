@@ -210,7 +210,10 @@
       "formatHint": "邀请码格式：XX-XXXXXXXX-XX",
       "currentUser": "当前用户",
       "switchAccount": "切换账号",
-      "logout": "退出登录"
+      "logout": "退出登录",
+      "applyTitle": "如何获取邀请码？",
+      "applyDescription": "可以使用注册账号的邮箱向 {email} 发送申请邮件，通过审核后会回复邀请码。",
+      "applyEmail": "ainovelassistant@gmail.com"
     }
   },
   "message": {

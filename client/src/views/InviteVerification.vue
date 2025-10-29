@@ -129,6 +129,33 @@
           show-icon
           banner
         />
+
+        <!-- Apply for Invite Code Section -->
+        <a-alert
+          :message="$t('auth.inviteVerification.applyTitle')"
+          type="warning"
+          show-icon
+          banner
+          class="apply-alert"
+        >
+          <template #description>
+            <div class="apply-description">
+              {{ $t('auth.inviteVerification.applyDescription', {
+                email: $t('auth.inviteVerification.applyEmail')
+              }) }}
+            </div>
+            <div class="email-link">
+              <a
+                :href="`mailto:${$t('auth.inviteVerification.applyEmail')}`"
+                target="_blank"
+                class="email-button"
+              >
+                <MailOutlined />
+                {{ $t('auth.inviteVerification.applyEmail') }}
+              </a>
+            </div>
+          </template>
+        </a-alert>
       </div>
     </div>
   </div>
@@ -142,7 +169,8 @@ import {
   CheckOutlined,
   SwapOutlined,
   LogoutOutlined,
-  DownOutlined
+  DownOutlined,
+  MailOutlined
 } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -491,6 +519,9 @@ onMounted(async () => {
 /* Info Section */
 .info-section {
   margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .info-section :deep(.ant-alert) {
@@ -503,6 +534,55 @@ onMounted(async () => {
   font-size: 14px;
   line-height: 1.5;
   color: var(--theme-text-secondary);
+}
+
+/* Apply Alert Styling */
+.apply-alert {
+  margin-top: 0 !important;
+}
+
+.apply-alert :deep(.ant-alert-message) {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.apply-description {
+  margin-bottom: 12px;
+  line-height: 1.6;
+  color: var(--theme-text-secondary);
+}
+
+.email-link {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.email-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--theme-icon-text);
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.email-button:hover {
+  background: var(--theme-icon-text);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.3);
+  color: white;
+}
+
+.email-button:active {
+  transform: translateY(0);
 }
 
 /* Form Item Styling */

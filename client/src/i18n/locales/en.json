@@ -206,7 +206,10 @@
       "formatHint": "Invite code format: XX-XXXXXXXX-XX",
       "currentUser": "Current User",
       "switchAccount": "Switch Account",
-      "logout": "Sign Out"
+      "logout": "Sign Out",
+      "applyTitle": "How to get an invite code?",
+      "applyDescription": "You can send an application email to {email} using your registered account email address. An invite code will be sent to you after approval.",
+      "applyEmail": "ainovelassistant@gmail.com"
     }
   },
   "message": {
