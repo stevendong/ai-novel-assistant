@@ -87,8 +87,8 @@ const handleThemeToggle = () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 35px;
+  min-height: 35px;
 }
 
 .theme-toggle-btn:hover {

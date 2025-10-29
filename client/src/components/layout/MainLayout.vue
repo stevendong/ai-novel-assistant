@@ -99,39 +99,13 @@
                 </a-button>
               </a-tooltip>
 
-              <!-- Notifications -->
-<!--              <a-tooltip title="通知">-->
-<!--                <a-badge count="3" size="small">-->
-<!--                  <a-button -->
-<!--                    type="text" -->
-<!--                    class="header-action-btn notification-btn"-->
-<!--                    data-button-type="notification"-->
-<!--                  >-->
-<!--                    <template #icon>-->
-<!--                      <BellOutlined data-icon="bell" />-->
-<!--                    </template>-->
-<!--                  </a-button>-->
-<!--                </a-badge>-->
-<!--              </a-tooltip>-->
-
-              <!-- Theme Toggle -->
-              <ThemeToggle />
+              <div style="display: flex;justify-content: center;">
+                <ThemeToggle />
+              </div>
 
               <!-- Language Toggle -->
               <LanguageToggle class="language-toggle-btn" />
 
-              <!-- Help -->
-<!--              <a-tooltip title="帮助">-->
-<!--                <a-button -->
-<!--                  type="text" -->
-<!--                  class="header-action-btn help-btn"-->
-<!--                  data-button-type="help"-->
-<!--                >-->
-<!--                  <template #icon>-->
-<!--                    <QuestionCircleOutlined data-icon="help" />-->
-<!--                  </template>-->
-<!--                </a-button>-->
-<!--              </a-tooltip>-->
             </a-space>
 
             <!-- User Menu -->
@@ -237,16 +211,7 @@ import { message } from 'ant-design-vue'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  BookOutlined,
-  SettingOutlined,
-  QuestionCircleOutlined,
-  UserOutlined,
-  LogoutOutlined,
-  BellOutlined,
   DownOutlined,
-  CloseOutlined,
-  CalendarOutlined,
-  TagsOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 import NavigationMenu from './NavigationMenu.vue'

@@ -325,7 +325,6 @@ onMounted(async () => {
 
 @media (prefers-color-scheme: dark) {
   :deep(.logout-item:hover) {
-    background-color: #2a1215 !important;
     color: #ff7875 !important;
   }
 }
