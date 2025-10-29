@@ -323,6 +323,21 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
+/* 主题切换按钮特殊样式 */
+.login-controls :deep(.theme-toggle-btn) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
+
+.login-controls :deep(.theme-toggle-btn):hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
 /* 语言切换按钮特殊样式 */
 .login-controls :deep(.language-toggle-btn) {
   background: rgba(255, 255, 255, 0.15) !important;
