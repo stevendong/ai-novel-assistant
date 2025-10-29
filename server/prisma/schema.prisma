@@ -1,295 +1,249 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./novels.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// 用户模型
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  email     String   @unique
-  password  String   // bcrypt hashed
-  nickname  String?  // 显示名称
-  avatar    String?  // 头像URL
-  avatarKey String?  // 头像文件key，用于删除文件
-  role      String   @default("user") // 用户角色：admin, user
-  isActive  Boolean  @default(true)
-  lastLogin DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // 邀请相关字段
-  invitedBy      String?  // 邀请者用户ID
-  inviteCodeUsed String?  // 使用的邀请码
-  inviteVerified Boolean  @default(false) // 是否已验证邀请码
-
-  // 关联的小说
-  novels       Novel[]
-  sessions     UserSession[]
-  conversations AIConversation[]
-
-  // 邀请关联
-  inviter        User?         @relation("UserInvites", fields: [invitedBy], references: [id])
-  invitees       User[]        @relation("UserInvites")
-  createdInvites InviteCode[]  @relation("CreatedInvites")
-  inviteUsages   InviteUsage[]
-
-  // 记忆备份关联
-  memoryBackups  MemoryBackup[]
-
-  // 批量章节生成关联
+  id               String                   @id @default(cuid())
+  username         String                   @unique
+  email            String                   @unique
+  password         String
+  nickname         String?
+  avatar           String?
+  avatarKey        String?
+  role             String                   @default("user")
+  isActive         Boolean                  @default(true)
+  lastLogin        DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  invitedBy        String?
+  inviteCodeUsed   String?
+  inviteVerified   Boolean                  @default(false)
+  conversations    AIConversation[]
   batchGenerations BatchChapterGeneration[]
-
-  // AI偏好设置关联
-  aiPreferences    UserAIPreferences?
-
-  // 文件上传关联
   files            File[]
+  createdInvites   InviteCode[]             @relation("CreatedInvites")
+  inviteUsages     InviteUsage[]
+  memoryBackups    MemoryBackup[]
+  novels           Novel[]
+  inviter          User?                    @relation("UserInvites", fields: [invitedBy], references: [id])
+  invitees         User[]                   @relation("UserInvites")
+  aiPreferences    UserAIPreferences?
+  sessions         UserSession[]
 }
 
-// 小说基本信息
 model Novel {
-  id          String   @id @default(cuid())
-  userId      String   // 作者用户ID
-  title       String
-  description String?
-  genre       String?
-  rating      String   @default("PG") // G, PG, PG-13, R, NC-17
-  status      String   @default("draft") // draft, writing, completed
-  wordCount   Int      @default(0) // 总字数
-  targetWordCount Int? // 目标字数
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // 关联数据
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  characters  Character[]
-  settings    WorldSetting[]
-  chapters    Chapter[]
-  aiSettings  AIConstraint?
-  statistics    NovelStatistics[]
-  goals         WritingGoal[]
-  workflows     WorkflowConfig[]
-  conversations AIConversation[]
+  id               String                   @id @default(cuid())
+  userId           String
+  title            String
+  description      String?
+  genre            String?
+  rating           String                   @default("PG")
+  status           String                   @default("draft")
+  wordCount        Int                      @default(0)
+  targetWordCount  Int?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  aiSettings       AIConstraint?
+  conversations    AIConversation[]
   batchGenerations BatchChapterGeneration[]
-  files         File[]
+  chapters         Chapter[]
+  characters       Character[]
+  files            File[]
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statistics       NovelStatistics[]
+  workflows        WorkflowConfig[]
+  settings         WorldSetting[]
+  goals            WritingGoal[]
 
   @@index([userId])
 }
 
-// 角色信息
 model Character {
-  id             String  @id @default(cuid())
-  novelId        String
-  name           String
-  description    String?
-  age            String? // 年龄
-  gender         String? // 性别
-  identity       String? // 身份/职业
-  appearance     String?
-  personality    String?
-  values         String? // 核心价值观
-  fears          String? // 恐惧与弱点
-  background     String?
-  skills         String? // 技能与能力
-  relationships  String? // 关系网络 JSON字符串
-  avatar         String? // 角色头像URL
-  avatarKey      String? // 头像文件key
-  avatarMetadata String? // 头像元数据(JSON)
-  isLocked       Boolean @default(false)
-
-  // SillyTavern 角色卡特有字段
-  firstMessage            String? // 第一条消息/问候语
-  messageExample          String? // 对话示例
-  alternateGreetings      String? // 备用问候语（JSON数组）
-  systemPrompt            String? // 系统提示词
-  postHistoryInstructions String? // 历史后指令
-  tags                    String? // 标签（JSON数组）
-  creator                 String? // 创作者
-  characterVersion        String? // 版本号
-  characterBook           String? // 角色书/世界书（JSON）
-  originalCardData        String? // 原始卡片完整数据（JSON）
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  novel        Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  chapterRefs  ChapterCharacter[]
+  id                      String             @id @default(cuid())
+  novelId                 String
+  name                    String
+  description             String?
+  age                     String?
+  gender                  String?
+  identity                String?
+  appearance              String?
+  personality             String?
+  values                  String?
+  fears                   String?
+  background              String?
+  skills                  String?
+  relationships           String?
+  avatar                  String?
+  avatarKey               String?
+  avatarMetadata          String?
+  isLocked                Boolean            @default(false)
+  firstMessage            String?
+  messageExample          String?
+  alternateGreetings      String?
+  systemPrompt            String?
+  postHistoryInstructions String?
+  tags                    String?
+  creator                 String?
+  characterVersion        String?
+  characterBook           String?
+  originalCardData        String?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  chapterRefs             ChapterCharacter[]
+  novel                   Novel              @relation(fields: [novelId], references: [id], onDelete: Cascade)
 
   @@index([novelId])
 }
 
-// 世界设定
 model WorldSetting {
-  id          String  @id @default(cuid())
+  id          String           @id @default(cuid())
   novelId     String
-  type        String  // worldview, location, rule, culture
+  type        String
   name        String
   description String
-  details     String? // 详细设定 JSON字符串
-  isLocked    Boolean @default(false)
+  details     String?
+  isLocked    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  chapterRefs ChapterSetting[]
+  novel       Novel            @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  @@index([novelId])
+}
+
+model Chapter {
+  id              String             @id @default(cuid())
+  novelId         String
+  chapterNumber   Int
+  title           String
+  outline         String?
+  content         String?
+  plotPoints      String?
+  illustrations   String?
+  status          String             @default("planning")
+  wordCount       Int                @default(0)
+  targetWordCount Int?
+  progress        Int                @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  novel           Novel              @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  characters      ChapterCharacter[]
+  settings        ChapterSetting[]
+  consistencyLog  ConsistencyCheck[]
+
+  @@unique([novelId, chapterNumber])
+  @@index([novelId])
+}
+
+model AIConstraint {
+  id          String   @id @default(cuid())
+  novelId     String   @unique
+  rating      String   @default("PG")
+  violence    Int      @default(2)
+  romance     Int      @default(1)
+  language    Int      @default(1)
+  customRules String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  novel       Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  chapterRefs ChapterSetting[]
-
-  @@index([novelId])
+  novel       Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
 }
 
-// 章节内容
-model Chapter {
-  id             String   @id @default(cuid())
-  novelId        String
-  chapterNumber  Int
-  title          String
-  outline        String?  // AI生成的大纲
-  content        String?  // 正文内容
-  plotPoints     String?  // 剧情要点 JSON字符串
-  illustrations  String?  // 插图位置和描述 JSON字符串
-  status         String   @default("planning") // planning, writing, reviewing, completed
-  wordCount      Int      @default(0) // 章节字数
-  targetWordCount Int?    // 章节目标字数
-  progress       Int      @default(0) // 章节完成进度 0-100
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
-  novel          Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  characters     ChapterCharacter[]
-  settings       ChapterSetting[]
-  consistencyLog ConsistencyCheck[]
-
-  @@index([novelId])
-  @@unique([novelId, chapterNumber])
-}
-
-// AI创作约束
-model AIConstraint {
-  id       String @id @default(cuid())
-  novelId  String @unique
-  rating   String @default("PG")
-  violence Int    @default(2)
-  romance  Int    @default(1)
-  language Int    @default(1)
-  customRules String? // 自定义规则 JSON字符串
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  novel    Novel  @relation(fields: [novelId], references: [id], onDelete: Cascade)
-}
-
-// 一致性检查记录
 model ConsistencyCheck {
   id        String   @id @default(cuid())
   chapterId String
-  type      String   // character, setting, timeline, logic
+  type      String
   issue     String
-  severity  String   // low, medium, high
+  severity  String
   resolved  Boolean  @default(false)
   createdAt DateTime @default(now())
-  
   chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 
   @@index([chapterId])
 }
 
-// 章节-角色关联
 model ChapterCharacter {
   chapterId   String
   characterId String
-  role        String? // main, supporting, mentioned
-  
-  chapter     Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  role        String?
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  
+  chapter     Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
   @@id([chapterId, characterId])
 }
 
-// 章节-设定关联
 model ChapterSetting {
   chapterId String
   settingId String
-  usage     String? // 使用方式描述
-  
-  chapter   Chapter      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  usage     String?
   setting   WorldSetting @relation(fields: [settingId], references: [id], onDelete: Cascade)
-  
+  chapter   Chapter      @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
   @@id([chapterId, settingId])
 }
 
-// 写作统计
 model NovelStatistics {
   id        String   @id @default(cuid())
   novelId   String
-  date      DateTime // 统计日期，只包含年月日
-  wordCount Int      @default(0) // 当日新增字数
-  timeSpent Int      @default(0) // 写作时间（分钟）
+  date      DateTime
+  wordCount Int      @default(0)
+  timeSpent Int      @default(0)
   createdAt DateTime @default(now())
-  
   novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  
+
   @@unique([novelId, date])
   @@index([novelId])
 }
 
-// 写作目标
 model WritingGoal {
   id        String   @id @default(cuid())
   novelId   String
-  type      String   // daily, weekly, monthly, total
-  target    Int      // 目标字数
-  period    String   // 时间周期标识，如 "2024-01" 表示2024年1月
-  achieved  Int      @default(0) // 已完成字数
+  type      String
+  target    Int
+  period    String
+  achieved  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
   novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  
+
   @@unique([novelId, type, period])
   @@index([novelId])
 }
 
-// 状态变更历史
 model StatusHistory {
   id          String   @id @default(cuid())
-  entityType  String   // 'novel' | 'chapter'
+  entityType  String
   entityId    String
   fromStatus  String?
   toStatus    String
-  triggeredBy String   // 'user' | 'system'
-  reason      String?  // 变更原因
-  metadata    String?  // 额外信息 JSON字符串
+  triggeredBy String
+  reason      String?
+  metadata    String?
   createdAt   DateTime @default(now())
-  
+
   @@index([entityType, entityId])
   @@index([createdAt])
 }
 
-// 工作流配置
 model WorkflowConfig {
   id          String   @id @default(cuid())
   novelId     String
-  entityType  String   // 'novel' | 'chapter'  
-  transitions String   // JSON格式的流转规则
+  entityType  String
+  transitions String
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
   novel       Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  
+
   @@unique([novelId, entityType])
   @@index([novelId])
 }
 
-// 用户会话管理
 model UserSession {
   id           String   @id @default(cuid())
   userId       String
@@ -300,27 +254,24 @@ model UserSession {
   lastUsed     DateTime @default(now())
   userAgent    String?
   ipAddress    String?
-
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([sessionToken])
 }
 
-// AI对话会话
 model AIConversation {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   userId    String
   novelId   String?
-  mode      String   @default("chat") // chat, enhance, check
+  mode      String      @default("chat")
   title     String
-  settings  String?  // JSON格式的会话设置
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  novel     Novel?   @relation(fields: [novelId], references: [id], onDelete: SetNull)
+  settings  String?
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  novel     Novel?      @relation(fields: [novelId], references: [id])
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  AIMessage[]
 
   @@index([userId])
@@ -328,38 +279,33 @@ model AIConversation {
   @@index([userId, updatedAt])
 }
 
-// AI对话消息
 model AIMessage {
-  id             String   @id @default(cuid())
+  id             String         @id @default(cuid())
   conversationId String
-  role           String   // user, assistant
+  role           String
   content        String
-  messageType    String?  // general, character, worldbuilding, outline, enhancement, consistency
-  metadata       String?  // JSON格式的元数据（建议、跟进问题等）
-  actions        String?  // JSON格式的可执行操作
-  createdAt      DateTime @default(now())
-
+  messageType    String?
+  metadata       String?
+  actions        String?
+  createdAt      DateTime       @default(now())
   conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([conversationId, createdAt])
 }
 
-// 邀请码管理
 model InviteCode {
-  id          String   @id @default(cuid())
-  code        String   @unique        // 邀请码（8-12位字符）
-  createdBy   String?                 // 创建者用户ID，null表示系统生成
-  maxUses     Int      @default(1)    // 最大使用次数
-  usedCount   Int      @default(0)    // 已使用次数
-  expiresAt   DateTime?              // 过期时间，null表示永不过期
-  isActive    Boolean  @default(true) // 是否激活
-  description String?                // 邀请码描述/用途
-  codeType    String   @default("user") // 邀请码类型：system, admin, user
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // 关联
+  id          String        @id @default(cuid())
+  code        String        @unique
+  createdBy   String?
+  maxUses     Int           @default(1)
+  usedCount   Int           @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean       @default(true)
+  description String?
+  codeType    String        @default("user")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   creator     User?         @relation("CreatedInvites", fields: [createdBy], references: [id])
   usages      InviteUsage[]
 
@@ -368,38 +314,32 @@ model InviteCode {
   @@index([isActive, expiresAt])
 }
 
-// 邀请码使用记录
 model InviteUsage {
-  id         String   @id @default(cuid())
-  codeId     String   // 邀请码ID
-  userId     String   // 使用者用户ID
-  usedAt     DateTime @default(now())
-  ipAddress  String?  // 使用时的IP地址
-  userAgent  String?  // 浏览器信息
-
-  // 关联
-  inviteCode InviteCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  id         String     @id @default(cuid())
+  codeId     String
+  userId     String
+  usedAt     DateTime   @default(now())
+  ipAddress  String?
+  userAgent  String?
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviteCode InviteCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
 
-  @@unique([codeId, userId]) // 防止同一用户重复使用同一邀请码
+  @@unique([codeId, userId])
   @@index([codeId])
   @@index([userId])
 }
 
-// Mem0记忆备份表
 model MemoryBackup {
   id         String   @id @default(cuid())
-  userId     String   // 用户ID
-  novelId    String?  // 小说ID，可为空表示全局记忆
-  mem0Id     String?  // Mem0中的记忆ID
-  content    String   // 记忆内容
-  memoryType String   @default("general") // 记忆类型
-  importance Int      @default(1) // 重要性等级 1-5
-  metadata   String?  // JSON格式的元数据
+  userId     String
+  novelId    String?
+  mem0Id     String?
+  content    String
+  memoryType String   @default("general")
+  importance Int      @default(1)
+  metadata   String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  // 关联
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -409,27 +349,24 @@ model MemoryBackup {
   @@index([importance])
 }
 
-// 批量章节生成记录表
 model BatchChapterGeneration {
-  id                String   @id @default(cuid())
+  id                String             @id @default(cuid())
   novelId           String
   userId            String
-  batchName         String   // 批次名称
-  mode              String   // continue, insert, branch, expand
-  parameters        String   // 生成参数（JSON字符串）
-  status            String   @default("pending") // pending, analyzing, generating, completed, failed
-  progress          Int      @default(0) // 0-100
-  totalChapters     Int      // 计划生成章节数
-  completedChapters Int      @default(0) // 已完成章节数
-  startPosition     Int?     // 起始位置（章节号）
-  analysisResult    String?  // 上下文分析结果（JSON字符串）
-  errorMessage      String?  // 错误信息
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // 关联
-  novel             Novel              @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  batchName         String
+  mode              String
+  parameters        String
+  status            String             @default("pending")
+  progress          Int                @default(0)
+  totalChapters     Int
+  completedChapters Int                @default(0)
+  startPosition     Int?
+  analysisResult    String?
+  errorMessage      String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  novel             Novel              @relation(fields: [novelId], references: [id], onDelete: Cascade)
   generatedChapters GeneratedChapter[]
 
   @@index([novelId])
@@ -437,75 +374,63 @@ model BatchChapterGeneration {
   @@index([status])
 }
 
-// 生成章节模板表
 model GeneratedChapter {
-  id              String   @id @default(cuid())
-  batchId         String
-  chapterNumber   Int
-  title           String
-  outline         String
-  plotPoints      String   // 剧情要点（JSON字符串）
-  characters      String?  // 涉及角色（JSON字符串）
-  settings        String?  // 使用设定（JSON字符串）
-  estimatedWords  Int      @default(0) // 预估字数
-  priority        Int      @default(1) // 重要性等级 1-5
-  dependencies    String?  // 依赖的章节ID列表（JSON字符串）
-  aiConfidence    Float    @default(0.8) // AI生成信心度 0-1
-  status          String   @default("draft") // draft, approved, rejected, applied
-  notes           String?  // 用户备注
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String                 @id @default(cuid())
+  batchId        String
+  chapterNumber  Int
+  title          String
+  outline        String
+  plotPoints     String
+  characters     String?
+  settings       String?
+  estimatedWords Int                    @default(0)
+  priority       Int                    @default(1)
+  dependencies   String?
+  aiConfidence   Float                  @default(0.8)
+  status         String                 @default("draft")
+  notes          String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  batch          BatchChapterGeneration @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
-  // 关联
-  batch           BatchChapterGeneration @relation(fields: [batchId], references: [id], onDelete: Cascade)
-
+  @@unique([batchId, chapterNumber])
   @@index([batchId])
   @@index([status])
-  @@unique([batchId, chapterNumber])
 }
 
-// 用户AI偏好设置
 model UserAIPreferences {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  preferredProvider  String?  // openai, claude, custom等
-  preferredModel     String?  // 具体模型名称
-  taskPreferences    String   @default("{}") // 任务特定偏好设置(JSON)
-  autoSave           Boolean  @default(true)
-  maxHistoryLength   Int      @default(50)
-
-  // 自定义AI配置
-  customConfigs      String   @default("[]") // 自定义AI提供商配置列表(JSON数组)
-
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  // 关联
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  preferredProvider String?
+  preferredModel    String?
+  taskPreferences   String   @default("{}")
+  autoSave          Boolean  @default(true)
+  maxHistoryLength  Int      @default(50)
+  customConfigs     String   @default("[]")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-// 文件管理
 model File {
   id          String   @id @default(cuid())
-  userId      String   // 上传者用户ID
-  novelId     String?  // 关联的小说ID（可选）
-  fileName    String   // 原始文件名
-  fileKey     String   // 存储的文件key
-  fileUrl     String   // 文件访问URL
-  fileType    String   // 文件MIME类型
-  fileSize    Int      // 文件大小（字节）
-  category    String   @default("other") // 文件分类：worldbook(世界书), character(角色卡), document(文档), image(图片), other(其他)
-  description String?  // 文件描述
-  tags        String?  // 标签（JSON数组字符串）
-  isPublic    Boolean  @default(false) // 是否公开
+  userId      String
+  novelId     String?
+  fileName    String
+  fileKey     String
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  category    String   @default("other")
+  description String?
+  tags        String?
+  isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // 关联
+  novel       Novel?   @relation(fields: [novelId], references: [id])
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  novel       Novel?   @relation(fields: [novelId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([novelId])

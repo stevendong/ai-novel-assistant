@@ -47,11 +47,36 @@ npm run start      # 启动生产服务器
 
 📖 **详细文档**: 查看 [MONOREPO.md](./MONOREPO.md) 了解完整的 Monorepo 架构说明
 
+## 数据库迁移
+
+项目支持从 SQLite 迁移到生产级数据库（PostgreSQL/MySQL）。
+
+### 🎯 推荐方案：Supabase PostgreSQL
+
+```bash
+# 5分钟快速配置
+# 1. 访问 https://supabase.com 创建项目
+# 2. 复制连接字符串
+# 3. 配置环境变量
+cp .env.supabase.example server/.env
+# 编辑 DATABASE_URL
+
+# 4. 应用数据库结构
+cd server
+npx prisma generate
+npx prisma db push
+
+# 5. 测试连接
+node test-db-connection.js
+```
+
 ## 技术栈
 
-- **后端**: Node.js + Express + Prisma + SQLite
+- **后端**: Node.js + Express + Prisma
+- **数据库**: SQLite (开发) / PostgreSQL (生产)
 - **前端**: Vue 3 + Quasar + Monaco Editor
 - **AI服务**: OpenAI API
+- **存储**: Cloudflare R2
 - **桌面**: Electron (计划中)
 
 ## 开发进度
