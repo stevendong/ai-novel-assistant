@@ -118,6 +118,18 @@ async function ensurePortAvailable(port, options = {}) {
     showProcessInfo = true
   } = options;
 
+  // 在 Docker 容器或生产环境中跳过端口检查
+  // Docker 容器应该有干净的端口环境,不需要杀进程
+  if (process.env.NODE_ENV === 'production' || isDockerEnvironment()) {
+    console.log(`🐳 Docker/生产环境检测到,跳过端口检查`);
+    return {
+      success: true,
+      message: `Docker/生产环境,跳过端口 ${port} 检查`,
+      available: true,
+      skipped: true
+    };
+  }
+
   console.log(`🔍 检查端口 ${port} 是否可用...`);
 
   const inUse = await isPortInUse(port);
@@ -177,6 +189,31 @@ async function ensurePortAvailable(port, options = {}) {
     available: false,
     killedProcesses: result?.killedProcesses || []
   };
+}
+
+/**
+ * 检测是否在 Docker 容器中运行
+ * @returns {boolean}
+ */
+function isDockerEnvironment() {
+  try {
+    const fs = require('fs');
+
+    // 检查 /.dockerenv 文件
+    if (fs.existsSync('/.dockerenv')) {
+      return true;
+    }
+
+    // 检查 /proc/1/cgroup 是否包含 docker
+    if (fs.existsSync('/proc/1/cgroup')) {
+      const cgroup = fs.readFileSync('/proc/1/cgroup', 'utf8');
+      return cgroup.includes('docker') || cgroup.includes('kubepods');
+    }
+
+    return false;
+  } catch (error) {
+    return false;
+  }
 }
 
 module.exports = {

@@ -138,12 +138,26 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// 优雅关闭
-process.on('SIGINT', async () => {
-  logger.info('Shutting down server...');
-  await prisma.$disconnect();
-  process.exit(0);
-});
+// 优雅关闭处理
+const gracefulShutdown = async (signal) => {
+  logger.info(`${signal} signal received: closing HTTP server`);
+
+  try {
+    // 断开数据库连接
+    await prisma.$disconnect();
+    logger.info('Database connection closed');
+
+    // 正常退出
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+};
+
+// 监听终止信号
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // 启动服务器
 async function startServer() {
