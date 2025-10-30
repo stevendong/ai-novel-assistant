@@ -54,7 +54,7 @@
                   v-for="project in projectStore.projects"
                   :key="project.id"
                   :value="project.id"
-                  :title="`${project.title} - ${project.description || '暂无描述'}`"
+                  :title="`${project.title} - ${project.description || $t('common.noDescription')}`"
                 >
                   <div class="project-option">
                     <a-avatar
@@ -85,7 +85,7 @@
             <!-- Action Buttons -->
             <a-space size="small">
               <!-- AI Assistant Toggle -->
-              <a-tooltip title="AI助手">
+              <a-tooltip :title="$t('ai.assistant')">
                 <a-button
                   type="text"
                   class="header-action-btn ai-assistant-btn"
@@ -155,32 +155,32 @@
     <!-- Add Chapter Dialog -->
     <a-modal
       v-model:open="addChapterVisible"
-      title="添加新章节"
+      :title="$t('chapter.addNew')"
       width="600px"
       @ok="handleAddChapter"
       :confirm-loading="chaptersLoading"
     >
       <a-form layout="vertical" :model="addChapterForm">
         <a-form-item
-          label="章节标题"
+          :label="$t('chapter.chapterTitle')"
           name="title"
-          :rules="[{ required: true, message: '请输入章节标题' }]"
+          :rules="[{ required: true, message: t('chapter.enterTitleRequired') }]"
         >
           <a-input
             v-model:value="addChapterForm.title"
-            placeholder="请输入章节标题"
+            :placeholder="$t('chapter.enterTitle')"
             maxlength="100"
             show-count
           />
         </a-form-item>
 
         <a-form-item
-          label="章节大纲"
+          :label="$t('chapter.chapterOutline')"
           name="outline"
         >
           <a-textarea
             v-model:value="addChapterForm.outline"
-            placeholder="请输入章节大纲（可选）"
+            :placeholder="$t('chapter.outlinePlaceholder')"
             :rows="4"
             maxlength="500"
             show-count
@@ -189,11 +189,11 @@
 
         <div class="chapter-info">
           <a-descriptions :column="2" size="small">
-            <a-descriptions-item label="章节号">
-              第 {{ chapters.length + 1 }} 章
+            <a-descriptions-item :label="$t('chapter.number')">
+              {{ $t('chapter.chapterPrefix') }} {{ chapters.length + 1 }} 章
             </a-descriptions-item>
-            <a-descriptions-item label="状态">
-              规划中
+            <a-descriptions-item :label="$t('common.status')">
+              {{ $t('chapter.status.planning') }}
             </a-descriptions-item>
           </a-descriptions>
         </div>
@@ -214,6 +214,7 @@ import {
   DownOutlined,
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
+import { useI18n } from 'vue-i18n'
 import NavigationMenu from './NavigationMenu.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import LanguageToggle from './LanguageToggle.vue'
@@ -225,6 +226,8 @@ import { useThemeStore } from '@/stores/theme'
 import StatusBar from './StatusBar.vue'
 // 移除不再需要的文本工具导入
 import { useChapterList } from '@/composables/useChapterList'
+
+const { t } = useI18n()
 
 const projectStore = useProjectStore()
 const themeStore = useThemeStore()
@@ -428,9 +431,9 @@ const getStatusColor = (status: string) => {
 
 const getStatusText = (status: string) => {
   const texts = {
-    'draft': '草稿',
-    'writing': '写作中',
-    'completed': '已完成'
+    'draft': t('chapter.status.draft'),
+    'writing': t('chapter.status.writing'),
+    'completed': t('chapter.status.completed')
   }
   return texts[status as keyof typeof texts] || status
 }
@@ -442,12 +445,12 @@ const formatDate = (dateString: string) => {
   const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
 
   if (diffInHours < 1) {
-    return '刚刚'
+    return t('date.justNow')
   } else if (diffInHours < 24) {
-    return `${diffInHours}小时前`
+    return `${diffInHours}${t('date.hoursAgo')}`
   } else if (diffInHours < 24 * 7) {
     const days = Math.floor(diffInHours / 24)
-    return `${days}天前`
+    return `${days}${t('date.daysAgo')}`
   } else {
     return date.toLocaleDateString('zh-CN', {
       month: 'short',

@@ -2,38 +2,38 @@
   <div class="h-full p-6 overflow-y-auto">
     <div class="max-w-4xl mx-auto">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold theme-text-primary">作品管理</h1>
+        <h1 class="text-2xl font-bold theme-text-primary">{{ $t('project.managementTitle') }}</h1>
         <a-space>
           <a-button type="primary" @click="showNewProjectModal = true">
             <template #icon>
               <PlusOutlined />
             </template>
-            新建作品
+            {{ $t('project.createNew') }}
           </a-button>
           <a-button @click="importProject">
             <template #icon>
               <ImportOutlined />
             </template>
-            导入作品
+            {{ $t('project.import') }}
           </a-button>
         </a-space>
       </div>
 
       <!-- Current Project Info -->
-      <a-card v-if="projectStore.currentProject" class="mb-6" title="当前作品">
+      <a-card v-if="projectStore.currentProject" class="mb-6" :title="$t('project.currentProject')">
         <template #extra>
           <a-space>
             <a-button size="small" @click="openEditProject">
               <template #icon>
                 <EditOutlined />
               </template>
-              编辑
+              {{ $t('common.edit') }}
             </a-button>
             <a-button size="small" danger @click="deleteProject">
               <template #icon>
                 <DeleteOutlined />
               </template>
-              删除
+              {{ $t('common.delete') }}
             </a-button>
           </a-space>
         </template>
@@ -41,18 +41,18 @@
         <a-row :gutter="[16, 16]">
           <a-col :span="12">
             <a-descriptions :column="1" size="small">
-              <a-descriptions-item label="作品名称">
+              <a-descriptions-item :label="$t('project.projectName')">
                 {{ projectStore.currentProject.title }}
               </a-descriptions-item>
-              <a-descriptions-item label="类型">
+              <a-descriptions-item :label="$t('project.genre')">
                 {{ projectStore.currentProject.genre }}
               </a-descriptions-item>
-              <a-descriptions-item label="分级">
+              <a-descriptions-item :label="$t('project.rating')">
                 <a-tag :color="getRatingColor(projectStore.currentProject.rating)">
                   {{ projectStore.currentProject.rating }}
                 </a-tag>
               </a-descriptions-item>
-              <a-descriptions-item label="状态">
+              <a-descriptions-item :label="$t('common.status')">
                 <a-tag :color="getStatusColor(projectStore.currentProject.status)">
                   {{ getStatusText(projectStore.currentProject.status) }}
                 </a-tag>
@@ -61,16 +61,16 @@
           </a-col>
           <a-col :span="12">
             <a-descriptions :column="1" size="small">
-              <a-descriptions-item label="创建时间">
+              <a-descriptions-item :label="$t('project.createdAt')">
                 {{ formatDate(projectStore.currentProject.createdAt) }}
               </a-descriptions-item>
-              <a-descriptions-item label="最后更新">
+              <a-descriptions-item :label="$t('project.updatedAt')">
                 {{ formatDate(projectStore.currentProject.updatedAt) }}
               </a-descriptions-item>
-              <a-descriptions-item label="章节数量">
+              <a-descriptions-item :label="$t('project.chapterCount')">
                 {{ chaptersCount }}
               </a-descriptions-item>
-              <a-descriptions-item label="角色数量">
+              <a-descriptions-item :label="$t('project.characterCount')">
                 {{ charactersCount }}
               </a-descriptions-item>
             </a-descriptions>
@@ -78,7 +78,7 @@
         </a-row>
 
         <div class="mt-4">
-          <h4 class="text-sm font-medium theme-text-primary mb-2">作品描述</h4>
+          <h4 class="text-sm font-medium theme-text-primary mb-2">{{ $t('project.description') }}</h4>
           <p class="theme-text-secondary text-sm leading-relaxed">
             {{ projectStore.currentProject.description }}
           </p>
@@ -89,18 +89,18 @@
       <a-card class="mb-6">
         <template #title>
           <div class="flex items-center justify-between">
-            <span>最近作品</span>
+            <span>{{ $t('project.recentProjects') }}</span>
             <div class="flex items-center gap-2">
               <a-tag v-if="recentProjects.length > 5" color="blue">
-                {{ showAllRecent ? `显示全部 ${recentProjects.length}` : `显示 5 / ${recentProjects.length}` }}
+                {{ showAllRecent ? `${$t('common.showAll')} ${recentProjects.length}` : `${$t('common.showAll')} 5 / ${recentProjects.length}` }}
               </a-tag>
-              <a-button 
-                v-if="recentProjects.length > 5" 
-                type="link" 
+              <a-button
+                v-if="recentProjects.length > 5"
+                type="link"
                 size="small"
                 @click="toggleShowAllRecent"
               >
-                {{ showAllRecent ? '收起' : '查看全部' }}
+                {{ showAllRecent ? $t('common.collapse') : $t('common.viewAll') }}
               </a-button>
             </div>
           </div>
@@ -110,10 +110,10 @@
             <a-list-item>
               <template #actions>
                 <a-button type="text" size="small" @click="openProject(item)">
-                  打开
+                  {{ $t('common.open') }}
                 </a-button>
                 <a-button type="text" size="small" @click="duplicateProject(item)">
-                  复制
+                  {{ $t('common.duplicate') }}
                 </a-button>
               </template>
               
@@ -149,7 +149,7 @@
         <a-col :span="8">
           <a-card size="small">
             <a-statistic
-              title="总作品数"
+              :title="$t('project.totalProjects')"
               :value="totalProjects"
               :prefix="h(BookOutlined)"
             />
@@ -158,7 +158,7 @@
         <a-col :span="8">
           <a-card size="small">
             <a-statistic
-              title="进行中作品"
+              :title="$t('project.inProgress')"
               :value="inProgressProjects"
               :prefix="h(EditOutlined)"
               :value-style="{ color: '#3f8600' }"
@@ -168,7 +168,7 @@
         <a-col :span="8">
           <a-card size="small">
             <a-statistic
-              title="已完成作品"
+              :title="$t('project.completed')"
               :value="completedProjects"
               :prefix="h(CheckCircleOutlined)"
               :value-style="{ color: '#cf1322' }"
@@ -181,63 +181,63 @@
     <!-- New Project Modal -->
     <a-modal
       v-model:open="showNewProjectModal"
-      title="创建新作品"
+      :title="$t('project.createNewModalTitle')"
       width="600px"
       @ok="createNewProject"
       :confirm-loading="loading"
     >
       <a-form :model="newProject" layout="vertical" ref="newFormRef">
-        <a-form-item 
-          label="作品名称" 
+        <a-form-item
+          :label="$t('project.projectName')"
           name="title"
-          :rules="[{ required: true, message: '请输入作品名称', trigger: 'blur' }]"
+          :rules="[{ required: true, message: t('project.enterTitleRequired'), trigger: 'blur' }]"
         >
-          <a-input v-model:value="newProject.title" placeholder="输入作品名称" />
+          <a-input v-model:value="newProject.title" :placeholder="$t('project.enterTitle')" />
         </a-form-item>
-        
-        <a-form-item label="作品描述">
+
+        <a-form-item :label="$t('project.projectDescription')">
           <a-textarea
             v-model:value="newProject.description"
             :rows="3"
-            placeholder="简要描述您的小说内容和主题"
+            :placeholder="$t('project.descriptionPlaceholder')"
           />
         </a-form-item>
-        
+
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="类型">
-              <a-select v-model:value="newProject.genre" placeholder="选择小说类型">
-                <a-select-option value="奇幻">奇幻</a-select-option>
-                <a-select-option value="科幻">科幻</a-select-option>
-                <a-select-option value="现实">现实</a-select-option>
-                <a-select-option value="历史">历史</a-select-option>
-                <a-select-option value="悬疑">悬疑</a-select-option>
-                <a-select-option value="言情">言情</a-select-option>
-                <a-select-option value="武侠">武侠</a-select-option>
+            <a-form-item :label="$t('project.genre')">
+              <a-select v-model:value="newProject.genre" :placeholder="$t('project.selectGenre')">
+                <a-select-option value="奇幻">{{ $t('genre.fantasy') }}</a-select-option>
+                <a-select-option value="科幻">{{ $t('genre.scifi') }}</a-select-option>
+                <a-select-option value="现实">{{ $t('genre.realistic') }}</a-select-option>
+                <a-select-option value="历史">{{ $t('genre.historical') }}</a-select-option>
+                <a-select-option value="悬疑">{{ $t('genre.mystery') }}</a-select-option>
+                <a-select-option value="言情">{{ $t('genre.romance') }}</a-select-option>
+                <a-select-option value="武侠">{{ $t('genre.wuxia') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="内容分级">
-              <a-select v-model:value="newProject.rating" placeholder="选择内容分级">
-                <a-select-option value="G">G - 全年龄</a-select-option>
-                <a-select-option value="PG">PG - 家长指导</a-select-option>
-                <a-select-option value="PG-13">PG-13 - 13岁以上</a-select-option>
-                <a-select-option value="R">R - 17岁以上</a-select-option>
-                <a-select-option value="NC-17">NC-17 - 成人内容</a-select-option>
+            <a-form-item :label="$t('project.rating')">
+              <a-select v-model:value="newProject.rating" :placeholder="$t('project.selectRating')">
+                <a-select-option value="G">{{ $t('rating.g') }}</a-select-option>
+                <a-select-option value="PG">{{ $t('rating.pg') }}</a-select-option>
+                <a-select-option value="PG-13">{{ $t('rating.pg13') }}</a-select-option>
+                <a-select-option value="R">{{ $t('rating.r') }}</a-select-option>
+                <a-select-option value="NC-17">{{ $t('rating.nc17') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
         </a-row>
-        
-        <a-form-item label="目标字数">
+
+        <a-form-item :label="$t('project.targetWordCount')">
           <a-input-number
             v-model:value="newProject.targetWordCount"
             :min="1000"
             :max="10000000"
             :step="1000"
             style="width: 100%"
-            placeholder="设置小说目标字数"
+            :placeholder="$t('project.targetWordCountPlaceholder')"
           />
         </a-form-item>
       </a-form>
@@ -246,63 +246,63 @@
     <!-- Edit Project Modal -->
     <a-modal
       v-model:open="showEditProjectModal"
-      title="编辑作品"
+      :title="$t('project.editModalTitle')"
       width="600px"
       @ok="updateProject"
       :confirm-loading="loading"
     >
       <a-form :model="editProject" layout="vertical" ref="editFormRef">
-        <a-form-item 
-          label="作品名称" 
+        <a-form-item
+          :label="$t('project.projectName')"
           name="title"
-          :rules="[{ required: true, message: '请输入作品名称', trigger: 'blur' }]"
+          :rules="[{ required: true, message: t('project.enterTitleRequired'), trigger: 'blur' }]"
         >
-          <a-input v-model:value="editProject.title" placeholder="输入作品名称" />
+          <a-input v-model:value="editProject.title" :placeholder="$t('project.enterTitle')" />
         </a-form-item>
-        
-        <a-form-item label="作品描述">
+
+        <a-form-item :label="$t('project.projectDescription')">
           <a-textarea
             v-model:value="editProject.description"
             :rows="3"
-            placeholder="简要描述您的小说内容和主题"
+            :placeholder="$t('project.descriptionPlaceholder')"
           />
         </a-form-item>
-        
+
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="类型">
-              <a-select v-model:value="editProject.genre" placeholder="选择小说类型">
-                <a-select-option value="奇幻">奇幻</a-select-option>
-                <a-select-option value="科幻">科幻</a-select-option>
-                <a-select-option value="现实">现实</a-select-option>
-                <a-select-option value="历史">历史</a-select-option>
-                <a-select-option value="悬疑">悬疑</a-select-option>
-                <a-select-option value="言情">言情</a-select-option>
-                <a-select-option value="武侠">武侠</a-select-option>
+            <a-form-item :label="$t('project.genre')">
+              <a-select v-model:value="editProject.genre" :placeholder="$t('project.selectGenre')">
+                <a-select-option value="奇幻">{{ $t('genre.fantasy') }}</a-select-option>
+                <a-select-option value="科幻">{{ $t('genre.scifi') }}</a-select-option>
+                <a-select-option value="现实">{{ $t('genre.realistic') }}</a-select-option>
+                <a-select-option value="历史">{{ $t('genre.historical') }}</a-select-option>
+                <a-select-option value="悬疑">{{ $t('genre.mystery') }}</a-select-option>
+                <a-select-option value="言情">{{ $t('genre.romance') }}</a-select-option>
+                <a-select-option value="武侠">{{ $t('genre.wuxia') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="内容分级">
-              <a-select v-model:value="editProject.rating" placeholder="选择内容分级">
-                <a-select-option value="G">G - 全年龄</a-select-option>
-                <a-select-option value="PG">PG - 家长指导</a-select-option>
-                <a-select-option value="PG-13">PG-13 - 13岁以上</a-select-option>
-                <a-select-option value="R">R - 17岁以上</a-select-option>
-                <a-select-option value="NC-17">NC-17 - 成人内容</a-select-option>
+            <a-form-item :label="$t('project.rating')">
+              <a-select v-model:value="editProject.rating" :placeholder="$t('project.selectRating')">
+                <a-select-option value="G">{{ $t('rating.g') }}</a-select-option>
+                <a-select-option value="PG">{{ $t('rating.pg') }}</a-select-option>
+                <a-select-option value="PG-13">{{ $t('rating.pg13') }}</a-select-option>
+                <a-select-option value="R">{{ $t('rating.r') }}</a-select-option>
+                <a-select-option value="NC-17">{{ $t('rating.nc17') }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
         </a-row>
-        
-        <a-form-item label="目标字数">
+
+        <a-form-item :label="$t('project.targetWordCount')">
           <a-input-number
             v-model:value="editProject.targetWordCount"
             :min="1000"
             :max="10000000"
             :step="1000"
             style="width: 100%"
-            placeholder="设置小说目标字数"
+            :placeholder="$t('project.targetWordCountPlaceholder')"
           />
         </a-form-item>
       </a-form>
@@ -322,10 +322,13 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import { useI18n } from 'vue-i18n'
 import type { Novel, ProjectOverviewStats } from '@/types'
 import { novelService } from '@/services/novelService'
 import { useProjectStore } from '@/stores/project'
 import { getNovelStatusText, getNovelStatusColor } from '@/constants/status'
+
+const { t } = useI18n()
 
 // 全局作品状态
 const projectStore = useProjectStore()
@@ -385,7 +388,7 @@ const loadData = async () => {
     }
   } catch (error) {
     console.error('Failed to load project data:', error)
-    message.error('加载作品数据失败')
+    message.error(t('project.loadFailure'))
   } finally {
     loading.value = false
   }
@@ -446,15 +449,15 @@ const openEditProject = () => {
 
 const deleteProject = async () => {
   if (!projectStore.currentProject) return
-  
+
   try {
     await novelService.deleteNovel(projectStore.currentProject.id)
     projectStore.removeProject(projectStore.currentProject.id)
-    message.success('作品删除成功')
+    message.success(t('project.deleteSuccess'))
     await loadData() // 重新加载数据
   } catch (error) {
     console.error('Failed to delete project:', error)
-    message.error('删除作品失败')
+    message.error(t('project.deleteFailure'))
   }
 }
 
@@ -466,17 +469,17 @@ const openProject = (project: Novel) => {
 const duplicateProject = async (project: Novel) => {
   try {
     const duplicated = await novelService.duplicateNovel(project.id, `${project.title} (副本)`)
-    message.success('作品复制成功')
+    message.success(t('project.duplicateSuccess'))
     await loadData() // 重新加载数据
   } catch (error) {
     console.error('Failed to duplicate project:', error)
-    message.error('复制作品失败')
+    message.error(t('project.duplicateFailure'))
   }
 }
 
 const importProject = () => {
   // TODO: 实现作品导入功能
-  message.info('导入功能开发中...')
+  message.info(t('project.importDevelopment'))
 }
 
 const toggleShowAllRecent = () => {
@@ -500,10 +503,10 @@ const createNewProject = async () => {
     
     // 添加到全局store
     projectStore.addProject(created)
-    
-    message.success('作品创建成功')
+
+    message.success(t('project.createSuccess'))
     showNewProjectModal.value = false
-    
+
     // Reset form
     newFormRef.value?.resetFields()
     newProject.value = {
@@ -513,7 +516,7 @@ const createNewProject = async () => {
       rating: 'PG-13',
       targetWordCount: 100000
     }
-    
+
     // 重新加载数据
     await loadData()
   } catch (error) {
@@ -522,7 +525,7 @@ const createNewProject = async () => {
       return
     }
     console.error('Failed to create project:', error)
-    message.error('创建作品失败')
+    message.error(t('project.createFailure'))
   } finally {
     loading.value = false
   }
@@ -530,14 +533,14 @@ const createNewProject = async () => {
 
 const updateProject = async () => {
   if (!projectStore.currentProject) {
-    message.error('没有选择要编辑的作品')
+    message.error(t('project.noProjectSelected'))
     return
   }
-  
+
   try {
     // 表单验证
     await editFormRef.value?.validate()
-    
+
     loading.value = true
     const updated = await novelService.updateNovel(projectStore.currentProject.id, {
       title: editProject.value.title,
@@ -546,13 +549,13 @@ const updateProject = async () => {
       rating: editProject.value.rating as any,
       targetWordCount: editProject.value.targetWordCount
     })
-    
+
     // 更新全局store中的作品数据
     projectStore.updateProject(updated)
-    
-    message.success('作品更新成功')
+
+    message.success(t('project.updateSuccess'))
     showEditProjectModal.value = false
-    
+
     // 重新加载数据以保证数据一致性
     await loadData()
   } catch (error) {
@@ -561,7 +564,7 @@ const updateProject = async () => {
       return
     }
     console.error('Failed to update project:', error)
-    message.error('作品更新失败')
+    message.error(t('project.updateFailure'))
   } finally {
     loading.value = false
   }

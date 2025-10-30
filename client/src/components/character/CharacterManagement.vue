@@ -84,6 +84,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { message, Modal } from 'ant-design-vue'
+import { useI18n } from 'vue-i18n'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
 import { useProjectStore } from '@/stores/project'
@@ -95,6 +96,7 @@ import CharacterImportProgress from './CharacterImportProgress.vue'
 import AIEnhancementPanel from './AIEnhancementPanel.vue'
 import FileSelectorModal from '@/components/file/FileSelectorModal.vue'
 
+const { t } = useI18n()
 const projectStore = useProjectStore()
 
 const {
@@ -127,7 +129,7 @@ const importing = ref(false)
 const showCardSelectorModal = ref(false)
 const showImportProgressModal = ref(false)
 const importStep = ref(0)
-const importStatusText = ref('准备导入...')
+const importStatusText = ref(t('character.prepareImport'))
 const importPreviewData = ref<any>(null)
 const importError = ref('')
 const importComplete = ref(false)
@@ -228,7 +230,7 @@ const applySuggestion = async (field: string, value: string) => {
   })
   if (updated) {
     selectedCharacter.value = updated
-    message.success('建议已应用')
+    message.success(t('character.suggestionApplied'))
   }
 }
 
@@ -238,7 +240,7 @@ const applyAllSuggestions = async (suggestions: Record<string, string>) => {
   const updated = await updateCharacter(selectedCharacter.value.id, suggestions)
   if (updated) {
     selectedCharacter.value = updated
-    message.success('所有建议已应用')
+    message.success(t('character.allSuggestionsApplied'))
     showAISuggestionsPanel.value = false
   }
 }
@@ -250,7 +252,7 @@ const openAvatarSelector = () => {
 
 const handleAvatarFileSelect = async (file: any) => {
   if (!file || !file.fileUrl || !selectedCharacter.value) {
-    message.warning('请选择有效的图片文件')
+    message.warning(t('character.selectValidImage'))
     return
   }
 
@@ -265,7 +267,7 @@ const handleAvatarFileSelect = async (file: any) => {
     if (charIndex !== -1) {
       characters.value[charIndex].avatar = file.fileUrl
     }
-    message.success('头像更新成功！')
+    message.success(t('character.avatarUpdateSuccess'))
     showAvatarSelectorModal.value = false
   }
 }
@@ -288,11 +290,11 @@ const confirmDeleteCharacter = () => {
   if (!selectedCharacter.value) return
 
   Modal.confirm({
-    title: '确认删除',
-    content: `确定要删除角色 "${selectedCharacter.value.name}" 吗？此操作不可恢复。`,
-    okText: '删除',
+    title: t('common.confirmDelete'),
+    content: `${t('character.deleteConfirm')} "${selectedCharacter.value.name}" ${t('character.deleteConfirmSuffix')} ${t('common.irreversible')}`,
+    okText: t('common.delete'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     onOk: async () => {
       if (selectedCharacter.value) {
         const success = await deleteCharacterAPI(selectedCharacter.value.id)
@@ -328,10 +330,10 @@ const exportCharacterCard = async () => {
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
 
-    message.success('角色卡导出成功！')
+    message.success(t('character.exportSuccess'))
   } catch (error) {
     console.error('导出失败:', error)
-    message.error('角色卡导出失败')
+    message.error(t('character.exportFailure'))
   } finally {
     exporting.value = false
   }
@@ -345,12 +347,12 @@ const openCardSelector = () => {
 
 const handleCardFileSelect = async (file: any) => {
   if (!file || !file.fileUrl) {
-    message.warning('请选择有效的角色卡文件')
+    message.warning(t('character.selectValidCard'))
     return
   }
 
   if (!projectStore.currentProject) {
-    message.error('请先选择一个项目')
+    message.error(t('project.selectProjectFirst'))
     return
   }
 
@@ -358,7 +360,7 @@ const handleCardFileSelect = async (file: any) => {
   showImportProgressModal.value = true
   importing.value = true
   importStep.value = 0
-  importStatusText.value = '正在读取文件...'
+  importStatusText.value = t('character.readingFile')
   importPreviewData.value = null
   importError.value = ''
   importComplete.value = false
@@ -371,7 +373,7 @@ const handleCardFileSelect = async (file: any) => {
     const cardFile = new File([blob], file.fileName || 'character_card.png', { type: 'image/png' })
 
     importStep.value = 1
-    importStatusText.value = '正在提取角色数据...'
+    importStatusText.value = t('character.extractingData')
     await new Promise(resolve => setTimeout(resolve, 300))
 
     const formData = new FormData()
@@ -381,7 +383,7 @@ const handleCardFileSelect = async (file: any) => {
     formData.append('existingFileKey', file.fileKey || '')
 
     importStep.value = 2
-    importStatusText.value = 'AI 正在智能映射字段（姓名、外貌、性格、技能等）...'
+    importStatusText.value = t('character.aiMapping')
 
     const importResponse = await apiClient.post(
       '/api/characters/import-card',
@@ -396,14 +398,14 @@ const handleCardFileSelect = async (file: any) => {
     const result = importResponse.data
 
     if (result.conflict) {
-      importError.value = `角色 "${result.existingCharacter.name}" 已存在，请重命名后再试`
+      importError.value = `${t('character.character')} "${result.existingCharacter.name}" ${t('character.alreadyExists')}`
       importing.value = false
       return
     }
 
     if (result.success) {
       importStep.value = 3
-      importStatusText.value = '角色创建成功！'
+      importStatusText.value = t('character.importSuccess')
       importPreviewData.value = {
         ...result.character,
         avatar: file.fileUrl
@@ -416,7 +418,7 @@ const handleCardFileSelect = async (file: any) => {
     }
   } catch (error) {
     console.error('角色卡导入失败:', error)
-    importError.value = '角色卡导入失败，请确保这是有效的 SillyTavern 角色卡'
+    importError.value = t('character.importFailure')
     importing.value = false
   }
 }
@@ -424,7 +426,7 @@ const handleCardFileSelect = async (file: any) => {
 const closeImportProgress = () => {
   showImportProgressModal.value = false
   importStep.value = 0
-  importStatusText.value = '准备导入...'
+  importStatusText.value = t('character.prepareImport')
   importPreviewData.value = null
   importError.value = ''
   importComplete.value = false
