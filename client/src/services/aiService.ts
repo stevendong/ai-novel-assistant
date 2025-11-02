@@ -18,6 +18,13 @@ export interface StreamChunk {
 
 export type StreamHandler = (chunk: StreamChunk) => void
 
+export interface ChatStreamOptions {
+  type?: string
+  provider?: string
+  model?: string
+  signal?: AbortSignal
+}
+
 export interface OutlineGenerationParams {
   novelId: string
   type: 'full' | 'chapter' | 'arc'
@@ -145,7 +152,13 @@ class AIService {
   }
 
   // 流式AI对话
-  async chatStream(novelId: string, message: string, onStream: StreamHandler, context = {}, options = {}): Promise<void> {
+  async chatStream(
+    novelId: string,
+    message: string,
+    onStream: StreamHandler,
+    context: Record<string, any> = {},
+    options: ChatStreamOptions = {}
+  ): Promise<void> {
     try {
       // 获取认证token
       const token = localStorage.getItem('sessionToken')
@@ -165,10 +178,11 @@ class AIService {
           novelId,
           message,
           context,
-          type: (options as any).type || 'general',
-          provider: (options as any).provider,
-          model: (options as any).model
-        })
+          type: options.type || 'general',
+          provider: options.provider,
+          model: options.model
+        }),
+        signal: options.signal
       })
 
       if (!response.ok) {
@@ -215,8 +229,18 @@ class AIService {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Stream error:', error)
+
+      if (error?.name === 'AbortError') {
+        onStream({
+          type: 'error',
+          reason: 'abort',
+          message: '请求已取消'
+        })
+        return
+      }
+
       onStream({
         type: 'error',
         message: error instanceof Error ? error.message : 'Unknown streaming error'
@@ -919,6 +943,58 @@ ${description}
     })
 
     return response
+  }
+
+  async generateContentStream(
+    params: {
+      novelId: string
+      chapterId: string
+      outline?: string
+      existingContent?: string
+      targetLength?: number
+      style?: string
+      characters?: any[]
+      settings?: any[]
+      signal?: AbortSignal
+    },
+    onStream: StreamHandler
+  ): Promise<void> {
+    const {
+      novelId,
+      chapterId,
+      outline,
+      existingContent,
+      targetLength = 2000,
+      style = 'modern',
+      characters = [],
+      settings = [],
+      signal
+    } = params
+
+    const prompt = this.buildContentPrompt({
+      outline,
+      existingContent,
+      targetLength,
+      style,
+      characters,
+      settings
+    })
+
+    return this.chatStream(
+      novelId,
+      prompt,
+      onStream,
+      {
+        chapterId,
+        characters,
+        settings,
+        contentGeneration: true
+      },
+      {
+        type: 'creative',
+        signal
+      }
+    )
   }
 
   // 构建正文生成提示词

@@ -170,7 +170,7 @@ import {
   ClearOutlined,
   CloseCircleOutlined
 } from '@ant-design/icons-vue'
-import { aiService } from '@/services/aiService'
+import { aiService, type StreamChunk } from '@/services/aiService'
 
 interface Props {
   novelId: string
@@ -217,6 +217,116 @@ const options = ref<GenerateOptions>({
   focus: ['dialogue', 'description'],
   mode: 'balanced'
 })
+
+const TYPEWRITER_DELAY = 16
+const TYPEWRITER_BATCH_SIZE = 4
+let typewriterQueue: string[] = []
+let typewriterTimer: ReturnType<typeof setTimeout> | null = null
+let typewriterActive = false
+let typewriterCancelled = false
+let currentTypewriterContent = props.existingContent || ''
+let typewriterFlushResolver: (() => void) | null = null
+
+const resolveTypewriterFlush = () => {
+  if (typewriterFlushResolver) {
+    typewriterFlushResolver()
+    typewriterFlushResolver = null
+  }
+}
+
+const runTypewriter = () => {
+  if (typewriterCancelled) {
+    typewriterActive = false
+    typewriterQueue = []
+    if (typewriterTimer) {
+      clearTimeout(typewriterTimer)
+      typewriterTimer = null
+    }
+    resolveTypewriterFlush()
+    return
+  }
+
+  if (typewriterQueue.length === 0) {
+    typewriterActive = false
+    if (typewriterTimer) {
+      clearTimeout(typewriterTimer)
+      typewriterTimer = null
+    }
+    resolveTypewriterFlush()
+    return
+  }
+
+  const batch = typewriterQueue.splice(0, TYPEWRITER_BATCH_SIZE).join('')
+  currentTypewriterContent += batch
+  emit('update:content', currentTypewriterContent)
+  typewriterTimer = setTimeout(runTypewriter, TYPEWRITER_DELAY)
+}
+
+const enqueueTypewriterText = (text: string) => {
+  if (!text) return
+  typewriterQueue.push(...Array.from(text))
+  if (!typewriterActive) {
+    typewriterActive = true
+    runTypewriter()
+  }
+}
+
+const resetTypewriter = (initial = '') => {
+  if (typewriterTimer) {
+    clearTimeout(typewriterTimer)
+    typewriterTimer = null
+  }
+  typewriterQueue = []
+  typewriterActive = false
+  typewriterCancelled = false
+  currentTypewriterContent = initial
+  emit('update:content', initial)
+}
+
+const waitForTypewriterFlush = (): Promise<void> => {
+  return new Promise((resolve) => {
+    if (!typewriterActive && typewriterQueue.length === 0) {
+      resolve()
+    } else {
+      typewriterFlushResolver = resolve
+    }
+  })
+}
+
+const cancelTypewriter = () => {
+  typewriterCancelled = true
+  typewriterQueue = []
+  if (typewriterTimer) {
+    clearTimeout(typewriterTimer)
+    typewriterTimer = null
+  }
+  typewriterActive = false
+  resolveTypewriterFlush()
+}
+
+const computeSeparator = (content: string): string => {
+  if (!content || !content.trim()) {
+    return ''
+  }
+
+  if (content.endsWith('\n\n')) {
+    return ''
+  }
+
+  if (content.endsWith('\n')) {
+    return '\n'
+  }
+
+  return '\n\n'
+}
+
+const combineContent = (existing: string, separator: string, generated: string): string => {
+  if (!existing || !existing.trim()) {
+    return generated
+  }
+
+  return `${existing}${separator}${generated}`
+}
 
 // 进度条里程碑
 const milestones = ref([
@@ -270,11 +380,22 @@ const handleContinue = async () => {
 
 // 执行生成
 const performGenerate = async (isContinue: boolean) => {
+  const existingSnapshot = props.existingContent || ''
+  const separator = isContinue ? computeSeparator(existingSnapshot) : ''
+  let aggregatedContent = ''
+  let streamError: string | null = null
+
   try {
     generating.value = true
     isCancelled.value = false
-    progress.value = 0
+    progress.value = 5
     generatingText.value = 'AI正在分析章节信息...'
+
+    cancelTypewriter()
+    abortController.value?.abort()
+
+    const baseContent = isContinue ? existingSnapshot + separator : ''
+    resetTypewriter(baseContent)
 
     abortController.value = new AbortController()
 
@@ -282,7 +403,7 @@ const performGenerate = async (isContinue: boolean) => {
       novelId: props.novelId,
       chapterId: props.chapterId,
       outline: props.outline,
-      existingContent: isContinue ? props.existingContent : '',
+      existingContent: isContinue ? existingSnapshot : '',
       targetLength: options.value.targetLength,
       style: options.value.style,
       characters: props.characters || [],
@@ -290,68 +411,91 @@ const performGenerate = async (isContinue: boolean) => {
       signal: abortController.value.signal
     }
 
-    progress.value = 20
-    generatingText.value = 'AI正在构思情节...'
-
-    if (isCancelled.value) return
-
-    const response = await aiService.generateContent(params)
-
-    if (isCancelled.value) return
-
-    progress.value = 60
-    generatingText.value = '正在生成文字...'
-
-    let content = ''
-    if (typeof response === 'string') {
-      content = response
-    } else if (response && typeof response === 'object') {
-      content = response.content || response.message || response.data || (response as any).text || ''
-      if (typeof content !== 'string') {
-        content = JSON.stringify(response)
+    await aiService.generateContentStream(params, (chunk: StreamChunk) => {
+      switch (chunk.type) {
+        case 'connected':
+          progress.value = Math.max(progress.value, 10)
+          generatingText.value = 'AI创作已连接...'
+          break
+        case 'chunk':
+          if (!chunk.content) break
+          aggregatedContent += chunk.content
+          enqueueTypewriterText(chunk.content)
+          generatingText.value = '正在生成文字...'
+          progress.value = Math.min(progress.value + Math.max(Math.floor(chunk.content.length / 20), 1), 85)
+          break
+        case 'finish':
+          progress.value = Math.max(progress.value, 90)
+          generatingText.value = '正在整理内容...'
+          break
+        case 'done':
+          progress.value = Math.max(progress.value, 95)
+          break
+        case 'error':
+          if (chunk.reason === 'abort') {
+            isCancelled.value = true
+          } else {
+            streamError = chunk.message || '流式生成失败，请稍后重试'
+          }
+          break
       }
+    })
+
+    await waitForTypewriterFlush()
+
+    if (isCancelled.value) {
+      const fallback = isContinue ? existingSnapshot : ''
+      currentTypewriterContent = fallback
+      emit('update:content', fallback)
+      message.info('内容生成已取消')
+      return
     }
 
-    if (!content || content.trim().length === 0) {
+    if (streamError) {
+      throw new Error(streamError)
+    }
+
+    progress.value = 100
+    generatingText.value = '正在完成...'
+
+    const formatted = formatGeneratedContent(aggregatedContent)
+
+    if (!formatted) {
       throw new Error('生成的内容为空')
     }
 
-    if (isCancelled.value) return
-
-    progress.value = 80
-    generatingText.value = '正在格式化内容...'
-
-    const formattedContent = formatGeneratedContent(content)
-
-    if (isCancelled.value) return
-
-    progress.value = 90
-    generatingText.value = '正在呈现内容...'
-
     const finalContent = isContinue
-      ? props.existingContent + '\n\n' + formattedContent
-      : formattedContent
+      ? combineContent(existingSnapshot, separator, formatted)
+      : formatted
 
-    await typewriterEffect(finalContent, isContinue)
-
-    if (isCancelled.value) return
-
-    progress.value = 100
-
+    currentTypewriterContent = finalContent
+    emit('update:content', finalContent)
     emit('generated', finalContent)
 
     message.success(`内容${isContinue ? '续写' : '生成'}成功！`)
   } catch (error: any) {
-    if (error.name === 'AbortError' || isCancelled.value) {
-      console.log('Content generation cancelled')
+    if (error?.name === 'AbortError' || isCancelled.value) {
+      message.info('内容生成已取消')
     } else {
       console.error('Failed to generate content:', error)
       message.error(`内容${isContinue ? '续写' : '生成'}失败，请重试`)
+      const fallback = isContinue ? existingSnapshot : ''
+      currentTypewriterContent = fallback
+      emit('update:content', fallback)
     }
   } finally {
+    abortController.value = null
+    typewriterQueue = []
+    if (typewriterTimer) {
+      clearTimeout(typewriterTimer)
+      typewriterTimer = null
+    }
+    typewriterActive = false
+    typewriterCancelled = false
+    typewriterFlushResolver = null
     generating.value = false
     progress.value = 0
-    abortController.value = null
+    generatingText.value = 'AI正在准备创作...'
     isCancelled.value = false
   }
 }
@@ -373,37 +517,13 @@ const formatGeneratedContent = (content: string): string => {
   return formatted
 }
 
-// 打字机效果
-const typewriterEffect = async (text: string, append: boolean = false): Promise<void> => {
-  const chars = text.split('')
-  const delayPerChar = 10
-
-  if (!append) {
-    emit('update:content', '')
-  }
-
-  let currentText = append ? props.existingContent + '\n\n' : ''
-
-  const charsPerBatch = 5
-  for (let i = 0; i < chars.length; i += charsPerBatch) {
-    if (isCancelled.value) {
-      break
-    }
-
-    const batch = chars.slice(i, i + charsPerBatch).join('')
-    currentText += batch
-    emit('update:content', currentText)
-
-    await new Promise(resolve => setTimeout(resolve, delayPerChar))
-  }
-}
-
 const handleCancel = () => {
   if (abortController.value) {
     abortController.value.abort()
   }
   isCancelled.value = true
   generatingText.value = '正在取消...'
+  cancelTypewriter()
 }
 
 // 清空内容
