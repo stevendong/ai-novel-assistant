@@ -397,9 +397,6 @@ const cancelTypewriter = () => {
   resolveTypewriterFlush()
 }
 
-const formatChapterTitlePattern = /^第[\d一二三四五六七八九十百千万]+[章节回部节：:\s]/i
-const sceneBreakPattern = /^([*•\-]|——|————|…|\s)+$/
-
 const formatGeneratedContent = (content: string, finalize = true): string => {
   if (!content) return ''
 
@@ -417,18 +414,7 @@ const formatGeneratedContent = (content: string, finalize = true): string => {
   }
 
   const lines = normalized.split('\n')
-  const formattedLines = lines.map((line) => {
-    const trimmed = line.trim()
-    if (!trimmed) return ''
-
-    if (trimmed.startsWith('　　')) return trimmed
-    if (formatChapterTitlePattern.test(trimmed)) return trimmed
-    if (sceneBreakPattern.test(trimmed)) return trimmed
-    if (/^#+\s*/.test(trimmed)) return trimmed
-    if (/^[*-]\s+/.test(trimmed)) return trimmed
-
-    return `　　${trimmed}`
-  })
+  const formattedLines = lines.map((line) => line.trim())
 
   let formatted = formattedLines.join('\n')
 
