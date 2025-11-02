@@ -259,7 +259,10 @@ const htmlToPlainText = (html: string): string => {
     .replace(/<[^>]+>/g, '')
 
   text = htmlEntityDecoder(text)
-  text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n')
+  text = text
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
 
   return text.trim()
 }
@@ -288,7 +291,8 @@ const plainTextToHtml = (text: string): string => {
       flushParagraph()
       continue
     }
-    buffer.push(line)
+    const sanitizedLine = line.replace(/\s+$/u, '')
+    buffer.push(sanitizedLine)
   }
 
   flushParagraph()
@@ -406,6 +410,7 @@ const formatGeneratedContent = (content: string, finalize = true): string => {
     .replace(/^(以下是|这是|正文内容如下)[：:]\s*/gm, '')
     .replace(/\u00a0/g, ' ')
     .replace(/\t/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
 
   if (finalize) {
     normalized = normalized.replace(/\n{3,}/g, '\n\n').trim()
