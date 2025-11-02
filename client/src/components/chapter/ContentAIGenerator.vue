@@ -218,14 +218,103 @@ const options = ref<GenerateOptions>({
   mode: 'balanced'
 })
 
+const htmlEntityDecoder = (() => {
+  if (typeof window === 'undefined') {
+    return (input: string) =>
+      input
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+  }
+  const textarea = document.createElement('textarea')
+  return (input: string) => {
+    textarea.innerHTML = input
+    return textarea.value
+  }
+})()
+
+const escapeHtml = (input: string): string => {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+const htmlToPlainText = (html: string): string => {
+  if (!html) return ''
+  let text = html
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<li>/gi, '• ')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<\/blockquote>/gi, '\n')
+    .replace(/<hr\s*\/?>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+
+  text = htmlEntityDecoder(text)
+  text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n')
+
+  return text.trim()
+}
+
+const plainTextToHtml = (text: string): string => {
+  const normalized = text.replace(/\r\n/g, '\n')
+  if (!normalized.trim()) {
+    return ''
+  }
+
+  const lines = normalized.split('\n')
+  const paragraphs: string[] = []
+  let buffer: string[] = []
+
+  const flushParagraph = () => {
+    if (buffer.length === 0) {
+      return
+    }
+    const content = buffer.map(line => escapeHtml(line)).join('<br />')
+    paragraphs.push(`<p>${content}</p>`)
+    buffer = []
+  }
+
+  for (const line of lines) {
+    if (line.trim() === '') {
+      flushParagraph()
+      continue
+    }
+    buffer.push(line)
+  }
+
+  flushParagraph()
+
+  if (paragraphs.length === 0) {
+    paragraphs.push('<p></p>')
+  }
+
+  return paragraphs.join('')
+}
+
+const emitContentUpdate = (text: string) => {
+  emit('update:content', plainTextToHtml(text))
+}
+
+const getExistingContentPlain = () => htmlToPlainText(props.existingContent || '')
+
 const TYPEWRITER_DELAY = 16
 const TYPEWRITER_BATCH_SIZE = 4
 let typewriterQueue: string[] = []
 let typewriterTimer: ReturnType<typeof setTimeout> | null = null
 let typewriterActive = false
 let typewriterCancelled = false
-let currentTypewriterContent = props.existingContent || ''
+let currentTypewriterContent = getExistingContentPlain()
 let typewriterFlushResolver: (() => void) | null = null
+let rawAggregatedContent = ''
 
 const resolveTypewriterFlush = () => {
   if (typewriterFlushResolver) {
@@ -258,7 +347,7 @@ const runTypewriter = () => {
 
   const batch = typewriterQueue.splice(0, TYPEWRITER_BATCH_SIZE).join('')
   currentTypewriterContent += batch
-  emit('update:content', currentTypewriterContent)
+  emitContentUpdate(currentTypewriterContent)
   typewriterTimer = setTimeout(runTypewriter, TYPEWRITER_DELAY)
 }
 
@@ -280,7 +369,7 @@ const resetTypewriter = (initial = '') => {
   typewriterActive = false
   typewriterCancelled = false
   currentTypewriterContent = initial
-  emit('update:content', initial)
+  emitContentUpdate(initial)
 }
 
 const waitForTypewriterFlush = (): Promise<void> => {
@@ -302,6 +391,47 @@ const cancelTypewriter = () => {
   }
   typewriterActive = false
   resolveTypewriterFlush()
+}
+
+const formatChapterTitlePattern = /^第[\d一二三四五六七八九十百千万]+[章节回部节：:\s]/i
+const sceneBreakPattern = /^([*•\-]|——|————|…|\s)+$/
+
+const formatGeneratedContent = (content: string, finalize = true): string => {
+  if (!content) return ''
+
+  let normalized = content
+    .replace(/\r\n/g, '\n')
+    .replace(/```(?:markdown|text)?\n?/g, '')
+    .replace(/```/g, '')
+    .replace(/^(以下是|这是|正文内容如下)[：:]\s*/gm, '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\t/g, ' ')
+
+  if (finalize) {
+    normalized = normalized.replace(/\n{3,}/g, '\n\n').trim()
+  }
+
+  const lines = normalized.split('\n')
+  const formattedLines = lines.map((line) => {
+    const trimmed = line.trim()
+    if (!trimmed) return ''
+
+    if (trimmed.startsWith('　　')) return trimmed
+    if (formatChapterTitlePattern.test(trimmed)) return trimmed
+    if (sceneBreakPattern.test(trimmed)) return trimmed
+    if (/^#+\s*/.test(trimmed)) return trimmed
+    if (/^[*-]\s+/.test(trimmed)) return trimmed
+
+    return `　　${trimmed}`
+  })
+
+  let formatted = formattedLines.join('\n')
+
+  if (finalize) {
+    formatted = formatted.trimEnd()
+  }
+
+  return formatted
 }
 
 const computeSeparator = (content: string): string => {
@@ -342,7 +472,7 @@ const canGenerate = computed(() => {
 })
 
 const hasExistingContent = computed(() => {
-  return props.existingContent && props.existingContent.trim().length > 0
+  return getExistingContentPlain().trim().length > 0
 })
 
 // AI生成正文
@@ -380,9 +510,8 @@ const handleContinue = async () => {
 
 // 执行生成
 const performGenerate = async (isContinue: boolean) => {
-  const existingSnapshot = props.existingContent || ''
+  const existingSnapshot = getExistingContentPlain()
   const separator = isContinue ? computeSeparator(existingSnapshot) : ''
-  let aggregatedContent = ''
   let streamError: string | null = null
 
   try {
@@ -396,6 +525,7 @@ const performGenerate = async (isContinue: boolean) => {
 
     const baseContent = isContinue ? existingSnapshot + separator : ''
     resetTypewriter(baseContent)
+    rawAggregatedContent = ''
 
     abortController.value = new AbortController()
 
@@ -419,10 +549,28 @@ const performGenerate = async (isContinue: boolean) => {
           break
         case 'chunk':
           if (!chunk.content) break
-          aggregatedContent += chunk.content
-          enqueueTypewriterText(chunk.content)
+          rawAggregatedContent += chunk.content
+          const formattedPartial = formatGeneratedContent(rawAggregatedContent, false)
+          const targetContent = isContinue
+            ? combineContent(existingSnapshot, separator, formattedPartial)
+            : formattedPartial
+
+          const currentDisplayed = currentTypewriterContent + typewriterQueue.join('')
+
+          if (targetContent.startsWith(currentDisplayed)) {
+            const delta = targetContent.slice(currentDisplayed.length)
+            if (delta) {
+              enqueueTypewriterText(delta)
+              progress.value = Math.min(
+                progress.value + Math.max(Math.floor(delta.length / 10), 1),
+                85
+              )
+            }
+          } else {
+            resetTypewriter(targetContent)
+          }
+
           generatingText.value = '正在生成文字...'
-          progress.value = Math.min(progress.value + Math.max(Math.floor(chunk.content.length / 20), 1), 85)
           break
         case 'finish':
           progress.value = Math.max(progress.value, 90)
@@ -446,7 +594,7 @@ const performGenerate = async (isContinue: boolean) => {
     if (isCancelled.value) {
       const fallback = isContinue ? existingSnapshot : ''
       currentTypewriterContent = fallback
-      emit('update:content', fallback)
+      emitContentUpdate(fallback)
       message.info('内容生成已取消')
       return
     }
@@ -458,7 +606,7 @@ const performGenerate = async (isContinue: boolean) => {
     progress.value = 100
     generatingText.value = '正在完成...'
 
-    const formatted = formatGeneratedContent(aggregatedContent)
+    const formatted = formatGeneratedContent(rawAggregatedContent, true)
 
     if (!formatted) {
       throw new Error('生成的内容为空')
@@ -468,9 +616,19 @@ const performGenerate = async (isContinue: boolean) => {
       ? combineContent(existingSnapshot, separator, formatted)
       : formatted
 
+    const currentDisplayed = currentTypewriterContent + typewriterQueue.join('')
+
+    if (finalContent.startsWith(currentDisplayed)) {
+      const delta = finalContent.slice(currentDisplayed.length)
+      if (delta) {
+        enqueueTypewriterText(delta)
+        await waitForTypewriterFlush()
+      }
+    }
+
     currentTypewriterContent = finalContent
-    emit('update:content', finalContent)
-    emit('generated', finalContent)
+    emitContentUpdate(finalContent)
+    emit('generated', plainTextToHtml(finalContent))
 
     message.success(`内容${isContinue ? '续写' : '生成'}成功！`)
   } catch (error: any) {
@@ -481,7 +639,7 @@ const performGenerate = async (isContinue: boolean) => {
       message.error(`内容${isContinue ? '续写' : '生成'}失败，请重试`)
       const fallback = isContinue ? existingSnapshot : ''
       currentTypewriterContent = fallback
-      emit('update:content', fallback)
+      emitContentUpdate(fallback)
     }
   } finally {
     abortController.value = null
@@ -493,28 +651,12 @@ const performGenerate = async (isContinue: boolean) => {
     typewriterActive = false
     typewriterCancelled = false
     typewriterFlushResolver = null
+    rawAggregatedContent = ''
     generating.value = false
     progress.value = 0
     generatingText.value = 'AI正在准备创作...'
     isCancelled.value = false
   }
-}
-
-// 格式化生成的内容
-const formatGeneratedContent = (content: string): string => {
-  // 移除可能的代码块标记
-  let formatted = content.replace(/```(?:markdown|text)?\n?/g, '')
-
-  // 移除说明性文字（如果AI添加了）
-  formatted = formatted.replace(/^(以下是|这是|正文内容如下)[：:]\s*/gm, '')
-
-  // 确保段落之间有适当的空行
-  formatted = formatted.replace(/\n{3,}/g, '\n\n')
-
-  // 移除首尾空白
-  formatted = formatted.trim()
-
-  return formatted
 }
 
 const handleCancel = () => {
@@ -524,6 +666,7 @@ const handleCancel = () => {
   isCancelled.value = true
   generatingText.value = '正在取消...'
   cancelTypewriter()
+  rawAggregatedContent = ''
 }
 
 // 清空内容
@@ -535,7 +678,7 @@ const handleClear = () => {
     okType: 'danger',
     cancelText: '取消',
     onOk() {
-      emit('update:content', '')
+      emitContentUpdate('')
       emit('cleared')
       message.success('内容已清空')
     }
