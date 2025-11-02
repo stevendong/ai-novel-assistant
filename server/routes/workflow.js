@@ -1,5 +1,6 @@
 const express = require('express')
 const statusWorkflowService = require('../services/statusWorkflowService')
+const prisma = require('../utils/prismaClient')
 
 const router = express.Router()
 
@@ -116,9 +117,6 @@ router.post('/novels/:novelId/chapters/batch-advance', async (req, res) => {
       return res.status(400).json({ error: 'Both fromStatus and toStatus are required' })
     }
 
-    const { PrismaClient } = require('@prisma/client')
-    const prisma = new PrismaClient()
-
     const chapters = await prisma.chapter.findMany({
       where: { novelId, status: fromStatus }
     })
@@ -159,9 +157,6 @@ router.post('/novels/:novelId/chapters/batch-advance', async (req, res) => {
 router.post('/novels/:novelId/auto-advance', async (req, res) => {
   try {
     const { novelId } = req.params
-
-    const { PrismaClient } = require('@prisma/client')
-    const prisma = new PrismaClient()
 
     // 获取所有章节
     const chapters = await prisma.chapter.findMany({

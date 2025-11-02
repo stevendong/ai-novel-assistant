@@ -3,8 +3,7 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('./utils/prismaClient');
 
 // 导入端口管理工具和日志工具
 const { ensurePortAvailable } = require('./utils/portManager');
@@ -47,9 +46,33 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 信任代理，使得 req.ip 能正确获取客户端真实IP
-// 这对于部署在Nginx、Apache等反向代理后的应用很重要
-app.set('trust proxy', true);
+// 配置信任代理，避免过度信任导致的速率限制绕过
+const resolveTrustProxy = () => {
+  const raw = process.env.TRUST_PROXY;
+
+  if (!raw) {
+    return ['loopback', 'linklocal', 'uniquelocal'];
+  }
+
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === 'false') return false;
+
+  if (/^\d+$/.test(normalized)) {
+    return Number(normalized);
+  }
+
+  if (normalized === 'true') {
+    logger.warn('TRUST_PROXY=true is unsafe; falling back to loopback/linklocal/uniquelocal');
+    return ['loopback', 'linklocal', 'uniquelocal'];
+  }
+
+  return raw
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+app.set('trust proxy', resolveTrustProxy());
 
 // ========== 安全中间件 ==========
 // 1. Helmet - 设置安全 HTTP 头

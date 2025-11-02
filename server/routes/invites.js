@@ -1,10 +1,9 @@
 const express = require('express')
 const router = express.Router()
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
 const inviteService = require('../services/inviteService')
 const { requireAuth, optionalAuth } = require('../middleware/auth')
 const logger = require('../utils/logger')
+const prisma = require('../utils/prismaClient')
 
 // 验证邀请码（公开接口，注册时使用）
 router.post('/validate', async (req, res) => {

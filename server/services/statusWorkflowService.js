@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client')
 const consistencyService = require('./consistencyService')
-const prisma = new PrismaClient()
+const prisma = require('../utils/prismaClient')
 
 class StatusWorkflowService {
   constructor() {

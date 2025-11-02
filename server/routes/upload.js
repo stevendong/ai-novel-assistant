@@ -2,11 +2,10 @@ const express = require('express');
 const multer = require('multer');
 const { requireAuth } = require('../middleware/auth');
 const uploadService = require('../services/uploadService');
-const { PrismaClient } = require('@prisma/client');
 const logger = require('../utils/logger');
+const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // 配置 multer 内存存储
 const upload = multer({

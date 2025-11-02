@@ -1,11 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const fs = require('fs-extra');
 const path = require('path');
 const EPub = require('epub-gen');
 const { v4: uuidv4 } = require('uuid');
-
-const prisma = new PrismaClient();
+const prisma = require('../utils/prismaClient');
 const router = express.Router();
 
 // 确保导出目录存在

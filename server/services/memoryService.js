@@ -1,12 +1,12 @@
 const { MemoryClient } = require('mem0ai');
 const memoryConfig = require('../config/memoryConfig');
 const logger = require('../utils/logger');
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../utils/prismaClient');
 
 class MemoryService {
   constructor() {
     this.client = null;
-    this.prisma = new PrismaClient();
+    this.prisma = prisma;
     this.initializeClient();
 
     // 性能指标

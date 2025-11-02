@@ -1,10 +1,8 @@
 const express = require('express')
-const { PrismaClient } = require('@prisma/client')
 const { batchChapterService } = require('../services/batchChapterService')
 const { requireAuth } = require('../middleware/auth')
+const prisma = require('../utils/prismaClient')
 const router = express.Router()
-
-const prisma = new PrismaClient()
 
 // 添加Prisma到请求对象
 router.use((req, res, next) => {

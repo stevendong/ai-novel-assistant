@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client')
 const aiService = require('./aiService')
-const prisma = new PrismaClient()
+const prisma = require('../utils/prismaClient')
 
 /**
  * 批量章节生成服务

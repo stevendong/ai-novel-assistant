@@ -39,6 +39,15 @@ npm run client:dev  # 仅前端
 npm run server:dev  # 仅后端
 ```
 
+### 开发数据库
+- 默认情况下，后端在 `NODE_ENV=development` 时会使用本地 PostgreSQL 数据库连接串 `postgresql://noveluser:changeme@localhost:5432/novel_db?schema=public`
+- 如果本地尚未启动数据库，可以使用项目内的 Docker 编排快速拉起：
+  ```bash
+  docker compose -f docker-compose.postgres.yml up -d postgres
+  ```
+- 需要自定义本地连接时，可设置 `LOCAL_DATABASE_URL`；若要直接链接远程数据库，则在环境变量中显式设置 `DATABASE_URL`
+- 部署在反向代理后时，请通过 `TRUST_PROXY` 指定可信代理（默认只信任 loopback/linklocal/uniquelocal），避免使用不安全的 `true`
+
 ### 构建和部署
 ```bash
 npm run build      # 构建前端

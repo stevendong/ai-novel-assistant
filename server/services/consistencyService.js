@@ -1,4 +1,3 @@
-const { PrismaClient } = require('@prisma/client');
 const OpenAI = require('openai');
 const { aiConfig, validateConfig } = require('../config/aiConfig');
 const { 
@@ -9,7 +8,7 @@ const {
   createSystemMessage 
 } = require('../utils/aiHelpers');
 
-const prisma = new PrismaClient();
+const prisma = require('../utils/prismaClient');
 
 // 验证AI配置
 try {

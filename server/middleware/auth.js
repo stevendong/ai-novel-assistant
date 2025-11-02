@@ -1,5 +1,6 @@
 const AuthUtils = require('../utils/auth');
 const logger = require('../utils/logger');
+const prisma = require('../utils/prismaClient');
 
 const requireAuth = async (req, res, next) => {
   try {
@@ -88,9 +89,6 @@ const requireOwnership = (resourceType) => {
     }
 
     try {
-      const { PrismaClient } = require('@prisma/client');
-      const prisma = new PrismaClient();
-
       let resource;
       switch (resourceType) {
         case 'novel':

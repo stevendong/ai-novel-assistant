@@ -1,5 +1,4 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const multer = require('multer');
 const AuthUtils = require('../utils/auth');
 const { requireAuth } = require('../middleware/auth');
@@ -7,9 +6,9 @@ const logger = require('../utils/logger');
 const inviteService = require('../services/inviteService');
 const uploadService = require('../services/uploadService');
 const { getCleanClientIp } = require('../utils/ipHelper');
+const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // 配置 multer 用于头像上传
 const avatarUpload = multer({

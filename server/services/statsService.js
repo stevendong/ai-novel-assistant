@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../utils/prismaClient')
 
 class StatsService {
   // 获取今日写作统计

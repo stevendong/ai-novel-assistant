@@ -1,10 +1,9 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { requireAdmin } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // 获取所有用户列表
 router.get('/users', requireAdmin, async (req, res) => {

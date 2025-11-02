@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const consistencyService = require('../services/consistencyService');
+const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // 获取章节的一致性检查结果
 router.get('/chapters/:chapterId', async (req, res) => {

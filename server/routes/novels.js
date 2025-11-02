@@ -1,8 +1,6 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { requireAuth, requireOwnership } = require('../middleware/auth');
-
-const prisma = new PrismaClient();
+const prisma = require('../utils/prismaClient');
 const router = express.Router();
 
 // 获取所有小说项目（合并了统计功能）

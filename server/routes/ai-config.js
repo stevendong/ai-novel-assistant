@@ -2,6 +2,7 @@ const express = require('express');
 const aiService = require('../services/aiService');
 const { aiConfig } = require('../config/aiConfig');
 const { requireAuth } = require('../middleware/auth');
+const prisma = require('../utils/prismaClient');
 const router = express.Router();
 
 // 模型列表缓存 (TTL: 1小时)
@@ -43,9 +44,6 @@ router.get('/config', requireAuth, async (req, res) => {
 
     // 如果用户已登录,添加用户自定义的提供商
     if (userId) {
-      const { PrismaClient } = require('@prisma/client');
-      const prisma = new PrismaClient();
-
       const preferences = await prisma.userAIPreferences.findUnique({
         where: { userId }
       });
@@ -95,8 +93,6 @@ router.get('/config', requireAuth, async (req, res) => {
 router.get('/preferences', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
 
     // 查找用户偏好设置
     const preferences = await prisma.userAIPreferences.findUnique({
@@ -142,9 +138,6 @@ router.put('/preferences', requireAuth, async (req, res) => {
       maxHistoryLength,
       customConfigs
     } = req.body;
-
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
 
     // 验证提供商是否可用
     if (preferredProvider && !aiService.providers.has(preferredProvider)) {
@@ -279,9 +272,6 @@ router.post('/models/list', requireAuth, async (req, res) => {
     }
     // 如果是用户保存的自定义配置
     else if (userId) {
-      const { PrismaClient } = require('@prisma/client');
-      const prisma = new PrismaClient();
-
       const preferences = await prisma.userAIPreferences.findUnique({
         where: { userId }
       });

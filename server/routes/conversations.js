@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const { requireAuth } = require('../middleware/auth');
+const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // 获取当前用户的所有对话
 router.get('/', requireAuth, async (req, res) => {

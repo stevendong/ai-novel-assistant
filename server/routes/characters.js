@@ -1,9 +1,8 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
 const multer = require('multer');
 const uploadService = require('../services/uploadService');
 const characterCardUtils = require('../utils/characterCardUtils');
-const prisma = new PrismaClient();
+const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
 
