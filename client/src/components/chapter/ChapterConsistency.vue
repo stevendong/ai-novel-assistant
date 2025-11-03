@@ -2,9 +2,9 @@
   <div class="chapter-consistency">
     <div class="consistency-header">
       <div class="header-title">
-        <h3>一致性检查</h3>
+        <h3>{{ t('chapterEditor.consistency.title') }}</h3>
         <a-tag v-if="unresolvedCount > 0" :color="unresolvedCount > 0 ? 'error' : 'success'">
-          {{ unresolvedCount }} 个待解决
+          {{ t('chapterEditor.consistency.unresolvedTag', { count: unresolvedCount }) }}
         </a-tag>
       </div>
       <a-space>
@@ -14,7 +14,7 @@
           v-if="issues.length > 0"
         >
           <template #icon><FilterOutlined /></template>
-          筛选
+          {{ t('chapterEditor.consistency.actions.filter') }}
         </a-button>
         <a-button
           type="primary"
@@ -22,7 +22,7 @@
           @click="handleCheck"
         >
           <template #icon><CheckCircleOutlined /></template>
-          {{ checking ? '检查中...' : '检查一致性' }}
+          {{ checking ? t('chapterEditor.consistency.actions.checking') : t('chapterEditor.consistency.actions.check') }}
         </a-button>
       </a-space>
     </div>
@@ -31,24 +31,24 @@
     <div v-if="issues.length > 0" class="consistency-filters">
       <a-space :size="8" wrap>
         <a-radio-group v-model:value="severityFilter" button-style="solid" size="small">
-          <a-radio-button value="all">全部</a-radio-button>
+          <a-radio-button value="all">{{ t('chapterEditor.consistency.filters.severity.all') }}</a-radio-button>
           <a-radio-button value="high">
-            <WarningOutlined /> 高
+            <WarningOutlined /> {{ t('chapterEditor.consistency.filters.severity.high') }}
           </a-radio-button>
           <a-radio-button value="medium">
-            <ExclamationCircleOutlined /> 中
+            <ExclamationCircleOutlined /> {{ t('chapterEditor.consistency.filters.severity.medium') }}
           </a-radio-button>
           <a-radio-button value="low">
-            <InfoCircleOutlined /> 低
+            <InfoCircleOutlined /> {{ t('chapterEditor.consistency.filters.severity.low') }}
           </a-radio-button>
         </a-radio-group>
 
         <a-divider type="vertical" />
 
         <a-radio-group v-model:value="statusFilter" button-style="solid" size="small">
-          <a-radio-button value="all">全部状态</a-radio-button>
-          <a-radio-button value="unresolved">未解决</a-radio-button>
-          <a-radio-button value="resolved">已解决</a-radio-button>
+          <a-radio-button value="all">{{ t('chapterEditor.consistency.filters.status.all') }}</a-radio-button>
+          <a-radio-button value="unresolved">{{ t('chapterEditor.consistency.filters.status.unresolved') }}</a-radio-button>
+          <a-radio-button value="resolved">{{ t('chapterEditor.consistency.filters.status.resolved') }}</a-radio-button>
         </a-radio-group>
       </a-space>
     </div>
@@ -73,7 +73,7 @@
                     {{ getTypeText(item.type) }}
                   </a-tag>
                   <a-tag v-if="item.resolved" color="success">
-                    <CheckOutlined /> 已解决
+                    <CheckOutlined /> {{ t('chapterEditor.consistency.issue.resolved') }}
                   </a-tag>
                 </a-space>
               </div>
@@ -91,30 +91,30 @@
 
           <template #actions>
             <a-space>
-              <a-tooltip v-if="!item.resolved" title="标记为已解决">
+              <a-tooltip v-if="!item.resolved" :title="t('chapterEditor.consistency.issue.markResolvedTooltip')">
                 <a-button
                   type="text"
                   size="small"
                   @click="handleResolve(item.id)"
                 >
                   <template #icon><CheckOutlined /></template>
-                  解决
+                  {{ t('chapterEditor.consistency.issue.markResolved') }}
                 </a-button>
               </a-tooltip>
-              <a-tooltip v-else title="重新打开">
+              <a-tooltip v-else :title="t('chapterEditor.consistency.issue.reopenTooltip')">
                 <a-button
                   type="text"
                   size="small"
                   @click="handleUnresolve(item.id)"
                 >
                   <template #icon><CloseOutlined /></template>
-                  重新打开
+                  {{ t('chapterEditor.consistency.issue.reopen') }}
                 </a-button>
               </a-tooltip>
               <a-popconfirm
-                title="确定要删除这个问题吗？"
-                ok-text="确定"
-                cancel-text="取消"
+                :title="t('chapterEditor.consistency.issue.deleteConfirm')"
+                :ok-text="t('common.confirm')"
+                :cancel-text="t('common.cancel')"
                 @confirm="handleDelete(item.id)"
               >
                 <a-button
@@ -134,7 +134,7 @@
     <!-- 空状态 -->
     <a-empty
       v-else-if="!checking"
-      :description="issues.length === 0 ? '暂无一致性问题' : '没有符合条件的问题'"
+      :description="issues.length === 0 ? t('chapterEditor.consistency.empty.noIssues') : t('chapterEditor.consistency.empty.noResults')"
       class="empty-state"
     >
       <template #image>
@@ -149,15 +149,15 @@
       </template>
       <a-button v-if="issues.length === 0" type="primary" @click="handleCheck">
         <template #icon><CheckCircleOutlined /></template>
-        开始检查
+        {{ t('chapterEditor.consistency.actions.check') }}
       </a-button>
     </a-empty>
 
     <!-- 检查中状态 -->
     <div v-if="checking" class="checking-state">
-      <a-spin size="large" tip="正在检查一致性...">
+      <a-spin size="large" :tip="t('chapterEditor.consistency.checking.tip')">
         <div class="checking-content">
-          <p>正在分析章节内容、角色设定和世界设定...</p>
+          <p>{{ t('chapterEditor.consistency.checking.description') }}</p>
         </div>
       </a-spin>
     </div>
@@ -167,25 +167,25 @@
       <a-row :gutter="16">
         <a-col :span="6">
           <div class="stat-card">
-            <div class="stat-label">总问题数</div>
+            <div class="stat-label">{{ t('chapterEditor.consistency.stats.total') }}</div>
             <div class="stat-value">{{ issues.length }}</div>
           </div>
         </a-col>
         <a-col :span="6">
           <div class="stat-card high">
-            <div class="stat-label">高优先级</div>
+            <div class="stat-label">{{ t('chapterEditor.consistency.stats.high') }}</div>
             <div class="stat-value">{{ severityStats.high }}</div>
           </div>
         </a-col>
         <a-col :span="6">
           <div class="stat-card medium">
-            <div class="stat-label">中优先级</div>
+            <div class="stat-label">{{ t('chapterEditor.consistency.stats.medium') }}</div>
             <div class="stat-value">{{ severityStats.medium }}</div>
           </div>
         </a-col>
         <a-col :span="6">
           <div class="stat-card low">
-            <div class="stat-label">低优先级</div>
+            <div class="stat-label">{{ t('chapterEditor.consistency.stats.low') }}</div>
             <div class="stat-value">{{ severityStats.low }}</div>
           </div>
         </a-col>
@@ -210,6 +210,7 @@ import {
 } from '@ant-design/icons-vue'
 import type { ConsistencyCheck } from '@/types'
 import { chapterService } from '@/services/chapterService'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   modelValue: ConsistencyCheck[]
@@ -223,6 +224,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, locale } = useI18n()
 
 // 内部状态
 const issues = ref<ConsistencyCheck[]>([])
@@ -296,9 +298,9 @@ const getSeverityColor = (severity: string): string => {
 // 获取严重程度文本
 const getSeverityText = (severity: string): string => {
   const texts: Record<string, string> = {
-    'low': '低',
-    'medium': '中',
-    'high': '高'
+    'low': t('chapterEditor.consistency.filters.severity.lowShort'),
+    'medium': t('chapterEditor.consistency.filters.severity.mediumShort'),
+    'high': t('chapterEditor.consistency.filters.severity.highShort')
   }
   return texts[severity] || severity
 }
@@ -317,10 +319,10 @@ const getTypeColor = (type: string): string => {
 // 获取类型文本
 const getTypeText = (type: string): string => {
   const texts: Record<string, string> = {
-    'character': '角色一致性',
-    'setting': '设定一致性',
-    'timeline': '时间线',
-    'logic': '逻辑'
+    'character': t('chapterEditor.consistency.types.character'),
+    'setting': t('chapterEditor.consistency.types.setting'),
+    'timeline': t('chapterEditor.consistency.types.timeline'),
+    'logic': t('chapterEditor.consistency.types.logic')
   }
   return texts[type] || type
 }
@@ -336,15 +338,18 @@ const formatDate = (dateString: string): string => {
     const hours = Math.floor(diff / (1000 * 60 * 60))
     if (hours === 0) {
       const minutes = Math.floor(diff / (1000 * 60))
-      return minutes === 0 ? '刚刚' : `${minutes}分钟前`
+      return minutes === 0
+        ? t('chapterEditor.consistency.time.justNow')
+        : t('chapterEditor.consistency.time.minutesAgo', { value: minutes })
     }
-    return `${hours}小时前`
+    return t('chapterEditor.consistency.time.hoursAgo', { value: hours })
   } else if (days === 1) {
-    return '昨天'
+    return t('chapterEditor.consistency.time.yesterday')
   } else if (days < 7) {
-    return `${days}天前`
+    return t('chapterEditor.consistency.time.daysAgo', { value: days })
   }
-  return date.toLocaleDateString('zh-CN')
+  const localeTag = locale.value === 'zh' ? 'zh-CN' : 'en-US'
+  return date.toLocaleDateString(localeTag)
 }
 
 // 执行一致性检查
@@ -354,13 +359,13 @@ const handleCheck = async () => {
     // TODO: 调用 AI 检查一致性 API
     await new Promise(resolve => setTimeout(resolve, 2000)) // 模拟 API 调用
 
-    message.success('一致性检查完成')
+    message.success(t('chapterEditor.consistency.messages.checkSuccess'))
 
     // 通知父组件刷新数据
     emit('refresh')
   } catch (error) {
     console.error('Failed to check consistency:', error)
-    message.error('一致性检查失败')
+    message.error(t('chapterEditor.consistency.messages.checkFailed'))
   } finally {
     checking.value = false
   }
@@ -375,13 +380,13 @@ const handleResolve = async (issueId: string) => {
       issue.resolved = true
     }
 
-    message.success('已标记为解决')
+    message.success(t('chapterEditor.consistency.messages.resolveSuccess'))
 
     // 通知父组件刷新数据
     emit('refresh')
   } catch (error) {
     console.error('Failed to resolve issue:', error)
-    message.error('标记失败')
+    message.error(t('chapterEditor.consistency.messages.resolveFailed'))
   }
 }
 
@@ -394,13 +399,13 @@ const handleUnresolve = async (issueId: string) => {
       issue.resolved = false
     }
 
-    message.success('已重新打开')
+    message.success(t('chapterEditor.consistency.messages.reopenSuccess'))
 
     // 通知父组件刷新数据
     emit('refresh')
   } catch (error) {
     console.error('Failed to unresolve issue:', error)
-    message.error('操作失败')
+    message.error(t('chapterEditor.consistency.messages.reopenFailed'))
   }
 }
 
@@ -413,13 +418,13 @@ const handleDelete = async (issueId: string) => {
       issues.value.splice(index, 1)
     }
 
-    message.success('删除成功')
+    message.success(t('chapterEditor.consistency.messages.deleteSuccess'))
 
     // 通知父组件刷新数据
     emit('refresh')
   } catch (error) {
     console.error('Failed to delete issue:', error)
-    message.error('删除失败')
+    message.error(t('chapterEditor.consistency.messages.deleteFailed'))
   }
 }
 </script>

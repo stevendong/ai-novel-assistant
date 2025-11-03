@@ -7,7 +7,7 @@
         <a-dropdown>
           <a-button size="small" :type="editor.isActive('heading') ? 'primary' : 'default'">
             <template #icon><FontSizeOutlined /></template>
-            标题
+            {{ t('chapterEditor.editor.toolbar.heading') }}
           </a-button>
           <template #overlay>
             <a-menu>
@@ -15,25 +15,25 @@
                 @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
                 :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
               >
-                标题 1
+                {{ t('chapterEditor.editor.toolbar.headingLevel', { level: 1 }) }}
               </a-menu-item>
               <a-menu-item
                 @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
                 :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
               >
-                标题 2
+                {{ t('chapterEditor.editor.toolbar.headingLevel', { level: 2 }) }}
               </a-menu-item>
               <a-menu-item
                 @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
                 :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
               >
-                标题 3
+                {{ t('chapterEditor.editor.toolbar.headingLevel', { level: 3 }) }}
               </a-menu-item>
               <a-menu-item
                 @click="editor.chain().focus().setParagraph().run()"
                 :class="{ 'is-active': editor.isActive('paragraph') }"
               >
-                正文
+                {{ t('chapterEditor.editor.toolbar.paragraph') }}
               </a-menu-item>
             </a-menu>
           </template>
@@ -42,7 +42,7 @@
         <a-divider type="vertical" />
 
         <!-- 文本格式 -->
-        <a-tooltip title="加粗 (Ctrl+B)">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.bold')">
           <a-button
             size="small"
             :type="editor.isActive('bold') ? 'primary' : 'default'"
@@ -52,7 +52,7 @@
           </a-button>
         </a-tooltip>
 
-        <a-tooltip title="斜体 (Ctrl+I)">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.italic')">
           <a-button
             size="small"
             :type="editor.isActive('italic') ? 'primary' : 'default'"
@@ -62,7 +62,7 @@
           </a-button>
         </a-tooltip>
 
-        <a-tooltip title="删除线">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.strike')">
           <a-button
             size="small"
             :type="editor.isActive('strike') ? 'primary' : 'default'"
@@ -75,7 +75,7 @@
         <a-divider type="vertical" />
 
         <!-- 列表 -->
-        <a-tooltip title="无序列表">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.bulletList')">
           <a-button
             size="small"
             :type="editor.isActive('bulletList') ? 'primary' : 'default'"
@@ -85,7 +85,7 @@
           </a-button>
         </a-tooltip>
 
-        <a-tooltip title="有序列表">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.orderedList')">
           <a-button
             size="small"
             :type="editor.isActive('orderedList') ? 'primary' : 'default'"
@@ -98,7 +98,7 @@
         <a-divider type="vertical" />
 
         <!-- 引用和分割线 -->
-        <a-tooltip title="引用">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.blockquote')">
           <a-button
             size="small"
             :type="editor.isActive('blockquote') ? 'primary' : 'default'"
@@ -108,7 +108,7 @@
           </a-button>
         </a-tooltip>
 
-        <a-tooltip title="分割线">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.horizontalRule')">
           <a-button
             size="small"
             @click="editor.chain().focus().setHorizontalRule().run()"
@@ -120,7 +120,7 @@
         <a-divider type="vertical" />
 
         <!-- 撤销/重做 -->
-        <a-tooltip title="撤销 (Ctrl+Z)">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.undo')">
           <a-button
             size="small"
             @click="editor.chain().focus().undo().run()"
@@ -130,7 +130,7 @@
           </a-button>
         </a-tooltip>
 
-        <a-tooltip title="重做 (Ctrl+Shift+Z)">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.redo')">
           <a-button
             size="small"
             @click="editor.chain().focus().redo().run()"
@@ -143,7 +143,7 @@
         <a-divider type="vertical" />
 
         <!-- 清除格式 -->
-        <a-tooltip title="清除格式">
+        <a-tooltip :title="t('chapterEditor.editor.toolbar.clear')">
           <a-button
             size="small"
             @click="editor.chain().focus().clearNodes().unsetAllMarks().run()"
@@ -164,23 +164,20 @@
       <div class="status-items">
         <span class="status-item">
           <FileWordOutlined />
-          字数: {{ wordCount }}
+          {{ t('chapterEditor.editor.status.words', { count: wordCount }) }}
         </span>
         <span class="status-item" v-if="characterCount">
-          字符: {{ characterCount }}
+          {{ t('chapterEditor.editor.status.characters', { count: characterCount }) }}
         </span>
         <span class="status-item" v-if="targetWordCount">
-          进度: {{ Math.round((wordCount / targetWordCount) * 100) }}%
+          {{ t('chapterEditor.editor.status.progress', { value: progressPercentage }) }}
         </span>
       </div>
 
       <!-- AI续写提示 -->
       <div class="ai-hint" v-if="enableAiSuggestion && novelId && chapterId">
         <ThunderboltOutlined class="ai-icon" />
-        <span class="ai-text">
-          光标停留3秒自动显示续写建议，按 <kbd>Tab</kbd> 接受 |
-          按 <kbd>Cmd/Ctrl+H</kbd> 立即查看建议
-        </span>
+        <span class="ai-text" v-html="t('chapterEditor.editor.aiHint')"></span>
       </div>
     </div>
   </div>
@@ -195,6 +192,7 @@ import CharacterCount from '@tiptap/extension-character-count'
 import Typography from '@tiptap/extension-typography'
 import { AISuggestion } from '@/extensions/aiSuggestion'
 import { AIInlineSuggestion } from '@/extensions/aiInlineSuggestion'
+import { useI18n } from 'vue-i18n'
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -233,6 +231,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits(['update:modelValue', 'update:wordCount'])
 
+const { t } = useI18n()
+
 // 初始化编辑器
 console.log('📝 开始初始化 TiptapEditor')
 console.log('📝 AI建议配置:', {
@@ -251,7 +251,7 @@ const editor = useEditor({
       }
     }),
     Placeholder.configure({
-      placeholder: props.placeholder
+      placeholder: props.placeholder || t('chapterEditor.editor.placeholder')
     }),
     CharacterCount,
     Typography,
@@ -312,6 +312,12 @@ const wordCount = computed(() => {
 const characterCount = computed(() => {
   if (!editor.value) return 0
   return editor.value.storage.characterCount.characters()
+})
+
+const progressPercentage = computed(() => {
+  if (!props.targetWordCount) return 0
+  if (props.targetWordCount <= 0) return 0
+  return Math.round((wordCount.value / props.targetWordCount) * 100)
 })
 
 // 监听外部内容变化

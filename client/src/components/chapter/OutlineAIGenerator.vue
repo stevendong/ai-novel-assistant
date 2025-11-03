@@ -10,7 +10,7 @@
         :disabled="!canGenerate"
       >
         <template #icon><BulbOutlined /></template>
-        AI生成大纲
+        {{ t('chapterEditor.outline.actions.generate') }}
       </a-button>
 
       <a-button
@@ -21,10 +21,10 @@
         @click="handleClear"
       >
         <template #icon><ClearOutlined /></template>
-        清空
+        {{ t('chapterEditor.outline.actions.clear') }}
       </a-button>
 
-      <a-tooltip v-if="!canGenerate" title="请先填写章节标题">
+      <a-tooltip v-if="!canGenerate" :title="t('chapterEditor.outline.hints.needTitle')">
         <QuestionCircleOutlined class="help-icon" />
       </a-tooltip>
     </div>
@@ -38,22 +38,22 @@
     <!-- 生成选项（可展开） -->
     <div v-if="showOptions" class="generator-options">
       <a-collapse v-model:activeKey="activeOptionsKey" ghost>
-        <a-collapse-panel key="options" header="生成选项">
+        <a-collapse-panel key="options" :header="t('chapterEditor.outline.options.title')">
           <a-form layout="vertical" size="small">
-            <a-form-item label="生成风格">
+            <a-form-item :label="t('chapterEditor.outline.options.styleLabel')">
               <a-select v-model:value="options.style" size="small">
-                <a-select-option value="standard">标准</a-select-option>
-                <a-select-option value="detailed">详细</a-select-option>
-                <a-select-option value="brief">简要</a-select-option>
+                <a-select-option value="standard">{{ t('chapterEditor.outline.options.style.standard') }}</a-select-option>
+                <a-select-option value="detailed">{{ t('chapterEditor.outline.options.style.detailed') }}</a-select-option>
+                <a-select-option value="brief">{{ t('chapterEditor.outline.options.style.brief') }}</a-select-option>
               </a-select>
             </a-form-item>
 
-            <a-form-item label="内容侧重">
+            <a-form-item :label="t('chapterEditor.outline.options.focusLabel')">
               <a-checkbox-group v-model:value="options.focus">
-                <a-checkbox value="plot">情节发展</a-checkbox>
-                <a-checkbox value="character">角色刻画</a-checkbox>
-                <a-checkbox value="emotion">情感描写</a-checkbox>
-                <a-checkbox value="world">世界设定</a-checkbox>
+                <a-checkbox value="plot">{{ t('chapterEditor.outline.options.focus.plot') }}</a-checkbox>
+                <a-checkbox value="character">{{ t('chapterEditor.outline.options.focus.character') }}</a-checkbox>
+                <a-checkbox value="emotion">{{ t('chapterEditor.outline.options.focus.emotion') }}</a-checkbox>
+                <a-checkbox value="world">{{ t('chapterEditor.outline.options.focus.world') }}</a-checkbox>
               </a-checkbox-group>
             </a-form-item>
           </a-form>
@@ -72,6 +72,7 @@ import {
   QuestionCircleOutlined
 } from '@ant-design/icons-vue'
 import { aiService, type ChapterOutlineData } from '@/services/aiService'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   novelId: string
@@ -114,7 +115,9 @@ const emit = defineEmits<{
 
 // 状态
 const generating = ref(false)
-const generatingText = ref('AI正在分析章节信息...')
+const generatingStatus = ref<'preparing' | 'generating' | 'formatting' | 'presenting'>('preparing')
+const { t } = useI18n()
+const generatingText = computed(() => t(`chapterEditor.outline.progress.${generatingStatus.value}`))
 const activeOptionsKey = ref<string[]>([])
 const options = ref<GenerateOptions>({
   style: 'standard',
@@ -143,13 +146,13 @@ const getTypewriterDelay = () => {
 // AI生成大纲
 const handleGenerate = async () => {
   if (!canGenerate.value) {
-    message.warning('请先填写章节标题')
+    message.warning(t('chapterEditor.outline.messages.needTitle'))
     return
   }
 
   try {
     generating.value = true
-    generatingText.value = 'AI正在分析章节信息...'
+    generatingStatus.value = 'preparing'
 
     // 准备参数
     const params = {
@@ -165,18 +168,18 @@ const handleGenerate = async () => {
       nextChapterPlan: props.nextChapterPlan
     }
 
-    generatingText.value = 'AI正在生成大纲...'
+    generatingStatus.value = 'generating'
 
     // 调用AI服务
     const result: ChapterOutlineData = await aiService.generateChapterOutline(params)
 
-    generatingText.value = '正在格式化内容...'
+    generatingStatus.value = 'formatting'
 
     // 构建大纲文本
     const outlineText = buildOutlineText(result, options.value.style)
 
     // 使用打字机效果显示
-    generatingText.value = '正在呈现大纲...'
+    generatingStatus.value = 'presenting'
     await typewriterEffect(outlineText)
 
     // 发送剧情要点更新
@@ -191,10 +194,10 @@ const handleGenerate = async () => {
     // 发送生成完成事件
     emit('generated', result)
 
-    message.success('大纲生成成功！')
+    message.success(t('chapterEditor.outline.messages.success'))
   } catch (error) {
     console.error('Failed to generate outline:', error)
-    message.error('大纲生成失败，请重试')
+    message.error(t('chapterEditor.outline.messages.failed'))
   } finally {
     generating.value = false
   }
@@ -213,7 +216,7 @@ const buildOutlineText = (result: ChapterOutlineData, style: string): string => 
   if (style === 'brief') {
     // 简要版 - 只显示关键要点
     if (result.keyPoints && result.keyPoints.length > 0) {
-      text += '【关键要点】\n'
+      text += `${t('chapterEditor.outline.sections.keyPoints')}\n`
       result.keyPoints.forEach((point, index) => {
         text += `${index + 1}. ${point}\n`
       })
@@ -221,15 +224,18 @@ const buildOutlineText = (result: ChapterOutlineData, style: string): string => 
   } else if (style === 'detailed') {
     // 详细版 - 显示所有信息
     if (result.contentStructure && result.contentStructure.length > 0) {
-      text += '【内容结构】\n'
+      text += `${t('chapterEditor.outline.sections.contentStructure')}\n`
       result.contentStructure.forEach((section, index) => {
-        text += `${index + 1}. ${section.title}（约${section.estimatedWords}字）\n`
+        const approx = section.estimatedWords
+          ? t('chapterEditor.outline.text.approxWords', { words: section.estimatedWords })
+          : ''
+        text += `${index + 1}. ${section.title}${approx}\n`
         text += `   ${section.description}\n\n`
       })
     }
 
     if (result.keyPoints && result.keyPoints.length > 0) {
-      text += '【关键要点】\n'
+      text += `${t('chapterEditor.outline.sections.keyPoints')}\n`
       result.keyPoints.forEach((point, index) => {
         text += `${index + 1}. ${point}\n`
       })
@@ -237,11 +243,11 @@ const buildOutlineText = (result: ChapterOutlineData, style: string): string => 
     }
 
     if (result.emotionalTone) {
-      text += `【情感基调】${result.emotionalTone}\n\n`
+      text += `${t('chapterEditor.outline.sections.emotionalTone')}${result.emotionalTone}\n\n`
     }
 
     if (result.plotPoints && result.plotPoints.length > 0) {
-      text += '【情节要点】\n'
+      text += `${t('chapterEditor.outline.sections.plotPoints')}\n`
       result.plotPoints.forEach((point, index) => {
         const typeText = getPlotPointTypeText(point.type)
         text += `${index + 1}. [${typeText}] ${point.description}\n`
@@ -250,15 +256,18 @@ const buildOutlineText = (result: ChapterOutlineData, style: string): string => 
   } else {
     // 标准版 - 显示主要信息
     if (result.contentStructure && result.contentStructure.length > 0) {
-      text += '【内容结构】\n'
+      text += `${t('chapterEditor.outline.sections.contentStructure')}\n`
       result.contentStructure.forEach((section, index) => {
-        text += `${index + 1}. ${section.title}（约${section.estimatedWords}字）\n`
+        const approx = section.estimatedWords
+          ? t('chapterEditor.outline.text.approxWords', { words: section.estimatedWords })
+          : ''
+        text += `${index + 1}. ${section.title}${approx}\n`
         text += `   ${section.description}\n\n`
       })
     }
 
     if (result.keyPoints && result.keyPoints.length > 0) {
-      text += '【关键要点】\n'
+      text += `${t('chapterEditor.outline.sections.keyPoints')}\n`
       result.keyPoints.forEach((point, index) => {
         text += `${index + 1}. ${point}\n`
       })
@@ -266,7 +275,7 @@ const buildOutlineText = (result: ChapterOutlineData, style: string): string => 
     }
 
     if (result.emotionalTone) {
-      text += `【情感基调】${result.emotionalTone}\n`
+      text += `${t('chapterEditor.outline.sections.emotionalTone')}${result.emotionalTone}\n`
     }
   }
 
@@ -275,14 +284,15 @@ const buildOutlineText = (result: ChapterOutlineData, style: string): string => 
 
 // 获取情节要点类型文本
 const getPlotPointTypeText = (type: string): string => {
-  const typeMap: Record<string, string> = {
-    conflict: '冲突',
-    discovery: '发现',
-    emotion: '情感',
-    action: '行动',
-    dialogue: '对话'
+  const typeKeyMap: Record<string, string> = {
+    conflict: 'conflict',
+    discovery: 'discovery',
+    emotion: 'emotion',
+    action: 'action',
+    dialogue: 'dialogue'
   }
-  return typeMap[type] || type
+  const key = typeKeyMap[type] || type
+  return t(`chapterEditor.outline.plotPointTypes.${key}`, key)
 }
 
 // 打字机效果
@@ -314,14 +324,14 @@ const typewriterEffect = async (text: string): Promise<void> => {
 // 清空大纲
 const handleClear = () => {
   Modal.confirm({
-    title: '确认清空大纲？',
-    content: '此操作将清空当前大纲内容，是否继续？',
-    okText: '确定',
-    cancelText: '取消',
+    title: t('chapterEditor.outline.messages.clearConfirmTitle'),
+    content: t('chapterEditor.outline.messages.clearConfirmContent'),
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
     onOk() {
       emit('update:outline', '')
       emit('cleared')
-      message.success('大纲已清空')
+      message.success(t('chapterEditor.outline.messages.cleared'))
     }
   })
 }

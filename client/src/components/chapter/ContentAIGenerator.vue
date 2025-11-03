@@ -11,7 +11,7 @@
           :disabled="!canGenerate"
         >
           <template #icon><ThunderboltOutlined /></template>
-          AI生成正文
+          {{ t('chapterEditor.content.actions.generate') }}
         </a-button>
 
         <a-button
@@ -23,24 +23,24 @@
           :disabled="!canGenerate"
         >
           <template #icon><ForwardOutlined /></template>
-          续写内容
+          {{ t('chapterEditor.content.actions.continue') }}
         </a-button>
 
         <a-dropdown>
           <a-button size="small">
             <template #icon><SettingOutlined /></template>
-            选项
+            {{ t('chapterEditor.content.actions.options') }}
           </a-button>
           <template #overlay>
             <a-menu>
               <a-menu-item key="options" @click="showOptionsModal = true">
                 <SettingOutlined />
-                生成设置
+                {{ t('chapterEditor.content.actions.openSettings') }}
               </a-menu-item>
               <a-menu-divider />
               <a-menu-item key="clear" danger @click="handleClear" :disabled="!hasExistingContent">
                 <ClearOutlined />
-                清空内容
+                {{ t('chapterEditor.content.actions.clear') }}
               </a-menu-item>
             </a-menu>
           </template>
@@ -60,7 +60,7 @@
           </div>
         </div>
         <div class="status-text">
-          <span class="generating-title">AI创作中</span>
+          <span class="generating-title">{{ t('chapterEditor.content.progress.title') }}</span>
           <span class="generating-subtitle">{{ generatingText }}</span>
         </div>
         <div class="progress-percentage">{{ progress }}%</div>
@@ -72,7 +72,7 @@
           class="cancel-button"
         >
           <template #icon><CloseCircleOutlined /></template>
-          取消
+          {{ t('chapterEditor.content.actions.cancel') }}
         </a-button>
       </div>
 
@@ -107,51 +107,51 @@
     <!-- 生成选项Modal -->
     <a-modal
       v-model:open="showOptionsModal"
-      title="生成设置"
+      :title="t('chapterEditor.content.options.title')"
       @ok="showOptionsModal = false"
       width="480px"
     >
       <a-form layout="vertical">
-        <a-form-item label="生成长度">
+        <a-form-item :label="t('chapterEditor.content.options.lengthLabel')">
           <a-input-number
             v-model:value="options.targetLength"
             :min="200"
             :max="10000"
             :step="100"
             style="width: 100%"
-            placeholder="目标字数"
+            :placeholder="t('chapterEditor.content.options.lengthPlaceholder')"
           >
-            <template #addonAfter>字</template>
+            <template #addonAfter>{{ t('chapterEditor.content.options.lengthUnit') }}</template>
           </a-input-number>
-          <div class="form-help-text">建议单次生成1000-3000字</div>
+          <div class="form-help-text">{{ t('chapterEditor.content.options.lengthHint') }}</div>
         </a-form-item>
 
-        <a-form-item label="写作风格">
+        <a-form-item :label="t('chapterEditor.content.options.styleLabel')">
           <a-select v-model:value="options.style">
-            <a-select-option value="modern">现代小说体</a-select-option>
-            <a-select-option value="traditional">传统章回体</a-select-option>
-            <a-select-option value="cinematic">电影式叙述</a-select-option>
-            <a-select-option value="poetic">诗意抒情</a-select-option>
+            <a-select-option value="modern">{{ t('chapterEditor.content.options.style.modern') }}</a-select-option>
+            <a-select-option value="traditional">{{ t('chapterEditor.content.options.style.traditional') }}</a-select-option>
+            <a-select-option value="cinematic">{{ t('chapterEditor.content.options.style.cinematic') }}</a-select-option>
+            <a-select-option value="poetic">{{ t('chapterEditor.content.options.style.poetic') }}</a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item label="内容侧重">
+        <a-form-item :label="t('chapterEditor.content.options.focusLabel')">
           <a-checkbox-group v-model:value="options.focus">
             <a-space direction="vertical">
-              <a-checkbox value="dialogue">对话交流</a-checkbox>
-              <a-checkbox value="description">环境描写</a-checkbox>
-              <a-checkbox value="action">动作场景</a-checkbox>
-              <a-checkbox value="emotion">情感细腻</a-checkbox>
+              <a-checkbox value="dialogue">{{ t('chapterEditor.content.options.focus.dialogue') }}</a-checkbox>
+              <a-checkbox value="description">{{ t('chapterEditor.content.options.focus.description') }}</a-checkbox>
+              <a-checkbox value="action">{{ t('chapterEditor.content.options.focus.action') }}</a-checkbox>
+              <a-checkbox value="emotion">{{ t('chapterEditor.content.options.focus.emotion') }}</a-checkbox>
             </a-space>
           </a-checkbox-group>
         </a-form-item>
 
-        <a-form-item label="生成模式">
+        <a-form-item :label="t('chapterEditor.content.options.modeLabel')">
           <a-radio-group v-model:value="options.mode">
             <a-space direction="vertical">
-              <a-radio value="outline">严格遵循大纲</a-radio>
-              <a-radio value="creative">创意发挥</a-radio>
-              <a-radio value="balanced">平衡模式</a-radio>
+              <a-radio value="outline">{{ t('chapterEditor.content.options.mode.outline') }}</a-radio>
+              <a-radio value="creative">{{ t('chapterEditor.content.options.mode.creative') }}</a-radio>
+              <a-radio value="balanced">{{ t('chapterEditor.content.options.mode.balanced') }}</a-radio>
             </a-space>
           </a-radio-group>
         </a-form-item>
@@ -171,6 +171,7 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons-vue'
 import { aiService, type StreamChunk } from '@/services/aiService'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   novelId: string
@@ -203,13 +204,17 @@ const emit = defineEmits<{
   'cleared': []
 }>()
 
+const { t } = useI18n()
+
 // 状态
 const generating = ref(false)
-const generatingText = ref('AI正在准备创作...')
 const progress = ref(0)
 const showOptionsModal = ref(false)
 const abortController = ref<AbortController | null>(null)
 const isCancelled = ref(false)
+const generatingStatus = ref<'preparing' | 'analyzing' | 'connected' | 'writing' | 'organizing' | 'finishing' | 'cancelling'>('preparing')
+
+const generatingText = computed(() => t(`chapterEditor.content.progress.status.${generatingStatus.value}`))
 
 const options = ref<GenerateOptions>({
   targetLength: props.targetWordCount || 2000,
@@ -450,12 +455,12 @@ const combineContent = (existing: string, separator: string, generated: string):
 }
 
 // 进度条里程碑
-const milestones = ref([
-  { value: 0, label: '开始' },
-  { value: 20, label: '分析' },
-  { value: 60, label: '创作' },
-  { value: 90, label: '完成' }
-])
+const milestones = computed(() => ([
+  { value: 0, label: t('chapterEditor.content.progress.milestones.start') },
+  { value: 20, label: t('chapterEditor.content.progress.milestones.analysis') },
+  { value: 60, label: t('chapterEditor.content.progress.milestones.writing') },
+  { value: 90, label: t('chapterEditor.content.progress.milestones.finishing') }
+]))
 
 // 计算属性
 const canGenerate = computed(() => {
@@ -469,17 +474,17 @@ const hasExistingContent = computed(() => {
 // AI生成正文
 const handleGenerate = async () => {
   if (!canGenerate.value) {
-    message.warning('缺少必要信息，无法生成内容')
+    message.warning(t('chapterEditor.content.messages.missingInfo'))
     return
   }
 
   // 如果已有内容，确认是否覆盖
   if (hasExistingContent.value) {
     Modal.confirm({
-      title: '确认生成新内容？',
-      content: '当前已有内容，生成新内容将覆盖现有内容，是否继续？',
-      okText: '确定',
-      cancelText: '取消',
+      title: t('chapterEditor.content.messages.confirmGenerateTitle'),
+      content: t('chapterEditor.content.messages.confirmGenerateContent'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk() {
         performGenerate(false)
       }
@@ -492,7 +497,7 @@ const handleGenerate = async () => {
 // 续写内容
 const handleContinue = async () => {
   if (!canGenerate.value) {
-    message.warning('缺少必要信息，无法续写内容')
+    message.warning(t('chapterEditor.content.messages.missingInfo'))
     return
   }
 
@@ -509,7 +514,7 @@ const performGenerate = async (isContinue: boolean) => {
     generating.value = true
     isCancelled.value = false
     progress.value = 5
-    generatingText.value = 'AI正在分析章节信息...'
+    generatingStatus.value = 'analyzing'
 
     cancelTypewriter()
     abortController.value?.abort()
@@ -536,7 +541,7 @@ const performGenerate = async (isContinue: boolean) => {
       switch (chunk.type) {
         case 'connected':
           progress.value = Math.max(progress.value, 10)
-          generatingText.value = 'AI创作已连接...'
+          generatingStatus.value = 'connected'
           break
         case 'chunk':
           if (!chunk.content) break
@@ -561,11 +566,11 @@ const performGenerate = async (isContinue: boolean) => {
             resetTypewriter(targetContent)
           }
 
-          generatingText.value = '正在生成文字...'
+          generatingStatus.value = 'writing'
           break
         case 'finish':
           progress.value = Math.max(progress.value, 90)
-          generatingText.value = '正在整理内容...'
+          generatingStatus.value = 'organizing'
           break
         case 'done':
           progress.value = Math.max(progress.value, 95)
@@ -574,7 +579,7 @@ const performGenerate = async (isContinue: boolean) => {
           if (chunk.reason === 'abort') {
             isCancelled.value = true
           } else {
-            streamError = chunk.message || '流式生成失败，请稍后重试'
+            streamError = chunk.message || t('chapterEditor.content.messages.streamFailed')
           }
           break
       }
@@ -586,7 +591,7 @@ const performGenerate = async (isContinue: boolean) => {
       const fallback = isContinue ? existingSnapshot : ''
       currentTypewriterContent = fallback
       emitContentUpdate(fallback)
-      message.info('内容生成已取消')
+      message.info(t('chapterEditor.content.messages.cancelled'))
       return
     }
 
@@ -595,12 +600,12 @@ const performGenerate = async (isContinue: boolean) => {
     }
 
     progress.value = 100
-    generatingText.value = '正在完成...'
+    generatingStatus.value = 'finishing'
 
     const formatted = formatGeneratedContent(rawAggregatedContent, true)
 
     if (!formatted) {
-      throw new Error('生成的内容为空')
+      throw new Error(t('chapterEditor.content.messages.emptyResult'))
     }
 
     const finalContent = isContinue
@@ -621,13 +626,17 @@ const performGenerate = async (isContinue: boolean) => {
     emitContentUpdate(finalContent)
     emit('generated', plainTextToHtml(finalContent))
 
-    message.success(`内容${isContinue ? '续写' : '生成'}成功！`)
+    message.success(isContinue
+      ? t('chapterEditor.content.messages.continueSuccess')
+      : t('chapterEditor.content.messages.generateSuccess'))
   } catch (error: any) {
     if (error?.name === 'AbortError' || isCancelled.value) {
-      message.info('内容生成已取消')
+      message.info(t('chapterEditor.content.messages.cancelled'))
     } else {
       console.error('Failed to generate content:', error)
-      message.error(`内容${isContinue ? '续写' : '生成'}失败，请重试`)
+      message.error(isContinue
+        ? t('chapterEditor.content.messages.continueFailed')
+        : t('chapterEditor.content.messages.generateFailed'))
       const fallback = isContinue ? existingSnapshot : ''
       currentTypewriterContent = fallback
       emitContentUpdate(fallback)
@@ -645,7 +654,7 @@ const performGenerate = async (isContinue: boolean) => {
     rawAggregatedContent = ''
     generating.value = false
     progress.value = 0
-    generatingText.value = 'AI正在准备创作...'
+    generatingStatus.value = 'preparing'
     isCancelled.value = false
   }
 }
@@ -655,7 +664,7 @@ const handleCancel = () => {
     abortController.value.abort()
   }
   isCancelled.value = true
-  generatingText.value = '正在取消...'
+  generatingStatus.value = 'cancelling'
   cancelTypewriter()
   rawAggregatedContent = ''
 }
@@ -663,15 +672,15 @@ const handleCancel = () => {
 // 清空内容
 const handleClear = () => {
   Modal.confirm({
-    title: '确认清空内容？',
-    content: '此操作将清空当前正文内容，是否继续？',
-    okText: '确定',
+    title: t('chapterEditor.content.messages.confirmClearTitle'),
+    content: t('chapterEditor.content.messages.confirmClearContent'),
+    okText: t('common.confirm'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     onOk() {
       emitContentUpdate('')
       emit('cleared')
-      message.success('内容已清空')
+      message.success(t('chapterEditor.content.messages.cleared'))
     }
   })
 }

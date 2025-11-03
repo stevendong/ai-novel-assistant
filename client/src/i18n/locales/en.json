@@ -169,7 +169,275 @@
       "consistency": "Consistency"
     },
     "editor": {
-      "placeholder": "Start writing the chapter..."
+      "placeholder": "Start writing the chapter...",
+      "toolbar": {
+        "heading": "Heading",
+        "headingLevel": "Heading {level}",
+        "paragraph": "Paragraph",
+        "bold": "Bold (Ctrl+B)",
+        "italic": "Italic (Ctrl+I)",
+        "strike": "Strikethrough",
+        "bulletList": "Bulleted list",
+        "orderedList": "Numbered list",
+        "blockquote": "Quote",
+        "horizontalRule": "Divider",
+        "undo": "Undo (Ctrl+Z)",
+        "redo": "Redo (Ctrl+Shift+Z)",
+        "clear": "Clear formatting"
+      },
+      "status": {
+        "words": "Words: {count}",
+        "characters": "Characters: {count}",
+        "progress": "Progress: {value}%"
+      },
+      "aiHint": "Pause your cursor for 3 seconds to see suggestions automatically. Press <kbd>Tab</kbd> to accept | Press <kbd>Cmd/Ctrl+H</kbd> to open suggestions instantly."
+    },
+    "content": {
+      "actions": {
+        "generate": "Generate Content",
+        "continue": "Continue Writing",
+        "options": "Options",
+        "openSettings": "Generation Settings",
+        "clear": "Clear Content",
+        "cancel": "Cancel"
+      },
+      "progress": {
+        "title": "AI Writing",
+        "status": {
+          "preparing": "Preparing to write...",
+          "analyzing": "Analyzing chapter context...",
+          "connected": "Connected to AI...",
+          "writing": "Writing...",
+          "organizing": "Organizing content...",
+          "finishing": "Wrapping up...",
+          "cancelling": "Cancelling..."
+        },
+        "milestones": {
+          "start": "Start",
+          "analysis": "Analysis",
+          "writing": "Writing",
+          "finishing": "Finish"
+        }
+      },
+      "options": {
+        "title": "Generation Settings",
+        "lengthLabel": "Target Length",
+        "lengthPlaceholder": "Target word count",
+        "lengthUnit": "words",
+        "lengthHint": "Recommended 1,000–3,000 words per run",
+        "styleLabel": "Writing Style",
+        "style": {
+          "modern": "Modern narrative",
+          "traditional": "Classical storytelling",
+          "cinematic": "Cinematic narrative",
+          "poetic": "Poetic tone"
+        },
+        "focusLabel": "Focus",
+        "focus": {
+          "dialogue": "Dialogue",
+          "description": "Description",
+          "action": "Action",
+          "emotion": "Emotion"
+        },
+        "modeLabel": "Generation Mode",
+        "mode": {
+          "outline": "Follow outline strictly",
+          "creative": "Creative exploration",
+          "balanced": "Balanced mode"
+        }
+      },
+      "messages": {
+        "missingInfo": "Missing required information. Please select a project and chapter.",
+        "confirmGenerateTitle": "Generate new content?",
+        "confirmGenerateContent": "Existing content will be replaced. Continue?",
+        "streamFailed": "Streaming failed. Please try again later.",
+        "cancelled": "Generation cancelled",
+        "emptyResult": "AI returned empty content.",
+        "continueSuccess": "Content continued successfully!",
+        "generateSuccess": "Content generated successfully!",
+        "continueFailed": "Failed to continue content. Please try again.",
+        "generateFailed": "Failed to generate content. Please try again.",
+        "confirmClearTitle": "Clear current content?",
+        "confirmClearContent": "This will remove all existing text. Continue?",
+        "cleared": "Content cleared."
+      }
+    },
+    "consistency": {
+      "title": "Consistency Check",
+      "unresolvedTag": "{count} unresolved",
+      "actions": {
+        "filter": "Filter",
+        "check": "Run Check",
+        "checking": "Checking..."
+      },
+      "filters": {
+        "severity": {
+          "all": "All",
+          "high": "High",
+          "medium": "Medium",
+          "low": "Low",
+          "highShort": "High",
+          "mediumShort": "Medium",
+          "lowShort": "Low"
+        },
+        "status": {
+          "all": "All statuses",
+          "unresolved": "Unresolved",
+          "resolved": "Resolved"
+        }
+      },
+      "issue": {
+        "resolved": "Resolved",
+        "markResolvedTooltip": "Mark as resolved",
+        "markResolved": "Resolve",
+        "reopenTooltip": "Reopen issue",
+        "reopen": "Reopen",
+        "deleteConfirm": "Delete this issue?"
+      },
+      "empty": {
+        "noIssues": "No consistency issues yet",
+        "noResults": "No issues match the filters"
+      },
+      "checking": {
+        "tip": "Checking consistency...",
+        "description": "Analyzing chapter content, characters, and settings..."
+      },
+      "stats": {
+        "total": "Total issues",
+        "high": "High priority",
+        "medium": "Medium priority",
+        "low": "Low priority"
+      },
+      "types": {
+        "character": "Character consistency",
+        "setting": "Setting consistency",
+        "timeline": "Timeline",
+        "logic": "Logic"
+      },
+      "time": {
+        "justNow": "Just now",
+        "minutesAgo": "{value} minutes ago",
+        "hoursAgo": "{value} hours ago",
+        "yesterday": "Yesterday",
+        "daysAgo": "{value} days ago"
+      },
+      "messages": {
+        "checkSuccess": "Consistency check completed",
+        "checkFailed": "Consistency check failed",
+        "resolveSuccess": "Issue marked as resolved",
+        "resolveFailed": "Failed to mark as resolved",
+        "reopenSuccess": "Issue reopened",
+        "reopenFailed": "Failed to reopen issue",
+        "deleteSuccess": "Issue deleted",
+        "deleteFailed": "Failed to delete issue"
+      }
+    },
+    "settings": {
+      "title": "Related Settings",
+      "countTag": "{count} settings",
+      "actions": {
+        "add": "Add Setting",
+        "addFirst": "Add first setting",
+        "editUsageTooltip": "Edit usage notes",
+        "remove": "Remove",
+        "removeConfirm": "Remove this setting?"
+      },
+      "list": {
+        "noDescription": "No description yet"
+      },
+      "stats": {
+        "worldview": "Worldbuilding: {count}",
+        "location": "Location: {count}",
+        "rule": "Rules: {count}",
+        "culture": "Culture: {count}"
+      },
+      "addModal": {
+        "title": "Add Setting to Chapter",
+        "selectLabel": "Select setting",
+        "selectPlaceholder": "Choose a setting to add",
+        "usageLabel": "Usage notes (optional)",
+        "usagePlaceholder": "Describe how this setting applies in the chapter...",
+        "usageHint": "Explain how this setting affects the chapter to maintain consistency."
+      },
+      "editModal": {
+        "title": "Edit Usage Notes",
+        "nameLabel": "Setting name",
+        "usageLabel": "Usage notes",
+        "usagePlaceholder": "Describe how this setting applies in the chapter..."
+      },
+      "typeLabels": {
+        "worldview": "Worldbuilding",
+        "location": "Location",
+        "rule": "Rules",
+        "culture": "Culture"
+      },
+      "messages": {
+        "loadFailed": "Failed to load settings.",
+        "addSuccess": "Setting added successfully",
+        "addFailed": "Failed to add setting",
+        "updateUsageSuccess": "Usage notes updated",
+        "updateUsageFailed": "Failed to update usage notes",
+        "removeSuccess": "Setting removed",
+        "removeFailed": "Failed to remove setting"
+      },
+      "validation": {
+        "selectRequired": "Please select a setting"
+      }
+    },
+    "outline": {
+      "actions": {
+        "generate": "Generate Outline",
+        "clear": "Clear Outline"
+      },
+      "hints": {
+        "needTitle": "Please enter the chapter title first"
+      },
+      "progress": {
+        "preparing": "Analyzing chapter context...",
+        "generating": "Generating outline...",
+        "formatting": "Formatting outline content...",
+        "presenting": "Presenting outline..."
+      },
+      "options": {
+        "title": "Generation Options",
+        "styleLabel": "Outline Style",
+        "style": {
+          "standard": "Standard",
+          "detailed": "Detailed",
+          "brief": "Brief"
+        },
+        "focusLabel": "Focus Areas",
+        "focus": {
+          "plot": "Plot development",
+          "character": "Character arc",
+          "emotion": "Emotional tone",
+          "world": "Worldbuilding"
+        }
+      },
+      "sections": {
+        "contentStructure": "【Content Structure】",
+        "keyPoints": "【Key Points】",
+        "emotionalTone": "【Emotional Tone】",
+        "plotPoints": "【Plot Points】"
+      },
+      "plotPointTypes": {
+        "conflict": "Conflict",
+        "discovery": "Discovery",
+        "emotion": "Emotion",
+        "action": "Action",
+        "dialogue": "Dialogue"
+      },
+      "text": {
+        "approxWords": " (approx {words} words)"
+      },
+      "messages": {
+        "needTitle": "Please enter the chapter title first",
+        "success": "Outline generated successfully!",
+        "failed": "Failed to generate outline. Please try again.",
+        "clearConfirmTitle": "Clear current outline?",
+        "clearConfirmContent": "This will remove the current outline content. Continue?",
+        "cleared": "Outline cleared."
+      }
     },
     "modals": {
       "updateStatusTitle": "Update Chapter Status",

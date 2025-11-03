@@ -2,9 +2,9 @@
   <div class="chapter-settings">
     <div class="settings-header">
       <div class="header-title">
-        <h3>相关设定</h3>
+        <h3>{{ t('chapterEditor.settings.title') }}</h3>
         <a-tag v-if="settings.length > 0" color="purple">
-          {{ settings.length }} 个设定
+          {{ t('chapterEditor.settings.countTag', { count: settings.length }) }}
         </a-tag>
       </div>
       <a-button
@@ -12,7 +12,7 @@
         @click="showAddModal = true"
       >
         <template #icon><PlusOutlined /></template>
-        添加设定
+        {{ t('chapterEditor.settings.actions.add') }}
       </a-button>
     </div>
 
@@ -26,7 +26,7 @@
         <a-list-item class="setting-item">
           <a-list-item-meta
             :title="item.setting.name"
-            :description="item.usage || item.setting.description || '暂无描述'"
+            :description="item.usage || item.setting.description || t('chapterEditor.settings.list.noDescription')"
           >
             <template #avatar>
               <a-avatar
@@ -45,7 +45,7 @@
                 {{ getSettingTypeLabel(item.setting.type) }}
               </a-tag>
 
-              <a-tooltip title="编辑使用说明">
+              <a-tooltip :title="t('chapterEditor.settings.actions.editUsageTooltip')">
                 <a-button
                   type="text"
                   size="small"
@@ -56,9 +56,9 @@
               </a-tooltip>
 
               <a-popconfirm
-                title="确定要移除这个设定吗？"
-                ok-text="确定"
-                cancel-text="取消"
+                :title="t('chapterEditor.settings.actions.removeConfirm')"
+                :ok-text="t('common.confirm')"
+                :cancel-text="t('common.cancel')"
                 @confirm="handleRemove(item.settingId)"
               >
                 <a-button
@@ -67,7 +67,7 @@
                   size="small"
                 >
                   <template #icon><DeleteOutlined /></template>
-                  移除
+                  {{ t('chapterEditor.settings.actions.remove') }}
                 </a-button>
               </a-popconfirm>
             </div>
@@ -79,7 +79,7 @@
     <!-- 空状态 -->
     <a-empty
       v-else
-      description="暂无关联设定"
+      :description="t('chapterEditor.settings.empty.description')"
       class="empty-state"
     >
       <template #image>
@@ -87,7 +87,7 @@
       </template>
       <a-button type="primary" @click="showAddModal = true">
         <template #icon><PlusOutlined /></template>
-        添加第一个设定
+        {{ t('chapterEditor.settings.actions.addFirst') }}
       </a-button>
     </a-empty>
 
@@ -96,22 +96,22 @@
       <a-space :size="12">
         <span class="stat-item">
           <GlobalOutlined />
-          世界观: {{ typeStats.worldview }}
+          {{ t('chapterEditor.settings.stats.worldview', { count: typeStats.worldview }) }}
         </span>
         <a-divider type="vertical" />
         <span class="stat-item">
           <EnvironmentOutlined />
-          地点: {{ typeStats.location }}
+          {{ t('chapterEditor.settings.stats.location', { count: typeStats.location }) }}
         </span>
         <a-divider type="vertical" />
         <span class="stat-item">
           <FileProtectOutlined />
-          规则: {{ typeStats.rule }}
+          {{ t('chapterEditor.settings.stats.rule', { count: typeStats.rule }) }}
         </span>
         <a-divider type="vertical" />
         <span class="stat-item">
           <ReadOutlined />
-          文化: {{ typeStats.culture }}
+          {{ t('chapterEditor.settings.stats.culture', { count: typeStats.culture }) }}
         </span>
       </a-space>
     </div>
@@ -119,7 +119,7 @@
     <!-- 添加设定模态框 -->
     <a-modal
       v-model:open="showAddModal"
-      title="添加设定到章节"
+      :title="t('chapterEditor.settings.addModal.title')"
       :confirm-loading="loading"
       width="600px"
       @ok="handleAdd"
@@ -127,13 +127,13 @@
     >
       <a-form layout="vertical">
         <a-form-item
-          label="选择设定"
+          :label="t('chapterEditor.settings.addModal.selectLabel')"
           :validate-status="formError.setting ? 'error' : ''"
           :help="formError.setting"
         >
           <a-select
             v-model:value="selectedSettingId"
-            placeholder="请选择要添加的设定"
+            :placeholder="t('chapterEditor.settings.addModal.selectPlaceholder')"
             show-search
             option-filter-prop="label"
             :loading="loadingSettings"
@@ -161,17 +161,17 @@
           </a-select>
         </a-form-item>
 
-        <a-form-item label="使用说明（可选）">
+        <a-form-item :label="t('chapterEditor.settings.addModal.usageLabel')">
           <a-textarea
             v-model:value="selectedUsage"
-            placeholder="描述如何在本章节中使用这个设定..."
+            :placeholder="t('chapterEditor.settings.addModal.usagePlaceholder')"
             :rows="4"
             :maxlength="500"
             show-count
           />
           <div class="usage-hint">
             <InfoCircleOutlined />
-            说明如何在本章节中应用此设定，有助于保持内容一致性
+            {{ t('chapterEditor.settings.addModal.usageHint') }}
           </div>
         </a-form-item>
       </a-form>
@@ -180,22 +180,22 @@
     <!-- 编辑使用说明模态框 -->
     <a-modal
       v-model:open="showEditUsageModal"
-      title="编辑使用说明"
+      :title="t('chapterEditor.settings.editModal.title')"
       :confirm-loading="loading"
       @ok="handleUpdateUsage"
       @cancel="resetEditForm"
     >
       <a-form layout="vertical">
-        <a-form-item label="设定名称">
+        <a-form-item :label="t('chapterEditor.settings.editModal.nameLabel')">
           <a-input
             :value="editingItem?.setting.name"
             disabled
           />
         </a-form-item>
-        <a-form-item label="使用说明">
+        <a-form-item :label="t('chapterEditor.settings.editModal.usageLabel')">
           <a-textarea
             v-model:value="editingUsage"
-            placeholder="描述如何在本章节中使用这个设定..."
+            :placeholder="t('chapterEditor.settings.editModal.usagePlaceholder')"
             :rows="4"
             :maxlength="500"
             show-count
@@ -222,6 +222,7 @@ import {
 import type { WorldSetting, ChapterSetting } from '@/types'
 import { chapterService } from '@/services/chapterService'
 import { api } from '@/utils/api'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   modelValue: ChapterSetting[]
@@ -236,6 +237,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, locale } = useI18n()
 
 // 内部状态
 const settings = ref<ChapterSetting[]>([])
@@ -293,13 +295,21 @@ const getSettingTypeColor = (type: string): string => {
 
 // 获取设定类型图标
 const getSettingTypeIcon = (type: string): string => {
-  const icons: Record<string, string> = {
+  const isZh = locale.value === 'zh'
+  const iconsZh: Record<string, string> = {
     'worldview': '世',
     'location': '地',
     'rule': '规',
     'culture': '文'
   }
-  return icons[type] || '设'
+  const iconsEn: Record<string, string> = {
+    'worldview': 'W',
+    'location': 'L',
+    'rule': 'R',
+    'culture': 'C'
+  }
+  const icons = isZh ? iconsZh : iconsEn
+  return icons[type] || (isZh ? '设' : 'S')
 }
 
 // 获取设定类型标签颜色
@@ -316,10 +326,10 @@ const getSettingTypeTagColor = (type: string): string => {
 // 获取设定类型标签文本
 const getSettingTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
-    'worldview': '世界观',
-    'location': '地点',
-    'rule': '规则',
-    'culture': '文化'
+    'worldview': t('chapterEditor.settings.typeLabels.worldview'),
+    'location': t('chapterEditor.settings.typeLabels.location'),
+    'rule': t('chapterEditor.settings.typeLabels.rule'),
+    'culture': t('chapterEditor.settings.typeLabels.culture')
   }
   return labels[type] || type
 }
@@ -332,7 +342,7 @@ const loadAvailableSettings = async () => {
     availableSettings.value = response.data
   } catch (error) {
     console.error('Failed to load settings:', error)
-    message.error('加载设定列表失败')
+    message.error(t('chapterEditor.settings.messages.loadFailed'))
   } finally {
     loadingSettings.value = false
   }
@@ -342,7 +352,7 @@ const loadAvailableSettings = async () => {
 const handleAdd = async () => {
   // 验证
   if (!selectedSettingId.value) {
-    formError.value.setting = '请选择设定'
+    formError.value.setting = t('chapterEditor.settings.validation.selectRequired')
     return
   }
 
@@ -354,7 +364,7 @@ const handleAdd = async () => {
       selectedUsage.value
     )
 
-    message.success('添加设定成功')
+    message.success(t('chapterEditor.settings.messages.addSuccess'))
     showAddModal.value = false
     resetAddForm()
 
@@ -362,7 +372,7 @@ const handleAdd = async () => {
     emit('refresh')
   } catch (error) {
     console.error('Failed to add setting:', error)
-    message.error('添加设定失败')
+    message.error(t('chapterEditor.settings.messages.addFailed'))
   } finally {
     loading.value = false
   }
@@ -387,7 +397,7 @@ const handleUpdateUsage = async () => {
       editingUsage.value
     )
 
-    message.success('更新使用说明成功')
+    message.success(t('chapterEditor.settings.messages.updateUsageSuccess'))
     showEditUsageModal.value = false
     resetEditForm()
 
@@ -395,7 +405,7 @@ const handleUpdateUsage = async () => {
     emit('refresh')
   } catch (error) {
     console.error('Failed to update setting usage:', error)
-    message.error('更新失败')
+    message.error(t('chapterEditor.settings.messages.updateUsageFailed'))
   } finally {
     loading.value = false
   }
@@ -405,13 +415,13 @@ const handleUpdateUsage = async () => {
 const handleRemove = async (settingId: string) => {
   try {
     await chapterService.removeSettingFromChapter(props.chapterId, settingId)
-    message.success('移除设定成功')
+    message.success(t('chapterEditor.settings.messages.removeSuccess'))
 
     // 通知父组件刷新数据
     emit('refresh')
   } catch (error) {
     console.error('Failed to remove setting:', error)
-    message.error('移除设定失败')
+    message.error(t('chapterEditor.settings.messages.removeFailed'))
   }
 }
 

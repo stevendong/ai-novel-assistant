@@ -169,7 +169,275 @@
       "consistency": "一致性检查"
     },
     "editor": {
-      "placeholder": "开始编写章节内容..."
+      "placeholder": "开始编写章节内容...",
+      "toolbar": {
+        "heading": "标题",
+        "headingLevel": "标题 {level}",
+        "paragraph": "正文",
+        "bold": "加粗 (Ctrl+B)",
+        "italic": "斜体 (Ctrl+I)",
+        "strike": "删除线",
+        "bulletList": "无序列表",
+        "orderedList": "有序列表",
+        "blockquote": "引用",
+        "horizontalRule": "分割线",
+        "undo": "撤销 (Ctrl+Z)",
+        "redo": "重做 (Ctrl+Shift+Z)",
+        "clear": "清除格式"
+      },
+      "status": {
+        "words": "字数: {count}",
+        "characters": "字符: {count}",
+        "progress": "进度: {value}%"
+      },
+      "aiHint": "光标停留3秒自动显示续写建议，按 <kbd>Tab</kbd> 接受 | 按 <kbd>Cmd/Ctrl+H</kbd> 立即查看建议"
+    },
+    "content": {
+      "actions": {
+        "generate": "AI生成正文",
+        "continue": "续写内容",
+        "options": "选项",
+        "openSettings": "生成设置",
+        "clear": "清空内容",
+        "cancel": "取消"
+      },
+      "progress": {
+        "title": "AI创作中",
+        "status": {
+          "preparing": "AI正在准备创作...",
+          "analyzing": "AI正在分析章节信息...",
+          "connected": "AI创作已连接...",
+          "writing": "正在生成文字...",
+          "organizing": "正在整理内容...",
+          "finishing": "正在完成...",
+          "cancelling": "正在取消..."
+        },
+        "milestones": {
+          "start": "开始",
+          "analysis": "分析",
+          "writing": "创作",
+          "finishing": "完成"
+        }
+      },
+      "options": {
+        "title": "生成设置",
+        "lengthLabel": "生成长度",
+        "lengthPlaceholder": "目标字数",
+        "lengthUnit": "字",
+        "lengthHint": "建议单次生成1000-3000字",
+        "styleLabel": "写作风格",
+        "style": {
+          "modern": "现代小说体",
+          "traditional": "传统章回体",
+          "cinematic": "电影式叙述",
+          "poetic": "诗意抒情"
+        },
+        "focusLabel": "内容侧重",
+        "focus": {
+          "dialogue": "对话交流",
+          "description": "环境描写",
+          "action": "动作场景",
+          "emotion": "情感细腻"
+        },
+        "modeLabel": "生成模式",
+        "mode": {
+          "outline": "严格遵循大纲",
+          "creative": "创意发挥",
+          "balanced": "平衡模式"
+        }
+      },
+      "messages": {
+        "missingInfo": "缺少必要信息，无法生成内容",
+        "confirmGenerateTitle": "确认生成新内容？",
+        "confirmGenerateContent": "当前已有内容，生成新内容将覆盖现有内容，是否继续？",
+        "streamFailed": "流式生成失败，请稍后重试",
+        "cancelled": "内容生成已取消",
+        "emptyResult": "生成的内容为空",
+        "continueSuccess": "内容续写成功！",
+        "generateSuccess": "内容生成成功！",
+        "continueFailed": "内容续写失败，请重试",
+        "generateFailed": "内容生成失败，请重试",
+        "confirmClearTitle": "确认清空内容？",
+        "confirmClearContent": "此操作将清空当前正文内容，是否继续？",
+        "cleared": "内容已清空"
+      }
+    },
+    "consistency": {
+      "title": "一致性检查",
+      "unresolvedTag": "{count} 个待解决",
+      "actions": {
+        "filter": "筛选",
+        "check": "检查一致性",
+        "checking": "检查中..."
+      },
+      "filters": {
+        "severity": {
+          "all": "全部",
+          "high": "高",
+          "medium": "中",
+          "low": "低",
+          "highShort": "高",
+          "mediumShort": "中",
+          "lowShort": "低"
+        },
+        "status": {
+          "all": "全部状态",
+          "unresolved": "未解决",
+          "resolved": "已解决"
+        }
+      },
+      "issue": {
+        "resolved": "已解决",
+        "markResolvedTooltip": "标记为已解决",
+        "markResolved": "解决",
+        "reopenTooltip": "重新打开",
+        "reopen": "重新打开",
+        "deleteConfirm": "确定要删除这个问题吗？"
+      },
+      "empty": {
+        "noIssues": "暂无一致性问题",
+        "noResults": "没有符合条件的问题"
+      },
+      "checking": {
+        "tip": "正在检查一致性...",
+        "description": "正在分析章节内容、角色设定和世界设定..."
+      },
+      "stats": {
+        "total": "总问题数",
+        "high": "高优先级",
+        "medium": "中优先级",
+        "low": "低优先级"
+      },
+      "types": {
+        "character": "角色一致性",
+        "setting": "设定一致性",
+        "timeline": "时间线",
+        "logic": "逻辑"
+      },
+      "time": {
+        "justNow": "刚刚",
+        "minutesAgo": "{value}分钟前",
+        "hoursAgo": "{value}小时前",
+        "yesterday": "昨天",
+        "daysAgo": "{value}天前"
+      },
+      "messages": {
+        "checkSuccess": "一致性检查完成",
+        "checkFailed": "一致性检查失败",
+        "resolveSuccess": "已标记为解决",
+        "resolveFailed": "标记失败",
+        "reopenSuccess": "已重新打开",
+        "reopenFailed": "操作失败",
+        "deleteSuccess": "删除成功",
+        "deleteFailed": "删除失败"
+      }
+    },
+    "settings": {
+      "title": "相关设定",
+      "countTag": "{count} 个设定",
+      "actions": {
+        "add": "添加设定",
+        "addFirst": "添加第一个设定",
+        "editUsageTooltip": "编辑使用说明",
+        "remove": "移除",
+        "removeConfirm": "确定要移除这个设定吗？"
+      },
+      "list": {
+        "noDescription": "暂无描述"
+      },
+      "stats": {
+        "worldview": "世界观: {count}",
+        "location": "地点: {count}",
+        "rule": "规则: {count}",
+        "culture": "文化: {count}"
+      },
+      "addModal": {
+        "title": "添加设定到章节",
+        "selectLabel": "选择设定",
+        "selectPlaceholder": "请选择要添加的设定",
+        "usageLabel": "使用说明（可选）",
+        "usagePlaceholder": "描述如何在本章节中使用这个设定...",
+        "usageHint": "说明如何在本章节中应用此设定，有助于保持内容一致性。"
+      },
+      "editModal": {
+        "title": "编辑使用说明",
+        "nameLabel": "设定名称",
+        "usageLabel": "使用说明",
+        "usagePlaceholder": "描述如何在本章节中使用这个设定..."
+      },
+      "typeLabels": {
+        "worldview": "世界观",
+        "location": "地点",
+        "rule": "规则",
+        "culture": "文化"
+      },
+      "messages": {
+        "loadFailed": "加载设定列表失败",
+        "addSuccess": "添加设定成功",
+        "addFailed": "添加设定失败",
+        "updateUsageSuccess": "更新使用说明成功",
+        "updateUsageFailed": "更新失败",
+        "removeSuccess": "移除设定成功",
+        "removeFailed": "移除设定失败"
+      },
+      "validation": {
+        "selectRequired": "请选择设定"
+      }
+    },
+    "outline": {
+      "actions": {
+        "generate": "AI生成大纲",
+        "clear": "清空大纲"
+      },
+      "hints": {
+        "needTitle": "请先填写章节标题"
+      },
+      "progress": {
+        "preparing": "AI正在分析章节信息...",
+        "generating": "AI正在生成大纲...",
+        "formatting": "正在格式化内容...",
+        "presenting": "正在呈现大纲..."
+      },
+      "options": {
+        "title": "生成选项",
+        "styleLabel": "生成风格",
+        "style": {
+          "standard": "标准",
+          "detailed": "详细",
+          "brief": "简要"
+        },
+        "focusLabel": "内容侧重",
+        "focus": {
+          "plot": "情节发展",
+          "character": "角色刻画",
+          "emotion": "情感描写",
+          "world": "世界设定"
+        }
+      },
+      "sections": {
+        "contentStructure": "【内容结构】",
+        "keyPoints": "【关键要点】",
+        "emotionalTone": "【情感基调】",
+        "plotPoints": "【情节要点】"
+      },
+      "plotPointTypes": {
+        "conflict": "冲突",
+        "discovery": "发现",
+        "emotion": "情感",
+        "action": "行动",
+        "dialogue": "对话"
+      },
+      "text": {
+        "approxWords": "（约{words}字）"
+      },
+      "messages": {
+        "needTitle": "请先填写章节标题",
+        "success": "大纲生成成功！",
+        "failed": "大纲生成失败，请重试",
+        "clearConfirmTitle": "确认清空大纲？",
+        "clearConfirmContent": "此操作将清空当前大纲内容，是否继续？",
+        "cleared": "大纲已清空"
+      }
     },
     "modals": {
       "updateStatusTitle": "更改章节状态",
