@@ -1,19 +1,19 @@
 <template>
   <a-modal
     :open="visible"
-    title="新建角色"
+    :title="t('character.formModal.title')"
     width="800px"
     :maskClosable="false"
     @cancel="handleCancel"
   >
     <template #footer>
       <a-space>
-        <a-button @click="handleCancel">取消</a-button>
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
         <a-button
           v-if="hasAIGeneration"
           @click="handleClearAI"
         >
-          清除AI内容
+          {{ t('character.formModal.clearAI') }}
         </a-button>
         <a-button
           type="primary"
@@ -21,7 +21,7 @@
           @click="handleCreate"
           :disabled="!formData.name"
         >
-          创建角色
+          {{ t('character.formModal.create') }}
         </a-button>
       </a-space>
     </template>
@@ -29,30 +29,30 @@
     <div class="character-form">
       <a-tabs v-model:activeKey="activeTab">
         <!-- Manual Input Tab -->
-        <a-tab-pane key="manual" tab="手动输入">
+        <a-tab-pane key="manual" :tab="t('character.formModal.tabs.manual')">
           <a-form :model="formData" layout="vertical">
-            <a-form-item label="角色姓名" required>
+            <a-form-item :label="t('character.formModal.form.name')" required>
               <a-input
                 v-model:value="formData.name"
-                placeholder="输入角色姓名"
+                :placeholder="t('character.formModal.placeholders.name')"
               />
             </a-form-item>
 
-            <a-form-item label="角色描述">
+            <a-form-item :label="t('character.formModal.form.description')">
               <a-textarea
                 v-model:value="formData.description"
                 :rows="3"
-                placeholder="简要描述角色..."
+                :placeholder="t('character.formModal.placeholders.description')"
               />
             </a-form-item>
           </a-form>
         </a-tab-pane>
 
         <!-- AI Generate Tab -->
-        <a-tab-pane key="ai" tab="AI生成">
+        <a-tab-pane key="ai" :tab="t('character.formModal.tabs.ai')">
           <a-alert
-            message="提示"
-            description="描述你想要的角色，AI会自动生成完整的角色设定。"
+            :message="t('character.formModal.aiAlert.title')"
+            :description="t('character.formModal.aiAlert.description')"
             type="info"
             show-icon
             closable
@@ -60,11 +60,11 @@
           />
 
           <a-form :model="aiForm" layout="vertical">
-            <a-form-item label="角色描述提示词">
+            <a-form-item :label="t('character.formModal.form.prompt')">
               <a-textarea
                 v-model:value="aiForm.prompt"
                 :rows="4"
-                placeholder="例如：一个30岁的私人侦探，冷静睿智，有着不为人知的过去..."
+                :placeholder="t('character.formModal.placeholders.prompt')"
               />
             </a-form-item>
 
@@ -77,35 +77,35 @@
                 :disabled="!aiForm.prompt"
               >
                 <template #icon><RobotOutlined /></template>
-                生成角色
+                {{ t('character.formModal.generate') }}
               </a-button>
             </a-form-item>
           </a-form>
 
           <!-- AI Generated Result -->
           <div v-if="aiResult" class="ai-result">
-            <a-divider>AI生成结果</a-divider>
+            <a-divider>{{ t('character.formModal.aiResult.title') }}</a-divider>
 
             <a-descriptions bordered :column="1" size="small">
-              <a-descriptions-item label="姓名">
+              <a-descriptions-item :label="t('character.formModal.aiResult.name')">
                 {{ aiResult.name }}
               </a-descriptions-item>
-              <a-descriptions-item v-if="aiResult.gender" label="性别">
+              <a-descriptions-item v-if="aiResult.gender" :label="t('character.formModal.aiResult.gender')">
                 {{ aiResult.gender }}
               </a-descriptions-item>
-              <a-descriptions-item label="年龄">
+              <a-descriptions-item :label="t('character.formModal.aiResult.age')">
                 {{ aiResult.age }}
               </a-descriptions-item>
-              <a-descriptions-item label="身份">
+              <a-descriptions-item :label="t('character.formModal.aiResult.identity')">
                 {{ aiResult.identity }}
               </a-descriptions-item>
-              <a-descriptions-item label="描述">
+              <a-descriptions-item :label="t('character.formModal.aiResult.description')">
                 {{ aiResult.description }}
               </a-descriptions-item>
-              <a-descriptions-item label="性格">
+              <a-descriptions-item :label="t('character.formModal.aiResult.personality')">
                 {{ aiResult.personality }}
               </a-descriptions-item>
-              <a-descriptions-item label="外貌">
+              <a-descriptions-item :label="t('character.formModal.aiResult.appearance')">
                 {{ aiResult.appearance }}
               </a-descriptions-item>
             </a-descriptions>
@@ -121,10 +121,10 @@
         </a-tab-pane>
 
         <!-- Import Tab -->
-        <a-tab-pane key="import" tab="导入角色卡">
+        <a-tab-pane key="import" :tab="t('character.formModal.tabs.import')">
           <a-alert
-            message="支持SillyTavern角色卡"
-            description="从文件库选择PNG格式的角色卡进行导入"
+            :message="t('character.formModal.importAlert.title')"
+            :description="t('character.formModal.importAlert.description')"
             type="info"
             show-icon
             closable
@@ -137,7 +137,7 @@
             @click="$emit('selectCard')"
           >
             <template #icon><UploadOutlined /></template>
-            从文件库选择
+            {{ t('character.formModal.selectFromLibrary') }}
           </a-button>
         </a-tab-pane>
       </a-tabs>
@@ -148,6 +148,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { RobotOutlined, UploadOutlined } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   visible: boolean
@@ -167,6 +168,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { t } = useI18n()
 const activeTab = ref('manual')
 const formData = ref({
   name: '',

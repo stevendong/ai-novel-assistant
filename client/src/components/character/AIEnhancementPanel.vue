@@ -3,7 +3,7 @@
     <div class="panel-header">
       <h3 class="panel-title">
         <BulbOutlined class="mr-2" />
-        AI 完善建议
+        {{ t('character.aiEnhancement.title') }}
       </h3>
       <a-button
         type="text"
@@ -17,7 +17,7 @@
     <div class="panel-content">
       <!-- Suggestions -->
       <div class="suggestions-section">
-        <h4 class="section-title">完善建议</h4>
+        <h4 class="section-title">{{ t('character.aiEnhancement.suggestions') }}</h4>
 
         <a-collapse v-model:activeKey="activeKeys" ghost>
           <a-collapse-panel
@@ -32,7 +32,7 @@
                 type="primary"
                 @click="applySuggestion(key, value)"
               >
-                应用建议
+                {{ t('character.aiEnhancement.applySuggestion') }}
               </a-button>
             </div>
           </a-collapse-panel>
@@ -41,7 +41,7 @@
 
       <!-- Questions -->
       <div v-if="result.questions" class="questions-section">
-        <h4 class="section-title">思考问题</h4>
+        <h4 class="section-title">{{ t('character.aiEnhancement.questions') }}</h4>
         <ul class="question-list">
           <li
             v-for="(question, index) in result.questions"
@@ -57,10 +57,10 @@
       <div class="panel-actions">
         <a-space>
           <a-button @click="$emit('close')">
-            关闭
+            {{ t('common.close') }}
           </a-button>
           <a-button type="primary" @click="applyAll">
-            应用全部建议
+            {{ t('character.aiEnhancement.applyAll') }}
           </a-button>
         </a-space>
       </div>
@@ -71,6 +71,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { BulbOutlined, CloseOutlined } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   visible: boolean
@@ -86,23 +87,25 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { t } = useI18n()
 const activeKeys = ref<string[]>([])
 
 const fieldLabels: Record<string, string> = {
-  age: '年龄',
-  identity: '身份/职业',
-  description: '角色描述',
-  appearance: '外貌特征',
-  personality: '性格特点',
-  values: '核心价值观',
-  fears: '恐惧与弱点',
-  background: '个人背景',
-  skills: '技能与能力',
-  relationships: '人际关系'
+  age: 'character.fields.age',
+  identity: 'character.fields.identity',
+  description: 'character.fields.description',
+  appearance: 'character.fields.appearance',
+  personality: 'character.fields.personality',
+  values: 'character.fields.values',
+  fears: 'character.fields.fears',
+  background: 'character.fields.background',
+  skills: 'character.fields.skills',
+  relationships: 'character.fields.relationships'
 }
 
 const getFieldLabel = (key: string): string => {
-  return fieldLabels[key] || key
+  const path = fieldLabels[key]
+  return path ? t(path) : key
 }
 
 const applySuggestion = (field: string, value: string) => {

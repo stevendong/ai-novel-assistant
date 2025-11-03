@@ -1,7 +1,7 @@
 <template>
   <div class="character-detail">
     <div v-if="!character" class="empty-state">
-      <a-empty description="请选择一个角色" />
+      <a-empty :description="t('character.detail.emptyState')" />
     </div>
 
     <div v-else class="detail-content">
@@ -10,10 +10,10 @@
         <div class="header-wrapper">
           <div class="header-main">
             <!-- Avatar -->
-            <a-tooltip title="点击更换头像">
+            <a-tooltip :title="t('character.detail.changeAvatar')">
               <div class="avatar-wrapper" @click="$emit('changeAvatar')">
                 <a-badge
-                  :count="character.isLocked ? '锁' : 0"
+                  :count="character.isLocked ? t('character.detail.lockBadge') : 0"
                   :number-style="{ backgroundColor: '#ff4d4f' }"
                 >
                   <a-avatar
@@ -35,7 +35,7 @@
               <div class="header-meta">
                 <a-space :size="8">
                   <span v-if="character.gender" class="meta-item">
-                    {{ character.gender }}
+                    {{ formatGender(character.gender) }}
                   </span>
                   <a-divider v-if="character.gender && character.age" type="vertical" />
                   <span v-if="character.age" class="meta-item">
@@ -53,21 +53,21 @@
           <!-- Actions -->
           <div class="header-actions">
             <a-space :size="8" wrap>
-              <a-tooltip title="AI分析角色并提供完善建议">
+              <a-tooltip :title="t('character.detail.enhanceTooltip')">
                 <a-button
                   type="primary"
                   @click="$emit('enhance')"
                   :loading="enhancing"
                 >
                   <template #icon><RobotOutlined /></template>
-                  AI完善
+                  {{ t('character.detail.enhanceButton') }}
                 </a-button>
               </a-tooltip>
 
-              <a-tooltip title="导出角色卡为PNG文件">
+              <a-tooltip :title="t('character.detail.exportTooltip')">
                 <a-button @click="$emit('export')" :loading="exporting">
                   <template #icon><DownloadOutlined /></template>
-                  导出角色卡
+                  {{ t('character.detail.exportButton') }}
                 </a-button>
               </a-tooltip>
 
@@ -80,11 +80,11 @@
                     <a-menu-item key="lock" @click="$emit('toggleLock')">
                       <LockOutlined v-if="!character.isLocked" />
                       <UnlockOutlined v-else />
-                      {{ character.isLocked ? '解锁角色' : '锁定角色' }}
+                      {{ character.isLocked ? t('character.detail.unlock') : t('character.detail.lock') }}
                     </a-menu-item>
                     <a-menu-divider />
                     <a-menu-item key="delete" danger @click="$emit('delete')">
-                      <DeleteOutlined /> 删除角色
+                      <DeleteOutlined /> {{ t('character.detail.delete') }}
                     </a-menu-item>
                   </a-menu>
                 </template>
@@ -98,48 +98,48 @@
       <a-form :model="formData" layout="vertical" @finish="handleSave">
         <a-tabs v-model:activeKey="activeTab" type="card">
           <!-- Basic Info Tab -->
-          <a-tab-pane key="basic" tab="基本信息">
+          <a-tab-pane key="basic" :tab="t('character.detail.tabs.basic')">
             <a-row :gutter="16">
               <a-col :span="6">
-                <a-form-item label="角色姓名" required>
+                <a-form-item :label="t('character.detail.form.name')" required>
                   <a-input
                     v-model:value="formData.name"
-                    placeholder="输入角色姓名"
+                    :placeholder="t('character.detail.placeholders.name')"
                     :disabled="character.isLocked"
                     @change="handleChange"
                   />
                 </a-form-item>
               </a-col>
               <a-col :span="6">
-                <a-form-item label="性别">
+                <a-form-item :label="t('character.detail.form.gender')">
                   <a-select
                     v-model:value="formData.gender"
-                    placeholder="选择性别"
+                    :placeholder="t('character.detail.placeholders.gender')"
                     :disabled="character.isLocked"
                     @change="handleChange"
                     allow-clear
                   >
-                    <a-select-option value="男">男</a-select-option>
-                    <a-select-option value="女">女</a-select-option>
-                    <a-select-option value="其他">其他</a-select-option>
+                    <a-select-option value="男">{{ t('character.gender.male') }}</a-select-option>
+                    <a-select-option value="女">{{ t('character.gender.female') }}</a-select-option>
+                    <a-select-option value="其他">{{ t('character.gender.other') }}</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
               <a-col :span="6">
-                <a-form-item label="年龄">
+                <a-form-item :label="t('character.detail.form.age')">
                   <a-input
                     v-model:value="formData.age"
-                    placeholder="如：28岁"
+                    :placeholder="t('character.detail.placeholders.age')"
                     :disabled="character.isLocked"
                     @change="handleChange"
                   />
                 </a-form-item>
               </a-col>
               <a-col :span="6">
-                <a-form-item label="身份/职业">
+                <a-form-item :label="t('character.detail.form.identity')">
                   <a-input
                     v-model:value="formData.identity"
-                    placeholder="如：私人侦探"
+                    :placeholder="t('character.detail.placeholders.identity')"
                     :disabled="character.isLocked"
                     @change="handleChange"
                   />
@@ -147,21 +147,21 @@
               </a-col>
             </a-row>
 
-            <a-form-item label="角色描述">
+            <a-form-item :label="t('character.detail.form.description')">
               <a-textarea
                 v-model:value="formData.description"
                 :rows="3"
-                placeholder="简要描述角色的基本信息..."
+                :placeholder="t('character.detail.placeholders.description')"
                 :disabled="character.isLocked"
                 @change="handleChange"
               />
             </a-form-item>
 
-            <a-form-item label="外貌特征">
+            <a-form-item :label="t('character.detail.form.appearance')">
               <a-textarea
                 v-model:value="formData.appearance"
                 :rows="4"
-                placeholder="详细描述角色的外貌特征..."
+                :placeholder="t('character.detail.placeholders.appearance')"
                 :disabled="character.isLocked"
                 @change="handleChange"
               />
@@ -169,32 +169,32 @@
           </a-tab-pane>
 
           <!-- Personality Tab -->
-          <a-tab-pane key="personality" tab="性格特征">
-            <a-form-item label="性格特点">
+          <a-tab-pane key="personality" :tab="t('character.detail.tabs.personality')">
+            <a-form-item :label="t('character.detail.form.personality')">
               <a-textarea
                 v-model:value="formData.personality"
                 :rows="6"
-                placeholder="描述角色的性格特点、行为习惯、说话方式等..."
+                :placeholder="t('character.detail.placeholders.personality')"
                 :disabled="character.isLocked"
                 @change="handleChange"
               />
             </a-form-item>
 
-            <a-form-item label="核心价值观">
+            <a-form-item :label="t('character.detail.form.values')">
               <a-textarea
                 v-model:value="formData.values"
                 :rows="3"
-                placeholder="角色的核心价值观和信念..."
+                :placeholder="t('character.detail.placeholders.values')"
                 :disabled="character.isLocked"
                 @change="handleChange"
               />
             </a-form-item>
 
-            <a-form-item label="恐惧与弱点">
+            <a-form-item :label="t('character.detail.form.fears')">
               <a-textarea
                 v-model:value="formData.fears"
                 :rows="3"
-                placeholder="角色害怕什么，有什么弱点..."
+                :placeholder="t('character.detail.placeholders.fears')"
                 :disabled="character.isLocked"
                 @change="handleChange"
               />
@@ -202,22 +202,22 @@
           </a-tab-pane>
 
           <!-- Background Tab -->
-          <a-tab-pane key="background" tab="背景故事">
-            <a-form-item label="个人背景">
+          <a-tab-pane key="background" :tab="t('character.detail.tabs.background')">
+            <a-form-item :label="t('character.detail.form.background')">
               <a-textarea
                 v-model:value="formData.background"
                 :rows="8"
-                placeholder="角色的成长经历、重要事件、人生转折点..."
+                :placeholder="t('character.detail.placeholders.background')"
                 :disabled="character.isLocked"
                 @change="handleChange"
               />
             </a-form-item>
 
-            <a-form-item label="技能与能力">
+            <a-form-item :label="t('character.detail.form.skills')">
               <a-textarea
                 v-model:value="formData.skills"
                 :rows="3"
-                placeholder="角色掌握的技能、特殊能力..."
+                :placeholder="t('character.detail.placeholders.skills')"
                 :disabled="character.isLocked"
                 @change="handleChange"
               />
@@ -227,7 +227,7 @@
 
         <div class="form-footer">
           <a-button type="primary" html-type="submit" :disabled="character.isLocked">
-            保存修改
+            {{ t('character.detail.save') }}
           </a-button>
         </div>
       </a-form>
@@ -247,6 +247,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   character: Character | null
@@ -266,8 +267,24 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { t } = useI18n()
 const activeTab = ref('basic')
 const formData = ref<Partial<Character>>({})
+
+const genderLabelMap: Record<string, string> = {
+  male: 'character.gender.male',
+  female: 'character.gender.female',
+  other: 'character.gender.other',
+  男: 'character.gender.male',
+  女: 'character.gender.female',
+  其他: 'character.gender.other'
+}
+
+const formatGender = (value?: string | null) => {
+  if (!value) return ''
+  const key = genderLabelMap[value]
+  return key ? t(key) : value
+}
 
 // Watch character changes and update form data
 watch(() => props.character, (newChar) => {

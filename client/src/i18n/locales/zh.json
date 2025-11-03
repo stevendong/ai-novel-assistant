@@ -245,7 +245,144 @@
     "alreadyExists": "已存在，请重命名后再试",
     "importSuccess": "角色创建成功！",
     "importFailure": "角色卡导入失败，请确保这是有效的 SillyTavern 角色卡",
-    "prepareImport": "准备导入..."
+    "prepareImport": "准备导入...",
+    "list": {
+      "searchPlaceholder": "搜索角色名称、描述...",
+      "addCharacter": "新建角色",
+      "noDescription": "暂无描述",
+      "empty": "暂无角色"
+    },
+    "detail": {
+      "emptyState": "请选择一个角色",
+      "changeAvatar": "点击更换头像",
+      "lockBadge": "锁",
+      "enhanceTooltip": "AI分析角色并提供完善建议",
+      "enhanceButton": "AI完善",
+      "exportTooltip": "导出角色卡为PNG文件",
+      "exportButton": "导出角色卡",
+      "unlock": "解锁角色",
+      "lock": "锁定角色",
+      "delete": "删除角色",
+      "tabs": {
+        "basic": "基本信息",
+        "personality": "性格特征",
+        "background": "背景故事"
+      },
+      "form": {
+        "name": "角色姓名",
+        "gender": "性别",
+        "age": "年龄",
+        "identity": "身份/职业",
+        "description": "角色描述",
+        "appearance": "外貌特征",
+        "personality": "性格特点",
+        "values": "核心价值观",
+        "fears": "恐惧与弱点",
+        "background": "个人背景",
+        "skills": "技能与能力"
+      },
+      "placeholders": {
+        "name": "输入角色姓名",
+        "gender": "选择性别",
+        "age": "如：28岁",
+        "identity": "如：私人侦探",
+        "description": "简要描述角色的基本信息...",
+        "appearance": "详细描述角色的外貌特征...",
+        "personality": "描述角色的性格特点、行为习惯、说话方式等...",
+        "values": "角色的核心价值观和信念...",
+        "fears": "角色害怕什么，有什么弱点...",
+        "background": "角色的成长经历、重要事件、人生转折点...",
+        "skills": "角色掌握的技能、特殊能力..."
+      },
+      "save": "保存修改"
+    },
+    "gender": {
+      "male": "男",
+      "female": "女",
+      "other": "其他"
+    },
+    "fields": {
+      "age": "年龄",
+      "identity": "身份/职业",
+      "description": "角色描述",
+      "appearance": "外貌特征",
+      "personality": "性格特点",
+      "values": "核心价值观",
+      "fears": "恐惧与弱点",
+      "background": "个人背景",
+      "skills": "技能与能力",
+      "relationships": "人际关系"
+    },
+    "aiEnhancement": {
+      "title": "AI 完善建议",
+      "suggestions": "完善建议",
+      "applySuggestion": "应用建议",
+      "questions": "思考问题",
+      "applyAll": "应用全部建议"
+    },
+    "formModal": {
+      "title": "新建角色",
+      "clearAI": "清除AI内容",
+      "create": "创建角色",
+      "tabs": {
+        "manual": "手动输入",
+        "ai": "AI生成",
+        "import": "导入角色卡"
+      },
+      "form": {
+        "name": "角色姓名",
+        "description": "角色描述",
+        "prompt": "角色提示词"
+      },
+      "placeholders": {
+        "name": "输入角色姓名",
+        "description": "简要描述角色...",
+        "prompt": "例如：一个30岁的私人侦探，冷静睿智，有着不为人知的过去..."
+      },
+      "aiAlert": {
+        "title": "提示",
+        "description": "描述你想要的角色，AI会自动生成完整的角色设定。"
+      },
+      "generate": "生成角色",
+      "aiResult": {
+        "title": "AI生成结果",
+        "name": "姓名",
+        "gender": "性别",
+        "age": "年龄",
+        "identity": "身份",
+        "description": "描述",
+        "personality": "性格",
+        "appearance": "外貌"
+      },
+      "importAlert": {
+        "title": "支持SillyTavern角色卡",
+        "description": "从文件库选择PNG格式的角色卡进行导入"
+      },
+      "selectFromLibrary": "从文件库选择"
+    },
+    "import": {
+      "title": "导入角色卡",
+      "steps": {
+        "readFile": "读取文件",
+        "extractData": "提取数据",
+        "aiParsing": "AI解析",
+        "createCharacter": "创建角色"
+      },
+      "preview": {
+        "title": "角色预览",
+        "unknownAge": "年龄未知",
+        "unknownIdentity": "身份未知",
+        "fields": {
+          "personality": "性格特征",
+          "appearance": "外貌特征",
+          "background": "背景故事",
+          "skills": "技能能力"
+        }
+      },
+      "actions": {
+        "viewCharacter": "查看角色"
+      }
+    }
   },
   "worldSetting": {
     "title": "世界设定",

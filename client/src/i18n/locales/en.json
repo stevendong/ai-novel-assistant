@@ -245,7 +245,144 @@
     "alreadyExists": "already exists, please rename and try again",
     "importSuccess": "Character created successfully!",
     "importFailure": "Character card import failed, please ensure this is a valid SillyTavern character card",
-    "prepareImport": "Preparing import..."
+    "prepareImport": "Preparing import...",
+    "list": {
+      "searchPlaceholder": "Search character name or description...",
+      "addCharacter": "Add Character",
+      "noDescription": "No description yet",
+      "empty": "No characters"
+    },
+    "detail": {
+      "emptyState": "Select a character to view details",
+      "changeAvatar": "Click to change avatar",
+      "lockBadge": "Lock",
+      "enhanceTooltip": "AI analyzes the character and provides enhancement suggestions",
+      "enhanceButton": "AI Enhance",
+      "exportTooltip": "Export the character card as a PNG file",
+      "exportButton": "Export Card",
+      "unlock": "Unlock Character",
+      "lock": "Lock Character",
+      "delete": "Delete Character",
+      "tabs": {
+        "basic": "Basic Information",
+        "personality": "Personality Traits",
+        "background": "Background Story"
+      },
+      "form": {
+        "name": "Character Name",
+        "gender": "Gender",
+        "age": "Age",
+        "identity": "Identity / Occupation",
+        "description": "Character Description",
+        "appearance": "Appearance",
+        "personality": "Personality",
+        "values": "Core Values",
+        "fears": "Fears & Weaknesses",
+        "background": "Background",
+        "skills": "Skills & Abilities"
+      },
+      "placeholders": {
+        "name": "Enter character name",
+        "gender": "Select gender",
+        "age": "e.g. 28 years old",
+        "identity": "e.g. Private detective",
+        "description": "Briefly describe the character...",
+        "appearance": "Describe the character's appearance in detail...",
+        "personality": "Describe personality traits, habits, and speaking style...",
+        "values": "Character's core values and beliefs...",
+        "fears": "What the character fears or weaknesses...",
+        "background": "Character's upbringing, key events, and turning points...",
+        "skills": "Skills or special abilities the character has..."
+      },
+      "save": "Save Changes"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "fields": {
+      "age": "Age",
+      "identity": "Identity / Occupation",
+      "description": "Character Description",
+      "appearance": "Appearance",
+      "personality": "Personality Traits",
+      "values": "Core Values",
+      "fears": "Fears & Weaknesses",
+      "background": "Background",
+      "skills": "Skills & Abilities",
+      "relationships": "Relationships"
+    },
+    "aiEnhancement": {
+      "title": "AI Enhancement Suggestions",
+      "suggestions": "Enhancement Suggestions",
+      "applySuggestion": "Apply Suggestion",
+      "questions": "Reflection Questions",
+      "applyAll": "Apply All Suggestions"
+    },
+    "formModal": {
+      "title": "Create Character",
+      "clearAI": "Clear AI Content",
+      "create": "Create Character",
+      "tabs": {
+        "manual": "Manual Input",
+        "ai": "AI Generation",
+        "import": "Import Character Card"
+      },
+      "form": {
+        "name": "Character Name",
+        "description": "Character Description",
+        "prompt": "Character Prompt"
+      },
+      "placeholders": {
+        "name": "Enter character name",
+        "description": "Briefly describe the character...",
+        "prompt": "e.g. A 30-year-old private detective, calm and wise with a secret past..."
+      },
+      "aiAlert": {
+        "title": "Tip",
+        "description": "Describe the character you want and AI will generate a complete profile."
+      },
+      "generate": "Generate Character",
+      "aiResult": {
+        "title": "AI Generated Result",
+        "name": "Name",
+        "gender": "Gender",
+        "age": "Age",
+        "identity": "Identity",
+        "description": "Description",
+        "personality": "Personality",
+        "appearance": "Appearance"
+      },
+      "importAlert": {
+        "title": "Supports SillyTavern Cards",
+        "description": "Select a PNG format character card from the file library to import."
+      },
+      "selectFromLibrary": "Select from Library"
+    },
+    "import": {
+      "title": "Import Character Card",
+      "steps": {
+        "readFile": "Read File",
+        "extractData": "Extract Data",
+        "aiParsing": "AI Parsing",
+        "createCharacter": "Create Character"
+      },
+      "preview": {
+        "title": "Character Preview",
+        "unknownAge": "Unknown age",
+        "unknownIdentity": "Unknown identity",
+        "fields": {
+          "personality": "Personality Traits",
+          "appearance": "Appearance Traits",
+          "background": "Background Story",
+          "skills": "Skills & Abilities"
+        }
+      },
+      "actions": {
+        "viewCharacter": "View Character"
+      }
+    }
   },
   "worldSetting": {
     "title": "World Settings",

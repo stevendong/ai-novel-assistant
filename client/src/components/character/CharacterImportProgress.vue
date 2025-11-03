@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :open="visible"
-    title="导入角色卡"
+    :title="t('character.import.title')"
     :closable="false"
     :maskClosable="false"
     :footer="null"
@@ -9,10 +9,10 @@
   >
     <div class="import-progress-content">
       <a-steps :current="step" size="small" class="mb-6">
-        <a-step title="读取文件" />
-        <a-step title="提取数据" />
-        <a-step title="AI解析" />
-        <a-step title="创建角色" />
+        <a-step :title="t('character.import.steps.readFile')" />
+        <a-step :title="t('character.import.steps.extractData')" />
+        <a-step :title="t('character.import.steps.aiParsing')" />
+        <a-step :title="t('character.import.steps.createCharacter')" />
       </a-steps>
 
       <div class="import-status">
@@ -28,7 +28,7 @@
           </div>
 
           <div v-if="previewData" class="preview-section mt-6">
-            <h4 class="text-sm font-medium mb-3 theme-text-primary">角色预览</h4>
+            <h4 class="text-sm font-medium mb-3 theme-text-primary">{{ t('character.import.preview.title') }}</h4>
             <div class="preview-card">
               <div class="flex items-start space-x-4">
                 <a-avatar
@@ -41,7 +41,7 @@
                 <div class="flex-1">
                   <h5 class="font-medium theme-text-primary">{{ previewData.name }}</h5>
                   <p class="text-xs theme-text-secondary mt-1">
-                    {{ previewData.age || '年龄未知' }} · {{ previewData.identity || '身份未知' }}
+                    {{ previewData.age || t('character.import.preview.unknownAge') }} · {{ previewData.identity || t('character.import.preview.unknownIdentity') }}
                   </p>
                   <p class="text-sm theme-text-primary mt-2 line-clamp-2">
                     {{ previewData.description }}
@@ -51,22 +51,22 @@
 
               <div class="field-status mt-4 grid grid-cols-2 gap-2">
                 <div class="field-item" :class="{ 'field-complete': previewData.personality }">
-                  <span class="field-label">性格特征</span>
+                  <span class="field-label">{{ t('character.import.preview.fields.personality') }}</span>
                   <CheckCircleOutlined v-if="previewData.personality" class="text-green-500" />
                   <CloseCircleOutlined v-else class="text-gray-400" />
                 </div>
                 <div class="field-item" :class="{ 'field-complete': previewData.appearance }">
-                  <span class="field-label">外貌特征</span>
+                  <span class="field-label">{{ t('character.import.preview.fields.appearance') }}</span>
                   <CheckCircleOutlined v-if="previewData.appearance" class="text-green-500" />
                   <CloseCircleOutlined v-else class="text-gray-400" />
                 </div>
                 <div class="field-item" :class="{ 'field-complete': previewData.background }">
-                  <span class="field-label">背景故事</span>
+                  <span class="field-label">{{ t('character.import.preview.fields.background') }}</span>
                   <CheckCircleOutlined v-if="previewData.background" class="text-green-500" />
                   <CloseCircleOutlined v-else class="text-gray-400" />
                 </div>
                 <div class="field-item" :class="{ 'field-complete': previewData.skills }">
-                  <span class="field-label">技能能力</span>
+                  <span class="field-label">{{ t('character.import.preview.fields.skills') }}</span>
                   <CheckCircleOutlined v-if="previewData.skills" class="text-green-500" />
                   <CloseCircleOutlined v-else class="text-gray-400" />
                 </div>
@@ -78,8 +78,8 @@
 
       <div v-if="complete" class="import-actions mt-6 text-center">
         <a-space>
-          <a-button @click="$emit('close')">关闭</a-button>
-          <a-button type="primary" @click="$emit('view')">查看角色</a-button>
+          <a-button @click="$emit('close')">{{ t('common.close') }}</a-button>
+          <a-button type="primary" @click="$emit('view')">{{ t('character.import.actions.viewCharacter') }}</a-button>
         </a-space>
       </div>
     </div>
@@ -92,6 +92,7 @@ import {
   CloseCircleOutlined,
   LoadingOutlined
 } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   visible: boolean
@@ -110,6 +111,8 @@ interface Emits {
 
 defineProps<Props>()
 defineEmits<Emits>()
+
+const { t } = useI18n()
 </script>
 
 <style scoped>

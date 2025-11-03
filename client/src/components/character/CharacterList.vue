@@ -4,13 +4,13 @@
     <div class="list-header">
       <a-input-search
         v-model:value="searchText"
-        placeholder="搜索角色名称、描述..."
+        :placeholder="t('character.list.searchPlaceholder')"
         @search="handleSearch"
         style="margin-bottom: 12px"
       />
       <a-button type="primary" block @click="handleAddCharacter">
         <template #icon><PlusOutlined /></template>
-        新建角色
+        {{ t('character.list.addCharacter') }}
       </a-button>
     </div>
 
@@ -36,21 +36,21 @@
             <LockOutlined v-if="character.isLocked" class="lock-icon" />
           </div>
           <div v-if="character.gender || character.age || character.identity" class="character-meta">
-            <span v-if="character.gender">{{ character.gender }}</span>
+            <span v-if="character.gender">{{ formatGender(character.gender) }}</span>
             <span v-if="character.gender && character.age"> · </span>
             <span v-if="character.age">{{ character.age }}</span>
             <span v-if="(character.gender || character.age) && character.identity"> · </span>
             <span v-if="character.identity">{{ character.identity }}</span>
           </div>
           <div class="character-desc">
-            {{ character.description || '暂无描述' }}
+            {{ character.description || t('character.list.noDescription') }}
           </div>
         </div>
       </div>
 
       <a-empty
         v-if="characters.length === 0"
-        description="暂无角色"
+        :description="t('character.list.empty')"
         :image="Empty.PRESENTED_IMAGE_SIMPLE"
       />
     </div>
@@ -62,6 +62,7 @@ import { ref } from 'vue'
 import { Empty } from 'ant-design-vue'
 import { PlusOutlined, LockOutlined } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   characters: Character[]
@@ -77,7 +78,24 @@ interface Emits {
 defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { t } = useI18n()
+
 const searchText = ref('')
+
+const genderLabelMap: Record<string, string> = {
+  male: 'character.gender.male',
+  female: 'character.gender.female',
+  other: 'character.gender.other',
+  男: 'character.gender.male',
+  女: 'character.gender.female',
+  其他: 'character.gender.other'
+}
+
+const formatGender = (value?: string | null) => {
+  if (!value) return ''
+  const key = genderLabelMap[value]
+  return key ? t(key) : value
+}
 
 const handleSearch = (value: string) => {
   emit('search', value)
