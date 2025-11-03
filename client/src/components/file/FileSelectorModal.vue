@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :open="visible"
-    title="选择文件"
+    :title="title"
     width="900px"
     :footer="null"
     @cancel="handleCancel"
@@ -10,7 +10,7 @@
     <div class="selector-toolbar">
       <a-input-search
         v-model:value="searchKeyword"
-        placeholder="搜索文件名..."
+        :placeholder="t('fileSelector.searchPlaceholder')"
         class="search-input"
         @search="handleSearch"
         allow-clear
@@ -18,28 +18,28 @@
 
       <a-select
         v-model:value="filterCategory"
-        placeholder="文件分类"
+        :placeholder="t('fileSelector.categoryPlaceholder')"
         class="filter-select"
         @change="handleFilterChange"
         allow-clear
       >
         <a-select-option value="">
-          <AppstoreOutlined /> 全部分类
+          <AppstoreOutlined /> {{ t('fileSelector.categories.all') }}
         </a-select-option>
         <a-select-option value="worldbook">
-          <BookOutlined /> 世界书
+          <BookOutlined /> {{ t('fileSelector.categories.worldbook') }}
         </a-select-option>
         <a-select-option value="character">
-          <TeamOutlined /> 角色卡
+          <TeamOutlined /> {{ t('fileSelector.categories.character') }}
         </a-select-option>
         <a-select-option value="document">
-          <FileTextOutlined /> 文档
+          <FileTextOutlined /> {{ t('fileSelector.categories.document') }}
         </a-select-option>
         <a-select-option value="image">
-          <PictureOutlined /> 图片
+          <PictureOutlined /> {{ t('fileSelector.categories.image') }}
         </a-select-option>
         <a-select-option value="other">
-          <FileOutlined /> 其他
+          <FileOutlined /> {{ t('fileSelector.categories.other') }}
         </a-select-option>
       </a-select>
 
@@ -51,16 +51,16 @@
       >
         <a-button type="primary" :loading="uploading">
           <template #icon><UploadOutlined /></template>
-          上传文件
+          {{ t('fileSelector.upload') }}
         </a-button>
       </a-upload>
     </div>
 
     <!-- 文件网格 -->
     <a-spin :spinning="loading">
-      <a-empty v-if="!loading && displayFiles.length === 0" description="暂无文件">
+      <a-empty v-if="!loading && displayFiles.length === 0" :description="t(emptyDescriptionKey)">
         <a-button type="primary" @click="handleCancel">
-          返回上传
+          {{ t('fileSelector.backToUpload') }}
         </a-button>
       </a-empty>
 
@@ -111,17 +111,17 @@
     <div class="selector-footer">
       <a-space>
         <span v-if="selectedFile" class="selected-info">
-          已选择: {{ selectedFile.fileName }}
+          {{ t('fileSelector.selectedPrefix') }} {{ selectedFile.fileName }}
         </span>
       </a-space>
       <a-space>
-        <a-button @click="handleCancel">取消</a-button>
+        <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
         <a-button
           type="primary"
           :disabled="!selectedFileId"
           @click="handleConfirm"
         >
-          确定
+          {{ t('common.confirm') }}
         </a-button>
       </a-space>
     </div>
@@ -130,7 +130,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { message } from 'ant-design-vue'
 import {
   AppstoreOutlined,
   BookOutlined,
@@ -143,6 +142,7 @@ import {
 } from '@ant-design/icons-vue'
 import { useFileList } from '@/composables/useFileList'
 import { useFileUpload } from '@/composables/useFileUpload'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   visible?: boolean
@@ -165,6 +165,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+const { t } = useI18n()
+
 const {
   files,
   loading,
@@ -178,6 +180,26 @@ const { uploadFile, validateFile, uploading } = useFileUpload()
 const searchKeyword = ref('')
 const filterCategory = ref(props.category || '')
 const selectedFileId = ref<string>('')
+
+const emptyDescriptionKey = computed(() => {
+  if (props.category === 'character' || filterCategory.value === 'character') {
+    return 'fileSelector.empty.character'
+  }
+  if (props.accept && props.accept.some(type => type.includes('image') || type === 'image/*')) {
+    return 'fileSelector.empty.image'
+  }
+  return 'fileSelector.empty.default'
+})
+
+const title = computed(() => {
+  if (props.category === 'character' || filterCategory.value === 'character') {
+    return t('fileSelector.title.character')
+  }
+  if (props.accept && props.accept.some(type => type.includes('image') || type === 'image/*')) {
+    return t('fileSelector.title.image')
+  }
+  return t('fileSelector.title.default')
+})
 
 // accept 转为字符串
 const acceptString = computed(() => {
@@ -239,14 +261,9 @@ const getFileIcon = (mimeType: string) => {
 
 // 获取分类名称
 const getCategoryName = (category: string) => {
-  const names: Record<string, string> = {
-    worldbook: '世界书',
-    character: '角色卡',
-    document: '文档',
-    image: '图片',
-    other: '其他'
-  }
-  return names[category] || category
+  const key = `fileSelector.categories.${category || 'other'}`
+  const translated = t(key)
+  return translated === key ? category : translated
 }
 
 // 获取分类颜色

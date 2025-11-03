@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { api } from '@/utils/api'
+import i18n from '@/i18n'
 
 export interface UploadFileOptions {
   category?: string
@@ -10,6 +11,7 @@ export interface UploadFileOptions {
 
 export function useFileUpload() {
   const uploading = ref(false)
+  const { t } = i18n.global
 
   /**
    * 上传文件到服务器
@@ -53,13 +55,13 @@ export function useFileUpload() {
 
       console.log('[useFileUpload] 上传响应:', response.data)
 
-      message.success('文件上传成功')
+      message.success(t('fileUpload.uploadSuccess'))
       return response.data.file
     } catch (error: any) {
       console.error('[useFileUpload] 上传错误:', error)
       console.error('[useFileUpload] 错误响应:', error.response?.data)
 
-      const errorMsg = error.response?.data?.error || '文件上传失败'
+      const errorMsg = error.response?.data?.error || t('fileUpload.uploadFailed')
       message.error(errorMsg)
       throw error
     } finally {
@@ -82,7 +84,7 @@ export function useFileUpload() {
     // 大小校验
     const isLtMaxSize = file.size / 1024 / 1024 < maxSize
     if (!isLtMaxSize) {
-      message.error(`文件大小不能超过 ${maxSize}MB!`)
+      message.error(t('fileUpload.sizeLimit', { max: maxSize }))
       return false
     }
 
@@ -100,7 +102,7 @@ export function useFileUpload() {
       })
 
       if (!isAccepted) {
-        message.error('文件类型不支持!')
+        message.error(t('fileUpload.typeNotAllowed'))
         return false
       }
     }

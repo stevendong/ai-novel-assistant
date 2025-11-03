@@ -75,6 +75,7 @@
     <FileSelectorModal
       v-model:visible="showAvatarSelectorModal"
       :accept="['image/*']"
+      category="character"
       :novel-id="novelId"
       @select="handleAvatarFileSelect"
     />

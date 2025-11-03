@@ -4,15 +4,15 @@
     <div v-if="currentFile" class="selected-file" :class="`list-type-${listType}`">
       <!-- picture-card 模式 -->
       <div v-if="listType === 'picture-card'" class="preview-card">
-        <img v-if="isImage(currentFile)" :src="currentFile" alt="preview" />
+        <img v-if="isImage(currentFile)" :src="currentFile" :alt="t('fileSelector.previewAlt')" />
         <FileOutlined v-else class="file-icon" />
 
         <div class="preview-mask">
           <a-space>
-            <a-tooltip title="预览">
+            <a-tooltip :title="t('fileSelector.preview')">
               <EyeOutlined @click="handlePreview" />
             </a-tooltip>
-            <a-tooltip title="删除">
+            <a-tooltip :title="t('fileSelector.remove')">
               <DeleteOutlined @click="handleRemove" />
             </a-tooltip>
           </a-space>
@@ -21,7 +21,7 @@
 
       <!-- picture 模式 -->
       <div v-else-if="listType === 'picture'" class="file-item">
-        <img v-if="isImage(currentFile)" :src="currentFile" alt="preview" class="file-thumb" />
+        <img v-if="isImage(currentFile)" :src="currentFile" :alt="t('fileSelector.previewAlt')" class="file-thumb" />
         <FileOutlined v-else class="file-icon-small" />
         <span class="file-name">{{ getFileName(currentFile) }}</span>
         <CloseOutlined class="remove-icon" @click="handleRemove" />
@@ -44,7 +44,7 @@
     >
       <div class="empty-content">
         <PlusOutlined class="plus-icon" />
-        <div class="empty-text">{{ placeholder || '选择文件' }}</div>
+        <div class="empty-text">{{ placeholder || t('fileSelector.placeholder') }}</div>
       </div>
     </div>
 
@@ -59,9 +59,9 @@
           :accept="acceptString"
           :disabled="disabled"
         >
-          <a-button size="small" :disabled="disabled">
+          <a-button size="small" :disabled="disabled" :loading="uploading">
             <template #icon><UploadOutlined /></template>
-            上传新文件
+            {{ t('fileSelector.uploadNew') }}
           </a-button>
         </a-upload>
 
@@ -72,7 +72,7 @@
           @click="selectorModalVisible = true"
         >
           <template #icon><FolderOpenOutlined /></template>
-          从库中选择
+          {{ t('fileSelector.selectFromLibrary') }}
         </a-button>
       </a-space>
     </div>
@@ -99,8 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { message } from 'ant-design-vue'
+import { ref, computed } from 'vue'
 import {
   PlusOutlined,
   UploadOutlined,
@@ -113,6 +112,7 @@ import {
 import FileSelectorModal from './FileSelectorModal.vue'
 import { useFileUpload } from '@/composables/useFileUpload'
 import { useProjectStore } from '@/stores/project'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   value?: string              // v-model 绑定的文件URL
@@ -149,6 +149,7 @@ const emit = defineEmits<Emits>()
 
 const projectStore = useProjectStore()
 const { uploadFile, validateFile, uploading } = useFileUpload()
+const { t } = useI18n()
 
 const selectorModalVisible = ref(false)
 const previewVisible = ref(false)
@@ -173,7 +174,7 @@ const isImage = (url: string) => {
 const getFileName = (url: string) => {
   if (!url) return ''
   const parts = url.split('/')
-  return parts[parts.length - 1] || '未知文件'
+  return parts[parts.length - 1] || t('fileSelector.unknownFile')
 }
 
 // 点击空白区域
@@ -204,7 +205,7 @@ const handleUploadRequest = async ({ file }: any) => {
     emit('update:value', uploadedFile.fileUrl)
     emit('change', uploadedFile)
   } catch (error) {
-    console.error('上传失败:', error)
+    console.error('[FileSelector] Upload failed:', error)
   }
 }
 

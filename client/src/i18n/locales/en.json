@@ -268,6 +268,44 @@
       "other": "Other"
     }
   },
+  "fileSelector": {
+    "title": {
+      "default": "Select File",
+      "image": "Select Image",
+      "character": "Select Character Avatar"
+    },
+    "searchPlaceholder": "Search filename...",
+    "categoryPlaceholder": "File category",
+    "categories": {
+      "all": "All categories",
+      "worldbook": "World Book",
+      "character": "Character Cards",
+      "document": "Documents",
+      "image": "Images",
+      "other": "Other"
+    },
+    "upload": "Upload File",
+    "uploadNew": "Upload New File",
+    "selectFromLibrary": "Choose from Library",
+    "placeholder": "Select file",
+    "preview": "Preview",
+    "previewAlt": "File preview",
+    "remove": "Delete",
+    "selectedPrefix": "Selected:",
+    "backToUpload": "Back to upload",
+    "empty": {
+      "default": "No files available",
+      "image": "No images available",
+      "character": "No character files available"
+    },
+    "unknownFile": "Unknown file"
+  },
+  "fileUpload": {
+    "uploadSuccess": "File uploaded successfully",
+    "uploadFailed": "File upload failed",
+    "sizeLimit": "File size cannot exceed {max}MB!",
+    "typeNotAllowed": "File type not supported!"
+  },
   "fileManagement": {
     "title": "File Management",
     "subtitle": "Manage your project resources",
