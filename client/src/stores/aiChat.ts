@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { apiClient } from '@/utils/api'
 import { aiService } from '@/services/aiService'
 import type { StreamChunk } from '@/services/aiService'
+import i18n, { getCurrentLocale } from '@/i18n'
 
 export interface ChatMessage {
   id: string
@@ -45,6 +46,26 @@ export const useAIChatStore = defineStore('aiChat', () => {
     maxHistoryLength: 50
   })
 
+  const translate = (key: string, params?: Record<string, unknown>) => {
+    return i18n.global.t(key, params) as string
+  }
+
+  const resolveLocaleTag = () => {
+    const locale = i18n.global.locale.value || 'zh'
+    if (locale.toLowerCase().startsWith('en')) {
+      return 'en-US'
+    }
+    if (locale.toLowerCase().startsWith('zh')) {
+      return 'zh-CN'
+    }
+    return locale
+  }
+
+  const getQuickActions = () => ([
+    { key: 'help', label: translate('aiChat.quickActions.help') },
+    { key: 'examples', label: translate('aiChat.quickActions.examples') }
+  ])
+
   // 配置初始化状态
   const isConfigLoaded = ref(false)
 
@@ -65,10 +86,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         role: 'assistant',
         content: getWelcomeMessage(mode),
         timestamp: new Date(),
-        actions: [
-          { key: 'help', label: '查看帮助' },
-          { key: 'examples', label: '查看示例' }
-        ],
+        actions: getQuickActions(),
         metadata: { messageType: 'welcome' }  // 🔥 添加欢迎消息标记
       }],
       createdAt: new Date(),
@@ -203,7 +221,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
       console.error('AI API Error:', error)
 
       // Add fallback message
-      return await addMessage('assistant', '抱歉，AI服务暂时不可用。请稍后再试。')
+      return await addMessage('assistant', translate('aiChat.errors.serviceUnavailable'))
     }
   }
 
@@ -271,7 +289,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
           isTyping.value = false
           hasError = true
           if (assistantMessage) {
-            assistantMessage.content = chunk.message || '抱歉，流式传输过程中出现错误。'
+            assistantMessage.content = chunk.message || translate('aiChat.errors.streamingProcessError')
             if (assistantMessage.metadata) {
               assistantMessage.metadata.streaming = false
               assistantMessage.metadata.error = true
@@ -307,9 +325,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
     } catch (error) {
       isTyping.value = false
       console.error('Streaming error:', error)
-
       if (assistantMessage) {
-        assistantMessage.content = '抱歉，流式传输失败。请稍后再试。'
+        assistantMessage.content = translate('aiChat.errors.streamingFailed')
         if (assistantMessage.metadata) {
           assistantMessage.metadata.streaming = false
           assistantMessage.metadata.error = true
@@ -327,6 +344,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
       type: getMessageType(userMessage, currentSession.value?.mode || 'chat'),
       provider: settings.value.provider,
       model: settings.value.model,
+      locale: getCurrentLocale(),
       context: {
         mode: currentSession.value?.mode || 'chat',
         conversationHistory: getConversationHistory(),
@@ -364,33 +382,76 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
     if (mode === 'enhance') {
       return 'enhancement'
-    } else if (mode === 'check') {
-      return 'consistency'
-    } else if (lowerMessage.includes('大纲') || lowerMessage.includes('章节')) {
-      return 'outline'
-    } else if (lowerMessage.includes('角色') || lowerMessage.includes('人物')) {
-      return 'character'
-    } else if (lowerMessage.includes('设定') || lowerMessage.includes('世界')) {
-      return 'worldbuilding'
-    } else {
-      return 'general'
     }
+
+    if (mode === 'check') {
+      return 'consistency'
+    }
+
+    const mentionsOutline =
+      lowerMessage.includes('outline') ||
+      lowerMessage.includes('chapter') ||
+      message.includes('大纲') ||
+      message.includes('章节')
+
+    if (mentionsOutline) {
+      return 'outline'
+    }
+
+    const mentionsCharacter =
+      lowerMessage.includes('character') ||
+      lowerMessage.includes('persona') ||
+      message.includes('角色') ||
+      message.includes('人物')
+
+    if (mentionsCharacter) {
+      return 'character'
+    }
+
+    const mentionsWorldbuilding =
+      lowerMessage.includes('worldbuilding') ||
+      lowerMessage.includes('world-building') ||
+      lowerMessage.includes('world') ||
+      lowerMessage.includes('setting') ||
+      lowerMessage.includes('lore') ||
+      lowerMessage.includes('universe') ||
+      message.includes('设定') ||
+      message.includes('世界')
+
+    if (mentionsWorldbuilding) {
+      return 'worldbuilding'
+    }
+
+    return 'general'
   }
 
   const getResponseActions = (userMessage: string) => {
-    const message = userMessage.toLowerCase()
+    const lowerMessage = userMessage.toLowerCase()
+    const mentionsCharacter =
+      lowerMessage.includes('character') ||
+      lowerMessage.includes('persona') ||
+      userMessage.includes('角色') ||
+      userMessage.includes('人物')
 
-    if (message.includes('角色')) {
+    if (mentionsCharacter) {
       return [
-        { key: 'analyze-character', label: '深度分析' },
-        { key: 'suggest-traits', label: '性格建议' }
+        { key: 'analyze-character', label: translate('aiChat.responseActions.characterAnalyze') },
+        { key: 'suggest-traits', label: translate('aiChat.responseActions.characterTraits') }
       ]
     }
 
-    if (message.includes('设定')) {
+    const mentionsSetting =
+      lowerMessage.includes('setting') ||
+      lowerMessage.includes('world') ||
+      lowerMessage.includes('worldbuilding') ||
+      lowerMessage.includes('lore') ||
+      userMessage.includes('设定') ||
+      userMessage.includes('世界')
+
+    if (mentionsSetting) {
       return [
-        { key: 'expand-setting', label: '详细扩展' },
-        { key: 'check-logic', label: '逻辑检查' }
+        { key: 'expand-setting', label: translate('aiChat.responseActions.settingExpand') },
+        { key: 'check-logic', label: translate('aiChat.responseActions.settingLogic') }
       ]
     }
 
@@ -416,10 +477,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         content: getWelcomeMessage(currentSession.value.mode),
         timestamp: new Date(),
         metadata: { messageType: 'welcome' },
-        actions: [
-          { key: 'help', label: '查看帮助' },
-          { key: 'examples', label: '查看示例' }
-        ]
+        actions: getQuickActions()
       }
 
       // 添加新的欢迎消息到服务器
@@ -547,11 +605,18 @@ export const useAIChatStore = defineStore('aiChat', () => {
   // Helper functions
   const generateSessionTitle = (mode: 'chat' | 'enhance' | 'check') => {
     const titles: Record<'chat' | 'enhance' | 'check', string> = {
-      chat: '智能对话',
-      enhance: '内容完善',
-      check: '质量检查'
+      chat: translate('aiChat.modeTitles.chat'),
+      enhance: translate('aiChat.modeTitles.enhance'),
+      check: translate('aiChat.modeTitles.check')
     }
-    return `${titles[mode]} - ${new Date().toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    const localeTag = resolveLocaleTag()
+    const timestamp = new Date().toLocaleString(localeTag, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    return `${titles[mode] || titles.chat} - ${timestamp}`
   }
 
   const generateId = () => {
@@ -560,18 +625,18 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
   const getWelcomeMessage = (mode: 'chat' | 'enhance' | 'check') => {
     const messages: Record<'chat' | 'enhance' | 'check', string> = {
-      chat: '你好！我是你的AI创作助手。我可以帮你完善角色设定、扩展世界观、生成章节大纲，还能进行一致性检查。有什么我可以帮助你的吗？',
-      enhance: '欢迎来到内容完善模式！我专注于帮你完善角色设定、扩展世界观设定，以及优化情节内容。请告诉我你想要完善什么内容。',
-      check: '欢迎来到质量检查模式！我专注于检查内容的一致性、逻辑性和连贯性。请提供需要检查的内容或告诉我要检查什么。'
+      chat: translate('aiChat.welcome.chat'),
+      enhance: translate('aiChat.welcome.enhance'),
+      check: translate('aiChat.welcome.check')
     }
     return messages[mode] || messages.chat
   }
 
   const getModeDescription = (mode: 'chat' | 'enhance' | 'check') => {
     const descriptions: Record<'chat' | 'enhance' | 'check', string> = {
-      chat: '切换到对话模式。你可以与我自由对话，寻求创作建议。',
-      enhance: '切换到完善模式。我将帮你完善角色、设定和情节。',
-      check: '切换到检查模式。我将检查作品的一致性和逻辑性。'
+      chat: translate('aiChat.modeDescriptions.chat'),
+      enhance: translate('aiChat.modeDescriptions.enhance'),
+      check: translate('aiChat.modeDescriptions.check')
     }
     return descriptions[mode] || descriptions.chat
   }

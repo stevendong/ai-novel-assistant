@@ -59,6 +59,39 @@
     "suggestion": "Suggestion:",
     "pending": "Pending"
   },
+  "aiChat": {
+    "quickActions": {
+      "help": "View help",
+      "examples": "View examples"
+    },
+    "errors": {
+      "serviceUnavailable": "Sorry, the AI service is temporarily unavailable. Please try again later.",
+      "streamingProcessError": "Sorry, an error occurred while streaming.",
+      "streamingFailed": "Sorry, the stream failed. Please try again later.",
+      "requestAborted": "Request canceled"
+    },
+    "modeTitles": {
+      "chat": "Smart Chat",
+      "enhance": "Content Enhancement",
+      "check": "Quality Check"
+    },
+    "modeDescriptions": {
+      "chat": "Switched to chat mode. Feel free to ask for creative assistance.",
+      "enhance": "Switched to enhancement mode. I can help refine characters, settings, and plot.",
+      "check": "Switched to check mode. I will focus on consistency and logic issues."
+    },
+    "welcome": {
+      "chat": "Hi! I'm your AI writing partner. I can help refine characters, expand worldbuilding, draft chapter outlines, and run consistency checks. What would you like to work on?",
+      "enhance": "Welcome to enhancement mode! I specialize in enriching characters, deepening settings, and improving plot details. Let me know what you'd like to polish.",
+      "check": "Welcome to quality check mode! I focus on spotting consistency, logic, and continuity issues. Tell me what to review."
+    },
+    "responseActions": {
+      "characterAnalyze": "Deep Analysis",
+      "characterTraits": "Suggest Traits",
+      "settingExpand": "Expand Details",
+      "settingLogic": "Logic Check"
+    }
+  },
   "footer": {
     "projectLabel": "Project:",
     "noProjectSelected": "No project selected",

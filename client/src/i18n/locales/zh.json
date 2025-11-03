@@ -59,6 +59,39 @@
     "suggestion": "建议：",
     "pending": "待完善"
   },
+  "aiChat": {
+    "quickActions": {
+      "help": "查看帮助",
+      "examples": "查看示例"
+    },
+    "errors": {
+      "serviceUnavailable": "抱歉，AI服务暂时不可用。请稍后再试。",
+      "streamingProcessError": "抱歉，流式传输过程中出现错误。",
+      "streamingFailed": "抱歉，流式传输失败。请稍后再试。",
+      "requestAborted": "请求已取消"
+    },
+    "modeTitles": {
+      "chat": "智能对话",
+      "enhance": "内容完善",
+      "check": "质量检查"
+    },
+    "modeDescriptions": {
+      "chat": "切换到对话模式。你可以与我自由对话，寻求创作建议。",
+      "enhance": "切换到完善模式。我将帮你完善角色、设定和情节。",
+      "check": "切换到检查模式。我将检查作品的一致性和逻辑性。"
+    },
+    "welcome": {
+      "chat": "你好！我是你的AI创作助手。我可以帮你完善角色设定、扩展世界观、生成章节大纲，还能进行一致性检查。有什么我可以帮助你的吗？",
+      "enhance": "欢迎来到内容完善模式！我专注于帮你完善角色设定、扩展世界观设定，以及优化情节内容。请告诉我你想要完善什么内容。",
+      "check": "欢迎来到质量检查模式！我专注于检查内容的一致性、逻辑性和连贯性。请提供需要检查的内容或告诉我要检查什么。"
+    },
+    "responseActions": {
+      "characterAnalyze": "深度分析",
+      "characterTraits": "性格建议",
+      "settingExpand": "详细扩展",
+      "settingLogic": "逻辑检查"
+    }
+  },
   "footer": {
     "projectLabel": "项目：",
     "noProjectSelected": "未选择项目",

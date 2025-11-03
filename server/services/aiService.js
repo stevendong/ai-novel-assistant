@@ -9,6 +9,75 @@ const {
 const logger = require('../utils/logger');
 const memoryService = require('./memoryService');
 
+const DEFAULT_LOCALE = 'zh';
+
+const LOCALE_PROMPTS = {
+  zh: {
+    intro: '你是一个专业的小说创作助手。',
+    responseDirective: '请使用简体中文回答，并根据需要对用户提供的信息进行润色，使其自然流畅。',
+    novelInfoHeading: '当前小说信息：',
+    titleLabel: '标题：',
+    descriptionLabel: '描述：',
+    genreLabel: '类型：',
+    mainCharactersHeading: '主要角色：',
+    worldSettingsHeading: '世界设定：',
+    contentRestrictionsLabel: '内容限制：分级',
+    typeGuidance: {
+      creative: '请以创意和想象力为重点回答。',
+      analytical: '请以逻辑分析和结构化思考为重点回答。',
+      consistency: '请重点关注内容的一致性和连贯性。',
+      default: '请提供有帮助的建议和分析。'
+    },
+    memory: {
+      heading: '=== 相关记忆上下文 ===',
+      intro: '以下是与当前对话相关的历史记忆，请在回答时参考这些信息以保持连贯性和个性化：',
+      closing: '请基于这些记忆信息和当前小说背景，提供连贯、一致且个性化的回答。',
+      conflictNotice: '如果发现记忆中的信息与当前设定有冲突，请优先使用当前设定并提醒我。',
+      typeLabel: '类型',
+      importantTag: '重要'
+    }
+  },
+  en: {
+    intro: 'You are a professional novel writing assistant.',
+    responseDirective: 'Always respond in English to match the current application language while keeping the tone clear and helpful.',
+    novelInfoHeading: 'Current novel information:',
+    titleLabel: 'Title: ',
+    descriptionLabel: 'Description: ',
+    genreLabel: 'Genre: ',
+    mainCharactersHeading: 'Main characters:',
+    worldSettingsHeading: 'World settings:',
+    contentRestrictionsLabel: 'Content rating: ',
+    typeGuidance: {
+      creative: 'Focus on creativity and imagination in your response.',
+      analytical: 'Prioritize logical analysis and structured thinking.',
+      consistency: 'Keep the response focused on consistency and coherence.',
+      default: 'Provide helpful suggestions and analysis.'
+    },
+    memory: {
+      heading: '=== Related memory context ===',
+      intro: 'The following memories are relevant to this conversation. Use them to keep replies coherent and personalized:',
+      closing: 'Use these memories together with the current novel context to deliver coherent, consistent, and personalized answers.',
+      conflictNotice: 'If the memories conflict with the current setup, prioritize the current setup and point out the discrepancy.',
+      typeLabel: 'Type',
+      importantTag: 'Important'
+    }
+  }
+};
+
+function normalizeLocale(locale) {
+  if (!locale) return DEFAULT_LOCALE;
+  const normalized = String(locale).toLowerCase();
+  if (LOCALE_PROMPTS[normalized]) {
+    return normalized;
+  }
+  const base = normalized.split('-')[0];
+  return LOCALE_PROMPTS[base] ? base : DEFAULT_LOCALE;
+}
+
+function getLocaleConfig(locale) {
+  return LOCALE_PROMPTS[normalizeLocale(locale)];
+}
+
 class AIService {
   constructor() {
     this.providers = new Map();
@@ -470,6 +539,8 @@ class AIService {
     const startTime = Date.now();
 
     try {
+      const locale = normalizeLocale(options.locale);
+
       // 1. 检索相关记忆（如果启用且有用户ID）
       let memories = [];
       if (options.userId) {
@@ -483,8 +554,8 @@ class AIService {
 
       // 2. 构建增强的系统提示词
       const systemPrompt = memories.length > 0
-        ? this.buildMemoryEnhancedPrompt(novelContext, type, memories)
-        : this.buildSystemPrompt(novelContext, type);
+        ? this.buildMemoryEnhancedPrompt(novelContext, type, memories, locale)
+        : this.buildSystemPrompt(novelContext, type, locale);
 
       const messages = [
         { role: 'system', content: systemPrompt },
@@ -499,7 +570,14 @@ class AIService {
       });
 
       // 4. 解析响应
-      const parsedResponse = this.parseResponse(response.content, type, novelContext);
+      const parsedResponse = this.parseResponse(response.content, type, novelContext, locale);
+      const metadata = {
+        ...parsedResponse.metadata,
+        memoriesUsed: memories.length,
+        memoryEnhanced: memories.length > 0,
+        processingTime: Date.now() - startTime,
+        language: locale
+      };
 
       // 5. 异步更新记忆（不阻塞响应）
       if (options.userId) {
@@ -507,22 +585,18 @@ class AIService {
           userId: options.userId,
           novelId: novelContext?.id,
           mode: type,
-          messageType: options.messageType
+          messageType: options.messageType,
+          locale
         });
       }
 
       // 6. 记录性能指标
-      const duration = Date.now() - startTime;
+      const duration = metadata.processingTime;
       logger.info(`AI Response with Memory: ${duration}ms, memories used: ${memories.length}`);
 
       return {
         ...parsedResponse,
-        metadata: {
-          ...parsedResponse.metadata,
-          memoriesUsed: memories.length,
-          memoryEnhanced: memories.length > 0,
-          processingTime: duration
-        }
+        metadata
       };
 
     } catch (error) {
@@ -536,7 +610,9 @@ class AIService {
   async generateResponseFallback(novelContext, userMessage, type = 'general', options = {}) {
     logger.info('Using fallback mode (no memory enhancement)');
 
-    const systemPrompt = this.buildSystemPrompt(novelContext, type);
+    const locale = normalizeLocale(options.locale);
+    const startTime = Date.now();
+    const systemPrompt = this.buildSystemPrompt(novelContext, type, locale);
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -549,29 +625,41 @@ class AIService {
       model: options.model
     });
 
-    return this.parseResponse(response.content, type, novelContext);
+    const parsedResponse = this.parseResponse(response.content, type, novelContext, locale);
+    const processingTime = Date.now() - startTime;
+    return {
+      ...parsedResponse,
+      metadata: {
+        ...parsedResponse.metadata,
+        language: locale,
+        memoriesUsed: 0,
+        memoryEnhanced: false,
+        processingTime
+      }
+    };
   }
 
   // 构建记忆增强的提示词
-  buildMemoryEnhancedPrompt(novelContext, type, memories) {
-    let basePrompt = this.buildSystemPrompt(novelContext, type);
+  buildMemoryEnhancedPrompt(novelContext, type, memories, locale = DEFAULT_LOCALE) {
+    const config = getLocaleConfig(locale);
+    let basePrompt = this.buildSystemPrompt(novelContext, type, locale);
 
     if (memories && memories.length > 0) {
-      basePrompt += '\n\n=== 相关记忆上下文 ===\n';
-      basePrompt += '以下是与当前对话相关的历史记忆，请在回答时参考这些信息以保持连贯性和个性化：\n';
+      basePrompt += `\n\n${config.memory.heading}\n`;
+      basePrompt += `${config.memory.intro}\n`;
 
       memories.forEach((memory, index) => {
         basePrompt += `\n${index + 1}. ${memory.content}`;
         if (memory.metadata?.memory_type) {
-          basePrompt += ` [类型: ${memory.metadata.memory_type}]`;
+          basePrompt += ` [${config.memory.typeLabel}: ${memory.metadata.memory_type}]`;
         }
         if (memory.metadata?.importance > 3) {
-          basePrompt += ` [重要]`;
+          basePrompt += ` [${config.memory.importantTag}]`;
         }
       });
 
-      basePrompt += '\n\n请基于这些记忆信息和当前小说背景，提供连贯、一致且个性化的回答。';
-      basePrompt += '\n如果发现记忆中的信息与当前设定有冲突，请优先使用当前设定并提醒我。';
+      basePrompt += `\n\n${config.memory.closing}`;
+      basePrompt += `\n${config.memory.conflictNotice}`;
     }
 
     return basePrompt;
@@ -730,6 +818,7 @@ class AIService {
     const startTime = Date.now();
 
     try {
+      const locale = normalizeLocale(options.locale);
       // 1. 检索相关记忆（如果启用且有用户ID）
       let memories = [];
       if (options.userId) {
@@ -743,8 +832,8 @@ class AIService {
 
       // 2. 构建增强的系统提示词
       const systemPrompt = memories.length > 0
-        ? this.buildMemoryEnhancedPrompt(novelContext, type, memories)
-        : this.buildSystemPrompt(novelContext, type);
+        ? this.buildMemoryEnhancedPrompt(novelContext, type, memories, locale)
+        : this.buildSystemPrompt(novelContext, type, locale);
 
       const messages = [
         { role: 'system', content: systemPrompt },
@@ -765,7 +854,8 @@ class AIService {
           userId: options.userId,
           novelId: novelContext?.id,
           mode: type,
-          messageType: options.messageType
+          messageType: options.messageType,
+          locale
         },
         memoriesUsed: memories.length,
         startTime
@@ -782,7 +872,8 @@ class AIService {
   async generateResponseStreamFallback(novelContext, userMessage, type = 'general', options = {}) {
     logger.info('Using fallback mode for streaming (no memory enhancement)');
 
-    const systemPrompt = this.buildSystemPrompt(novelContext, type);
+    const locale = normalizeLocale(options.locale);
+    const systemPrompt = this.buildSystemPrompt(novelContext, type, locale);
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -844,43 +935,56 @@ class AIService {
     return wrappedStream();
   }
 
-  buildSystemPrompt(novelContext, type) {
-    let basePrompt = '你是一个专业的小说创作助手。';
-    
+  buildSystemPrompt(novelContext, type, locale = DEFAULT_LOCALE) {
+    const config = getLocaleConfig(locale);
+    let basePrompt = config.intro;
+
     if (novelContext) {
-      basePrompt += `\n当前小说信息：\n标题：${novelContext.title}\n描述：${novelContext.description}\n类型：${novelContext.genre}`;
-      
+      basePrompt += `\n${config.novelInfoHeading}`;
+
+      if (novelContext.title) {
+        basePrompt += `\n${config.titleLabel}${novelContext.title}`;
+      }
+      if (novelContext.description) {
+        basePrompt += `\n${config.descriptionLabel}${novelContext.description}`;
+      }
+      if (novelContext.genre) {
+        basePrompt += `\n${config.genreLabel}${novelContext.genre}`;
+      }
+
       if (novelContext.characters?.length > 0) {
-        basePrompt += `\n主要角色：\n${novelContext.characters.map(c => `- ${c.name}: ${c.description}`).join('\n')}`;
+        const characterLines = novelContext.characters
+          .map(c => `- ${c.name}${c.description ? `: ${c.description}` : ''}`)
+          .join('\n');
+        basePrompt += `\n${config.mainCharactersHeading}\n${characterLines}`;
       }
-      
+
       if (novelContext.settings?.length > 0) {
-        basePrompt += `\n世界设定：\n${novelContext.settings.map(s => `- ${s.name}: ${s.description}`).join('\n')}`;
+        const settingLines = novelContext.settings
+          .map(s => `- ${s.name}${s.description ? `: ${s.description}` : ''}`)
+          .join('\n');
+        basePrompt += `\n${config.worldSettingsHeading}\n${settingLines}`;
       }
-      
-      if (novelContext.aiSettings) {
-        basePrompt += `\n内容限制：分级${novelContext.aiSettings.rating}`;
+
+      if (novelContext.aiSettings?.rating) {
+        basePrompt += `\n${config.contentRestrictionsLabel}${novelContext.aiSettings.rating}`;
       }
     }
 
-    switch (type) {
-      case 'creative':
-        basePrompt += '\n请以创意和想象力为重点回答。';
-        break;
-      case 'analytical':
-        basePrompt += '\n请以逻辑分析和结构化思考为重点回答。';
-        break;
-      case 'consistency':
-        basePrompt += '\n请重点关注内容的一致性和连贯性。';
-        break;
-      default:
-        basePrompt += '\n请提供有帮助的建议和分析。';
+    const typeInstruction = config.typeGuidance?.[type] || config.typeGuidance?.default;
+    if (typeInstruction) {
+      basePrompt += `\n${typeInstruction}`;
+    }
+
+    if (config.responseDirective) {
+      basePrompt += `\n${config.responseDirective}`;
     }
 
     return basePrompt;
   }
 
-  parseResponse(content, type, novelContext = null) {
+  parseResponse(content, type, novelContext = null, locale = DEFAULT_LOCALE) {
+    const normalizedLocale = normalizeLocale(locale);
     // Enhanced response structure
     const result = {
       message: content,
@@ -894,11 +998,53 @@ class AIService {
         hasStructuredContent: false
       }
     };
+    result.metadata.language = normalizedLocale;
 
     // Extract structured information with multiple patterns
-    const suggestionMarkers = ['建议：', '建议:', '💡', '✅', '推荐：', '推荐:'];
-    const questionMarkers = ['问题：', '问题:', '❓', '🤔', '需要考虑：', '需要考虑:'];
-    const actionMarkers = ['下一步：', '下一步:', '🎯', '⚡', '行动建议：', '行动建议:'];
+    const suggestionMarkers = [
+      '建议：',
+      '建议:',
+      '💡',
+      '✅',
+      '推荐：',
+      '推荐:',
+      'Suggestion:',
+      'Suggestions:',
+      'Tip:',
+      'Tips:',
+      'Recommendation:',
+      'Recommendations:'
+    ];
+    const questionMarkers = [
+      '问题：',
+      '问题:',
+      '❓',
+      '🤔',
+      '需要考虑：',
+      '需要考虑:',
+      'Question:',
+      'Questions:',
+      'Consider:',
+      'Considerations:',
+      'Open question:',
+      'Reflection:'
+    ];
+    const actionMarkers = [
+      '下一步：',
+      '下一步:',
+      '🎯',
+      '⚡',
+      '行动建议：',
+      '行动建议:',
+      'Next step:',
+      'Next steps:',
+      'Next Step:',
+      'Next Steps:',
+      'Action:',
+      'Actions:',
+      'Recommended action:',
+      'Recommended actions:'
+    ];
 
     result.suggestions = this.extractBulletPoints(content, suggestionMarkers);
     result.questions = this.extractBulletPoints(content, questionMarkers);
@@ -931,7 +1077,7 @@ class AIService {
     }
 
     // Generate follow-up suggestions based on content
-    result.followUps = this.generateFollowUps(content, type, novelContext);
+    result.followUps = this.generateFollowUps(content, type, novelContext, normalizedLocale);
 
     return result;
   }
@@ -1009,23 +1155,63 @@ class AIService {
     return points;
   }
 
-  generateFollowUps(content, type, novelContext) {
+  generateFollowUps(content, type, novelContext, locale = DEFAULT_LOCALE) {
+    const normalizedLocale = normalizeLocale(locale);
     const followUps = [];
+    const text = content || '';
+    const lowerText = text.toLowerCase();
 
-    // Generate context-aware follow-up questions
-    if (type === 'character' && content.includes('性格')) {
-      followUps.push('要不要继续完善这个角色的背景故事？');
-      followUps.push('需要为这个角色设计一些具体的对话风格吗？');
+    const isCharacterTopic =
+      type === 'character' ||
+      text.includes('角色') ||
+      text.includes('性格') ||
+      lowerText.includes('character') ||
+      lowerText.includes('personality');
+
+    if (isCharacterTopic) {
+      if (normalizedLocale === 'en') {
+        followUps.push("Should I expand this character's backstory even further?");
+        followUps.push("Do you want suggestions for this character's dialogue style or traits?");
+      } else {
+        followUps.push('要不要继续完善这个角色的背景故事？');
+        followUps.push('需要为这个角色设计一些具体的对话风格吗？');
+      }
     }
 
-    if (type === 'worldbuilding' && content.includes('设定')) {
-      followUps.push('需要进一步扩展这个世界的历史背景吗？');
-      followUps.push('要为这个设定添加一些具体的规则限制吗？');
+    const isWorldbuildingTopic =
+      type === 'worldbuilding' ||
+      text.includes('设定') ||
+      text.includes('世界') ||
+      lowerText.includes('world') ||
+      lowerText.includes('setting') ||
+      lowerText.includes('lore');
+
+    if (isWorldbuildingTopic) {
+      if (normalizedLocale === 'en') {
+        followUps.push("Would you like me to expand the world's history or lore?");
+        followUps.push('Should we define more rules or constraints for this setting?');
+      } else {
+        followUps.push('需要进一步扩展这个世界的历史背景吗？');
+        followUps.push('要为这个设定添加一些具体的规则限制吗？');
+      }
     }
 
-    if (type === 'consistency' && content.includes('问题')) {
-      followUps.push('要我帮你制定修复这些问题的具体方案吗？');
-      followUps.push('需要检查其他章节是否有类似问题吗？');
+    const mentionsConsistency =
+      type === 'consistency' ||
+      text.includes('问题') ||
+      text.includes('矛盾') ||
+      lowerText.includes('issue') ||
+      lowerText.includes('conflict') ||
+      lowerText.includes('inconsistency');
+
+    if (mentionsConsistency) {
+      if (normalizedLocale === 'en') {
+        followUps.push('Would you like a concrete plan to resolve these issues?');
+        followUps.push('Should I check other chapters for similar inconsistencies?');
+      } else {
+        followUps.push('要我帮你制定修复这些问题的具体方案吗？');
+        followUps.push('需要检查其他章节是否有类似问题吗？');
+      }
     }
 
     return followUps.slice(0, 3); // Limit to 3 follow-ups

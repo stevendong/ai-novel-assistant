@@ -1,6 +1,11 @@
 import { api, type ApiResponse } from '@/utils/api'
+import i18n, { getCurrentLocale } from '@/i18n'
 
 const API_BASE = '/api'
+
+const translate = (key: string, params?: Record<string, unknown>) => {
+  return i18n.global.t(key, params) as string
+}
 
 export interface AIResponse {
   content: string
@@ -145,7 +150,8 @@ class AIService {
       context,
       type: (options as any).type || 'general',
       provider: (options as any).provider,
-      model: (options as any).model
+      model: (options as any).model,
+      locale: getCurrentLocale()
     }, config)
 
     return response.data
@@ -180,7 +186,8 @@ class AIService {
           context,
           type: options.type || 'general',
           provider: options.provider,
-          model: options.model
+          model: options.model,
+          locale: getCurrentLocale()
         }),
         signal: options.signal
       })
@@ -236,7 +243,7 @@ class AIService {
         onStream({
           type: 'error',
           reason: 'abort',
-          message: '请求已取消'
+          message: translate('aiChat.errors.requestAborted')
         })
         return
       }

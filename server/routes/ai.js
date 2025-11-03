@@ -9,7 +9,7 @@ const router = express.Router();
 // 通用AI对话接口（增强版本，支持记忆）
 router.post('/chat', requireAuth, async (req, res) => {
   try {
-    const { novelId, message, context, type, provider, model } = req.body;
+    const { novelId, message, context, type, provider, model, locale } = req.body;
     const userId = req.user.id; // 从认证中间件获取用户ID
 
     if (!message) {
@@ -44,7 +44,8 @@ router.post('/chat', requireAuth, async (req, res) => {
       taskType: type,
       temperature: undefined,
       userId: userId, // 传递用户ID用于记忆功能
-      messageType: context?.messageType || 'general'
+      messageType: context?.messageType || 'general',
+      locale
     });
 
     res.json(response);
@@ -60,7 +61,7 @@ router.post('/chat', requireAuth, async (req, res) => {
 // 流式AI对话接口
 router.post('/chat/stream', requireAuth, async (req, res) => {
   try {
-    const { novelId, message, context, type, provider, model } = req.body;
+    const { novelId, message, context, type, provider, model, locale } = req.body;
     
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -103,7 +104,8 @@ router.post('/chat/stream', requireAuth, async (req, res) => {
         taskType: type,
         temperature: undefined,
         userId: req.user?.id,
-        messageType: type
+        messageType: context?.messageType || type,
+        locale
       });
 
       // 处理流式响应
