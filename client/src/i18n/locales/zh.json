@@ -387,16 +387,30 @@
     "outline": {
       "actions": {
         "generate": "AI生成大纲",
-        "clear": "清空大纲"
+        "clear": "清空大纲",
+        "cancel": "取消生成"
       },
       "hints": {
         "needTitle": "请先填写章节标题"
       },
       "progress": {
-        "preparing": "AI正在分析章节信息...",
-        "generating": "AI正在生成大纲...",
-        "formatting": "正在格式化内容...",
-        "presenting": "正在呈现大纲..."
+        "title": "大纲生成器",
+        "status": {
+          "preparing": "正在准备提示词...",
+          "analyzing": "正在分析章节信息...",
+          "connected": "已连接到 AI...",
+          "drafting": "AI 正在构思大纲...",
+          "structuring": "AI 正在整理结构...",
+          "finalizing": "正在整理结果...",
+          "presenting": "正在呈现大纲...",
+          "cancelling": "正在取消..."
+        },
+        "milestones": {
+          "start": "开始",
+          "analysis": "分析",
+          "structure": "结构",
+          "finalize": "收尾"
+        }
       },
       "options": {
         "title": "生成选项",
@@ -434,6 +448,9 @@
         "needTitle": "请先填写章节标题",
         "success": "大纲生成成功！",
         "failed": "大纲生成失败，请重试",
+        "streamFailed": "流式传输失败，请稍后重试。",
+        "cancelled": "已取消大纲生成",
+        "emptyResult": "AI 返回的内容为空。",
         "clearConfirmTitle": "确认清空大纲？",
         "clearConfirmContent": "此操作将清空当前大纲内容，是否继续？",
         "cleared": "大纲已清空"

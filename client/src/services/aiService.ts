@@ -454,6 +454,54 @@ class AIService {
     return this.parseChapterOutlineResponse(content, chapterNumber, chapterTitle, targetWords)
   }
 
+  async generateChapterOutlineStream(
+    params: ChapterOutlineParams,
+    onStream: StreamHandler
+  ): Promise<void> {
+    this.ensureAssistantEnabled()
+
+    const {
+      novelId,
+      chapterId,
+      chapterNumber,
+      chapterTitle,
+      existingOutline = '',
+      characters = [],
+      settings = [],
+      targetWords = 2000,
+      previousChapterSummary = '',
+      nextChapterPlan = '',
+      signal
+    } = params
+
+    const prompt = this.buildChapterOutlinePrompt({
+      chapterNumber,
+      chapterTitle,
+      existingOutline,
+      characters,
+      settings,
+      targetWords,
+      previousChapterSummary,
+      nextChapterPlan
+    })
+
+    return this.chatStream(
+      novelId,
+      prompt,
+      onStream,
+      {
+        characters,
+        settings,
+        chapterOutlineGeneration: true,
+        chapterId
+      },
+      {
+        type: 'creative',
+        signal
+      }
+    )
+  }
+
   // 构建章节大纲生成提示词
   buildChapterOutlinePrompt(params: any): string {
     const {

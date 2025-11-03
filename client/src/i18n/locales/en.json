@@ -387,16 +387,30 @@
     "outline": {
       "actions": {
         "generate": "Generate Outline",
-        "clear": "Clear Outline"
+        "clear": "Clear Outline",
+        "cancel": "Cancel"
       },
       "hints": {
         "needTitle": "Please enter the chapter title first"
       },
       "progress": {
-        "preparing": "Analyzing chapter context...",
-        "generating": "Generating outline...",
-        "formatting": "Formatting outline content...",
-        "presenting": "Presenting outline..."
+        "title": "Outline Builder",
+        "status": {
+          "preparing": "Preparing outline prompt...",
+          "analyzing": "Analyzing chapter context...",
+          "connected": "Connected to AI...",
+          "drafting": "Drafting outline ideas...",
+          "structuring": "Structuring outline details...",
+          "finalizing": "Finalizing results...",
+          "presenting": "Presenting outline...",
+          "cancelling": "Cancelling..."
+        },
+        "milestones": {
+          "start": "Start",
+          "analysis": "Analysis",
+          "structure": "Structure",
+          "finalize": "Finalize"
+        }
       },
       "options": {
         "title": "Generation Options",
@@ -434,6 +448,9 @@
         "needTitle": "Please enter the chapter title first",
         "success": "Outline generated successfully!",
         "failed": "Failed to generate outline. Please try again.",
+        "streamFailed": "Streaming failed. Please try again later.",
+        "cancelled": "Outline generation cancelled",
+        "emptyResult": "AI returned empty outline.",
         "clearConfirmTitle": "Clear current outline?",
         "clearConfirmContent": "This will remove the current outline content. Continue?",
         "cleared": "Outline cleared."

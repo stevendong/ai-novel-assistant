@@ -31,8 +31,49 @@
 
     <!-- 生成状态提示 -->
     <div v-if="generating" class="generating-indicator">
-      <a-spin size="small" />
-      <span class="generating-text">{{ generatingText }}</span>
+      <div class="indicator-header">
+        <div class="status-icon">
+          <BulbOutlined />
+        </div>
+        <div class="status-text">
+          <span class="generating-title">{{ t('chapterEditor.outline.progress.title') }}</span>
+          <span class="generating-subtitle">{{ generatingText }}</span>
+        </div>
+        <div class="progress-percentage">{{ progress }}%</div>
+        <a-button
+          type="default"
+          size="small"
+          danger
+          @click="handleCancel"
+          class="cancel-button"
+        >
+          <template #icon><CloseCircleOutlined /></template>
+          {{ t('chapterEditor.outline.actions.cancel') }}
+        </a-button>
+      </div>
+
+      <div class="custom-progress-bar">
+        <div class="progress-track">
+          <div class="progress-fill" :style="{ width: `${progress}%` }">
+            <div class="progress-shimmer"></div>
+          </div>
+        </div>
+        <div class="progress-milestones">
+          <div
+            v-for="milestone in milestones"
+            :key="milestone.value"
+            class="milestone"
+            :class="{
+              active: progress >= milestone.value,
+              current: progress >= milestone.value && progress < milestone.value + 25
+            }"
+            :style="{ left: `${milestone.value}%` }"
+          >
+            <div class="milestone-dot"></div>
+            <div class="milestone-label">{{ milestone.label }}</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 生成选项（可展开） -->
@@ -69,9 +110,10 @@ import { message, Modal } from 'ant-design-vue'
 import {
   BulbOutlined,
   ClearOutlined,
+  CloseCircleOutlined,
   QuestionCircleOutlined
 } from '@ant-design/icons-vue'
-import { aiService, type ChapterOutlineData } from '@/services/aiService'
+import { aiService, type ChapterOutlineData, type StreamChunk } from '@/services/aiService'
 import { useI18n } from 'vue-i18n'
 
 interface Props {
@@ -115,14 +157,23 @@ const emit = defineEmits<{
 
 // 状态
 const generating = ref(false)
-const generatingStatus = ref<'preparing' | 'generating' | 'formatting' | 'presenting'>('preparing')
+const progress = ref(0)
+const generatingStatus = ref<'preparing' | 'analyzing' | 'connected' | 'drafting' | 'structuring' | 'finalizing' | 'presenting' | 'cancelling'>('preparing')
+const abortController = ref<AbortController | null>(null)
+const isCancelled = ref(false)
 const { t } = useI18n()
-const generatingText = computed(() => t(`chapterEditor.outline.progress.${generatingStatus.value}`))
+const generatingText = computed(() => t(`chapterEditor.outline.progress.status.${generatingStatus.value}`))
 const activeOptionsKey = ref<string[]>([])
 const options = ref<GenerateOptions>({
   style: 'standard',
   focus: ['plot', 'character']
 })
+const milestones = computed(() => ([
+  { value: 0, label: t('chapterEditor.outline.progress.milestones.start') },
+  { value: 25, label: t('chapterEditor.outline.progress.milestones.analysis') },
+  { value: 60, label: t('chapterEditor.outline.progress.milestones.structure') },
+  { value: 90, label: t('chapterEditor.outline.progress.milestones.finalize') }
+]))
 
 // 计算属性
 const canGenerate = computed(() => {
@@ -143,6 +194,218 @@ const getTypewriterDelay = () => {
   return speeds[props.typewriterSpeed]
 }
 
+let typewriterCancelled = false
+let typewriterTimer: ReturnType<typeof setTimeout> | null = null
+let typewriterResolve: (() => void) | null = null
+
+const cancelTypewriterEffect = () => {
+  typewriterCancelled = true
+  if (typewriterTimer) {
+    clearTimeout(typewriterTimer)
+    typewriterTimer = null
+  }
+  if (typewriterResolve) {
+    typewriterResolve()
+    typewriterResolve = null
+  }
+}
+
+const typewriterEffect = async (text: string): Promise<void> => {
+  cancelTypewriterEffect()
+  typewriterCancelled = false
+  emit('update:outline', '')
+
+  if (!text) {
+    return
+  }
+
+  const chars = Array.from(text)
+  const delayPerChar = getTypewriterDelay()
+  const maxDuration = 6000
+  const effectiveDelay = chars.length > 0
+    ? Math.min(delayPerChar, maxDuration / chars.length)
+    : delayPerChar
+
+  let currentText = ''
+
+  for (let i = 0; i < chars.length; i++) {
+    if (typewriterCancelled) break
+
+    currentText += chars[i]
+    emit('update:outline', currentText)
+
+    if (i % 5 === 0) {
+      await new Promise<void>((resolve) => {
+        typewriterResolve = resolve
+        typewriterTimer = setTimeout(() => {
+          typewriterTimer = null
+          typewriterResolve = null
+          resolve()
+        }, effectiveDelay)
+      })
+
+      if (typewriterCancelled) {
+        break
+      }
+    }
+  }
+
+  if (!typewriterCancelled) {
+    emit('update:outline', currentText)
+  }
+
+  if (typewriterTimer) {
+    clearTimeout(typewriterTimer)
+    typewriterTimer = null
+  }
+  if (typewriterResolve) {
+    typewriterResolve()
+    typewriterResolve = null
+  }
+}
+
+const formatOutlineContent = (content: string, finalize = true): string => {
+  if (!content) return ''
+
+  let normalized = content
+    .replace(/\r\n/g, '\n')
+    .replace(/```(?:json|markdown|text)?\n?/gi, '')
+    .replace(/```/g, '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\t/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+
+  if (finalize) {
+    normalized = normalized.replace(/\n{3,}/g, '\n\n').trim()
+  }
+
+  return normalized
+}
+
+const performGenerate = async () => {
+  const existingSnapshot = props.existingOutline || ''
+  let rawAggregatedContent = ''
+  let streamError: string | null = null
+
+  try {
+    generating.value = true
+    isCancelled.value = false
+    progress.value = 5
+    generatingStatus.value = 'analyzing'
+
+    cancelTypewriterEffect()
+    abortController.value?.abort()
+
+    abortController.value = new AbortController()
+
+    await aiService.generateChapterOutlineStream(
+      {
+        novelId: props.novelId,
+        chapterId: props.chapterId || '',
+        chapterNumber: props.chapterNumber,
+        chapterTitle: props.chapterTitle,
+        existingOutline: props.existingOutline,
+        characters: props.characters || [],
+        settings: props.settings || [],
+        targetWords: props.targetWordCount || 2000,
+        previousChapterSummary: props.previousChapterSummary,
+        nextChapterPlan: props.nextChapterPlan,
+        signal: abortController.value.signal
+      },
+      (chunk: StreamChunk) => {
+        switch (chunk.type) {
+          case 'connected':
+            progress.value = Math.max(progress.value, 10)
+            generatingStatus.value = 'connected'
+            break
+          case 'chunk':
+            if (chunk.content) {
+              rawAggregatedContent += chunk.content
+              const increment = Math.max(Math.floor(chunk.content.length / 20), 1)
+              progress.value = Math.min(progress.value + increment, 85)
+            }
+            generatingStatus.value = 'drafting'
+            break
+          case 'finish':
+            progress.value = Math.max(progress.value, 92)
+            generatingStatus.value = 'structuring'
+            break
+          case 'done':
+            progress.value = Math.max(progress.value, 96)
+            break
+          case 'error':
+            if (chunk.reason === 'abort') {
+              isCancelled.value = true
+            } else {
+              streamError = chunk.message || t('chapterEditor.outline.messages.streamFailed')
+            }
+            break
+        }
+      }
+    )
+
+    if (isCancelled.value) {
+      emit('update:outline', existingSnapshot)
+      message.info(t('chapterEditor.outline.messages.cancelled'))
+      return
+    }
+
+    if (streamError) {
+      throw new Error(streamError)
+    }
+
+    const formatted = formatOutlineContent(rawAggregatedContent, true)
+
+    if (!formatted) {
+      throw new Error(t('chapterEditor.outline.messages.emptyResult'))
+    }
+
+    const outlineData = aiService.parseChapterOutlineResponse(
+      formatted,
+      props.chapterNumber,
+      props.chapterTitle,
+      props.targetWordCount || 2000
+    )
+
+    generatingStatus.value = 'finalizing'
+    progress.value = 100
+
+    const outlineText = buildOutlineText(outlineData, options.value.style)
+
+    generatingStatus.value = 'presenting'
+    await typewriterEffect(outlineText)
+
+    if (outlineData.plotPoints && outlineData.plotPoints.length > 0) {
+      const plotPoints = outlineData.plotPoints.map(p => ({
+        type: p.type,
+        description: p.description
+      }))
+      emit('update:plotPoints', plotPoints)
+    }
+
+    emit('generated', outlineData)
+
+    message.success(t('chapterEditor.outline.messages.success'))
+  } catch (error: any) {
+    if (error?.name === 'AbortError' || isCancelled.value) {
+      emit('update:outline', existingSnapshot)
+      message.info(t('chapterEditor.outline.messages.cancelled'))
+    } else {
+      console.error('Failed to generate outline:', error)
+      message.error(streamError || t('chapterEditor.outline.messages.failed'))
+      emit('update:outline', existingSnapshot)
+    }
+  } finally {
+    abortController.value = null
+    generating.value = false
+    progress.value = 0
+    generatingStatus.value = 'preparing'
+    isCancelled.value = false
+    rawAggregatedContent = ''
+    cancelTypewriterEffect()
+  }
+}
+
 // AI生成大纲
 const handleGenerate = async () => {
   if (!canGenerate.value) {
@@ -150,57 +413,7 @@ const handleGenerate = async () => {
     return
   }
 
-  try {
-    generating.value = true
-    generatingStatus.value = 'preparing'
-
-    // 准备参数
-    const params = {
-      novelId: props.novelId,
-      chapterId: props.chapterId || '',
-      chapterNumber: props.chapterNumber,
-      chapterTitle: props.chapterTitle,
-      existingOutline: props.existingOutline,
-      characters: props.characters || [],
-      settings: props.settings || [],
-      targetWords: props.targetWordCount,
-      previousChapterSummary: props.previousChapterSummary,
-      nextChapterPlan: props.nextChapterPlan
-    }
-
-    generatingStatus.value = 'generating'
-
-    // 调用AI服务
-    const result: ChapterOutlineData = await aiService.generateChapterOutline(params)
-
-    generatingStatus.value = 'formatting'
-
-    // 构建大纲文本
-    const outlineText = buildOutlineText(result, options.value.style)
-
-    // 使用打字机效果显示
-    generatingStatus.value = 'presenting'
-    await typewriterEffect(outlineText)
-
-    // 发送剧情要点更新
-    if (result.plotPoints && result.plotPoints.length > 0) {
-      const plotPoints = result.plotPoints.map(p => ({
-        type: p.type,
-        description: p.description
-      }))
-      emit('update:plotPoints', plotPoints)
-    }
-
-    // 发送生成完成事件
-    emit('generated', result)
-
-    message.success(t('chapterEditor.outline.messages.success'))
-  } catch (error) {
-    console.error('Failed to generate outline:', error)
-    message.error(t('chapterEditor.outline.messages.failed'))
-  } finally {
-    generating.value = false
-  }
+  await performGenerate()
 }
 
 // 构建大纲文本
@@ -295,32 +508,6 @@ const getPlotPointTypeText = (type: string): string => {
   return t(`chapterEditor.outline.plotPointTypes.${key}`, key)
 }
 
-// 打字机效果
-const typewriterEffect = async (text: string): Promise<void> => {
-  // 首先清空现有内容
-  emit('update:outline', '')
-
-  const chars = text.split('')
-  const delayPerChar = getTypewriterDelay()
-  const totalChars = chars.length
-
-  // 计算总时长，避免过长
-  const maxDuration = 5000 // 最多5秒
-  const actualDelay = Math.min(delayPerChar, maxDuration / totalChars)
-
-  let currentText = ''
-
-  for (let i = 0; i < chars.length; i++) {
-    currentText += chars[i]
-    emit('update:outline', currentText)
-
-    // 每隔几个字符暂停一下
-    if (i % 5 === 0) {
-      await new Promise(resolve => setTimeout(resolve, actualDelay))
-    }
-  }
-}
-
 // 清空大纲
 const handleClear = () => {
   Modal.confirm({
@@ -336,10 +523,20 @@ const handleClear = () => {
   })
 }
 
+const handleCancel = () => {
+  if (!generating.value) return
+  isCancelled.value = true
+  generatingStatus.value = 'cancelling'
+  progress.value = Math.min(progress.value, 95)
+  cancelTypewriterEffect()
+  abortController.value?.abort()
+}
+
 // 暴露方法供父组件调用
 defineExpose({
   generate: handleGenerate,
-  clear: handleClear
+  clear: handleClear,
+  cancel: handleCancel
 })
 </script>
 
@@ -362,31 +559,156 @@ defineExpose({
 }
 
 .generating-indicator {
+  position: relative;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f6fbff 0%, #e8f3ff 100%);
+  border-radius: 10px;
+  color: #0b3c66;
+  margin-bottom: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(12, 94, 177, 0.15);
+  box-shadow:
+    0 6px 16px rgba(12, 94, 177, 0.12),
+    0 2px 6px rgba(12, 94, 177, 0.08);
+}
+
+.indicator-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: linear-gradient(90deg, #e6f7ff 0%, #f0f9ff 100%);
-  border: 1px solid #91d5ff;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #1890ff;
-  margin-bottom: 12px;
-  animation: pulse 2s ease-in-out infinite;
+  gap: 14px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
+.status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #0d4e8c;
+  font-size: 20px;
+  box-shadow: inset 0 0 12px rgba(13, 78, 140, 0.15);
 }
 
-.generating-text {
-  font-weight: 500;
+.status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   flex: 1;
+}
+
+.generating-title {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(11, 60, 102, 0.85);
+}
+
+.generating-subtitle {
+  font-size: 13px;
+  color: rgba(11, 60, 102, 0.9);
+}
+
+.progress-percentage {
+  font-weight: 600;
+  font-size: 16px;
+  color: rgba(11, 60, 102, 0.95);
+}
+
+.cancel-button {
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  color: #cf1b1b;
+  box-shadow: 0 0 0 1px rgba(207, 27, 27, 0.15);
+}
+
+.cancel-button:hover {
+  color: #a01313;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.custom-progress-bar {
+  position: relative;
+  z-index: 1;
+}
+
+.progress-track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  position: relative;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1890ff 0%, #74b4ff 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.progress-milestones {
+  position: relative;
+  margin-top: 10px;
+  height: 20px;
+}
+
+.milestone {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.milestone-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 0 auto 6px;
+  background: rgba(11, 60, 102, 0.25);
+}
+
+.milestone-label {
+  font-size: 11px;
+  color: rgba(11, 60, 102, 0.6);
+  white-space: nowrap;
+}
+
+.milestone.active .milestone-dot {
+  background: #1890ff;
+  box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.15);
+}
+
+.milestone.current .milestone-label {
+  color: rgba(11, 60, 102, 0.9);
+  font-weight: 500;
 }
 
 .generator-options {
@@ -399,40 +721,9 @@ defineExpose({
 
 .generator-options :deep(.ant-collapse) {
   background: transparent;
-  border: none;
 }
 
-.generator-options :deep(.ant-collapse-header) {
-  padding: 4px 0;
-  font-size: 13px;
-  color: var(--theme-text-secondary);
-}
-
-.generator-options :deep(.ant-collapse-content) {
-  border-top: 1px solid var(--theme-border);
-}
-
-.generator-options :deep(.ant-form-item) {
-  margin-bottom: 12px;
-}
-
-.generator-options :deep(.ant-form-item:last-child) {
-  margin-bottom: 0;
-}
-
-.generator-options :deep(.ant-checkbox-group) {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* 暗色主题支持 */
-:deep(.dark) .generating-indicator {
-  background: linear-gradient(90deg, #111d2c 0%, #15395b 100%);
-  border-color: #15395b;
-}
-
-:deep(.dark) .generator-options {
-  background: rgba(255, 255, 255, 0.04);
+.generator-options :deep(.ant-collapse-item) {
+  border-bottom: none !important;
 }
 </style>
