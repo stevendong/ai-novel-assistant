@@ -59,6 +59,27 @@
     "suggestion": "建议：",
     "pending": "待完善"
   },
+  "footer": {
+    "projectLabel": "项目：",
+    "noProjectSelected": "未选择项目",
+    "wordCountLabel": "字数：",
+    "wordCountTarget": "/ {target} ({progress}%)",
+    "chapterLabel": "章节：",
+    "chapterDetail": "/ {total}",
+    "todayLabel": "今日：",
+    "wordUnit": "字",
+    "saving": "保存中...",
+    "saved": "已保存",
+    "aiLabel": "AI：",
+    "aiStatus": {
+      "connected": "已连接",
+      "disconnected": "未连接",
+      "failed": "连接失败"
+    },
+    "online": "在线",
+    "offline": "离线",
+    "latency": "{latency}毫秒"
+  },
   "progress": {
     "title": "进度统计",
     "subtitle": "追踪您的创作进程，激发写作动力",

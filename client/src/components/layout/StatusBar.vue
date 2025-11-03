@@ -5,8 +5,8 @@
         <!-- 项目信息 -->
         <div class="status-item project-info">
           <BookOutlined class="status-icon" />
-          <span class="status-label">项目：</span>
-          <span class="status-value">{{ projectInfo.title }}</span>
+          <span class="status-label">{{ t('footer.projectLabel') }}</span>
+          <span class="status-value">{{ projectInfo.title || t('footer.noProjectSelected') }}</span>
           <a-tag
             v-if="projectInfo.status"
             size="small"
@@ -20,27 +20,27 @@
         <!-- 字数统计 -->
         <div class="status-item word-count">
           <EditOutlined class="status-icon" />
-          <span class="status-label">字数：</span>
+          <span class="status-label">{{ t('footer.wordCountLabel') }}</span>
           <span class="status-value highlight">{{ wordCount.total }}</span>
           <span v-if="wordCount.target" class="status-detail">
-            / {{ wordCount.target }} ({{ wordCount.progress }}%)
+            {{ t('footer.wordCountTarget', { target: wordCount.target, progress: wordCount.progress }) }}
           </span>
         </div>
 
         <!-- 章节统计 -->
         <div class="status-item chapter-stats">
           <FileTextOutlined class="status-icon" />
-          <span class="status-label">章节：</span>
+          <span class="status-label">{{ t('footer.chapterLabel') }}</span>
           <span class="status-value">{{ chapterStats.completed }}</span>
-          <span class="status-detail">/ {{ chapterStats.total }}</span>
+          <span class="status-detail">{{ t('footer.chapterDetail', { total: chapterStats.total }) }}</span>
         </div>
 
         <!-- 写作进度 -->
         <div class="status-item progress-info" v-if="todayProgress.words > 0">
           <ClockCircleOutlined class="status-icon" />
-          <span class="status-label">今日：</span>
+          <span class="status-label">{{ t('footer.todayLabel') }}</span>
           <span class="status-value highlight">{{ todayProgress.words }}</span>
-          <span class="status-detail">字</span>
+          <span class="status-detail">{{ t('footer.wordUnit') }}</span>
         </div>
       </a-space>
     </div>
@@ -50,17 +50,17 @@
         <!-- 保存状态 -->
         <div class="status-item save-status" v-if="saveStatus.lastSaved">
           <SaveOutlined class="status-icon" :class="{ 'saving': saveStatus.saving }" />
-          <span class="status-label">{{ saveStatus.saving ? '保存中...' : '已保存' }}</span>
+          <span class="status-label">{{ saveStatus.saving ? t('footer.saving') : t('footer.saved') }}</span>
           <span class="status-detail">{{ saveStatus.lastSaved }}</span>
         </div>
 
         <!-- AI连接状态 -->
         <div class="status-item ai-status">
           <RobotOutlined class="status-icon" />
-          <span class="status-label">AI：</span>
+          <span class="status-label">{{ t('footer.aiLabel') }}</span>
           <a-badge
             :status="aiConnection.status === 'connected' ? 'success' : 'error'"
-            :text="aiConnection.text"
+            :text="t(aiConnection.statusTextKey)"
           />
           <span v-if="aiConnection.model" class="status-detail">{{ aiConnection.model }}</span>
         </div>
@@ -71,8 +71,10 @@
             class="status-icon"
             :class="{ 'connected': systemStatus.online, 'disconnected': !systemStatus.online }"
           />
-          <span class="status-label">{{ systemStatus.online ? '在线' : '离线' }}</span>
-          <span v-if="systemStatus.latency" class="status-detail">{{ systemStatus.latency }}ms</span>
+          <span class="status-label">{{ systemStatus.online ? t('footer.online') : t('footer.offline') }}</span>
+          <span v-if="systemStatus.latency" class="status-detail">
+            {{ t('footer.latency', { latency: systemStatus.latency }) }}
+          </span>
         </div>
 
         <!-- 当前时间 -->
@@ -99,6 +101,7 @@ import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
 import { getNovelStatusText, getNovelStatusColor } from '@/constants/status'
 import { statusService } from '@/services/statusService'
+import { useI18n } from 'vue-i18n'
 
 // 接口定义
 interface ProjectInfo {
@@ -132,7 +135,7 @@ interface SaveStatus {
 
 interface AIConnection {
   status: 'connected' | 'disconnected' | 'connecting'
-  text: string
+  statusTextKey: string
   model?: string
   usage?: {
     requests: number
@@ -149,14 +152,18 @@ interface SystemStatus {
 // Stores
 const projectStore = useProjectStore()
 const chatStore = useAIChatStore()
+const { t, locale } = useI18n()
 
 // 响应式数据
-const projectInfo = ref<ProjectInfo>({ title: '未选择项目' })
+const projectInfo = ref<ProjectInfo>({ title: '' })
 const wordCount = ref<WordCount>({ total: '0' })
 const chapterStats = ref<ChapterStats>({ total: 0, completed: 0, writing: 0, planning: 0 })
 const todayProgress = ref<TodayProgress>({ words: 0, time: 0 })
 const saveStatus = ref<SaveStatus>({ saving: false, lastSaved: '', autoSave: true })
-const aiConnection = ref<AIConnection>({ status: 'disconnected', text: '未连接' })
+const aiConnection = ref<AIConnection>({
+  status: 'disconnected',
+  statusTextKey: 'footer.aiStatus.disconnected'
+})
 const systemStatus = ref<SystemStatus>({ online: navigator.onLine, performance: 'good' })
 const currentTime = ref('')
 
@@ -171,11 +178,20 @@ const getStatusColor = computed(() => getNovelStatusColor)
 
 // 使用服务中的格式化方法
 const formatWordCount = statusService.formatWordCount.bind(statusService)
+const localeTag = computed(() => {
+  if (locale.value === 'zh') {
+    return 'zh-CN'
+  }
+  if (locale.value === 'en') {
+    return 'en-US'
+  }
+  return locale.value
+})
 
 // 更新当前时间
 const updateCurrentTime = () => {
   const now = new Date()
-  currentTime.value = now.toLocaleTimeString('zh-CN', {
+  currentTime.value = now.toLocaleTimeString(localeTag.value, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit'
@@ -186,7 +202,7 @@ const updateCurrentTime = () => {
 const loadProjectInfo = async () => {
   const project = projectStore.currentProject
   if (!project) {
-    projectInfo.value = { title: '未选择项目' }
+    projectInfo.value = { title: '', status: undefined }
     wordCount.value = { total: '0' }
     return
   }
@@ -265,7 +281,7 @@ const loadTodayProgress = async () => {
 const updateSaveStatus = (saving: boolean, timestamp?: Date) => {
   saveStatus.value.saving = saving
   if (timestamp) {
-    saveStatus.value.lastSaved = timestamp.toLocaleTimeString('zh-CN', {
+    saveStatus.value.lastSaved = timestamp.toLocaleTimeString(localeTag.value, {
       hour: '2-digit',
       minute: '2-digit'
     })
@@ -279,14 +295,14 @@ const checkAIStatus = async () => {
 
     aiConnection.value = {
       status: data.connected ? 'connected' : 'disconnected',
-      text: data.connected ? '已连接' : '未连接',
+      statusTextKey: data.connected ? 'footer.aiStatus.connected' : 'footer.aiStatus.disconnected',
       model: data.model || undefined,
       usage: data.usage
     }
   } catch (error) {
     aiConnection.value = {
       status: 'disconnected',
-      text: '连接失败'
+      statusTextKey: 'footer.aiStatus.failed'
     }
   }
 }

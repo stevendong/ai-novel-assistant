@@ -59,6 +59,27 @@
     "suggestion": "Suggestion:",
     "pending": "Pending"
   },
+  "footer": {
+    "projectLabel": "Project:",
+    "noProjectSelected": "No project selected",
+    "wordCountLabel": "Words:",
+    "wordCountTarget": "/ {target} ({progress}%)",
+    "chapterLabel": "Chapters:",
+    "chapterDetail": "/ {total}",
+    "todayLabel": "Today:",
+    "wordUnit": "words",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "aiLabel": "AI:",
+    "aiStatus": {
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "failed": "Connection failed"
+    },
+    "online": "Online",
+    "offline": "Offline",
+    "latency": "{latency}ms"
+  },
   "progress": {
     "title": "Progress Overview",
     "subtitle": "Track your writing journey and stay motivated",
