@@ -1,10 +1,10 @@
 <template>
   <div class="batch-chapter-creator">
     <a-steps :current="currentStep" class="mb-6">
-      <a-step title="配置生成" />
-      <a-step title="AI分析" />
-      <a-step title="生成中" />
-      <a-step title="预览应用" />
+      <a-step :title="t('chapter.batch.steps.configure')" />
+      <a-step :title="t('chapter.batch.steps.analysis')" />
+      <a-step :title="t('chapter.batch.steps.generating')" />
+      <a-step :title="t('chapter.batch.steps.preview')" />
     </a-steps>
 
     <!-- 步骤 1: 配置生成 -->
@@ -16,13 +16,13 @@
         @finish="handleAnalyze"
       >
         <a-form-item
-          label="小说"
+          :label="t('chapter.batch.form.novel')"
           name="novelId"
-          :rules="[{ required: true, message: '请选择小说' }]"
+          :rules="[{ required: true, message: t('chapter.batch.form.errors.selectNovel') }]"
         >
           <a-select
             v-model:value="formData.novelId"
-            placeholder="选择要生成章节的小说"
+            :placeholder="t('chapter.batch.form.novelPlaceholder')"
             @change="handleNovelChange"
           >
             <a-select-option
@@ -36,105 +36,105 @@
         </a-form-item>
 
         <a-form-item
-          label="批次名称"
+          :label="t('chapter.batch.form.batchName')"
           name="batchName"
-          :rules="[{ required: true, message: '请输入批次名称' }]"
+          :rules="[{ required: true, message: t('chapter.batch.form.errors.batchName') }]"
         >
           <a-input
             v-model:value="formData.batchName"
-            placeholder="例如：第二卷章节计划"
+            :placeholder="t('chapter.batch.form.batchNamePlaceholder')"
           />
         </a-form-item>
 
         <a-form-item
-          label="生成模式"
+          :label="t('chapter.batch.form.mode')"
           name="mode"
-          :rules="[{ required: true, message: '请选择生成模式' }]"
+          :rules="[{ required: true, message: t('chapter.batch.form.errors.mode') }]"
         >
           <a-radio-group v-model:value="formData.mode">
             <a-radio value="continue">
               <div class="mode-option">
-                <div class="mode-title">续写模式</div>
-                <div class="mode-desc">基于现有剧情继续发展后续章节</div>
+                <div class="mode-title">{{ t('chapter.batch.modes.continue.title') }}</div>
+                <div class="mode-desc">{{ t('chapter.batch.modes.continue.desc') }}</div>
               </div>
             </a-radio>
             <a-radio value="insert">
               <div class="mode-option">
-                <div class="mode-title">插入模式</div>
-                <div class="mode-desc">在现有章节间插入新的剧情内容</div>
+                <div class="mode-title">{{ t('chapter.batch.modes.insert.title') }}</div>
+                <div class="mode-desc">{{ t('chapter.batch.modes.insert.desc') }}</div>
               </div>
             </a-radio>
             <a-radio value="branch">
               <div class="mode-option">
-                <div class="mode-title">分支模式</div>
-                <div class="mode-desc">探索不同的剧情发展分支</div>
+                <div class="mode-title">{{ t('chapter.batch.modes.branch.title') }}</div>
+                <div class="mode-desc">{{ t('chapter.batch.modes.branch.desc') }}</div>
               </div>
             </a-radio>
             <a-radio value="expand">
               <div class="mode-option">
-                <div class="mode-title">扩展模式</div>
-                <div class="mode-desc">将现有章节扩展为更详细的多个章节</div>
+                <div class="mode-title">{{ t('chapter.batch.modes.expand.title') }}</div>
+                <div class="mode-desc">{{ t('chapter.batch.modes.expand.desc') }}</div>
               </div>
             </a-radio>
           </a-radio-group>
         </a-form-item>
 
         <a-form-item
-          label="生成章节数"
+          :label="t('chapter.batch.form.chapterCount')"
           name="totalChapters"
           :rules="[
-            { required: true, message: '请输入章节数' },
-            { type: 'number', min: 1, max: 20, message: '章节数必须在1-20之间' }
+            { required: true, message: t('chapter.batch.form.errors.chapterCount') },
+            { type: 'number', min: 1, max: 20, message: t('chapter.batch.form.errors.chapterCountRange') }
           ]"
         >
           <a-input-number
             v-model:value="formData.totalChapters"
             :min="1"
             :max="20"
-            placeholder="1-20章"
+            :placeholder="t('chapter.batch.form.chapterCountPlaceholder')"
             style="width: 200px"
           />
-          <span class="ml-2 text-gray-500">建议一次生成5-10章</span>
+          <span class="ml-2 text-gray-500">{{ t('chapter.batch.form.chapterCountHint') }}</span>
         </a-form-item>
 
         <a-form-item
           v-if="formData.mode === 'insert'"
-          label="起始位置"
+          :label="t('chapter.batch.form.startPosition')"
           name="startPosition"
         >
           <a-input-number
             v-model:value="formData.startPosition"
             :min="1"
-            placeholder="从第几章开始插入"
+            :placeholder="t('chapter.batch.form.startPositionPlaceholder')"
             style="width: 200px"
           />
         </a-form-item>
 
-        <a-divider>高级选项</a-divider>
+        <a-divider>{{ t('chapter.batch.form.advanced') }}</a-divider>
 
-        <a-form-item label="每章目标字数">
+        <a-form-item :label="t('chapter.batch.form.targetWords')">
           <a-input-number
             v-model:value="formData.targetWordsPerChapter"
             :min="500"
             :max="10000"
             :step="500"
-            placeholder="2000"
+            :placeholder="t('chapter.batch.form.targetWordsPlaceholder')"
             style="width: 200px"
           />
-          <span class="ml-2 text-gray-500">默认2000字</span>
+          <span class="ml-2 text-gray-500">{{ t('chapter.batch.form.targetWordsHint') }}</span>
         </a-form-item>
 
-        <a-form-item label="重点关注">
+        <a-form-item :label="t('chapter.batch.form.focusAreas')">
           <a-select
             v-model:value="formData.focusAreas"
             mode="multiple"
-            placeholder="选择重点关注的方向"
+            :placeholder="t('chapter.batch.form.focusAreasPlaceholder')"
           >
-            <a-select-option value="plot">剧情推进</a-select-option>
-            <a-select-option value="character">角色塑造</a-select-option>
-            <a-select-option value="world">世界观展开</a-select-option>
-            <a-select-option value="conflict">冲突设计</a-select-option>
-            <a-select-option value="emotion">情感描写</a-select-option>
+            <a-select-option value="plot">{{ t('chapter.batch.form.focusOptions.plot') }}</a-select-option>
+            <a-select-option value="character">{{ t('chapter.batch.form.focusOptions.character') }}</a-select-option>
+            <a-select-option value="world">{{ t('chapter.batch.form.focusOptions.world') }}</a-select-option>
+            <a-select-option value="conflict">{{ t('chapter.batch.form.focusOptions.conflict') }}</a-select-option>
+            <a-select-option value="emotion">{{ t('chapter.batch.form.focusOptions.emotion') }}</a-select-option>
           </a-select>
         </a-form-item>
 
@@ -142,9 +142,9 @@
           <a-space>
             <a-button type="primary" html-type="submit" :loading="analyzing">
               <template #icon><RocketOutlined /></template>
-              开始分析
+              {{ t('chapter.batch.form.startAnalysis') }}
             </a-button>
-            <a-button @click="handleCancel">取消</a-button>
+            <a-button @click="handleCancel">{{ t('common.cancel') }}</a-button>
           </a-space>
         </a-form-item>
       </a-form>
@@ -152,40 +152,40 @@
 
     <!-- 步骤 2: AI分析结果 -->
     <div v-if="currentStep === 1" class="step-content">
-      <a-spin :spinning="analyzing" tip="AI正在分析小说上下文...">
+      <a-spin :spinning="analyzing" :tip="t('chapter.batch.analysis.loading')">
         <div v-if="analysisResult" class="analysis-result">
           <a-alert
-            message="上下文分析完成"
+            :message="t('chapter.batch.analysis.completedTitle')"
             type="success"
             show-icon
             class="mb-4"
           >
             <template #description>
-              AI已完成对《{{ analysisResult.novel.title }}》的分析，以下是分析结果摘要
+              {{ t('chapter.batch.analysis.completedDescription', { title: analysisResult.novel.title }) }}
             </template>
           </a-alert>
 
-          <a-descriptions title="小说信息" bordered :column="2" class="mb-4">
-            <a-descriptions-item label="类型">
-              {{ analysisResult.novel.genre || '未设定' }}
+          <a-descriptions :title="t('chapter.batch.analysis.novelInfo')" bordered :column="2" class="mb-4">
+            <a-descriptions-item :label="t('chapter.batch.analysis.genre')">
+              {{ analysisResult.novel.genre || t('common.notSet') }}
             </a-descriptions-item>
-            <a-descriptions-item label="状态">
+            <a-descriptions-item :label="t('chapter.batch.analysis.status')">
               {{ analysisResult.novel.status }}
             </a-descriptions-item>
-            <a-descriptions-item label="当前字数">
+            <a-descriptions-item :label="t('chapter.batch.analysis.wordCount')">
               {{ analysisResult.novel.wordCount.toLocaleString() }}
             </a-descriptions-item>
-            <a-descriptions-item label="章节数">
+            <a-descriptions-item :label="t('chapter.batch.analysis.chapterCount')">
               {{ analysisResult.novel.chapterCount }}
             </a-descriptions-item>
           </a-descriptions>
 
-          <a-card title="剧情分析" class="mb-4">
+          <a-card :title="t('chapter.batch.analysis.plotAnalysis')" class="mb-4">
             <a-descriptions bordered :column="1">
-              <a-descriptions-item label="当前阶段">
+              <a-descriptions-item :label="t('chapter.batch.analysis.currentStage')">
                 {{ analysisResult.analysis.currentStage }}
               </a-descriptions-item>
-              <a-descriptions-item label="主要冲突">
+              <a-descriptions-item :label="t('chapter.batch.analysis.mainConflicts')">
                 <a-tag
                   v-for="(conflict, index) in analysisResult.analysis.mainConflicts"
                   :key="index"
@@ -195,7 +195,7 @@
                   {{ conflict }}
                 </a-tag>
               </a-descriptions-item>
-              <a-descriptions-item label="可能发展方向">
+              <a-descriptions-item :label="t('chapter.batch.analysis.directions')">
                 <div
                   v-for="(direction, index) in analysisResult.analysis.potentialDirections"
                   :key="index"
@@ -210,7 +210,7 @@
 
           <a-row :gutter="16" class="mb-4">
             <a-col :span="12">
-              <a-card title="涉及角色" size="small">
+              <a-card :title="t('chapter.batch.analysis.characters')" size="small">
                 <a-tag
                   v-for="char in analysisResult.characters.slice(0, 10)"
                   :key="char.id"
@@ -220,12 +220,12 @@
                   {{ char.name }} ({{ char.role }})
                 </a-tag>
                 <div v-if="analysisResult.characters.length > 10" class="text-gray-500 mt-2">
-                  还有 {{ analysisResult.characters.length - 10 }} 个角色...
+                  {{ t('chapter.batch.analysis.moreCharacters', { count: analysisResult.characters.length - 10 }) }}
                 </div>
               </a-card>
             </a-col>
             <a-col :span="12">
-              <a-card title="世界设定" size="small">
+              <a-card :title="t('chapter.batch.analysis.settings')" size="small">
                 <a-tag
                   v-for="setting in analysisResult.settings.slice(0, 10)"
                   :key="setting.id"
@@ -235,7 +235,7 @@
                   {{ setting.name }} ({{ setting.type }})
                 </a-tag>
                 <div v-if="analysisResult.settings.length > 10" class="text-gray-500 mt-2">
-                  还有 {{ analysisResult.settings.length - 10 }} 个设定...
+                  {{ t('chapter.batch.analysis.moreSettings', { count: analysisResult.settings.length - 10 }) }}
                 </div>
               </a-card>
             </a-col>
@@ -245,11 +245,11 @@
             <a-space>
               <a-button @click="currentStep = 0">
                 <template #icon><LeftOutlined /></template>
-                返回修改
+                {{ t('chapter.batch.analysis.backToEdit') }}
               </a-button>
               <a-button type="primary" @click="handleStartGeneration" :loading="generating">
                 <template #icon><ThunderboltOutlined /></template>
-                开始生成章节
+                {{ t('chapter.batch.analysis.startGeneration') }}
               </a-button>
             </a-space>
           </div>
@@ -278,7 +278,7 @@
               {{ generationMessage }}
             </div>
             <div v-if="errorMessage" class="mt-2 text-red-500">
-              错误：{{ errorMessage }}
+              {{ t('chapter.batch.generation.errorPrefix', { message: errorMessage }) }}
             </div>
           </template>
         </a-result>
@@ -288,8 +288,8 @@
     <!-- 步骤 4: 预览和应用 -->
     <div v-if="currentStep === 3" class="step-content">
       <a-alert
-        message="章节生成完成！"
-        description="请预览生成的章节，选择要应用到小说中的章节"
+        :message="t('chapter.batch.preview.alertTitle')"
+        :description="t('chapter.batch.preview.alertDescription')"
         type="success"
         show-icon
         closable
@@ -303,7 +303,7 @@
             :checked="checkAll"
             @change="handleCheckAllChange"
           >
-            全选
+            {{ t('common.selectAll') }}
           </a-checkbox>
           <a-button
             type="primary"
@@ -312,10 +312,10 @@
             :loading="applying"
           >
             <template #icon><CheckOutlined /></template>
-            应用选中章节 ({{ selectedChapters.length }})
+            {{ t('chapter.batch.preview.applySelected', { count: selectedChapters.length }) }}
           </a-button>
           <a-button @click="handleViewBatches">
-            查看历史批次
+            {{ t('chapter.batch.preview.viewHistory') }}
           </a-button>
         </a-space>
       </div>
@@ -337,13 +337,13 @@
               <a-list-item-meta>
                 <template #title>
                   <a-space>
-                    <span class="font-bold">第{{ item.chapterNumber }}章：{{ item.title }}</span>
-                    <a-tag color="blue">优先级: {{ item.priority }}/5</a-tag>
+                    <span class="font-bold">{{ t('chapter.list.table.chapterTitle', { number: item.chapterNumber, title: item.title }) }}</span>
+                    <a-tag color="blue">{{ t('chapter.batch.preview.tagPriority', { priority: item.priority }) }}</a-tag>
                     <a-tag :color="getConfidenceColor(item.aiConfidence)">
-                      AI信心: {{ Math.round(item.aiConfidence * 100) }}%
+                      {{ t('chapter.batch.preview.tagConfidence', { confidence: Math.round(item.aiConfidence * 100) }) }}
                     </a-tag>
                     <a-tag v-if="item.estimatedWords">
-                      预估: {{ item.estimatedWords }}字
+                      {{ t('chapter.batch.preview.tagEstimate', { words: item.estimatedWords }) }}
                     </a-tag>
                   </a-space>
                 </template>
@@ -358,7 +358,7 @@
                 <a-row :gutter="16">
                   <a-col :span="8" v-if="item.plotPoints.length > 0">
                     <div class="detail-section">
-                      <div class="detail-title">剧情要点</div>
+                      <div class="detail-title">{{ t('chapter.batch.preview.sections.plotPoints') }}</div>
                       <ul class="detail-list">
                         <li v-for="(point, index) in item.plotPoints" :key="index">
                           {{ point }}
@@ -368,7 +368,7 @@
                   </a-col>
                   <a-col :span="8" v-if="item.characters.length > 0">
                     <div class="detail-section">
-                      <div class="detail-title">涉及角色</div>
+                      <div class="detail-title">{{ t('chapter.batch.preview.sections.characters') }}</div>
                       <a-tag
                         v-for="char in item.characters"
                         :key="char"
@@ -381,7 +381,7 @@
                   </a-col>
                   <a-col :span="8" v-if="item.settings.length > 0">
                     <div class="detail-section">
-                      <div class="detail-title">使用设定</div>
+                      <div class="detail-title">{{ t('chapter.batch.preview.sections.settings') }}</div>
                       <a-tag
                         v-for="setting in item.settings"
                         :key="setting"
@@ -398,11 +398,11 @@
                   <a-space>
                     <a-button size="small" @click="handleEditChapter(item)">
                       <template #icon><EditOutlined /></template>
-                      编辑
+                      {{ t('common.edit') }}
                     </a-button>
                     <a-button size="small" @click="handleRegenerateChapter(item)">
                       <template #icon><ReloadOutlined /></template>
-                      重新生成
+                      {{ t('chapter.batch.preview.actions.regenerate') }}
                     </a-button>
                   </a-space>
                 </div>
@@ -416,27 +416,27 @@
     <!-- 编辑章节 Modal -->
     <a-modal
       v-model:open="editModalVisible"
-      title="编辑章节"
+      :title="t('chapter.batch.editModal.title')"
       width="800px"
       @ok="handleSaveEdit"
       :confirm-loading="saving"
     >
       <a-form layout="vertical">
-        <a-form-item label="章节标题">
+        <a-form-item :label="t('chapter.chapterTitle')">
           <a-input v-model:value="editingChapter.title" />
         </a-form-item>
-        <a-form-item label="章节大纲">
+        <a-form-item :label="t('chapter.chapterOutline')">
           <a-textarea
             v-model:value="editingChapter.outline"
             :rows="8"
-            placeholder="详细描述章节内容..."
+            :placeholder="t('chapter.batch.editModal.outlinePlaceholder')"
           />
         </a-form-item>
-        <a-form-item label="备注">
+        <a-form-item :label="t('chapter.batch.editModal.notesLabel')">
           <a-textarea
             v-model:value="editingChapter.notes"
             :rows="3"
-            placeholder="添加备注..."
+            :placeholder="t('chapter.batch.editModal.notesPlaceholder')"
           />
         </a-form-item>
       </a-form>
@@ -445,7 +445,7 @@
     <!-- 批次历史 Modal -->
     <a-modal
       v-model:open="historyVisible"
-      title="批次历史"
+      :title="t('chapter.batch.history.title')"
       width="1400px"
       :footer="null"
       :destroyOnClose="true"
@@ -481,8 +481,11 @@ import type {
 import { novelService } from '@/services/novelService'
 import type { Novel } from '@/types'
 import BatchHistoryModal from './BatchHistoryModal.vue'
+import { useI18n } from 'vue-i18n'
 
 const emit = defineEmits(['close', 'success'])
+
+const { t, locale } = useI18n()
 
 // 步骤控制
 const currentStep = ref(0)
@@ -531,14 +534,14 @@ const saving = ref(false)
 
 // 计算属性
 const generationStatusText = computed(() => {
-  const statusMap: Record<BatchStatus, string> = {
-    pending: '准备生成...',
-    analyzing: 'AI正在分析上下文...',
-    generating: 'AI正在生成章节...',
-    completed: '生成完成！',
-    failed: '生成失败'
+  const statusKeyMap: Record<BatchStatus, string> = {
+    pending: 'chapter.batch.generation.status.pending',
+    analyzing: 'chapter.batch.generation.status.analyzing',
+    generating: 'chapter.batch.generation.status.generating',
+    completed: 'chapter.batch.generation.status.completed',
+    failed: 'chapter.batch.generation.status.failed'
   }
-  return statusMap[generationStatus.value] || '处理中...'
+  return t(statusKeyMap[generationStatus.value] || 'chapter.batch.generation.status.processing')
 })
 
 const indeterminate = computed(() => {
@@ -556,7 +559,7 @@ const loadNovels = async () => {
     novels.value = await novelService.getNovels()
   } catch (error) {
     console.error('加载小说列表失败:', error)
-    message.error('加载小说列表失败')
+    message.error(t('chapter.batch.messages.loadNovelsFailed'))
   }
 }
 
@@ -564,7 +567,11 @@ const loadNovels = async () => {
 const handleNovelChange = (novelId: string) => {
   const novel = novels.value.find(n => n.id === novelId)
   if (novel && !formData.batchName) {
-    formData.batchName = `${novel.title} - 批量生成 ${new Date().toLocaleDateString()}`
+    const formatter = new Intl.DateTimeFormat(locale.value === 'zh' ? 'zh-CN' : 'en-US')
+    formData.batchName = t('chapter.batch.autoBatchName', {
+      title: novel.title,
+      date: formatter.format(new Date())
+    })
   }
 }
 
@@ -574,10 +581,10 @@ const handleAnalyze = async () => {
   try {
     analysisResult.value = await batchChapterService.analyzeNovelContext(formData.novelId)
     currentStep.value = 1
-    message.success('上下文分析完成')
+    message.success(t('chapter.batch.messages.analysisSuccess'))
   } catch (error: any) {
     console.error('分析失败:', error)
-    message.error(error.message || '分析失败，请重试')
+    message.error(error.message || t('chapter.batch.messages.analysisFailed'))
   } finally {
     analyzing.value = false
   }
@@ -605,7 +612,7 @@ const handleStartGeneration = async () => {
     })
 
     currentBatchId.value = batchId
-    message.success('批量生成任务已创建')
+    message.success(t('chapter.batch.messages.generationCreated'))
 
     // 开始轮询进度
     await batchChapterService.pollBatchProgress(
@@ -613,7 +620,10 @@ const handleStartGeneration = async () => {
       (progress) => {
         generationStatus.value = progress.status
         generationProgress.value = progress.progress
-        generationMessage.value = `已完成 ${progress.completedChapters}/${progress.totalChapters} 章`
+        generationMessage.value = t('chapter.batch.generation.progress', {
+          completed: progress.completedChapters,
+          total: progress.totalChapters
+        })
 
         if (progress.errorMessage) {
           errorMessage.value = progress.errorMessage
@@ -627,9 +637,9 @@ const handleStartGeneration = async () => {
     )
   } catch (error: any) {
     console.error('生成失败:', error)
-    message.error(error.message || '生成失败，请重试')
+    message.error(error.message || t('chapter.batch.messages.generationFailed'))
     generationStatus.value = 'failed'
-    errorMessage.value = error.message
+    errorMessage.value = error.message || ''
   } finally {
     generating.value = false
   }
@@ -646,7 +656,7 @@ const loadPreview = async (batchId: string) => {
     selectedChapters.value = preview.value.chapters.map(c => c.id)
   } catch (error: any) {
     console.error('加载预览失败:', error)
-    message.error('加载预览失败')
+    message.error(t('chapter.batch.messages.loadPreviewFailed'))
   } finally {
     loadingPreview.value = false
   }
@@ -664,7 +674,7 @@ const handleCheckAllChange = (e: any) => {
 // 应用章节
 const handleApplyChapters = async () => {
   if (selectedChapters.value.length === 0) {
-    message.warning('请选择要应用的章节')
+    message.warning(t('chapter.batch.messages.selectChapters'))
     return
   }
 
@@ -675,12 +685,12 @@ const handleApplyChapters = async () => {
       selectedChapters.value
     )
 
-    message.success(`成功应用 ${result.createdChapters} 个章节`)
+    message.success(t('chapter.batch.messages.applySuccess', { count: result.createdChapters }))
     emit('success', result)
     emit('close')
   } catch (error: any) {
     console.error('应用章节失败:', error)
-    message.error(error.message || '应用章节失败')
+    message.error(error.message || t('chapter.batch.messages.applyFailed'))
   } finally {
     applying.value = false
   }
@@ -710,11 +720,11 @@ const handleSaveEdit = async () => {
       await loadPreview(currentBatchId.value)
     }
 
-    message.success('章节更新成功')
+    message.success(t('chapter.batch.messages.updateSuccess'))
     editModalVisible.value = false
   } catch (error: any) {
     console.error('更新章节失败:', error)
-    message.error('更新章节失败')
+    message.error(t('chapter.batch.messages.updateFailed'))
   } finally {
     saving.value = false
   }
@@ -724,10 +734,10 @@ const handleSaveEdit = async () => {
 const handleRegenerateChapter = async (chapter: any) => {
   try {
     await batchChapterService.regenerateChapter(chapter.id)
-    message.info('章节重新生成功能开发中')
+    message.info(t('chapter.batch.messages.regenerateInfo'))
   } catch (error: any) {
     console.error('重新生成失败:', error)
-    message.error('重新生成失败')
+    message.error(t('chapter.batch.messages.regenerateFailed'))
   }
 }
 

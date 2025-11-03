@@ -5,15 +5,15 @@
         <div class="header-left">
           <h1 class="page-title">
             <FileTextOutlined />
-            {{ $t('chapter.title') }}
+            {{ t('chapter.title') }}
           </h1>
-          <p class="page-description">{{ $t('nav.chapters') }}</p>
+          <p class="page-description">{{ t('nav.chapters') }}</p>
         </div>
         <div class="header-actions">
           <a-space>
             <a-input-search
               v-model:value="searchText"
-              :placeholder="$t('chapter.searchPlaceholder')"
+              :placeholder="t('chapter.searchPlaceholder')"
               style="width: 200px"
               @search="handleSearch"
               @pressEnter="handleSearch"
@@ -21,34 +21,34 @@
             />
             <a-select
               v-model:value="statusFilter"
-              :placeholder="$t('common.filter')"
+              :placeholder="t('common.filter')"
               style="width: 120px"
               @change="handleStatusFilter"
               allow-clear
             >
-              <a-select-option value="">全部状态</a-select-option>
-              <a-select-option value="planning">规划中</a-select-option>
-              <a-select-option value="writing">写作中</a-select-option>
-              <a-select-option value="reviewing">审核中</a-select-option>
-              <a-select-option value="completed">已完成</a-select-option>
+              <a-select-option value="">{{ t('chapter.list.filters.allStatuses') }}</a-select-option>
+              <a-select-option value="planning">{{ t('chapter.status.planning') }}</a-select-option>
+              <a-select-option value="writing">{{ t('chapter.status.writing') }}</a-select-option>
+              <a-select-option value="reviewing">{{ t('chapter.status.reviewing') }}</a-select-option>
+              <a-select-option value="completed">{{ t('chapter.status.completed') }}</a-select-option>
             </a-select>
             <a-dropdown>
               <a-button type="primary" :loading="chaptersLoading">
                 <template #icon>
                   <PlusOutlined />
                 </template>
-                添加章节
+                {{ t('chapter.addChapter') }}
                 <DownOutlined style="margin-left: 4px; font-size: 10px;" />
               </a-button>
               <template #overlay>
                 <a-menu @click="handleAddMenuClick">
                   <a-menu-item key="single">
                     <PlusOutlined />
-                    单个添加
+                    {{ t('chapter.list.menu.single') }}
                   </a-menu-item>
                   <a-menu-item key="batch">
                     <BulbOutlined />
-                    AI批量生成
+                    {{ t('chapter.list.menu.batch') }}
                   </a-menu-item>
                 </a-menu>
               </template>
@@ -71,7 +71,7 @@
             total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total: any) => `共 ${total} 个章节`,
+            showTotal: (total: number) => t('chapter.list.pagination.total', { count: total }),
             onChange: handlePageChange,
             onShowSizeChange: handlePageSizeChange
           }"
@@ -81,7 +81,7 @@
             <template v-if="column.key === 'title'">
               <div class="chapter-title-cell">
                 <a-typography-link @click="editChapter(record)">
-                  第{{ record.chapterNumber }}章：{{ record.title }}
+                  {{ t('chapter.list.table.chapterTitle', { number: record.chapterNumber, title: record.title }) }}
                 </a-typography-link>
               </div>
             </template>
@@ -121,7 +121,7 @@
                   <template #icon>
                     <EditOutlined />
                   </template>
-                  写作
+                  {{ t('chapter.list.actions.write') }}
                 </a-button>
                 <a-button
                   type="text"
@@ -131,7 +131,7 @@
                   <template #icon>
                     <EditOutlined />
                   </template>
-                  编辑
+                  {{ t('chapter.list.actions.editInfo') }}
                 </a-button>
                 <a-button
                   type="text"
@@ -141,12 +141,12 @@
                   <template #icon>
                     <CopyOutlined />
                   </template>
-                  复制
+                  {{ t('common.duplicate') }}
                 </a-button>
                 <a-popconfirm
-                  title="确定要删除这个章节吗？"
-                  ok-text="确定"
-                  cancel-text="取消"
+                  :title="t('chapter.deleteConfirm')"
+                  :ok-text="t('common.confirm')"
+                  :cancel-text="t('common.cancel')"
                   @confirm="deleteChapterConfirm(record.id)"
                 >
                   <a-button
@@ -157,7 +157,7 @@
                     <template #icon>
                       <DeleteOutlined />
                     </template>
-                    删除
+                    {{ t('common.delete') }}
                   </a-button>
                 </a-popconfirm>
               </a-space>
@@ -170,60 +170,60 @@
     <!-- Add Chapter Dialog -->
     <a-modal
       v-model:open="addChapterVisible"
-      title="添加新章节"
+      :title="t('chapter.addNew')"
       width="600px"
       @ok="handleAddChapter"
       :confirm-loading="chaptersLoading"
     >
       <a-form layout="vertical" :model="addChapterForm">
         <a-form-item
-          label="章节标题"
+          :label="t('chapter.chapterTitle')"
           name="title"
-          :rules="[{ required: true, message: '请输入章节标题' }]"
+          :rules="[{ required: true, message: t('chapter.enterTitleRequired') }]"
         >
           <a-input
             v-model:value="addChapterForm.title"
-            placeholder="请输入章节标题"
+            :placeholder="t('chapter.enterTitle')"
             :maxlength="100"
             show-count
           />
         </a-form-item>
 
         <a-form-item
-          label="添加方式"
+          :label="t('chapter.list.addModeLabel')"
           name="insertMode"
         >
           <a-radio-group v-model:value="addChapterForm.insertMode">
-            <a-radio value="append">添加到末尾（第 {{ nextChapterNumber }} 章）</a-radio>
-            <a-radio value="insert">插入到指定位置</a-radio>
+            <a-radio value="append">{{ t('chapter.list.addModeAppend', { number: nextChapterNumber }) }}</a-radio>
+            <a-radio value="insert">{{ t('chapter.list.addModeInsert') }}</a-radio>
           </a-radio-group>
         </a-form-item>
 
         <a-form-item
           v-if="addChapterForm.insertMode === 'insert'"
-          label="章节号"
+          :label="t('chapter.chapterNumber')"
           name="chapterNumber"
-          :rules="[{ required: true, message: '请输入章节号' }]"
+          :rules="[{ required: true, message: t('chapter.list.validation.enterChapterNumber') }]"
         >
           <a-input-number
             v-model:value="addChapterForm.chapterNumber"
             :min="1"
             :max="nextChapterNumber"
-            placeholder="请输入章节号"
+            :placeholder="t('chapter.list.chapterNumberPlaceholder')"
             style="width: 200px"
           />
           <span style="margin-left: 8px; color: #8c8c8c; font-size: 12px;">
-            插入到该位置，后续章节自动后移
+            {{ t('chapter.list.insertHint') }}
           </span>
         </a-form-item>
 
         <a-form-item
-          label="章节大纲"
+          :label="t('chapter.chapterOutline')"
           name="outline"
         >
           <a-textarea
             v-model:value="addChapterForm.outline"
-            placeholder="请输入章节大纲（可选）"
+            :placeholder="t('chapter.outlinePlaceholder')"
             :rows="4"
             :maxlength="500"
             show-count
@@ -232,16 +232,16 @@
 
         <div class="chapter-info">
           <a-descriptions :column="2" size="small">
-            <a-descriptions-item label="将创建为">
+            <a-descriptions-item :label="t('chapter.list.summary.willCreateAs')">
               <span v-if="addChapterForm.insertMode === 'append'">
-                第 {{ nextChapterNumber }} 章
+                {{ t('chapter.list.summary.appendResult', { number: nextChapterNumber }) }}
               </span>
               <span v-else>
-                第 {{ addChapterForm.chapterNumber }} 章（插入模式）
+                {{ t('chapter.list.summary.insertResult', { number: addChapterForm.chapterNumber }) }}
               </span>
             </a-descriptions-item>
-            <a-descriptions-item label="初始状态">
-              规划中
+            <a-descriptions-item :label="t('chapter.list.summary.initialStatus')">
+              {{ t('chapter.status.planning') }}
             </a-descriptions-item>
           </a-descriptions>
         </div>
@@ -251,32 +251,32 @@
     <!-- Edit Chapter Dialog -->
     <a-modal
       v-model:open="editChapterVisible"
-      title="编辑章节"
+      :title="t('chapter.editChapter')"
       width="600px"
       @ok="handleEditChapter"
       :confirm-loading="chaptersLoading"
     >
       <a-form layout="vertical" :model="editChapterForm" v-if="editChapterForm">
         <a-form-item
-          label="章节标题"
+          :label="t('chapter.chapterTitle')"
           name="title"
-          :rules="[{ required: true, message: '请输入章节标题' }]"
+          :rules="[{ required: true, message: t('chapter.enterTitleRequired') }]"
         >
           <a-input
             v-model:value="editChapterForm.title"
-            placeholder="请输入章节标题"
+            :placeholder="t('chapter.enterTitle')"
             :maxlength="100"
             show-count
           />
         </a-form-item>
 
         <a-form-item
-          label="章节大纲"
+          :label="t('chapter.chapterOutline')"
           name="outline"
         >
           <a-textarea
             v-model:value="editChapterForm.outline"
-            placeholder="请输入章节大纲（可选）"
+            :placeholder="t('chapter.outlinePlaceholder')"
             :rows="4"
             :maxlength="500"
             show-count
@@ -284,24 +284,24 @@
         </a-form-item>
 
         <a-form-item
-          label="状态"
+          :label="t('chapter.chapterStatus')"
           name="status"
         >
           <a-select v-model:value="editChapterForm.status">
-            <a-select-option value="planning">规划中</a-select-option>
-            <a-select-option value="writing">写作中</a-select-option>
-            <a-select-option value="reviewing">审核中</a-select-option>
-            <a-select-option value="completed">已完成</a-select-option>
+            <a-select-option value="planning">{{ t('chapter.status.planning') }}</a-select-option>
+            <a-select-option value="writing">{{ t('chapter.status.writing') }}</a-select-option>
+            <a-select-option value="reviewing">{{ t('chapter.status.reviewing') }}</a-select-option>
+            <a-select-option value="completed">{{ t('chapter.status.completed') }}</a-select-option>
           </a-select>
         </a-form-item>
 
         <div class="chapter-info">
           <a-descriptions :column="2" size="small">
-            <a-descriptions-item label="章节号">
-              第 {{ editChapterForm.chapterNumber }} 章
+            <a-descriptions-item :label="t('chapter.chapterNumber')">
+              {{ t('chapter.list.summary.chapterNumberValue', { number: editChapterForm.chapterNumber }) }}
             </a-descriptions-item>
-            <a-descriptions-item label="字数">
-              {{ getWordCount(editChapterForm.content) }} 字
+            <a-descriptions-item :label="t('chapter.wordCount')">
+              {{ t('chapter.list.summary.wordCountValue', { count: getWordCount(editChapterForm.content) }) }}
             </a-descriptions-item>
           </a-descriptions>
         </div>
@@ -311,7 +311,7 @@
     <!-- Batch Chapter Creator Modal -->
     <a-modal
       v-model:open="batchChapterVisible"
-      title="AI批量章节生成"
+      :title="t('chapter.list.batchModalTitle')"
       width="1200px"
       :footer="null"
       :maskClosable="false"
@@ -344,10 +344,12 @@ import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
 import { countValidWords } from '@/utils/textUtils'
 import BatchChapterCreator from '@/components/chapter/BatchChapterCreator.vue'
-import ConsistencyIndicator from "@/components/consistency/ConsistencyIndicator.vue";
+import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const projectStore = useProjectStore()
+const { t, locale } = useI18n()
 const {
   chapters,
   loading: chaptersLoading,
@@ -380,9 +382,9 @@ const searchText = ref('')
 const statusFilter = ref('')
 
 // 表格列定义
-const columns = [
+const columns = computed(() => [
   {
-    title: '章节',
+    title: t('chapter.chapterTitle'),
     key: 'title',
     dataIndex: 'title',
     width: 300,
@@ -390,7 +392,7 @@ const columns = [
     sortDirections: ['ascend', 'descend']
   },
   {
-    title: '状态',
+    title: t('chapter.chapterStatus'),
     key: 'status',
     dataIndex: 'status',
     width: 140,
@@ -398,13 +400,13 @@ const columns = [
     sortDirections: ['ascend', 'descend']
   },
   {
-    title: '字数',
+    title: t('chapter.wordCount'),
     key: 'wordCount',
     dataIndex: 'content',
     width: 100
   },
   {
-    title: '更新时间',
+    title: t('common.updatedAt'),
     key: 'updatedAt',
     dataIndex: 'updatedAt',
     width: 150,
@@ -412,11 +414,11 @@ const columns = [
     sortDirections: ['ascend', 'descend']
   },
   {
-    title: '操作',
+    title: t('common.actions'),
     key: 'actions',
     width: 200
   }
-]
+])
 
 // 组件挂载时加载数据
 onMounted(async () => {
@@ -451,7 +453,7 @@ const handleAddMenuClick = ({ key }) => {
 // 添加章节相关方法
 const showAddChapterDialog = () => {
   if (!projectStore.currentProject) {
-    message.error('请先选择作品')
+    message.error(t('chapter.list.selectProjectFirst'))
     return
   }
 
@@ -466,7 +468,7 @@ const showAddChapterDialog = () => {
 
 const showBatchChapterDialog = () => {
   if (!projectStore.currentProject) {
-    message.error('请先选择作品')
+    message.error(t('chapter.list.selectProjectFirst'))
     return
   }
 
@@ -479,7 +481,7 @@ const handleBatchCreatorClose = () => {
 
 const handleBatchCreatorSuccess = async (result: any) => {
   batchChapterVisible.value = false
-  message.success(`成功创建 ${result.createdChapters} 个章节`)
+  message.success(t('chapter.list.batchCreateSuccess', { count: result.createdChapters }))
 
   // 刷新章节列表以显示新创建的章节
   if (projectStore.currentProject) {
@@ -489,7 +491,7 @@ const handleBatchCreatorSuccess = async (result: any) => {
 
 const handleAddChapter = async () => {
   if (!addChapterForm.value.title.trim()) {
-    message.error('请输入章节标题')
+    message.error(t('chapter.enterTitleRequired'))
     return
   }
 
@@ -530,7 +532,7 @@ const handleEditChapter = async () => {
   if (!editChapterForm.value) return
 
   if (!editChapterForm.value.title.trim()) {
-    message.error('请输入章节标题')
+    message.error(t('chapter.enterTitleRequired'))
     return
   }
 
@@ -549,12 +551,12 @@ const handleEditChapter = async () => {
 // 复制章节
 const duplicateChapter = async (chapter: Chapter) => {
   const newChapter = await createChapter({
-    title: `${chapter.title}（副本）`,
+    title: `${chapter.title}${t('chapter.list.duplicateSuffix')}`,
     outline: chapter.outline || ''
   })
 
   if (newChapter) {
-    message.success('章节复制成功')
+    message.success(t('chapter.list.duplicateSuccess'))
   }
 }
 
@@ -562,7 +564,7 @@ const duplicateChapter = async (chapter: Chapter) => {
 const deleteChapterConfirm = async (chapterId: string) => {
   const success = await deleteChapter(chapterId)
   if (success) {
-    message.success('章节删除成功')
+    message.success(t('message.deleteSuccess'))
   }
 }
 
@@ -578,13 +580,9 @@ const getStatusColor = (status: string) => {
 }
 
 const getStatusText = (status: string) => {
-  const texts = {
-    'planning': '规划中',
-    'writing': '写作中',
-    'reviewing': '审核中',
-    'completed': '已完成'
-  }
-  return texts[status as keyof typeof texts] || status
+  const key = `chapter.status.${status}`
+  const translated = t(key)
+  return translated === key ? status : translated
 }
 
 const getWordCount = (content?: string) => {
@@ -601,17 +599,18 @@ const formatDate = (dateString: string) => {
   const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
 
   if (diffInHours < 1) {
-    return '刚刚'
+    return t('date.justNow')
   } else if (diffInHours < 24) {
-    return `${diffInHours}小时前`
+    return `${diffInHours}${t('date.hoursAgo')}`
   } else if (diffInHours < 24 * 7) {
     const days = Math.floor(diffInHours / 24)
-    return `${days}天前`
+    return `${days}${t('date.daysAgo')}`
   } else {
-    return date.toLocaleDateString('zh-CN', {
+    const localeValue = locale.value === 'zh' ? 'zh-CN' : 'en-US'
+    return new Intl.DateTimeFormat(localeValue, {
       month: 'short',
       day: 'numeric'
-    })
+    }).format(date)
   }
 }
 

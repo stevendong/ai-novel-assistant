@@ -41,7 +41,10 @@
     "complete": "Complete",
     "viewDetails": "View Details",
     "status": "Status",
+    "actions": "Actions",
     "noDescription": "No description",
+    "selectAll": "Select All",
+    "notSet": "Not set",
     "priority": {
       "high": "High",
       "medium": "Medium",
@@ -217,7 +220,180 @@
       "published": "Published",
       "planning": "Planning"
     },
-    "selectedChapters": "{count} chapters selected"
+    "selectedChapters": "{count} chapters selected",
+    "list": {
+      "filters": {
+        "allStatuses": "All statuses"
+      },
+      "menu": {
+        "single": "Add Single",
+        "batch": "AI Batch Generate"
+      },
+      "table": {
+        "chapterTitle": "Chapter {number}: {title}"
+      },
+      "actions": {
+        "write": "Write",
+        "editInfo": "Edit Info"
+      },
+      "pagination": {
+        "total": "Total {count} chapters"
+      },
+      "addModeLabel": "Add Mode",
+      "addModeAppend": "Add to end (Chapter {number})",
+      "addModeInsert": "Insert at specific position",
+      "validation": {
+        "enterChapterNumber": "Please enter chapter number"
+      },
+      "chapterNumberPlaceholder": "Enter chapter number",
+      "insertHint": "Insert at this position; subsequent chapters move forward",
+      "summary": {
+        "willCreateAs": "Will be created as",
+        "appendResult": "Chapter {number}",
+        "insertResult": "Chapter {number} (insert mode)",
+        "initialStatus": "Initial Status",
+        "chapterNumberValue": "Chapter {number}",
+        "wordCountValue": "{count} words"
+      },
+      "batchModalTitle": "AI Batch Chapter Generation",
+      "selectProjectFirst": "Please select a project first",
+      "batchCreateSuccess": "{count} chapters created successfully",
+      "duplicateSuccess": "Chapter duplicated successfully",
+      "duplicateSuffix": " (Copy)"
+    },
+    "batch": {
+      "steps": {
+        "configure": "Configure Generation",
+        "analysis": "AI Analysis",
+        "generating": "Generating",
+        "preview": "Preview & Apply"
+      },
+      "form": {
+        "novel": "Novel",
+        "novelPlaceholder": "Select the novel to generate chapters for",
+        "batchName": "Batch Name",
+        "batchNamePlaceholder": "e.g., Volume 2 Chapter Plan",
+        "mode": "Generation Mode",
+        "chapterCount": "Chapters to Generate",
+        "chapterCountPlaceholder": "1-20 chapters",
+        "chapterCountHint": "Recommended to generate 5-10 chapters at a time",
+        "startPosition": "Start Position",
+        "startPositionPlaceholder": "Insert starting from chapter number",
+        "advanced": "Advanced Options",
+        "targetWords": "Target Words per Chapter",
+        "targetWordsPlaceholder": "2000",
+        "targetWordsHint": "Default 2000 words",
+        "focusAreas": "Focus Areas",
+        "focusAreasPlaceholder": "Select focus areas",
+        "startAnalysis": "Start Analysis",
+        "errors": {
+          "selectNovel": "Please select a novel",
+          "batchName": "Please enter a batch name",
+          "mode": "Please select a generation mode",
+          "chapterCount": "Please enter the number of chapters",
+          "chapterCountRange": "Chapter count must be between 1 and 20"
+        },
+        "focusOptions": {
+          "plot": "Plot Progression",
+          "character": "Character Development",
+          "world": "Worldbuilding",
+          "conflict": "Conflict Design",
+          "emotion": "Emotional Arc"
+        }
+      },
+      "modes": {
+        "continue": {
+          "title": "Continuation Mode",
+          "desc": "Develop subsequent chapters based on the existing plot"
+        },
+        "insert": {
+          "title": "Insertion Mode",
+          "desc": "Insert new story content between existing chapters"
+        },
+        "branch": {
+          "title": "Branch Mode",
+          "desc": "Explore alternate plot branches"
+        },
+        "expand": {
+          "title": "Expansion Mode",
+          "desc": "Expand existing chapters into more detailed installments"
+        }
+      },
+      "autoBatchName": "{title} - Batch {date}",
+      "analysis": {
+        "loading": "AI analyzing novel context...",
+        "completedTitle": "Context Analysis Complete",
+        "completedDescription": "AI has finished analyzing \"{title}\". Here's the summary.",
+        "novelInfo": "Novel Information",
+        "genre": "Genre",
+        "status": "Status",
+        "wordCount": "Current Word Count",
+        "chapterCount": "Chapter Count",
+        "plotAnalysis": "Plot Analysis",
+        "currentStage": "Current Stage",
+        "mainConflicts": "Main Conflicts",
+        "directions": "Potential Directions",
+        "characters": "Key Characters",
+        "moreCharacters": "{count} more characters...",
+        "settings": "World Settings",
+        "moreSettings": "{count} more settings...",
+        "backToEdit": "Back to Edit",
+        "startGeneration": "Start Generating Chapters"
+      },
+      "generation": {
+        "status": {
+          "pending": "Preparing generation...",
+          "analyzing": "Analyzing context...",
+          "generating": "Generating chapters...",
+          "completed": "Generation complete!",
+          "failed": "Generation failed",
+          "processing": "Processing..."
+        },
+        "progress": "Completed {completed}/{total} chapters",
+        "errorPrefix": "Error: {message}"
+      },
+      "preview": {
+        "alertTitle": "Chapters generated!",
+        "alertDescription": "Review the generated chapters and choose which ones to apply to your novel",
+        "applySelected": "Apply Selected Chapters ({count})",
+        "viewHistory": "View Batch History",
+        "tagPriority": "Priority: {priority}/5",
+        "tagConfidence": "AI Confidence: {confidence}%",
+        "tagEstimate": "Estimate: {words} words",
+        "sections": {
+          "plotPoints": "Plot Points",
+          "characters": "Characters",
+          "settings": "Settings Used"
+        },
+        "actions": {
+          "regenerate": "Regenerate"
+        }
+      },
+      "editModal": {
+        "title": "Edit Chapter",
+        "outlinePlaceholder": "Describe the chapter in detail...",
+        "notesLabel": "Notes",
+        "notesPlaceholder": "Add notes..."
+      },
+      "history": {
+        "title": "Batch History"
+      },
+      "messages": {
+        "loadNovelsFailed": "Failed to load novels",
+        "analysisSuccess": "Context analysis completed",
+        "analysisFailed": "Analysis failed, please try again",
+        "generationCreated": "Batch generation task created",
+        "generationFailed": "Generation failed, please try again",
+        "loadPreviewFailed": "Failed to load preview",
+        "selectChapters": "Please select chapters to apply",
+        "applySuccess": "{count} chapters applied successfully",
+        "applyFailed": "Failed to apply chapters",
+        "updateSuccess": "Chapter updated successfully",
+        "updateFailed": "Failed to update chapter",
+        "regenerateInfo": "Regeneration feature under development",
+        "regenerateFailed": "Regeneration failed"
+      }
+    }
   },
   "character": {
     "title": "Character Settings",

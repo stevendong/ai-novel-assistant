@@ -41,7 +41,10 @@
     "complete": "完成",
     "viewDetails": "查看详细信息",
     "status": "状态",
+    "actions": "操作",
     "noDescription": "暂无描述",
+    "selectAll": "全选",
+    "notSet": "未设定",
     "priority": {
       "high": "高",
       "medium": "中",
@@ -217,7 +220,180 @@
       "published": "已发布",
       "planning": "规划中"
     },
-    "selectedChapters": "已选择 {count} 个章节"
+    "selectedChapters": "已选择 {count} 个章节",
+    "list": {
+      "filters": {
+        "allStatuses": "全部状态"
+      },
+      "menu": {
+        "single": "单个添加",
+        "batch": "AI批量生成"
+      },
+      "table": {
+        "chapterTitle": "第 {number} 章：{title}"
+      },
+      "actions": {
+        "write": "写作",
+        "editInfo": "编辑信息"
+      },
+      "pagination": {
+        "total": "共 {count} 个章节"
+      },
+      "addModeLabel": "添加方式",
+      "addModeAppend": "添加到末尾（第 {number} 章）",
+      "addModeInsert": "插入到指定位置",
+      "validation": {
+        "enterChapterNumber": "请输入章节号"
+      },
+      "chapterNumberPlaceholder": "请输入章节号",
+      "insertHint": "插入到该位置，后续章节自动后移",
+      "summary": {
+        "willCreateAs": "将创建为",
+        "appendResult": "第 {number} 章",
+        "insertResult": "第 {number} 章（插入模式）",
+        "initialStatus": "初始状态",
+        "chapterNumberValue": "第 {number} 章",
+        "wordCountValue": "{count} 字"
+      },
+      "batchModalTitle": "AI批量章节生成",
+      "selectProjectFirst": "请先选择作品",
+      "batchCreateSuccess": "成功创建 {count} 个章节",
+      "duplicateSuccess": "章节复制成功",
+      "duplicateSuffix": "（副本）"
+    },
+    "batch": {
+      "steps": {
+        "configure": "配置生成",
+        "analysis": "AI分析",
+        "generating": "生成中",
+        "preview": "预览应用"
+      },
+      "form": {
+        "novel": "小说",
+        "novelPlaceholder": "选择要生成章节的小说",
+        "batchName": "批次名称",
+        "batchNamePlaceholder": "例如：第二卷章节计划",
+        "mode": "生成模式",
+        "chapterCount": "生成章节数",
+        "chapterCountPlaceholder": "1-20章",
+        "chapterCountHint": "建议一次生成5-10章",
+        "startPosition": "起始位置",
+        "startPositionPlaceholder": "从第几章开始插入",
+        "advanced": "高级选项",
+        "targetWords": "每章目标字数",
+        "targetWordsPlaceholder": "2000",
+        "targetWordsHint": "默认2000字",
+        "focusAreas": "重点关注",
+        "focusAreasPlaceholder": "选择重点关注的方向",
+        "startAnalysis": "开始分析",
+        "errors": {
+          "selectNovel": "请选择小说",
+          "batchName": "请输入批次名称",
+          "mode": "请选择生成模式",
+          "chapterCount": "请输入章节数",
+          "chapterCountRange": "章节数必须在1-20之间"
+        },
+        "focusOptions": {
+          "plot": "剧情推进",
+          "character": "角色塑造",
+          "world": "世界观展开",
+          "conflict": "冲突设计",
+          "emotion": "情感描写"
+        }
+      },
+      "modes": {
+        "continue": {
+          "title": "续写模式",
+          "desc": "基于现有剧情继续发展后续章节"
+        },
+        "insert": {
+          "title": "插入模式",
+          "desc": "在现有章节间插入新的剧情内容"
+        },
+        "branch": {
+          "title": "分支模式",
+          "desc": "探索不同的剧情发展分支"
+        },
+        "expand": {
+          "title": "扩展模式",
+          "desc": "将现有章节扩展为更详细的多个章节"
+        }
+      },
+      "autoBatchName": "{title} - 批量生成 {date}",
+      "analysis": {
+        "loading": "AI正在分析小说上下文...",
+        "completedTitle": "上下文分析完成",
+        "completedDescription": "AI已完成对《{title}》的分析，以下是分析结果摘要",
+        "novelInfo": "小说信息",
+        "genre": "类型",
+        "status": "状态",
+        "wordCount": "当前字数",
+        "chapterCount": "章节数",
+        "plotAnalysis": "剧情分析",
+        "currentStage": "当前阶段",
+        "mainConflicts": "主要冲突",
+        "directions": "可能发展方向",
+        "characters": "涉及角色",
+        "moreCharacters": "还有 {count} 个角色...",
+        "settings": "世界设定",
+        "moreSettings": "还有 {count} 个设定...",
+        "backToEdit": "返回修改",
+        "startGeneration": "开始生成章节"
+      },
+      "generation": {
+        "status": {
+          "pending": "准备生成...",
+          "analyzing": "AI正在分析上下文...",
+          "generating": "AI正在生成章节...",
+          "completed": "生成完成！",
+          "failed": "生成失败",
+          "processing": "处理中..."
+        },
+        "progress": "已完成 {completed}/{total} 章",
+        "errorPrefix": "错误：{message}"
+      },
+      "preview": {
+        "alertTitle": "章节生成完成！",
+        "alertDescription": "请预览生成的章节，选择要应用到小说中的章节",
+        "applySelected": "应用选中章节 ({count})",
+        "viewHistory": "查看历史批次",
+        "tagPriority": "优先级: {priority}/5",
+        "tagConfidence": "AI信心: {confidence}%",
+        "tagEstimate": "预估: {words}字",
+        "sections": {
+          "plotPoints": "剧情要点",
+          "characters": "涉及角色",
+          "settings": "使用设定"
+        },
+        "actions": {
+          "regenerate": "重新生成"
+        }
+      },
+      "editModal": {
+        "title": "编辑章节",
+        "outlinePlaceholder": "详细描述章节内容...",
+        "notesLabel": "备注",
+        "notesPlaceholder": "添加备注..."
+      },
+      "history": {
+        "title": "批次历史"
+      },
+      "messages": {
+        "loadNovelsFailed": "加载小说列表失败",
+        "analysisSuccess": "上下文分析完成",
+        "analysisFailed": "分析失败，请重试",
+        "generationCreated": "批量生成任务已创建",
+        "generationFailed": "生成失败，请重试",
+        "loadPreviewFailed": "加载预览失败",
+        "selectChapters": "请选择要应用的章节",
+        "applySuccess": "成功应用 {count} 个章节",
+        "applyFailed": "应用章节失败",
+        "updateSuccess": "章节更新成功",
+        "updateFailed": "更新章节失败",
+        "regenerateInfo": "章节重新生成功能开发中",
+        "regenerateFailed": "重新生成失败"
+      }
+    }
   },
   "character": {
     "title": "人物设定",
