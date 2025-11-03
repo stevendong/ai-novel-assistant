@@ -1173,6 +1173,267 @@
       "applyEmail": "ainovelassistant@gmail.com"
     }
   },
+  "user": {
+    "menu": {
+      "defaultName": "User",
+      "defaultInitial": "U",
+      "profile": "Profile",
+      "settings": "Settings",
+      "help": "Help",
+      "helpComingSoon": "Help center is under construction...",
+      "logout": "Sign Out",
+      "logoutAllTitle": "Sign Out of All Devices",
+      "logoutAllDescription": "Are you sure you want to sign out of all devices? This will invalidate every active session.",
+      "deleteAccountTitle": "Delete Account",
+      "deleteAccountDescription": "This will permanently delete your account and all related data, including:",
+      "deleteAccountItems": {
+        "novels": "All novels",
+        "characters": "Characters and world settings",
+        "chapters": "Chapter content",
+        "stats": "Writing statistics"
+      },
+      "deleteAccountWarning": "This action cannot be undone!",
+      "deleteAccountPasswordLabel": "Enter your password to confirm deletion",
+      "deleteAccountPasswordPlaceholder": "Enter password",
+      "logoutConfirmTitle": "Confirm Sign Out",
+      "logoutConfirmDescription": "Are you sure you want to sign out of the current account?",
+      "logoutAllSuccess": "Signed out of all devices successfully",
+      "deleteAccountPasswordRequired": "Please enter your password to confirm deletion"
+    },
+    "settings": {
+      "modalTitle": "Settings",
+      "tabs": {
+        "general": "General Settings",
+        "ai": "AI Settings"
+      },
+      "general": {
+        "accountSecurity": "Account Security",
+        "logoutAll": "Sign Out of All Devices",
+        "dangerZone": "Danger Zone",
+        "deleteAccount": "Delete Account",
+        "deleteHint": "This will permanently delete your account and all data. This action cannot be undone."
+      },
+      "ai": {
+        "provider": {
+          "title": "AI Provider",
+          "description": "Choose your preferred AI service provider"
+        },
+        "model": {
+          "title": "AI Model",
+          "description": "Select the specific AI model"
+        },
+        "conversation": {
+          "title": "Conversation Settings",
+          "autoSave": {
+            "label": "Auto-save conversations",
+            "description": "Automatically save AI chat history"
+          },
+          "historyLength": {
+            "label": "Conversation history length",
+            "description": "Number of conversation messages to retain (10-200)"
+          }
+        },
+        "tasks": {
+          "title": "Task Preferences",
+          "description": "Configure preferred models for different task types",
+          "placeholder": "Use default",
+          "types": {
+            "consistency": {
+              "name": "Consistency Check",
+              "description": "Ensure logical consistency of your content"
+            },
+            "creative": {
+              "name": "Creative Writing",
+              "description": "Generate creative content and plot ideas"
+            },
+            "analysis": {
+              "name": "Content Analysis",
+              "description": "Analyze text structure and quality"
+            },
+            "content_generation": {
+              "name": "Content Generation",
+              "description": "Produce chapters and paragraphs"
+            }
+          }
+        },
+        "quickActions": {
+          "title": "Quick Actions",
+          "reset": "Reset to Default",
+          "save": "Save Settings"
+        },
+        "messages": {
+          "loadFailed": "Failed to load AI configuration",
+          "resetSuccess": "Reset to default settings",
+          "resetFailed": "Failed to reset settings",
+          "saveSuccess": "AI settings saved",
+          "saveFailed": "Failed to save settings"
+        }
+      },
+      "custom": {
+        "title": "Custom AI Providers",
+        "description": "Configure your own AI service endpoints",
+        "add": "Add Custom Configuration",
+        "empty": "No custom configurations yet",
+        "detail": {
+          "type": "Type",
+          "model": "Model",
+          "endpoint": "Endpoint"
+        },
+        "actions": {
+          "edit": "Edit",
+          "delete": "Delete"
+        },
+        "modal": {
+          "addTitle": "Add Custom Configuration",
+          "editTitle": "Edit Custom Configuration"
+        },
+        "fields": {
+          "name": {
+            "label": "Configuration Name",
+            "placeholder": "e.g., My OpenAI"
+          },
+          "type": {
+            "label": "Provider Type",
+            "placeholder": "Select type",
+            "options": {
+              "openai": "OpenAI Compatible",
+              "claude": "Claude",
+              "gemini": "Gemini"
+            }
+          },
+          "baseURL": {
+            "label": "API Base URL",
+            "placeholder": "e.g., https://api.openai.com/v1",
+            "hint": "Full API base URL including protocol and path"
+          },
+          "apiKey": {
+            "label": "API Key",
+            "placeholder": "Enter your API key",
+            "hint": "Your API key will be securely stored"
+          },
+          "model": {
+            "label": "Model Name",
+            "placeholder": "e.g., gpt-3.5-turbo",
+            "hintFetched": "Models fetched from the API",
+            "hintManual": "Specify the model name or fetch it from the API"
+          },
+          "timeout": {
+            "label": "Timeout (ms)"
+          }
+        },
+        "buttons": {
+          "fetchModels": "Fetch Models"
+        },
+        "messages": {
+          "missingCredentials": "Please fill in the API key and base URL first",
+          "fetchSuccess": "Fetched {count} models",
+          "fetchNone": "No available models were returned",
+          "fetchError": "Failed to fetch model list: {error}",
+          "deleteSuccess": "Configuration deleted",
+          "fieldsRequired": "Please fill in all required fields",
+          "updateSuccess": "Configuration updated",
+          "createSuccess": "Configuration added"
+        }
+      }
+    },
+    "profile": {
+      "header": {
+        "title": "Profile",
+        "subtitle": "Manage your personal information and account settings"
+      },
+      "basicInfo": {
+        "title": "Basic Information",
+        "username": "Username",
+        "usernameHint": "Username cannot be changed",
+        "email": "Email",
+        "emailHint": "Email cannot be changed",
+        "nickname": "Nickname",
+        "nicknamePlaceholder": "Enter nickname",
+        "avatar": "Avatar",
+        "submit": "Update Profile"
+      },
+      "password": {
+        "title": "Change Password",
+        "current": "Current Password",
+        "currentPlaceholder": "Enter current password",
+        "new": "New Password",
+        "newPlaceholder": "Enter new password",
+        "confirm": "Confirm Password",
+        "confirmPlaceholder": "Re-enter new password",
+        "submit": "Update Password",
+        "reset": "Reset"
+      },
+      "passwordStrength": {
+        "weak": "Weak",
+        "medium": "Medium",
+        "strong": "Strong",
+        "veryStrong": "Very Strong"
+      },
+      "stats": {
+        "title": "Statistics",
+        "novels": "Novels",
+        "chapters": "Chapters",
+        "totalWords": "Total Words",
+        "activeSessions": "Active Sessions",
+        "recentActivity": "Recent Activity",
+        "activitySuffix": "items"
+      },
+      "sessions": {
+        "title": "Login Sessions",
+        "refresh": "Refresh",
+        "currentSession": "Current Session",
+        "ipLabel": "IP",
+        "lastActive": "Last Active",
+        "unknown": "Unknown",
+        "devices": {
+          "windows": "Windows Device",
+          "mac": "Mac Device",
+          "linux": "Linux Device",
+          "android": "Android Device",
+          "ios": "iOS Device",
+          "unknown": "Unknown Device"
+        },
+        "logout": "Sign Out",
+        "logoutAll": "Sign Out of All Other Sessions"
+      },
+      "messages": {
+        "updateSuccess": "Profile updated successfully",
+        "updateFailed": "Profile update failed",
+        "passwordSuccess": "Password changed successfully. Other sessions have been signed out.",
+      "passwordFailed": "Failed to change password",
+      "avatarUploadSuccess": "Avatar uploaded successfully",
+      "avatarDeleteSuccess": "Avatar removed successfully",
+      "avatarUploadFailed": "Failed to upload avatar",
+      "avatarDeleteFailed": "Failed to delete avatar",
+      "imageProcessFailed": "Image processing failed",
+      "fileTypeInvalid": "Please select an image file",
+      "fileSizeExceeded": "Image size cannot exceed 5MB",
+      "statsLoadFailed": "Failed to load statistics",
+      "sessionsLoadFailed": "Failed to load sessions",
+      "sessionLogoutSuccess": "Session signed out successfully",
+      "sessionLogoutFailed": "Failed to sign out session",
+      "logoutAllSuccess": "All other sessions signed out",
+      "logoutAllFailed": "Failed to sign out other sessions"
+      },
+      "avatarUpload": {
+        "upload": "Upload Avatar",
+        "change": "Change Avatar",
+        "delete": "Delete Avatar",
+        "compressionTitle": "Image compressed by {ratio}%",
+        "compressionDescription": "Original size: {original}, Compressed size: {compressed}",
+        "tip": "Supports JPG, PNG, GIF formats up to 5MB"
+      },
+      "rules": {
+        "nicknameMax": "Nickname cannot exceed 50 characters",
+        "nicknameInvalid": "Nickname cannot contain special characters",
+        "currentPasswordRequired": "Please enter your current password",
+        "newPasswordRequired": "Please enter a new password",
+        "newPasswordMin": "Password must be at least 6 characters",
+        "confirmPasswordRequired": "Please confirm your new password",
+        "confirmPasswordMismatch": "Passwords do not match"
+      }
+    }
+  },
   "message": {
     "saveSuccess": "Save successful",
     "saveFailed": "Save failed",

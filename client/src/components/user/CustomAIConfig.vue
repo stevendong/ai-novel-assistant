@@ -1,11 +1,11 @@
 <template>
   <div class="custom-ai-config">
     <div class="config-header">
-      <h4>自定义AI提供商</h4>
-      <p class="section-description">配置您自己的 AI 服务接口</p>
+      <h4>{{ t('user.settings.custom.title') }}</h4>
+      <p class="section-description">{{ t('user.settings.custom.description') }}</p>
       <a-button type="primary" @click="showAddModal">
         <template #icon><PlusOutlined /></template>
-        添加自定义配置
+        {{ t('user.settings.custom.add') }}
       </a-button>
     </div>
 
@@ -14,66 +14,66 @@
         <div class="config-info">
           <div class="config-name">{{ config.name }}</div>
           <div class="config-details">
-            <span class="detail-item">类型: {{ config.type }}</span>
-            <span class="detail-item">模型: {{ config.model }}</span>
-            <span class="detail-item">接口: {{ config.baseURL }}</span>
+            <span class="detail-item">{{ t('user.settings.custom.detail.type') }}: {{ getProviderTypeLabel(config.type) }}</span>
+            <span class="detail-item">{{ t('user.settings.custom.detail.model') }}: {{ config.model }}</span>
+            <span class="detail-item">{{ t('user.settings.custom.detail.endpoint') }}: {{ config.baseURL }}</span>
           </div>
         </div>
         <div class="config-actions">
-          <a-button size="small" @click="editConfig(index)">编辑</a-button>
-          <a-button size="small" danger @click="deleteConfig(index)">删除</a-button>
+          <a-button size="small" @click="editConfig(index)">{{ t('user.settings.custom.actions.edit') }}</a-button>
+          <a-button size="small" danger @click="deleteConfig(index)">{{ t('user.settings.custom.actions.delete') }}</a-button>
         </div>
       </div>
     </div>
 
-    <a-empty v-else description="还没有自定义配置" />
+    <a-empty v-else :description="t('user.settings.custom.empty')" />
 
     <!-- 添加/编辑配置弹窗 -->
     <a-modal
       v-model:open="modalVisible"
-      :title="editingIndex !== null ? '编辑自定义配置' : '添加自定义配置'"
+      :title="editingIndex !== null ? t('user.settings.custom.modal.editTitle') : t('user.settings.custom.modal.addTitle')"
       @ok="handleSaveConfig"
       @cancel="handleCancelConfig"
       width="600px"
     >
       <a-form :model="formData" layout="vertical">
-        <a-form-item label="配置名称" required>
+        <a-form-item :label="t('user.settings.custom.fields.name.label')" required>
           <a-input
             v-model:value="formData.name"
-            placeholder="例如: 我的OpenAI"
+            :placeholder="t('user.settings.custom.fields.name.placeholder')"
           />
         </a-form-item>
 
-        <a-form-item label="提供商类型" required>
-          <a-select v-model:value="formData.type" placeholder="选择类型">
-            <a-select-option value="openai">OpenAI 兼容</a-select-option>
-            <a-select-option value="claude">Claude</a-select-option>
-            <a-select-option value="gemini">Gemini</a-select-option>
+        <a-form-item :label="t('user.settings.custom.fields.type.label')" required>
+          <a-select v-model:value="formData.type" :placeholder="t('user.settings.custom.fields.type.placeholder')">
+            <a-select-option value="openai">{{ t('user.settings.custom.fields.type.options.openai') }}</a-select-option>
+            <a-select-option value="claude">{{ t('user.settings.custom.fields.type.options.claude') }}</a-select-option>
+            <a-select-option value="gemini">{{ t('user.settings.custom.fields.type.options.gemini') }}</a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item label="API 基础地址" required>
+        <a-form-item :label="t('user.settings.custom.fields.baseURL.label')" required>
           <a-input
             v-model:value="formData.baseURL"
-            placeholder="例如: https://api.openai.com/v1"
+            :placeholder="t('user.settings.custom.fields.baseURL.placeholder')"
           />
-          <small class="form-hint">完整的 API 基础地址，包含协议和路径</small>
+          <small class="form-hint">{{ t('user.settings.custom.fields.baseURL.hint') }}</small>
         </a-form-item>
 
-        <a-form-item label="API Key" required>
+        <a-form-item :label="t('user.settings.custom.fields.apiKey.label')" required>
           <a-input-password
             v-model:value="formData.apiKey"
-            placeholder="输入您的 API Key"
+            :placeholder="t('user.settings.custom.fields.apiKey.placeholder')"
           />
-          <small class="form-hint">您的 API 密钥将被安全加密存储</small>
+          <small class="form-hint">{{ t('user.settings.custom.fields.apiKey.hint') }}</small>
         </a-form-item>
 
-        <a-form-item label="模型名称" required>
+        <a-form-item :label="t('user.settings.custom.fields.model.label')" required>
           <a-input-group compact style="display: flex;">
             <a-select
               v-if="availableModels.length > 0"
               v-model:value="formData.model"
-              placeholder="选择模型"
+              :placeholder="t('user.settings.custom.fields.model.placeholder')"
               style="flex: 1"
               :options="availableModels"
               show-search
@@ -81,7 +81,7 @@
             <a-input
               v-else
               v-model:value="formData.model"
-              placeholder="例如: gpt-3.5-turbo"
+              :placeholder="t('user.settings.custom.fields.model.placeholder')"
               style="flex: 1"
             />
             <a-button
@@ -90,15 +90,15 @@
               :disabled="!formData.apiKey || !formData.baseURL"
             >
               <template #icon><ReloadOutlined /></template>
-              获取模型
+              {{ t('user.settings.custom.buttons.fetchModels') }}
             </a-button>
           </a-input-group>
           <small class="form-hint">
-            {{ availableModels.length > 0 ? '从API获取到的可用模型' : '使用的具体模型名称，或点击"获取模型"从API获取' }}
+            {{ availableModels.length > 0 ? t('user.settings.custom.fields.model.hintFetched') : t('user.settings.custom.fields.model.hintManual') }}
           </small>
         </a-form-item>
 
-        <a-form-item label="超时时间 (毫秒)">
+        <a-form-item :label="t('user.settings.custom.fields.timeout.label')">
           <a-input-number
             v-model:value="formData.timeout"
             :min="5000"
@@ -117,6 +117,7 @@ import { ref, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons-vue'
 import { apiClient } from '@/utils/api'
+import { useI18n } from 'vue-i18n'
 
 // Props
 const props = defineProps({
@@ -128,6 +129,8 @@ const props = defineProps({
 
 // Emits
 const emit = defineEmits(['update:modelValue'])
+
+const { t } = useI18n()
 
 // Local state
 const configs = ref([...props.modelValue])
@@ -144,6 +147,12 @@ const formData = ref({
   timeout: 60000
 })
 
+const getProviderTypeLabel = (type) => {
+  const key = `user.settings.custom.fields.type.options.${type}`
+  const translated = t(key)
+  return translated === key ? type : translated
+}
+
 // Watch props
 watch(() => props.modelValue, (newVal) => {
   configs.value = [...newVal]
@@ -152,7 +161,7 @@ watch(() => props.modelValue, (newVal) => {
 // Methods
 const fetchModels = async () => {
   if (!formData.value.apiKey || !formData.value.baseURL) {
-    message.warning('请先填写 API Key 和基础地址')
+    message.warning(t('user.settings.custom.messages.missingCredentials'))
     return
   }
 
@@ -171,17 +180,17 @@ const fetchModels = async () => {
     }))
 
     if (models.length > 0) {
-      message.success(`成功获取 ${models.length} 个模型`)
+      message.success(t('user.settings.custom.messages.fetchSuccess', { count: models.length }))
       // 如果当前没有选择模型，自动选择第一个
       if (!formData.value.model) {
         formData.value.model = models[0].id
       }
     } else {
-      message.warning('未获取到可用模型')
+      message.warning(t('user.settings.custom.messages.fetchNone'))
     }
   } catch (error) {
     console.error('Failed to fetch models:', error)
-    message.error('获取模型列表失败: ' + (error.response?.data?.message || error.message))
+    message.error(t('user.settings.custom.messages.fetchError', { error: error.response?.data?.message || error.message }))
     availableModels.value = []
   } finally {
     loadingModels.value = false
@@ -212,23 +221,23 @@ const editConfig = (index) => {
 const deleteConfig = (index) => {
   configs.value.splice(index, 1)
   emit('update:modelValue', configs.value)
-  message.success('配置已删除')
+  message.success(t('user.settings.custom.messages.deleteSuccess'))
 }
 
 const handleSaveConfig = () => {
   // 验证表单
   if (!formData.value.name || !formData.value.baseURL || !formData.value.apiKey || !formData.value.model) {
-    message.error('请填写所有必填项')
+    message.error(t('user.settings.custom.messages.fieldsRequired'))
     return
   }
 
   // 保存配置
   if (editingIndex.value !== null) {
     configs.value[editingIndex.value] = { ...formData.value }
-    message.success('配置已更新')
+    message.success(t('user.settings.custom.messages.updateSuccess'))
   } else {
     configs.value.push({ ...formData.value })
-    message.success('配置已添加')
+    message.success(t('user.settings.custom.messages.createSuccess'))
   }
 
   emit('update:modelValue', configs.value)

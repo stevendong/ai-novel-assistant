@@ -1,25 +1,28 @@
 <template>
   <div class="general-settings">
     <div class="settings-section">
-      <h4>账户安全</h4>
+      <h4>{{ t('user.settings.general.accountSecurity') }}</h4>
       <a-button @click="emit('logoutAll')" block>
-        登出所有设备
+        {{ t('user.settings.general.logoutAll') }}
       </a-button>
     </div>
 
     <div class="settings-section">
-      <h4>危险操作</h4>
+      <h4>{{ t('user.settings.general.dangerZone') }}</h4>
       <a-button danger @click="emit('deleteAccount')" block>
-        删除账户
+        {{ t('user.settings.general.deleteAccount') }}
       </a-button>
-      <small class="form-hint">此操作将永久删除您的账户和所有数据,无法恢复</small>
+      <small class="form-hint">{{ t('user.settings.general.deleteHint') }}</small>
     </div>
   </div>
 </template>
 
 <script setup>
-// Emits
+import { useI18n } from 'vue-i18n'
+
 const emit = defineEmits(['logoutAll', 'deleteAccount'])
+
+const { t } = useI18n()
 </script>
 
 <style scoped>

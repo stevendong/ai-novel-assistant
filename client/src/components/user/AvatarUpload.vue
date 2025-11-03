@@ -20,7 +20,7 @@
           :loading="uploading"
           @click="triggerUpload"
         >
-          <UploadOutlined /> {{ currentAvatar ? '更换头像' : '上传头像' }}
+          <UploadOutlined /> {{ currentAvatar ? t('user.profile.avatarUpload.change') : t('user.profile.avatarUpload.upload') }}
         </a-button>
 
         <a-button
@@ -30,7 +30,7 @@
           :loading="deleting"
           @click="handleDelete"
         >
-          <DeleteOutlined /> 删除头像
+          <DeleteOutlined /> {{ t('user.profile.avatarUpload.delete') }}
         </a-button>
       </div>
     </div>
@@ -47,8 +47,8 @@
     <!-- 压缩信息提示 -->
     <div v-if="compressionInfo" class="compression-info">
       <a-alert
-        :message="`图片已压缩 ${compressionInfo.compressionRatio.toFixed(1)}%`"
-        :description="`原始大小: ${compressionInfo.originalSizeText}, 压缩后: ${compressionInfo.compressedSizeText}`"
+        :message="t('user.profile.avatarUpload.compressionTitle', { ratio: compressionInfo.compressionRatio.toFixed(1) })"
+        :description="t('user.profile.avatarUpload.compressionDescription', { original: compressionInfo.originalSizeText, compressed: compressionInfo.compressedSizeText })"
         type="info"
         closable
         @close="compressionInfo = null"
@@ -58,18 +58,19 @@
     <!-- 上传提示 -->
     <div v-if="showUploadTip" class="upload-tip">
       <a-typography-text type="secondary">
-        支持 JPG、PNG、GIF 格式，文件大小不超过 5MB
+        {{ t('user.profile.avatarUpload.tip') }}
       </a-typography-text>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { message } from 'ant-design-vue';
 import { UserOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { compressImage, formatFileSize, isImageFile, validateImageSize } from '@/utils/imageCompressor';
 import { useAuthStore } from '@/stores/auth';
+import { useI18n } from 'vue-i18n';
 
 interface Props {
   currentAvatar?: string;
@@ -92,6 +93,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
+const { t } = useI18n();
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const previewUrl = ref<string>('');
@@ -117,13 +119,13 @@ const handleFileChange = async (event: Event) => {
 
   // 验证文件类型
   if (!isImageFile(file)) {
-    message.error('请选择图片文件');
+    message.error(t('user.profile.messages.fileTypeInvalid'));
     return;
   }
 
   // 验证文件大小
   if (!validateImageSize(file, 5 * 1024 * 1024)) {
-    message.error('图片大小不能超过 5MB');
+    message.error(t('user.profile.messages.fileSizeExceeded'));
     return;
   }
 
@@ -152,7 +154,7 @@ const handleFileChange = async (event: Event) => {
     await uploadAvatar(compressed.file);
 
   } catch (error: any) {
-    message.error(error.message || '图片处理失败');
+    message.error(error.message || t('user.profile.messages.imageProcessFailed'));
     console.error('Image processing error:', error);
   } finally {
     uploading.value = false;
@@ -172,7 +174,7 @@ const uploadAvatar = async (file: File) => {
     if (result.success && result.data?.user?.avatar) {
       emit('update:currentAvatar', result.data.user.avatar);
       emit('uploadSuccess', result.data.user.avatar);
-      message.success('头像上传成功');
+      message.success(t('user.profile.messages.avatarUploadSuccess'));
 
       // 清空预览
       if (previewUrl.value) {
@@ -180,10 +182,10 @@ const uploadAvatar = async (file: File) => {
         previewUrl.value = '';
       }
     } else {
-      throw new Error(result.error || '头像上传失败');
+      throw new Error(result.error || t('user.profile.messages.avatarUploadFailed'));
     }
   } catch (error: any) {
-    message.error(error.message || '头像上传失败');
+    message.error(error.message || t('user.profile.messages.avatarUploadFailed'));
     throw error;
   }
 };
@@ -197,7 +199,7 @@ const handleDelete = async () => {
     if (result.success) {
       emit('update:currentAvatar', null);
       emit('deleteSuccess');
-      message.success('头像删除成功');
+      message.success(t('user.profile.messages.avatarDeleteSuccess'));
 
       // 清空预览
       if (previewUrl.value) {
@@ -205,10 +207,10 @@ const handleDelete = async () => {
         previewUrl.value = '';
       }
     } else {
-      throw new Error(result.error || '头像删除失败');
+      throw new Error(result.error || t('user.profile.messages.avatarDeleteFailed'));
     }
   } catch (error: any) {
-    message.error(error.message || '头像删除失败');
+    message.error(error.message || t('user.profile.messages.avatarDeleteFailed'));
   } finally {
     deleting.value = false;
   }

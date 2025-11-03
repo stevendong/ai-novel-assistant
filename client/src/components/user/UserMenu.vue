@@ -11,25 +11,25 @@
             {{ getInitials(authStore.user?.nickname || authStore.user?.username) }}
           </a-avatar>
         </template>
-        <span class="username">{{ authStore.user?.nickname || authStore.user?.username || '用户' }}</span>
+        <span class="username">{{ authStore.user?.nickname || authStore.user?.username || t('user.menu.defaultName') }}</span>
         <DownOutlined />
       </a-button>
 
       <template #overlay>
         <a-menu @click="handleMenuClick">
           <a-menu-item key="profile" :icon="h(UserOutlined)">
-            个人资料
+            {{ t('user.menu.profile') }}
           </a-menu-item>
           <a-menu-divider />
           <a-menu-item key="settings" :icon="h(SettingOutlined)">
-            设置
+            {{ t('user.menu.settings') }}
           </a-menu-item>
           <a-menu-item key="help" :icon="h(QuestionCircleOutlined)">
-            帮助
+            {{ t('user.menu.help') }}
           </a-menu-item>
           <a-menu-divider />
           <a-menu-item key="logout" :icon="h(LogoutOutlined)" class="logout-item">
-            退出登录
+            {{ t('user.menu.logout') }}
           </a-menu-item>
         </a-menu>
       </template>
@@ -39,13 +39,13 @@
   <!-- Profile Modal -->
   <a-modal
     v-model:open="profileModalVisible"
-    title="个人资料"
+    :title="t('user.profile.header.title')"
     :width="500"
     @ok="handleUpdateProfile"
     @cancel="cancelProfileEdit"
     :confirmLoading="authStore.isLoading"
-    ok-text="保存"
-    cancel-text="取消"
+    :ok-text="t('common.save')"
+    :cancel-text="t('common.cancel')"
   >
     <a-form :form="profileForm" layout="vertical">
       <div class="profile-avatar">
@@ -58,28 +58,30 @@
         </a-avatar>
       </div>
 
-      <a-form-item label="用户名" required>
+      <a-form-item :label="t('user.profile.basicInfo.username')" required>
         <a-input
           v-model:value="profileData.username"
           disabled
-          placeholder="用户名"
+          :placeholder="t('user.profile.basicInfo.username')"
+          :suffix="t('user.profile.basicInfo.usernameHint')"
         />
-        <small class="form-hint">用户名不可修改</small>
+        <small class="form-hint">{{ t('user.profile.basicInfo.usernameHint') }}</small>
       </a-form-item>
 
-      <a-form-item label="邮箱" required>
+      <a-form-item :label="t('user.profile.basicInfo.email')" required>
         <a-input
           v-model:value="profileData.email"
           disabled
-          placeholder="邮箱"
+          :placeholder="t('user.profile.basicInfo.email')"
+          :suffix="t('user.profile.basicInfo.emailHint')"
         />
-        <small class="form-hint">邮箱不可修改</small>
+        <small class="form-hint">{{ t('user.profile.basicInfo.emailHint') }}</small>
       </a-form-item>
 
-      <a-form-item label="昵称">
+      <a-form-item :label="t('user.profile.basicInfo.nickname')">
         <a-input
           v-model:value="profileData.nickname"
-          placeholder="请输入昵称"
+          :placeholder="t('user.profile.basicInfo.nicknamePlaceholder')"
           :maxlength="50"
         />
       </a-form-item>
@@ -96,41 +98,41 @@
   <!-- Logout All Confirmation -->
   <a-modal
     v-model:open="logoutAllModalVisible"
-    title="登出所有设备"
+    :title="t('user.menu.logoutAllTitle')"
     @ok="handleLogoutAll"
     @cancel="logoutAllModalVisible = false"
     :confirmLoading="authStore.isLoading"
-    ok-text="确认"
-    cancel-text="取消"
+    :ok-text="t('common.confirm')"
+    :cancel-text="t('common.cancel')"
   >
-    <p>您确定要登出所有设备吗？这将使所有已登录的设备失效。</p>
+    <p>{{ t('user.menu.logoutAllDescription') }}</p>
   </a-modal>
 
   <!-- Delete Account Confirmation -->
   <a-modal
     v-model:open="deleteAccountModalVisible"
-    title="删除账户"
+    :title="t('user.menu.deleteAccountTitle')"
     @ok="handleDeleteAccount"
     @cancel="cancelDeleteAccount"
     :confirmLoading="authStore.isLoading"
-    ok-text="确认删除"
-    cancel-text="取消"
+    :ok-text="t('common.confirmDelete')"
+    :cancel-text="t('common.cancel')"
     ok-type="danger"
   >
     <div class="delete-account-form">
-      <p>此操作将永久删除您的账户和所有相关数据，包括：</p>
+      <p>{{ t('user.menu.deleteAccountDescription') }}</p>
       <ul>
-        <li>所有小说作品</li>
-        <li>角色和世界设定</li>
-        <li>章节内容</li>
-        <li>写作统计</li>
+        <li>{{ t('user.menu.deleteAccountItems.novels') }}</li>
+        <li>{{ t('user.menu.deleteAccountItems.characters') }}</li>
+        <li>{{ t('user.menu.deleteAccountItems.chapters') }}</li>
+        <li>{{ t('user.menu.deleteAccountItems.stats') }}</li>
       </ul>
-      <p><strong>此操作无法撤销！</strong></p>
+      <p><strong>{{ t('user.menu.deleteAccountWarning') }}</strong></p>
 
-      <a-form-item label="请输入您的密码确认删除" required>
+      <a-form-item :label="t('user.menu.deleteAccountPasswordLabel')" required>
         <a-input-password
           v-model:value="deleteAccountPassword"
-          placeholder="请输入密码"
+          :placeholder="t('user.menu.deleteAccountPasswordPlaceholder')"
         />
       </a-form-item>
     </div>
@@ -151,9 +153,11 @@ import {
 } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import SettingsModal from './SettingsModal.vue'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const profileModalVisible = ref(false)
 const settingsModalVisible = ref(false)
@@ -169,7 +173,7 @@ const profileData = reactive({
 })
 
 const getInitials = (name) => {
-  if (!name) return 'U'
+  if (!name) return t('user.menu.defaultInitial')
   return name.charAt(0).toUpperCase()
 }
 
@@ -222,15 +226,15 @@ const cancelProfileEdit = () => {
 
 
 const showHelp = () => {
-  message.info('帮助文档开发中...')
+  message.info(t('user.menu.helpComingSoon'))
 }
 
 const handleLogout = () => {
   Modal.confirm({
-    title: '确认登出',
-    content: '您确定要登出当前账户吗？',
-    okText: '确认',
-    cancelText: '取消',
+    title: t('user.menu.logoutConfirmTitle'),
+    content: t('user.menu.logoutConfirmDescription'),
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
     onOk: async () => {
       const result = await authStore.logout()
       if (result.success) {
@@ -259,7 +263,7 @@ const showDeleteAccountModal = () => {
 
 const handleDeleteAccount = async () => {
   if (!deleteAccountPassword.value) {
-    message.error('请输入密码确认删除')
+    message.error(t('user.menu.deleteAccountPasswordRequired'))
     return
   }
 

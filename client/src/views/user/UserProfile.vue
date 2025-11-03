@@ -1,8 +1,8 @@
 <template>
   <div class="user-profile">
     <a-page-header
-      title="个人资料"
-      sub-title="管理您的个人信息和账户设置"
+      :title="t('user.profile.header.title')"
+      :sub-title="t('user.profile.header.subtitle')"
     />
 
     <div class="profile-content p-6">
@@ -10,7 +10,7 @@
         <!-- 左侧：基本信息和统计 -->
         <a-col :span="16">
           <!-- 基本信息 -->
-          <a-card title="基本信息" class="mb-4">
+          <a-card :title="t('user.profile.basicInfo.title')" class="mb-4">
             <a-form
               :model="profileForm"
               :rules="profileRules"
@@ -19,31 +19,33 @@
               :wrapper-col="{ span: 18 }"
               @finish="handleUpdateProfile"
             >
-              <a-form-item label="用户名">
+              <a-form-item :label="t('user.profile.basicInfo.username')">
                 <a-input
                   :value="userStore.user?.username"
                   disabled
-                  suffix="用户名不可修改"
+                  :suffix="t('user.profile.basicInfo.usernameHint')"
+                  :placeholder="t('user.profile.basicInfo.username')"
                 />
               </a-form-item>
 
-              <a-form-item label="邮箱">
+              <a-form-item :label="t('user.profile.basicInfo.email')">
                 <a-input
                   :value="userStore.user?.email"
                   disabled
-                  suffix="邮箱不可修改"
+                  :suffix="t('user.profile.basicInfo.emailHint')"
+                  :placeholder="t('user.profile.basicInfo.email')"
                 />
               </a-form-item>
 
-              <a-form-item label="昵称" name="nickname">
+              <a-form-item :label="t('user.profile.basicInfo.nickname')" name="nickname">
                 <a-input
                   v-model:value="profileForm.nickname"
-                  placeholder="请输入昵称"
+                  :placeholder="t('user.profile.basicInfo.nicknamePlaceholder')"
                   :loading="profileLoading"
                 />
               </a-form-item>
 
-              <a-form-item label="头像" name="avatar">
+              <a-form-item :label="t('user.profile.basicInfo.avatar')" name="avatar">
                 <AvatarUpload
                   :current-avatar="userStore.user?.avatar"
                   :size="80"
@@ -54,14 +56,14 @@
 
               <a-form-item :wrapper-col="{ offset: 6, span: 18 }">
                 <a-button type="primary" html-type="submit" :loading="profileLoading">
-                  更新个人信息
+                  {{ t('user.profile.basicInfo.submit') }}
                 </a-button>
               </a-form-item>
             </a-form>
           </a-card>
 
           <!-- 密码修改 -->
-          <a-card title="修改密码" class="mb-4">
+          <a-card :title="t('user.profile.password.title')" class="mb-4">
             <a-form
               :model="passwordForm"
               :rules="passwordRules"
@@ -70,18 +72,18 @@
               :wrapper-col="{ span: 18 }"
               @finish="handleChangePassword"
             >
-              <a-form-item label="当前密码" name="currentPassword">
+              <a-form-item :label="t('user.profile.password.current')" name="currentPassword">
                 <a-input-password
                   v-model:value="passwordForm.currentPassword"
-                  placeholder="请输入当前密码"
+                  :placeholder="t('user.profile.password.currentPlaceholder')"
                   autocomplete="current-password"
                 />
               </a-form-item>
 
-              <a-form-item label="新密码" name="newPassword">
+              <a-form-item :label="t('user.profile.password.new')" name="newPassword">
                 <a-input-password
                   v-model:value="passwordForm.newPassword"
-                  placeholder="请输入新密码"
+                  :placeholder="t('user.profile.password.newPlaceholder')"
                   autocomplete="new-password"
                 />
                 <div class="password-strength mt-2">
@@ -92,24 +94,24 @@
                       :style="{ width: passwordStrength.percentage + '%' }"
                     ></div>
                   </div>
-                  <span class="strength-text">{{ passwordStrength.text }}</span>
+                  <span class="strength-text">{{ passwordStrength.key ? t(passwordStrength.key) : '' }}</span>
                 </div>
               </a-form-item>
 
-              <a-form-item label="确认密码" name="confirmPassword">
+              <a-form-item :label="t('user.profile.password.confirm')" name="confirmPassword">
                 <a-input-password
                   v-model:value="passwordForm.confirmPassword"
-                  placeholder="请再次输入新密码"
+                  :placeholder="t('user.profile.password.confirmPlaceholder')"
                   autocomplete="new-password"
                 />
               </a-form-item>
 
               <a-form-item :wrapper-col="{ offset: 6, span: 18 }">
                 <a-button type="primary" html-type="submit" :loading="passwordLoading">
-                  修改密码
+                  {{ t('user.profile.password.submit') }}
                 </a-button>
                 <a-button class="ml-2" @click="resetPasswordForm">
-                  重置
+                  {{ t('user.profile.password.reset') }}
                 </a-button>
               </a-form-item>
             </a-form>
@@ -119,36 +121,36 @@
         <!-- 右侧：统计信息和活动记录 -->
         <a-col :span="8">
           <!-- 统计信息 -->
-          <a-card title="统计信息" class="mb-4" :loading="statsLoading">
+          <a-card :title="t('user.profile.stats.title')" class="mb-4" :loading="statsLoading">
             <a-row :gutter="16" v-if="userStats">
               <a-col :span="12">
-                <a-statistic title="小说数量" :value="userStats.novels" />
+                <a-statistic :title="t('user.profile.stats.novels')" :value="userStats.novels" />
               </a-col>
               <a-col :span="12">
-                <a-statistic title="章节数量" :value="userStats.chapters" />
+                <a-statistic :title="t('user.profile.stats.chapters')" :value="userStats.chapters" />
               </a-col>
             </a-row>
             <a-row :gutter="16" class="mt-3" v-if="userStats">
               <a-col :span="12">
-                <a-statistic title="总字数" :value="userStats.totalWords" />
+                <a-statistic :title="t('user.profile.stats.totalWords')" :value="userStats.totalWords" />
               </a-col>
               <a-col :span="12">
-                <a-statistic title="活跃会话" :value="userStats.activeSessions" />
+                <a-statistic :title="t('user.profile.stats.activeSessions')" :value="userStats.activeSessions" />
               </a-col>
             </a-row>
             <a-row class="mt-3" v-if="userStats">
               <a-col :span="24">
-                <a-statistic title="最近活动" :value="userStats.recentActivity" suffix="项" />
+                <a-statistic :title="t('user.profile.stats.recentActivity')" :value="userStats.recentActivity" :suffix="t('user.profile.stats.activitySuffix')" />
               </a-col>
             </a-row>
           </a-card>
 
           <!-- 会话管理 -->
-          <a-card title="登录会话" class="mb-4">
+          <a-card :title="t('user.profile.sessions.title')" class="mb-4">
             <template #extra>
               <a-button size="small" @click="loadSessions">
                 <ReloadOutlined />
-                刷新
+                {{ t('user.profile.sessions.refresh') }}
               </a-button>
             </template>
 
@@ -163,12 +165,12 @@
                     <DesktopOutlined />
                     {{ getDeviceInfo(session.userAgent) }}
                     <a-tag v-if="session.isCurrent" size="small" color="green" class="ml-2">
-                      当前会话
+                      {{ t('user.profile.sessions.currentSession') }}
                     </a-tag>
                   </div>
                   <div class="session-details text-gray-500 text-sm">
-                    <div>IP: {{ session.ipAddress || '未知' }}</div>
-                    <div>最后活动: {{ formatTime(session.lastUsed) }}</div>
+                    <div>{{ t('user.profile.sessions.ipLabel') }}: {{ session.ipAddress || t('user.profile.sessions.unknown') }}</div>
+                    <div>{{ t('user.profile.sessions.lastActive') }}: {{ formatTime(session.lastUsed) }}</div>
                   </div>
                 </div>
                 <a-button
@@ -178,12 +180,12 @@
                   @click="handleDeleteSession(session.id)"
                   :loading="sessionDeleting === session.id"
                 >
-                  注销
+                  {{ t('user.profile.sessions.logout') }}
                 </a-button>
               </div>
 
               <a-button block @click="handleLogoutAll" :loading="logoutAllLoading">
-                注销所有其他会话
+                {{ t('user.profile.sessions.logoutAll') }}
               </a-button>
             </div>
           </a-card>
@@ -204,8 +206,10 @@ import {
 import { api } from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
 import AvatarUpload from '@/components/user/AvatarUpload.vue'
+import { useI18n } from 'vue-i18n'
 
 const userStore = useAuthStore()
+const { t, locale } = useI18n()
 
 const profileFormRef = ref<FormInstance>()
 const passwordFormRef = ref<FormInstance>()
@@ -234,6 +238,16 @@ const passwordForm = reactive({
 const userStats = ref<any>(null)
 const sessions = ref<any[]>([])
 
+const localeTag = computed(() => {
+  if (locale.value === 'zh') {
+    return 'zh-CN'
+  }
+  if (locale.value === 'en') {
+    return 'en-US'
+  }
+  return locale.value
+})
+
 // 初始化个人信息表单
 const initProfileForm = () => {
   if (userStore.user) {
@@ -245,71 +259,71 @@ const initProfileForm = () => {
 // 密码强度计算
 const passwordStrength = computed(() => {
   const password = passwordForm.newPassword
-  if (!password) return { level: 0, percentage: 0, text: '' }
+  if (!password) return { level: 0, percentage: 0, key: '' }
 
-  let score = 0
   const checks = [
     /[a-z]/.test(password), // 小写字母
     /[A-Z]/.test(password), // 大写字母
-    /\d/.test(password),    // 数字
+    /\d/.test(password), // 数字
     /[!@#$%^&*(),.?":{}|<>]/.test(password), // 特殊字符
-    password.length >= 8    // 长度
+    password.length >= 8 // 长度
   ]
 
-  score = checks.filter(Boolean).length
+  const score = checks.filter(Boolean).length
 
-  if (score <= 2) return { level: 1, percentage: 25, text: '弱' }
-  if (score <= 3) return { level: 2, percentage: 50, text: '中等' }
-  if (score <= 4) return { level: 3, percentage: 75, text: '强' }
-  return { level: 4, percentage: 100, text: '很强' }
+  if (score <= 2) return { level: 1, percentage: 25, key: 'user.profile.passwordStrength.weak' }
+  if (score <= 3) return { level: 2, percentage: 50, key: 'user.profile.passwordStrength.medium' }
+  if (score <= 4) return { level: 3, percentage: 75, key: 'user.profile.passwordStrength.strong' }
+  return { level: 4, percentage: 100, key: 'user.profile.passwordStrength.veryStrong' }
 })
 
 // 表单验证规则
-const profileRules: Record<string, Rule[]> = {
+const profileRules = computed<Record<string, Rule[]>>(() => ({
   nickname: [
-    { max: 50, message: '昵称不能超过50个字符', trigger: 'blur' },
-    { pattern: /^[^<>'"&]*$/, message: '昵称不能包含特殊字符', trigger: 'blur' }
+    { max: 50, message: t('user.profile.rules.nicknameMax'), trigger: 'blur' },
+    { pattern: /^[^<>'"&]*$/, message: t('user.profile.rules.nicknameInvalid'), trigger: 'blur' }
   ]
-}
+}))
 
-const passwordRules: Record<string, Rule[]> = {
+const passwordRules = computed<Record<string, Rule[]>>(() => ({
   currentPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
+    { required: true, message: t('user.profile.rules.currentPasswordRequired'), trigger: 'blur' }
   ],
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码至少6个字符', trigger: 'blur' }
+    { required: true, message: t('user.profile.rules.newPasswordRequired'), trigger: 'blur' },
+    { min: 6, message: t('user.profile.rules.newPasswordMin'), trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { required: true, message: t('user.profile.rules.confirmPasswordRequired'), trigger: 'blur' },
     {
       validator: async (_rule: any, value: string) => {
         if (value !== passwordForm.newPassword) {
-          return Promise.reject(new Error('两次输入的密码不一致'))
+          return Promise.reject(new Error(t('user.profile.rules.confirmPasswordMismatch')))
         }
         return Promise.resolve()
       },
       trigger: 'blur'
     }
   ]
-}
+}))
 
 // 获取设备信息
 const getDeviceInfo = (userAgent: string) => {
-  if (!userAgent) return '未知设备'
+  if (!userAgent) return t('user.profile.sessions.devices.unknown')
 
-  if (userAgent.includes('Windows')) return 'Windows 设备'
-  if (userAgent.includes('Mac')) return 'Mac 设备'
-  if (userAgent.includes('Linux')) return 'Linux 设备'
-  if (userAgent.includes('Android')) return 'Android 设备'
-  if (userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS 设备'
+  const ua = userAgent.toLowerCase()
+  if (ua.includes('windows')) return t('user.profile.sessions.devices.windows')
+  if (ua.includes('mac')) return t('user.profile.sessions.devices.mac')
+  if (ua.includes('linux')) return t('user.profile.sessions.devices.linux')
+  if (ua.includes('android')) return t('user.profile.sessions.devices.android')
+  if (ua.includes('iphone') || ua.includes('ipad')) return t('user.profile.sessions.devices.ios')
 
-  return '未知设备'
+  return t('user.profile.sessions.devices.unknown')
 }
 
 // 格式化时间
 const formatTime = (dateString: string) => {
-  return new Date(dateString).toLocaleString('zh-CN')
+  return new Date(dateString).toLocaleString(localeTag.value)
 }
 
 // 更新个人信息
@@ -317,16 +331,16 @@ const handleUpdateProfile = async () => {
   try {
     profileLoading.value = true
 
-    const response = await api.put('/api/auth/profile', {
+    await api.put('/api/auth/profile', {
       nickname: profileForm.nickname,
       avatar: profileForm.avatar
     })
 
     await userStore.refreshUser()
-    message.success('个人信息更新成功')
+    message.success(t('user.profile.messages.updateSuccess'))
   } catch (error: any) {
     console.error('更新个人信息失败:', error)
-    message.error(error.response?.data?.message || '更新失败')
+    message.error(error.response?.data?.message || t('user.profile.messages.updateFailed'))
   } finally {
     profileLoading.value = false
   }
@@ -342,12 +356,12 @@ const handleChangePassword = async () => {
       newPassword: passwordForm.newPassword
     })
 
-    message.success('密码修改成功，其他会话已注销')
+    message.success(t('user.profile.messages.passwordSuccess'))
     resetPasswordForm()
     loadSessions() // 刷新会话列表
   } catch (error: any) {
     console.error('修改密码失败:', error)
-    message.error(error.response?.data?.message || '修改密码失败')
+    message.error(error.response?.data?.message || t('user.profile.messages.passwordFailed'))
   } finally {
     passwordLoading.value = false
   }
@@ -366,13 +380,13 @@ const resetPasswordForm = () => {
 // 处理头像上传成功
 const handleAvatarUploadSuccess = (url: string) => {
   profileForm.avatar = url
-  message.success('头像上传成功')
+  message.success(t('user.profile.messages.avatarUploadSuccess'))
 }
 
 // 处理头像删除成功
 const handleAvatarDeleteSuccess = () => {
   profileForm.avatar = ''
-  message.success('头像删除成功')
+  message.success(t('user.profile.messages.avatarDeleteSuccess'))
 }
 
 // 加载用户统计
@@ -383,6 +397,7 @@ const loadUserStats = async () => {
     userStats.value = response.data.stats
   } catch (error) {
     console.error('加载统计信息失败:', error)
+    message.error(t('user.profile.messages.statsLoadFailed'))
   } finally {
     statsLoading.value = false
   }
@@ -396,7 +411,7 @@ const loadSessions = async () => {
     sessions.value = response.data.sessions
   } catch (error) {
     console.error('加载会话列表失败:', error)
-    message.error('加载会话列表失败')
+    message.error(t('user.profile.messages.sessionsLoadFailed'))
   } finally {
     sessionsLoading.value = false
   }
@@ -407,11 +422,11 @@ const handleDeleteSession = async (sessionId: string) => {
   try {
     sessionDeleting.value = sessionId
     await api.delete(`/api/auth/sessions/${sessionId}`)
-    message.success('会话注销成功')
+    message.success(t('user.profile.messages.sessionLogoutSuccess'))
     loadSessions()
   } catch (error: any) {
     console.error('注销会话失败:', error)
-    message.error(error.response?.data?.message || '注销会话失败')
+    message.error(error.response?.data?.message || t('user.profile.messages.sessionLogoutFailed'))
   } finally {
     sessionDeleting.value = null
   }
@@ -422,11 +437,11 @@ const handleLogoutAll = async () => {
   try {
     logoutAllLoading.value = true
     await api.post('/api/auth/logout-all')
-    message.success('所有其他会话已注销')
+    message.success(t('user.profile.messages.logoutAllSuccess'))
     loadSessions()
   } catch (error: any) {
     console.error('注销所有会话失败:', error)
-    message.error(error.response?.data?.message || '注销失败')
+    message.error(error.response?.data?.message || t('user.profile.messages.logoutAllFailed'))
   } finally {
     logoutAllLoading.value = false
   }

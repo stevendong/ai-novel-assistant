@@ -1173,6 +1173,267 @@
       "applyEmail": "ainovelassistant@gmail.com"
     }
   },
+  "user": {
+    "menu": {
+      "defaultName": "用户",
+      "defaultInitial": "用",
+      "profile": "个人资料",
+      "settings": "设置",
+      "help": "帮助",
+      "helpComingSoon": "帮助文档开发中...",
+      "logout": "退出登录",
+      "logoutAllTitle": "登出所有设备",
+      "logoutAllDescription": "您确定要登出所有设备吗？这将使所有已登录的设备失效。",
+      "deleteAccountTitle": "删除账户",
+      "deleteAccountDescription": "此操作将永久删除您的账户和所有相关数据，包括：",
+      "deleteAccountItems": {
+        "novels": "所有小说作品",
+        "characters": "角色和世界设定",
+        "chapters": "章节内容",
+        "stats": "写作统计"
+      },
+      "deleteAccountWarning": "此操作无法撤销！",
+      "deleteAccountPasswordLabel": "请输入您的密码确认删除",
+      "deleteAccountPasswordPlaceholder": "请输入密码",
+      "logoutConfirmTitle": "确认登出",
+      "logoutConfirmDescription": "您确定要登出当前账户吗？",
+      "logoutAllSuccess": "已登出所有设备",
+      "deleteAccountPasswordRequired": "请输入密码确认删除"
+    },
+    "settings": {
+      "modalTitle": "设置",
+      "tabs": {
+        "general": "常规设置",
+        "ai": "AI设置"
+      },
+      "general": {
+        "accountSecurity": "账户安全",
+        "logoutAll": "登出所有设备",
+        "dangerZone": "危险操作",
+        "deleteAccount": "删除账户",
+        "deleteHint": "此操作将永久删除您的账户及所有数据，且无法恢复。"
+      },
+      "ai": {
+        "provider": {
+          "title": "AI提供商",
+          "description": "选择您偏好的 AI 服务提供商"
+        },
+        "model": {
+          "title": "AI模型",
+          "description": "选择具体的 AI 模型"
+        },
+        "conversation": {
+          "title": "对话设置",
+          "autoSave": {
+            "label": "自动保存对话",
+            "description": "自动保存 AI 对话记录"
+          },
+          "historyLength": {
+            "label": "对话历史长度",
+            "description": "保留的对话消息数量（10-200）"
+          }
+        },
+        "tasks": {
+          "title": "任务偏好",
+          "description": "为不同任务类型配置偏好模型",
+          "placeholder": "使用默认",
+          "types": {
+            "consistency": {
+              "name": "一致性检查",
+              "description": "确保内容逻辑一致"
+            },
+            "creative": {
+              "name": "创意写作",
+              "description": "生成创意内容与情节"
+            },
+            "analysis": {
+              "name": "内容分析",
+              "description": "分析文本结构和质量"
+            },
+            "content_generation": {
+              "name": "内容生成",
+              "description": "生成章节与段落内容"
+            }
+          }
+        },
+        "quickActions": {
+          "title": "快速操作",
+          "reset": "重置为默认",
+          "save": "保存设置"
+        },
+        "messages": {
+          "loadFailed": "加载 AI 配置失败",
+          "resetSuccess": "已重置为默认设置",
+          "resetFailed": "重置设置失败",
+          "saveSuccess": "AI 设置已保存",
+          "saveFailed": "保存设置失败"
+        }
+      },
+      "custom": {
+        "title": "自定义 AI 提供商",
+        "description": "配置您自己的 AI 服务接口",
+        "add": "添加自定义配置",
+        "empty": "还没有自定义配置",
+        "detail": {
+          "type": "类型",
+          "model": "模型",
+          "endpoint": "接口"
+        },
+        "actions": {
+          "edit": "编辑",
+          "delete": "删除"
+        },
+        "modal": {
+          "addTitle": "添加自定义配置",
+          "editTitle": "编辑自定义配置"
+        },
+        "fields": {
+          "name": {
+            "label": "配置名称",
+            "placeholder": "例如：我的 OpenAI"
+          },
+          "type": {
+            "label": "提供商类型",
+            "placeholder": "选择类型",
+            "options": {
+              "openai": "OpenAI 兼容",
+              "claude": "Claude",
+              "gemini": "Gemini"
+            }
+          },
+          "baseURL": {
+            "label": "API 基础地址",
+            "placeholder": "例如：https://api.openai.com/v1",
+            "hint": "完整的 API 基础地址，包含协议和路径"
+          },
+          "apiKey": {
+            "label": "API Key",
+            "placeholder": "输入您的 API Key",
+            "hint": "您的 API 密钥将被安全加密存储"
+          },
+          "model": {
+            "label": "模型名称",
+            "placeholder": "例如：gpt-3.5-turbo",
+            "hintFetched": "从 API 获取到的可用模型",
+            "hintManual": "填写具体模型名称，或点击“获取模型”从 API 获取"
+          },
+          "timeout": {
+            "label": "超时时间（毫秒）"
+          }
+        },
+        "buttons": {
+          "fetchModels": "获取模型"
+        },
+        "messages": {
+          "missingCredentials": "请先填写 API Key 和基础地址",
+          "fetchSuccess": "成功获取 {count} 个模型",
+          "fetchNone": "未获取到可用模型",
+          "fetchError": "获取模型列表失败：{error}",
+          "deleteSuccess": "配置已删除",
+          "fieldsRequired": "请填写所有必填项",
+          "updateSuccess": "配置已更新",
+          "createSuccess": "配置已添加"
+        }
+      }
+    },
+    "profile": {
+      "header": {
+        "title": "个人资料",
+        "subtitle": "管理您的个人信息和账户设置"
+      },
+      "basicInfo": {
+        "title": "基本信息",
+        "username": "用户名",
+        "usernameHint": "用户名不可修改",
+        "email": "邮箱",
+        "emailHint": "邮箱不可修改",
+        "nickname": "昵称",
+        "nicknamePlaceholder": "请输入昵称",
+        "avatar": "头像",
+        "submit": "更新个人信息"
+      },
+      "password": {
+        "title": "修改密码",
+        "current": "当前密码",
+        "currentPlaceholder": "请输入当前密码",
+        "new": "新密码",
+        "newPlaceholder": "请输入新密码",
+        "confirm": "确认密码",
+        "confirmPlaceholder": "请再次输入新密码",
+        "submit": "修改密码",
+        "reset": "重置"
+      },
+      "passwordStrength": {
+        "weak": "弱",
+        "medium": "中等",
+        "strong": "强",
+        "veryStrong": "很强"
+      },
+      "stats": {
+        "title": "统计信息",
+        "novels": "小说数量",
+        "chapters": "章节数量",
+        "totalWords": "总字数",
+        "activeSessions": "活跃会话",
+        "recentActivity": "最近活动",
+        "activitySuffix": "项"
+      },
+      "sessions": {
+        "title": "登录会话",
+        "refresh": "刷新",
+        "currentSession": "当前会话",
+        "ipLabel": "IP",
+        "lastActive": "最后活动",
+        "unknown": "未知",
+        "devices": {
+          "windows": "Windows 设备",
+          "mac": "Mac 设备",
+          "linux": "Linux 设备",
+          "android": "Android 设备",
+          "ios": "iOS 设备",
+          "unknown": "未知设备"
+        },
+        "logout": "注销",
+        "logoutAll": "注销所有其他会话"
+      },
+      "messages": {
+        "updateSuccess": "个人信息更新成功",
+        "updateFailed": "更新失败",
+        "passwordSuccess": "密码修改成功，其他会话已注销",
+      "passwordFailed": "修改密码失败",
+      "avatarUploadSuccess": "头像上传成功",
+      "avatarDeleteSuccess": "头像删除成功",
+      "avatarUploadFailed": "头像上传失败",
+      "avatarDeleteFailed": "头像删除失败",
+      "imageProcessFailed": "图片处理失败",
+      "fileTypeInvalid": "请选择图片文件",
+      "fileSizeExceeded": "图片大小不能超过 5MB",
+      "statsLoadFailed": "加载统计信息失败",
+      "sessionsLoadFailed": "加载会话列表失败",
+      "sessionLogoutSuccess": "会话注销成功",
+      "sessionLogoutFailed": "注销会话失败",
+      "logoutAllSuccess": "所有其他会话已注销",
+      "logoutAllFailed": "注销失败"
+      },
+      "avatarUpload": {
+        "upload": "上传头像",
+        "change": "更换头像",
+        "delete": "删除头像",
+        "compressionTitle": "图片已压缩 {ratio}%",
+        "compressionDescription": "原始大小：{original}，压缩后：{compressed}",
+        "tip": "支持 JPG、PNG、GIF 格式，文件大小不超过 5MB"
+      },
+      "rules": {
+        "nicknameMax": "昵称不能超过50个字符",
+        "nicknameInvalid": "昵称不能包含特殊字符",
+        "currentPasswordRequired": "请输入当前密码",
+        "newPasswordRequired": "请输入新密码",
+        "newPasswordMin": "密码至少6个字符",
+        "confirmPasswordRequired": "请确认新密码",
+        "confirmPasswordMismatch": "两次输入的密码不一致"
+      }
+    }
+  },
   "message": {
     "saveSuccess": "保存成功",
     "saveFailed": "保存失败",

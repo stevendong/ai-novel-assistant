@@ -1,8 +1,8 @@
 <template>
   <div class="ai-settings">
     <div class="settings-section">
-      <h4>AI提供商</h4>
-      <p class="section-description">选择您偏好的AI服务提供商</p>
+      <h4>{{ t('user.settings.ai.provider.title') }}</h4>
+      <p class="section-description">{{ t('user.settings.ai.provider.description') }}</p>
       <a-select
         v-model:value="aiSettings.provider"
         style="width: 100%"
@@ -13,8 +13,8 @@
     </div>
 
     <div class="settings-section">
-      <h4>AI模型</h4>
-      <p class="section-description">选择具体的AI模型</p>
+      <h4>{{ t('user.settings.ai.model.title') }}</h4>
+      <p class="section-description">{{ t('user.settings.ai.model.description') }}</p>
       <a-select
         v-model:value="aiSettings.model"
         style="width: 100%"
@@ -25,19 +25,19 @@
     </div>
 
     <div class="settings-section">
-      <h4>对话设置</h4>
+      <h4>{{ t('user.settings.ai.conversation.title') }}</h4>
       <div class="setting-item">
         <div class="setting-label">
-          <span>自动保存对话</span>
-          <small>自动保存AI对话记录</small>
+          <span>{{ t('user.settings.ai.conversation.autoSave.label') }}</span>
+          <small>{{ t('user.settings.ai.conversation.autoSave.description') }}</small>
         </div>
         <a-switch v-model:checked="aiSettings.autoSave" @change="onAutoSaveChange" />
       </div>
 
       <div class="setting-item">
         <div class="setting-label">
-          <span>对话历史长度</span>
-          <small>保留的对话消息数量 (10-200)</small>
+          <span>{{ t('user.settings.ai.conversation.historyLength.label') }}</span>
+          <small>{{ t('user.settings.ai.conversation.historyLength.description') }}</small>
         </div>
         <a-input-number
           v-model:value="aiSettings.maxHistoryLength"
@@ -51,8 +51,8 @@
     </div>
 
     <div class="settings-section">
-      <h4>任务偏好</h4>
-      <p class="section-description">为不同类型的任务配置偏好模型</p>
+      <h4>{{ t('user.settings.ai.tasks.title') }}</h4>
+      <p class="section-description">{{ t('user.settings.ai.tasks.description') }}</p>
       <div class="task-preferences">
         <div class="task-item" v-for="task in taskTypes" :key="task.key">
           <div class="task-info">
@@ -63,7 +63,7 @@
             v-model:value="aiSettings.taskPreferences[task.key]"
             style="width: 160px"
             :options="taskModelOptions"
-            placeholder="使用默认"
+            :placeholder="t('user.settings.ai.tasks.placeholder')"
             allow-clear
             @change="onTaskPreferenceChange"
           />
@@ -77,18 +77,18 @@
     </div>
 
     <div class="settings-section">
-      <h4>快速操作</h4>
+      <h4>{{ t('user.settings.ai.quickActions.title') }}</h4>
       <a-row :gutter="12">
         <a-col :span="12">
           <a-button @click="resetAISettings" block>
             <template #icon><ReloadOutlined /></template>
-            重置为默认
+            {{ t('user.settings.ai.quickActions.reset') }}
           </a-button>
         </a-col>
         <a-col :span="12">
           <a-button type="primary" @click="saveAISettings" :loading="savingSettings" block>
             <template #icon><SaveOutlined /></template>
-            保存设置
+            {{ t('user.settings.ai.quickActions.save') }}
           </a-button>
         </a-col>
       </a-row>
@@ -103,9 +103,11 @@ import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue'
 import { useAIChatStore } from '@/stores/aiChat'
 import { apiClient } from '@/utils/api'
 import CustomAIConfig from './CustomAIConfig.vue'
+import { useI18n } from 'vue-i18n'
 
 // Stores
 const aiChatStore = useAIChatStore()
+const { t } = useI18n()
 
 // Local state
 const aiSettings = reactive({
@@ -123,12 +125,28 @@ const loadingProviders = ref(false)
 const savingSettings = ref(false)
 
 // 任务类型定义
-const taskTypes = [
-  { key: 'consistency', name: '一致性检查', description: '检查内容的逻辑一致性' },
-  { key: 'creative', name: '创意写作', description: '生成创意内容和情节' },
-  { key: 'analysis', name: '内容分析', description: '分析文本结构和质量' },
-  { key: 'content_generation', name: '内容生成', description: '生成章节和段落内容' }
-]
+const taskTypes = computed(() => [
+  {
+    key: 'consistency',
+    name: t('user.settings.ai.tasks.types.consistency.name'),
+    description: t('user.settings.ai.tasks.types.consistency.description')
+  },
+  {
+    key: 'creative',
+    name: t('user.settings.ai.tasks.types.creative.name'),
+    description: t('user.settings.ai.tasks.types.creative.description')
+  },
+  {
+    key: 'analysis',
+    name: t('user.settings.ai.tasks.types.analysis.name'),
+    description: t('user.settings.ai.tasks.types.analysis.description')
+  },
+  {
+    key: 'content_generation',
+    name: t('user.settings.ai.tasks.types.content_generation.name'),
+    description: t('user.settings.ai.tasks.types.content_generation.description')
+  }
+])
 
 const taskModelOptions = computed(() => {
   const options = availableModels.value.map(model => ({
@@ -182,7 +200,7 @@ const loadAIConfig = async () => {
     updateAvailableModels()
   } catch (error) {
     console.error('加载AI配置失败:', error)
-    message.error('加载AI配置失败')
+    message.error(t('user.settings.ai.messages.loadFailed'))
   } finally {
     loadingProviders.value = false
   }
@@ -273,10 +291,10 @@ const resetAISettings = async () => {
     })
 
     updateAvailableModels()
-    message.success('已重置为默认设置')
+    message.success(t('user.settings.ai.messages.resetSuccess'))
   } catch (error) {
     console.error('重置设置失败:', error)
-    message.error('重置设置失败')
+    message.error(t('user.settings.ai.messages.resetFailed'))
   }
 }
 
@@ -301,10 +319,10 @@ const saveAISettings = async () => {
       maxHistoryLength: aiSettings.maxHistoryLength
     })
 
-    message.success('AI设置已保存')
+    message.success(t('user.settings.ai.messages.saveSuccess'))
   } catch (error) {
     console.error('保存AI设置失败:', error)
-    message.error('保存设置失败')
+    message.error(t('user.settings.ai.messages.saveFailed'))
   } finally {
     savingSettings.value = false
   }
