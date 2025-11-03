@@ -97,34 +97,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
     currentSession.value = session
     sessions.value.unshift(session)
 
-    // Save to database if autoSave is enabled
-    if (settings.value.autoSave) {
-      try {
-        const createdSession = await createSessionInDatabase(session)
-        // 🔥 关键修复：用服务器返回的ID更新本地会话
-        if (createdSession && createdSession.id) {
-          session.id = createdSession.id
-          currentSession.value.id = createdSession.id
-
-          // 也更新sessions数组中的引用
-          const sessionIndex = sessions.value.findIndex(s => s === session)
-          if (sessionIndex !== -1) {
-            sessions.value[sessionIndex].id = createdSession.id
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to save new session to database:', error)
-      } finally {
-        // 🔥 清除创建状态，无论成功还是失败
-        session.isCreating = false
-        if (currentSession.value) {
-          currentSession.value.isCreating = false
-        }
-      }
-    } else {
-      // 即使不自动保存，也要清除创建状态
-      session.isCreating = false
-    }
+    // 推迟持久化到首次保存，避免刷新时重复创建空会话
+    session.isCreating = false
 
     return session
   }
@@ -200,6 +174,11 @@ export const useAIChatStore = defineStore('aiChat', () => {
     await addMessage('user', userMessage)
     isTyping.value = true
 
+    if (!aiService.isAssistantEnabled()) {
+      isTyping.value = false
+      return await addMessage('assistant', translate('aiChat.errors.assistantDisabled'))
+    }
+
     try {
       if (useStream) {
         return await sendMessageStream(userMessage, novelId || currentSession.value?.novelId)
@@ -220,8 +199,13 @@ export const useAIChatStore = defineStore('aiChat', () => {
       isTyping.value = false
       console.error('AI API Error:', error)
 
+      const errorCode = (error as any)?.code
+      const fallbackMessage = errorCode === 'AI_ASSISTANT_DISABLED'
+        ? translate('aiChat.errors.assistantDisabled')
+        : translate('aiChat.errors.serviceUnavailable')
+
       // Add fallback message
-      return await addMessage('assistant', translate('aiChat.errors.serviceUnavailable'))
+      return await addMessage('assistant', fallbackMessage)
     }
   }
 
@@ -338,6 +322,12 @@ export const useAIChatStore = defineStore('aiChat', () => {
   }
 
   const callAIAPI = async (userMessage: string, novelId?: string | null) => {
+    if (!aiService.isAssistantEnabled()) {
+      const error = new Error(translate('aiChat.errors.assistantDisabled'))
+      ;(error as any).code = 'AI_ASSISTANT_DISABLED'
+      throw error
+    }
+
     const requestPayload = {
       novelId,
       message: userMessage,
@@ -464,13 +454,18 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
 
     try {
-      // 调用服务器API删除所有消息（包括欢迎消息）
-      await apiClient.delete(`/api/conversations/${currentSession.value.id}/messages`)
+      // 如果会话还未同步到服务器，直接重置本地消息即可
+      if (!currentSession.value.id || currentSession.value.id.startsWith('session_')) {
+        currentSession.value.messages = []
+      } else {
+        // 调用服务器API删除所有消息（包括欢迎消息）
+        await apiClient.delete(`/api/conversations/${currentSession.value.id}/messages`)
 
-      // 清空当前会话的所有消息
-      currentSession.value.messages = []
+        // 清空当前会话的所有消息
+        currentSession.value.messages = []
+      }
 
-      // 创建新的欢迎消息
+      // 创建新的欢迎消息（本地即时展示，稍后自动保存会话时同步到服务器）
       const newWelcomeMessage: ChatMessage = {
         id: generateId(),
         role: 'assistant',
@@ -480,18 +475,20 @@ export const useAIChatStore = defineStore('aiChat', () => {
         actions: getQuickActions()
       }
 
-      // 添加新的欢迎消息到服务器
-      const response = await apiClient.post(`/api/conversations/${currentSession.value.id}/messages`, {
-        role: newWelcomeMessage.role,
-        content: newWelcomeMessage.content,
-        messageType: 'welcome',
-        metadata: newWelcomeMessage.metadata,
-        actions: newWelcomeMessage.actions
-      })
+      // 如果会话已同步，补写欢迎消息到服务器
+      if (currentSession.value.id && !currentSession.value.id.startsWith('session_')) {
+        const response = await apiClient.post(`/api/conversations/${currentSession.value.id}/messages`, {
+          role: newWelcomeMessage.role,
+          content: newWelcomeMessage.content,
+          messageType: 'welcome',
+          metadata: newWelcomeMessage.metadata,
+          actions: newWelcomeMessage.actions
+        })
 
-      // 使用服务器返回的消息ID
-      if (response.data) {
-        newWelcomeMessage.id = response.data.id
+        // 使用服务器返回的消息ID
+        if (response.data) {
+          newWelcomeMessage.id = response.data.id
+        }
       }
 
       // 将新的欢迎消息添加到当前会话
@@ -805,6 +802,10 @@ export const useAIChatStore = defineStore('aiChat', () => {
   }
 
   const deleteSessionFromDatabase = async (sessionId: string) => {
+    if (!sessionId || sessionId.startsWith('session_')) {
+      return
+    }
+
     try {
       await apiClient.delete(`/api/conversations/${sessionId}`)
     } catch (error) {

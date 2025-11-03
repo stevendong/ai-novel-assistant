@@ -66,6 +66,13 @@ export interface AIStatus {
   error?: string
 }
 
+export interface DashboardStatus {
+  projectStats: ProjectStats | null
+  todayStats: TodayStats | null
+  aiStatus: AIStatus
+  systemHealth: SystemHealth
+}
+
 class StatusService {
   // 获取今日写作统计
   async getTodayStats(novelId: string): Promise<TodayStats> {
@@ -109,6 +116,14 @@ class StatusService {
   // AI服务状态
   async getAIStatus(): Promise<AIStatus> {
     const response = await apiClient.get('/api/ai/status')
+    return response.data
+  }
+
+  // 获取仪表盘综合状态
+  async getDashboardStatus(novelId?: string): Promise<DashboardStatus> {
+    const response = await apiClient.get('/api/dashboard/status', {
+      params: novelId ? { novelId } : undefined
+    })
     return response.data
   }
 

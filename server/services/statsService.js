@@ -339,6 +339,28 @@ class StatsService {
       }
     }
   }
+
+  // 获取仪表盘综合状态
+  async getDashboardStatus(novelId) {
+    const [projectStats, todayStats, aiStatus, systemHealth] = await Promise.all([
+      novelId
+        ? this.getProjectStats(novelId).catch(error => {
+            console.error('Error getting dashboard project stats:', error)
+            return null
+          })
+        : Promise.resolve(null),
+      novelId ? this.getTodayStats(novelId) : Promise.resolve({ wordCount: 0, timeSpent: 0 }),
+      this.getAIStatus(),
+      this.getSystemHealth()
+    ])
+
+    return {
+      projectStats,
+      todayStats,
+      aiStatus,
+      systemHealth
+    }
+  }
 }
 
 module.exports = new StatsService()

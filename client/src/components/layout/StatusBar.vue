@@ -101,6 +101,7 @@ import { useProjectStore } from '@/stores/project'
 import { useAIChatStore } from '@/stores/aiChat'
 import { getNovelStatusText, getNovelStatusColor } from '@/constants/status'
 import { statusService } from '@/services/statusService'
+import type { ProjectStats, TodayStats, AIStatus, SystemHealth } from '@/services/statusService'
 import { useI18n } from 'vue-i18n'
 
 // 接口定义
@@ -170,7 +171,6 @@ const currentTime = ref('')
 // 定时器
 let timeTimer: number | null = null
 let statusTimer: number | null = null
-let pingTimer: number | null = null
 
 // 计算属性
 const getStatusText = computed(() => getNovelStatusText)
@@ -198,85 +198,6 @@ const updateCurrentTime = () => {
   })
 }
 
-// 加载项目信息
-const loadProjectInfo = async () => {
-  const project = projectStore.currentProject
-  if (!project) {
-    projectInfo.value = { title: '', status: undefined }
-    wordCount.value = { total: '0' }
-    return
-  }
-
-  try {
-    // 从后台获取最新的项目统计
-    const stats = await statusService.getProjectStats(project.id)
-
-    projectInfo.value = {
-      title: stats.novel.title,
-      status: stats.novel.status
-    }
-
-    wordCount.value = {
-      total: formatWordCount(stats.novel.wordCount),
-      target: stats.novel.targetWordCount ? formatWordCount(stats.novel.targetWordCount) : undefined,
-      progress: stats.novel.targetWordCount ? Math.round((stats.novel.wordCount / stats.novel.targetWordCount) * 100) : undefined
-    }
-  } catch (error) {
-    console.error('Failed to load project info:', error)
-    // 降级到使用本地数据
-    projectInfo.value = {
-      title: project.title,
-      status: project.status
-    }
-
-    const total = project.wordCount || 0
-    const target = project.targetWordCount
-    wordCount.value = {
-      total: formatWordCount(total),
-      target: target ? formatWordCount(target) : undefined,
-      progress: target ? Math.round((total / target) * 100) : undefined
-    }
-  }
-}
-
-// 加载章节统计
-const loadChapterStats = async () => {
-  const project = projectStore.currentProject
-  if (!project) {
-    chapterStats.value = { total: 0, completed: 0, writing: 0, planning: 0 }
-    return
-  }
-
-  try {
-    // 从项目统计中获取章节信息
-    const stats = await statusService.getProjectStats(project.id)
-    chapterStats.value = stats.chapters
-  } catch (error) {
-    console.error('Failed to load chapter stats:', error)
-    chapterStats.value = { total: 0, completed: 0, writing: 0, planning: 0 }
-  }
-}
-
-// 加载今日进度
-const loadTodayProgress = async () => {
-  const project = projectStore.currentProject
-  if (!project) {
-    todayProgress.value = { words: 0, time: 0 }
-    return
-  }
-
-  try {
-    const stats = await statusService.getTodayStats(project.id)
-    todayProgress.value = {
-      words: stats.wordCount || 0,
-      time: stats.timeSpent || 0
-    }
-  } catch (error) {
-    console.error('Failed to load today progress:', error)
-    todayProgress.value = { words: 0, time: 0 }
-  }
-}
-
 // 更新保存状态
 const updateSaveStatus = (saving: boolean, timestamp?: Date) => {
   saveStatus.value.saving = saving
@@ -288,18 +209,65 @@ const updateSaveStatus = (saving: boolean, timestamp?: Date) => {
   }
 }
 
-// 检查AI连接状态
-const checkAIStatus = async () => {
-  try {
-    const data = await statusService.getAIStatus()
-
-    aiConnection.value = {
-      status: data.connected ? 'connected' : 'disconnected',
-      statusTextKey: data.connected ? 'footer.aiStatus.connected' : 'footer.aiStatus.disconnected',
-      model: data.model || undefined,
-      usage: data.usage
+const applyProjectStats = (projectStats: ProjectStats | null, project: any | null) => {
+  if (projectStats) {
+    projectInfo.value = {
+      title: projectStats.novel.title,
+      status: projectStats.novel.status
     }
-  } catch (error) {
+
+    wordCount.value = {
+      total: formatWordCount(projectStats.novel.wordCount),
+      target: projectStats.novel.targetWordCount ? formatWordCount(projectStats.novel.targetWordCount) : undefined,
+      progress: projectStats.novel.targetWordCount ? Math.round((projectStats.novel.wordCount / projectStats.novel.targetWordCount) * 100) : undefined
+    }
+
+    chapterStats.value = projectStats.chapters
+    return
+  }
+
+  if (project) {
+    projectInfo.value = {
+      title: project.title,
+      status: project.status
+    }
+
+    const total = project.wordCount || 0
+    const target = project.targetWordCount
+
+    wordCount.value = {
+      total: formatWordCount(total),
+      target: target ? formatWordCount(target) : undefined,
+      progress: target ? Math.round((total / target) * 100) : undefined
+    }
+  } else {
+    projectInfo.value = { title: '', status: undefined }
+    wordCount.value = { total: '0' }
+  }
+
+  chapterStats.value = { total: 0, completed: 0, writing: 0, planning: 0 }
+}
+
+const applyTodayStats = (todayStats: TodayStats | null) => {
+  if (todayStats) {
+    todayProgress.value = {
+      words: todayStats.wordCount || 0,
+      time: todayStats.timeSpent || 0
+    }
+  } else {
+    todayProgress.value = { words: 0, time: 0 }
+  }
+}
+
+const applyAIStatus = (status: AIStatus | null) => {
+  if (status) {
+    aiConnection.value = {
+      status: status.connected ? 'connected' : 'disconnected',
+      statusTextKey: status.connected ? 'footer.aiStatus.connected' : 'footer.aiStatus.disconnected',
+      model: status.model || undefined,
+      usage: status.usage
+    }
+  } else {
     aiConnection.value = {
       status: 'disconnected',
       statusTextKey: 'footer.aiStatus.failed'
@@ -307,20 +275,39 @@ const checkAIStatus = async () => {
   }
 }
 
-// 检查系统状态
-const checkSystemStatus = async () => {
-  const startTime = Date.now()
-
-  try {
-    const data = await statusService.getSystemHealth()
-    const latency = Date.now() - startTime
-
+const applySystemStatus = (health: SystemHealth | null, latency: number) => {
+  if (health) {
     systemStatus.value = {
-      online: data.status === 'healthy',
+      online: health.status === 'healthy',
       latency,
       performance: statusService.getLatencyLevel(latency)
     }
+  } else {
+    systemStatus.value = {
+      online: false,
+      performance: 'poor'
+    }
+  }
+}
+
+// 刷新所有状态（单次请求）
+const refreshAllStatus = async () => {
+  const project = projectStore.currentProject
+  const startTime = Date.now()
+
+  try {
+    const data = await statusService.getDashboardStatus(project?.id)
+    const latency = Date.now() - startTime
+
+    applyProjectStats(project ? data.projectStats : null, project)
+    applyTodayStats(project ? data.todayStats : null)
+    applyAIStatus(data.aiStatus)
+    applySystemStatus(data.systemHealth, latency)
   } catch (error) {
+    console.error('Failed to load dashboard status:', error)
+    applyProjectStats(null, project)
+    applyTodayStats(null)
+    applyAIStatus(null)
     systemStatus.value = {
       online: false,
       performance: 'poor'
@@ -331,29 +318,17 @@ const checkSystemStatus = async () => {
 // 监听网络状态
 const handleOnline = () => {
   systemStatus.value.online = true
-  checkSystemStatus()
+  refreshAllStatus()
 }
 
 const handleOffline = () => {
   systemStatus.value.online = false
-}
-
-// 刷新所有状态
-const refreshAllStatus = async () => {
-  await Promise.all([
-    loadProjectInfo(),
-    loadChapterStats(),
-    loadTodayProgress(),
-    checkAIStatus(),
-    checkSystemStatus()
-  ])
+  systemStatus.value.latency = undefined
 }
 
 // 监听项目变化
 const unwatchProject = projectStore.$subscribe(() => {
-  loadProjectInfo()
-  loadChapterStats()
-  loadTodayProgress()
+  refreshAllStatus()
 })
 
 // 生命周期
@@ -364,8 +339,7 @@ onMounted(() => {
 
   // 设置定时器
   timeTimer = window.setInterval(updateCurrentTime, 1000)
-  statusTimer = window.setInterval(refreshAllStatus, 30000) // 30秒刷新一次
-  pingTimer = window.setInterval(checkSystemStatus, 60000) // 1分钟检查一次网络
+  statusTimer = window.setInterval(refreshAllStatus, 60000) // 1分钟刷新一次
 
   // 监听网络状态
   window.addEventListener('online', handleOnline)
@@ -376,7 +350,6 @@ onUnmounted(() => {
   // 清理定时器
   if (timeTimer) clearInterval(timeTimer)
   if (statusTimer) clearInterval(statusTimer)
-  if (pingTimer) clearInterval(pingTimer)
 
   // 移除事件监听
   window.removeEventListener('online', handleOnline)

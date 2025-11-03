@@ -93,4 +93,16 @@ router.get('/ai/status', async (req, res) => {
   }
 })
 
+// 仪表盘综合状态
+router.get('/dashboard/status', requireAuth, async (req, res) => {
+  try {
+    const { novelId } = req.query
+    const status = await statsService.getDashboardStatus(novelId)
+    res.json(status)
+  } catch (error) {
+    console.error('Error getting dashboard status:', error)
+    res.status(500).json({ error: 'Failed to get dashboard status' })
+  }
+})
+
 module.exports = router

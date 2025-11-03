@@ -68,7 +68,8 @@
       "serviceUnavailable": "抱歉，AI服务暂时不可用。请稍后再试。",
       "streamingProcessError": "抱歉，流式传输过程中出现错误。",
       "streamingFailed": "抱歉，流式传输失败。请稍后再试。",
-      "requestAborted": "请求已取消"
+      "requestAborted": "请求已取消",
+      "assistantDisabled": "AI创作助手未启用，请在设置中开启后再试。"
     },
     "modeTitles": {
       "chat": "智能对话",

@@ -136,8 +136,87 @@ export interface SuggestionResponse {
 }
 
 class AIService {
+  private readonly assistantToggleKeys = [
+    'ai_assistant_enabled',
+    'aiAssistantEnabled',
+    'ai_helper_enabled'
+  ]
+
+  // 检查本地是否启用了AI助手
+  isAssistantEnabled(): boolean {
+    return this.computeAssistantEnabled()
+  }
+
+  private computeAssistantEnabled(): boolean {
+    // 1. 优先读取浏览器存储配置
+    if (typeof window !== 'undefined') {
+      const storedFlag =
+        this.readAssistantFlagFromStorage(window.localStorage) ??
+        this.readAssistantFlagFromStorage(window.sessionStorage)
+
+      if (storedFlag !== null) {
+        return storedFlag
+      }
+
+      // 2. 读取全局配置（如果可用）
+      const globalConfig = (window as any)?.__APP_CONFIG__?.features?.aiAssistant
+      if (typeof globalConfig === 'boolean') {
+        return globalConfig
+      }
+    }
+
+    // 3. 读取环境变量
+    const envFlag = this.normalizeBoolean((import.meta.env as Record<string, any>)?.VITE_AI_ASSISTANT_ENABLED)
+    if (envFlag !== null) {
+      return envFlag
+    }
+
+    // 默认启用
+    return true
+  }
+
+  private readAssistantFlagFromStorage(storage?: Storage): boolean | null {
+    if (!storage) return null
+
+    try {
+      for (const key of this.assistantToggleKeys) {
+        const value = storage.getItem(key)
+        const parsed = this.normalizeBoolean(value)
+        if (parsed !== null) {
+          return parsed
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to read AI assistant flag from storage:', error)
+    }
+
+    return null
+  }
+
+  private normalizeBoolean(value: unknown): boolean | null {
+    if (value === null || value === undefined) return null
+    const normalized = String(value).trim().toLowerCase()
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false
+    return null
+  }
+
+  private ensureAssistantEnabled(): void {
+    if (!this.computeAssistantEnabled()) {
+      throw this.createAssistantDisabledError()
+    }
+  }
+
+  private createAssistantDisabledError(): Error {
+    const error = new Error(translate('aiChat.errors.assistantDisabled'))
+    ;(error as any).code = 'AI_ASSISTANT_DISABLED'
+    return error
+  }
+
   // 通用AI对话
   async chat(novelId: string, message: string, context = {}, options = {}): Promise<AIResponse> {
+    this.ensureAssistantEnabled()
+
     const config: any = {}
     
     if ((options as any).signal) {
@@ -165,6 +244,14 @@ class AIService {
     context: Record<string, any> = {},
     options: ChatStreamOptions = {}
   ): Promise<void> {
+    if (!this.computeAssistantEnabled()) {
+      onStream({
+        type: 'error',
+        message: translate('aiChat.errors.assistantDisabled')
+      })
+      return
+    }
+
     try {
       // 获取认证token
       const token = localStorage.getItem('sessionToken')
@@ -257,6 +344,8 @@ class AIService {
 
   // AI大纲生成
   async generateOutline(params: OutlineGenerationParams): Promise<OutlineData> {
+    this.ensureAssistantEnabled()
+
     const {
       novelId,
       type,
@@ -312,6 +401,8 @@ class AIService {
 
   // 生成单章节内容大纲
   async generateChapterOutline(params: ChapterOutlineParams): Promise<ChapterOutlineData> {
+    this.ensureAssistantEnabled()
+
     const {
       novelId,
       chapterId,
@@ -814,6 +905,8 @@ ${description}
 
   // 应用大纲到小说
   async applyOutline(novelId: string, outlineData: OutlineData): Promise<any> {
+    this.ensureAssistantEnabled()
+
     const response = await api.post(`${API_BASE}/ai/outline/apply`, {
       novelId,
       outline: outlineData
@@ -824,6 +917,8 @@ ${description}
 
   // 保存大纲草稿
   async saveOutlineDraft(novelId: string, outlineData: OutlineData): Promise<any> {
+    this.ensureAssistantEnabled()
+
     const response = await api.post(`${API_BASE}/ai/outline/draft`, {
       novelId,
       outline: outlineData
@@ -834,6 +929,8 @@ ${description}
 
   // 创建可分享的大纲链接
   async createShareableOutline(outlineData: OutlineData): Promise<string> {
+    this.ensureAssistantEnabled()
+
     const response = await api.post(`${API_BASE}/ai/outline/share`, {
       outline: outlineData
     })

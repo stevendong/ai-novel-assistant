@@ -68,7 +68,8 @@
       "serviceUnavailable": "Sorry, the AI service is temporarily unavailable. Please try again later.",
       "streamingProcessError": "Sorry, an error occurred while streaming.",
       "streamingFailed": "Sorry, the stream failed. Please try again later.",
-      "requestAborted": "Request canceled"
+      "requestAborted": "Request canceled",
+      "assistantDisabled": "The AI assistant is turned off. Enable it in settings to use this feature."
     },
     "modeTitles": {
       "chat": "Smart Chat",
