@@ -438,14 +438,33 @@
     "suggestAddRelation": "建议添加与...的关联，增强设定完整性。",
     "aiComprehensiveAnalysis": "AI 全面分析",
     "addNewSettingTitle": "添加新设定",
-    "enhanceType": "增强类型",
+    "enhanceType": {
+      "comprehensive": "全面增强",
+      "focused": "重点增强",
+      "creative": "创意增强",
+      "practical": "实用增强"
+    },
     "expansionAspects": "重点扩展方面",
     "plotRelevance": "与情节的关联",
     "plotRelevancePlaceholder": "描述这个设定在故事中的作用和重要性...",
-    "detailLevel": "详细程度",
+    "detailLevel": {
+      "brief": "简要补充",
+      "standard": "标准详细",
+      "comprehensive": "全面深入",
+      "immersive": "沉浸式描述"
+    },
     "focusAreas": "重点关注领域",
-    "suggestionType": "建议类型",
-    "scope": "检查范围",
+    "suggestionType": {
+      "general": "综合分析",
+      "completeness": "完整性检查",
+      "creativity": "创意发展",
+      "consistency": "一致性检查",
+      "integration": "情节融合"
+    },
+    "scope": {
+      "setting": "仅当前设定",
+      "full": "全面检查"
+    },
     "startAIAnalysis": "开始AI分析",
     "enhancedDescription": "增强描述",
     "applyToDescription": "应用到描述",
@@ -460,39 +479,16 @@
     "settingTypes": "设定类型",
     "generationConfig": "生成数量配置",
     "customRequirements": "自定义生成要求（可选）",
-    "specialRequirements": "特殊要求",
+    "specialRequirements": "{type} 特殊要求",
     "startBatchGenerate": "开始批量生成",
-    "successGenerated": "成功生成",
+    "successGenerated": "成功生成 {count} 个世界设定",
     "unit": "个世界设定",
-    "applySelected": "应用选中的设定",
+    "applySelected": "应用选中的设定 ({count})",
     "relationType": {
       "contains": "包含",
       "influences": "影响",
       "conflicts": "冲突",
       "supports": "支撑"
-    },
-    "enhanceType": {
-      "comprehensive": "全面增强",
-      "focused": "重点增强",
-      "creative": "创意增强",
-      "practical": "实用增强"
-    },
-    "detailLevel": {
-      "brief": "简要补充",
-      "standard": "标准详细",
-      "comprehensive": "全面深入",
-      "immersive": "沉浸式描述"
-    },
-    "suggestionType": {
-      "general": "综合分析",
-      "completeness": "完整性检查",
-      "creativity": "创意发展",
-      "consistency": "一致性检查",
-      "integration": "情节融合"
-    },
-    "scope": {
-      "setting": "仅当前设定",
-      "full": "全面检查"
     },
     "mode": {
       "comprehensive": "全面生成 - 创建完整的世界设定体系",
@@ -516,15 +512,121 @@
       "economics": "经济设定",
       "religion": "宗教设定",
       "other": "其他设定"
+    },
+    "emptyCategory": "暂无{category}",
+    "relationTypeLabel": "关系类型",
+    "sampleExpansionSuggestion": "该世界观设定可以进一步细化魔法体系的具体规则和限制。",
+    "sampleConsistencyIssue": "发现与“古代王国”设定存在时代冲突，建议调整时间线。",
+    "sampleRelationSuggestion": "建议添加与“主城”位置的关联，增强设定完整性。",
+    "selectSettingTypePlaceholder": "选择设定类型",
+    "enhanceTypeTitle": "增强类型",
+    "aiAnalysisSuccess": "AI 分析完成",
+    "aiActionFailed": "AI 操作失败，请重试",
+    "applySuggestionSuccess": "AI 建议已应用",
+    "applyEnhancedDescription": "增强描述已应用",
+    "applyFieldSuccess": "已应用{field}",
+    "applyAllFieldsSuccess": "已应用所有{type}字段",
+    "lockSuccess": "设定已锁定",
+    "unlockSuccess": "设定已解锁",
+    "fillRequired": "请填写必填字段",
+    "selectProject": "请先选择作品",
+    "selectSettingType": "请选择至少一种设定类型",
+    "batchGenerateSuccess": "批量生成完成",
+    "batchGenerateFailed": "批量生成失败，请重试",
+    "selectSettingsToApply": "请选择要创建的设定",
+    "applyBatchSuccess": "成功创建 {count} 个世界设定",
+    "applyBatchFailed": "应用设定失败，请重试",
+    "loadFailed": "加载设定失败，请重试",
+    "deleteWarning": "确定要删除设定「{name}」吗？此操作不可撤销。",
+    "detailDescription": "详细描述",
+    "pendingContent": "待完善",
+    "specialRequirementsPlaceholder": "对{type}的特殊要求...",
+    "enhanceModalTitle": "智能增强",
+    "expandModalTitle": "细节扩展",
+    "suggestionsModalTitle": "AI建议分析",
+    "consistencyModalTitle": "一致性检查",
+    "fieldNames": {
+      "era": "时代背景",
+      "factions": "主要势力",
+      "history": "世界历史",
+      "specialElements": "特殊元素",
+      "locationType": "位置类型",
+      "climate": "气候环境",
+      "population": "人口规模",
+      "geography": "地理特征",
+      "importantPlaces": "重要场所",
+      "ruleTypes": "规则类型",
+      "coreRules": "核心规则",
+      "limitations": "限制条件",
+      "language": "主要语言",
+      "religion": "宗教信仰",
+      "traditions": "文化传统",
+      "socialStructure": "社会结构",
+      "values": "价值观念"
+    },
+    "aspectOptions": {
+      "worldview": {
+        "history": "历史背景",
+        "politics": "政治体系",
+        "economy": "经济制度",
+        "society": "社会结构",
+        "culture": "文化传统",
+        "technology": "科技水平"
+      },
+      "location": {
+        "geography": "地理特征",
+        "architecture": "建筑风格",
+        "population": "人口分布",
+        "functionalAreas": "功能区域",
+        "transportation": "交通网络",
+        "environment": "自然环境"
+      },
+      "rule": {
+        "mechanism": "运作机制",
+        "scope": "适用范围",
+        "limitations": "限制条件",
+        "exceptions": "例外情况",
+        "process": "执行流程",
+        "consequences": "违规后果"
+      },
+      "culture": {
+        "customs": "传统习俗",
+        "values": "价值观念",
+        "arts": "艺术形式",
+        "language": "语言特色",
+        "religion": "宗教信仰",
+        "etiquette": "社会礼仪"
+      }
+    },
+    "focusAreasList": [
+      "感官描述",
+      "氛围营造",
+      "功能细节",
+      "文化内涵",
+      "互动要素",
+      "叙事潜力"
+    ],
+    "detailLevelOptions": {
+      "brief": "简要补充",
+      "standard": "标准详细",
+      "comprehensive": "全面深入",
+      "immersive": "沉浸式描述"
+    },
+    "suggestionTypeOptions": {
+      "general": "综合分析",
+      "completeness": "完整性检查",
+      "creativity": "创意发展",
+      "consistency": "一致性检查",
+      "integration": "情节融合"
+    },
+    "scopeOptions": {
+      "setting": "仅当前设定",
+      "full": "全面检查"
     }
   },
   "ai": {
     "assistant": "AI助手",
     "dialogue": "对话模式",
-    "enhance": "文本优化",
-    "consistency": "一致性检查",
-    "generating": "生成中...",
-    "askAnything": "有什么我可以帮助您的吗？",
     "enhance": {
       "title": "文本优化",
       "selectText": "请先选择要优化的文本",
@@ -538,7 +640,9 @@
       "checking": "正在检查一致性...",
       "noIssues": "暂无一致性问题",
       "issuesFound": "发现 {count} 个问题"
-    }
+    },
+    "generating": "生成中...",
+    "askAnything": "有什么我可以帮助您的吗？"
   },
   "export": {
     "title": "导出发布",

@@ -5,7 +5,7 @@
       <!-- Header -->
       <div class="p-4 border-b theme-border">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold theme-text-primary">世界设定</h2>
+          <h2 class="text-lg font-semibold theme-text-primary">{{ t('worldSetting.title') }}</h2>
         </div>
 
         <!-- Action Buttons -->
@@ -14,13 +14,13 @@
             <template #icon>
               <RobotOutlined />
             </template>
-            AI批量生成
+            {{ t('worldSetting.batchGenerate') }}
           </a-button>
           <a-button block @click="showAddSettingModal = true">
             <template #icon>
               <PlusOutlined />
             </template>
-            手动新增
+            {{ t('worldSetting.addManual') }}
           </a-button>
         </div>
       </div>
@@ -100,7 +100,7 @@
                 ]"
               >
                 <div class="flex space-x-1">
-                  <a-tooltip title="快速新增">
+                  <a-tooltip :title="t('worldSetting.quickAdd')">
                     <a-button
                       size="small"
                       type="text"
@@ -111,7 +111,7 @@
                     </a-button>
                   </a-tooltip>
 
-                  <a-tooltip title="AI生成">
+                  <a-tooltip :title="t('worldSetting.aiGenerate')">
                     <a-button
                       size="small"
                       type="text"
@@ -153,7 +153,7 @@
         
         <a-input-search
           v-model:value="searchQuery"
-          placeholder="搜索设定..."
+          :placeholder="t('worldSetting.searchPlaceholder')"
           size="small"
         />
       </div>
@@ -175,7 +175,7 @@
                   {{ setting.name }}
                 </h4>
                 <a-tag v-if="setting.isLocked" size="small" color="red">
-                  锁定
+                  {{ t('worldSetting.locked') }}
                 </a-tag>
               </div>
               <p class="text-xs theme-text-primary mt-1 line-clamp-3">
@@ -190,9 +190,9 @@
 
         <div v-if="currentCategorySettings.length === 0" class="text-center py-8 theme-text-primary">
           <GlobalOutlined style="font-size: 32px; margin-bottom: 8px;" />
-          <p>暂无{{ getCategoryTitle(currentCategory) }}</p>
+          <p>{{ t('worldSetting.emptyCategory', { category: getCategoryTitle(currentCategory) }) }}</p>
           <a-button type="link" @click="showAddSettingModal = true">
-            创建第一个设定
+            {{ t('worldSetting.createFirst') }}
           </a-button>
         </div>
       </div>
@@ -203,7 +203,7 @@
       <div v-if="!selectedSetting" class="flex-1 flex items-center justify-center theme-text-primary">
         <div class="text-center">
           <GlobalOutlined style="font-size: 48px; margin-bottom: 16px;" />
-          <p>选择一个设定以查看和编辑详情</p>
+          <p>{{ t('worldSetting.selectToView') }}</p>
         </div>
       </div>
       
@@ -228,19 +228,19 @@
                     <a-menu @click="handleAIAction">
                       <a-menu-item key="enhance">
                         <RobotOutlined />
-                        智能增强
+                        {{ t('worldSetting.enhance') }}
                       </a-menu-item>
                       <a-menu-item key="expand">
                         <ExpandAltOutlined />
-                        细节扩展
+                        {{ t('worldSetting.expand') }}
                       </a-menu-item>
                       <a-menu-item key="suggestions">
                         <BulbOutlined />
-                        AI建议
+                        {{ t('worldSetting.aiSuggestions') }}
                       </a-menu-item>
                       <a-menu-item key="consistency">
                         <CheckCircleOutlined />
-                        一致性检查
+                        {{ t('worldSetting.consistency') }}
                       </a-menu-item>
                     </a-menu>
                   </template>
@@ -248,7 +248,7 @@
                     <template #icon>
                       <RobotOutlined />
                     </template>
-                    AI工具
+                    {{ t('worldSetting.aiTools') }}
                     <DownOutlined />
                   </a-button>
                 </a-dropdown>
@@ -259,7 +259,7 @@
                   <template #icon>
                     <BulbOutlined />
                   </template>
-                  AI建议
+                  {{ t('worldSetting.aiSuggestions') }}
                 </a-button>
                 <a-button
                   :type="selectedSetting.isLocked ? 'default' : 'primary'"
@@ -269,13 +269,13 @@
                     <LockOutlined v-if="selectedSetting.isLocked" />
                     <UnlockOutlined v-else />
                   </template>
-                  {{ selectedSetting.isLocked ? '解锁' : '锁定' }}
+                  {{ selectedSetting.isLocked ? t('worldSetting.unlock') : t('worldSetting.lock') }}
                 </a-button>
                 <a-button danger @click="deleteSetting">
                   <template #icon>
                     <DeleteOutlined />
                   </template>
-                  删除
+                  {{ t('common.delete') }}
                 </a-button>
               </a-space>
             </div>
@@ -284,47 +284,47 @@
             <a-form :model="editingSetting" layout="vertical" @finish="saveSetting">
               <a-row :gutter="16" class="mb-4">
                 <a-col :span="16">
-                  <a-form-item label="设定名称" required>
+                  <a-form-item :label="t('worldSetting.settingName')" required>
                     <a-input 
                       v-model:value="editingSetting.name" 
-                      placeholder="输入设定名称"
+                      :placeholder="t('worldSetting.enterSettingName')"
                       :disabled="selectedSetting.isLocked"
                     />
                   </a-form-item>
                 </a-col>
                 <a-col :span="8">
-                  <a-form-item label="设定类型" required>
+                  <a-form-item :label="t('worldSetting.settingType')" required>
                     <a-select 
                       v-model:value="editingSetting.type" 
                       :disabled="selectedSetting.isLocked"
                     >
-                      <a-select-option value="worldview">世界观设定</a-select-option>
-                      <a-select-option value="location">地理位置</a-select-option>
-                      <a-select-option value="rule">规则体系</a-select-option>
-                      <a-select-option value="culture">文化背景</a-select-option>
+                      <a-select-option value="worldview">{{ t('worldSetting.worldview') }}</a-select-option>
+                      <a-select-option value="location">{{ t('worldSetting.location') }}</a-select-option>
+                      <a-select-option value="rule">{{ t('worldSetting.rule') }}</a-select-option>
+                      <a-select-option value="culture">{{ t('worldSetting.culture') }}</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
               </a-row>
               
-              <a-form-item label="基本描述">
+              <a-form-item :label="t('worldSetting.basicDescription')">
                 <a-textarea 
                   v-model:value="editingSetting.description" 
                   :rows="4"
-                  placeholder="简要描述这个设定..."
+                  :placeholder="t('worldSetting.descriptionPlaceholder')"
                   :disabled="selectedSetting.isLocked"
                 />
               </a-form-item>
 
               <a-tabs v-model:activeKey="activeTab" type="card">
                 <!-- Detail Tab -->
-                <a-tab-pane key="details" tab="详细内容">
+                <a-tab-pane key="details" :tab="t('worldSetting.details')">
                   <div class="space-y-6">
-                    <a-form-item label="详细内容">
+                    <a-form-item :label="t('worldSetting.details')">
                       <a-textarea
                         v-model:value="editingSetting.detailsText"
                         :rows="12"
-                        placeholder="请详细描述这个设定的内容、背景、特点等信息..."
+                        :placeholder="t('worldSetting.detailsPlaceholder')"
                         :disabled="selectedSetting.isLocked"
                       />
                     </a-form-item>
@@ -332,7 +332,7 @@
                 </a-tab-pane>
 
                 <!-- Relations Tab -->
-                <a-tab-pane key="relations" tab="关联设定">
+                <a-tab-pane key="relations" :tab="t('worldSetting.relatedSettings')">
                   <div class="space-y-4">
                     <div 
                       v-for="(relation, index) in editingSetting.relations" 
@@ -343,7 +343,7 @@
                         <a-col :span="8">
                           <a-select 
                             v-model:value="relation.settingId" 
-                            placeholder="选择关联设定"
+                            :placeholder="t('worldSetting.selectRelated')"
                             :disabled="selectedSetting.isLocked"
                           >
                             <a-select-option 
@@ -358,19 +358,19 @@
                         <a-col :span="4">
                           <a-select 
                             v-model:value="relation.type" 
-                            placeholder="关系类型"
+                            :placeholder="t('worldSetting.relationTypeLabel')"
                             :disabled="selectedSetting.isLocked"
                           >
-                            <a-select-option value="contains">包含</a-select-option>
-                            <a-select-option value="influences">影响</a-select-option>
-                            <a-select-option value="conflicts">冲突</a-select-option>
-                            <a-select-option value="supports">支撑</a-select-option>
+                            <a-select-option value="contains">{{ t('worldSetting.relationType.contains') }}</a-select-option>
+                            <a-select-option value="influences">{{ t('worldSetting.relationType.influences') }}</a-select-option>
+                            <a-select-option value="conflicts">{{ t('worldSetting.relationType.conflicts') }}</a-select-option>
+                            <a-select-option value="supports">{{ t('worldSetting.relationType.supports') }}</a-select-option>
                           </a-select>
                         </a-col>
                         <a-col :span="10">
                           <a-input 
                             v-model:value="relation.description" 
-                            placeholder="关系描述"
+                            :placeholder="t('worldSetting.relationDescription')"
                             :disabled="selectedSetting.isLocked"
                           />
                         </a-col>
@@ -394,18 +394,18 @@
                       :disabled="selectedSetting.isLocked"
                     >
                       <PlusOutlined />
-                      添加关联
+                      {{ t('worldSetting.addRelation') }}
                     </a-button>
                   </div>
                 </a-tab-pane>
 
                 <!-- Notes Tab -->
-                <a-tab-pane key="notes" tab="创作笔记">
-                  <a-form-item label="创作笔记">
+                <a-tab-pane key="notes" :tab="t('worldSetting.notes')">
+                  <a-form-item :label="t('worldSetting.notes')">
                     <a-textarea 
                       v-model:value="editingSetting.notes" 
                       :rows="12"
-                      placeholder="记录创作想法、灵感、待完善的内容..."
+                      :placeholder="t('worldSetting.notesPlaceholder')"
                       :disabled="selectedSetting.isLocked"
                     />
                   </a-form-item>
@@ -418,7 +418,7 @@
                   html-type="submit"
                   :disabled="selectedSetting.isLocked"
                 >
-                  保存修改
+                  {{ t('common.save') }}
                 </a-button>
               </div>
             </a-form>
@@ -428,7 +428,7 @@
         <!-- AI Suggestions Panel (30%) -->
         <div v-if="showAISuggestionsPanel" class="w-80 theme-bg-elevated border-l theme-border p-4">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-medium theme-text-primary">AI 建议</h3>
+            <h3 class="text-sm font-medium theme-text-primary">{{ t('worldSetting.aiSuggestionsPanel') }}</h3>
             <a-button
               type="text"
               size="small"
@@ -442,30 +442,30 @@
           </div>
           
           <div class="space-y-4">
-            <a-card size="small" title="扩展建议">
+            <a-card size="small" :title="t('worldSetting.expansionSuggestions')">
               <p class="text-sm theme-text-primary">
-                该世界观设定可以进一步细化魔法体系的具体规则和限制。
+                {{ t('worldSetting.sampleExpansionSuggestion') }}
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">
-                详细展开
+                {{ t('worldSetting.detailExpand') }}
               </a-button>
             </a-card>
             
-            <a-card size="small" title="一致性检查">
+            <a-card size="small" :title="t('worldSetting.consistencyCheck')">
               <p class="text-sm theme-text-primary">
-                发现与"古代王国"设定存在时代冲突，建议调整时间线。
+                {{ t('worldSetting.sampleConsistencyIssue') }}
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">
-                查看冲突
+                {{ t('worldSetting.viewConflict') }}
               </a-button>
             </a-card>
             
-            <a-card size="small" title="关联建议">
+            <a-card size="small" :title="t('worldSetting.relationSuggestion')">
               <p class="text-sm theme-text-primary">
-                建议添加与"主城"位置的关联，增强设定完整性。
+                {{ t('worldSetting.sampleRelationSuggestion') }}
               </p>
               <a-button type="link" size="small" class="p-0 mt-2">
-                添加关联
+                {{ t('worldSetting.addRelation') }}
               </a-button>
             </a-card>
           </div>
@@ -475,7 +475,7 @@
               <template #icon>
                 <RobotOutlined />
               </template>
-              AI 全面分析
+              {{ t('worldSetting.aiComprehensiveAnalysis') }}
             </a-button>
           </div>
         </div>
@@ -485,26 +485,26 @@
     <!-- Add Setting Modal -->
     <a-modal
       v-model:open="showAddSettingModal"
-      title="添加新设定"
+      :title="t('worldSetting.addNewSettingTitle')"
       @ok="addSetting"
     >
       <a-form :model="newSetting" layout="vertical">
-        <a-form-item label="设定类型" required>
-          <a-select v-model:value="newSetting.type" placeholder="选择设定类型">
-            <a-select-option value="worldview">世界观设定</a-select-option>
-            <a-select-option value="location">地理位置</a-select-option>
-            <a-select-option value="rule">规则体系</a-select-option>
-            <a-select-option value="culture">文化背景</a-select-option>
+        <a-form-item :label="t('worldSetting.settingType')" required>
+          <a-select v-model:value="newSetting.type" :placeholder="t('worldSetting.selectSettingTypePlaceholder')">
+            <a-select-option value="worldview">{{ t('worldSetting.worldview') }}</a-select-option>
+            <a-select-option value="location">{{ t('worldSetting.location') }}</a-select-option>
+            <a-select-option value="rule">{{ t('worldSetting.rule') }}</a-select-option>
+            <a-select-option value="culture">{{ t('worldSetting.culture') }}</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="设定名称" required>
-          <a-input v-model:value="newSetting.name" placeholder="输入设定名称" />
+        <a-form-item :label="t('worldSetting.settingName')" required>
+          <a-input v-model:value="newSetting.name" :placeholder="t('worldSetting.enterSettingName')" />
         </a-form-item>
-        <a-form-item label="基本描述">
+        <a-form-item :label="t('worldSetting.basicDescription')">
           <a-textarea 
             v-model:value="newSetting.description" 
             :rows="3"
-            placeholder="简要描述这个设定..."
+            :placeholder="t('worldSetting.descriptionPlaceholder')"
           />
         </a-form-item>
       </a-form>
@@ -524,16 +524,16 @@
           <!-- 智能增强配置 -->
           <div v-if="aiModalType === 'enhance'" class="space-y-4">
             <a-form layout="vertical">
-              <a-form-item label="增强类型">
+              <a-form-item :label="t('worldSetting.enhanceTypeTitle')">
                 <a-select v-model:value="expansionOptions.type">
-                  <a-select-option value="comprehensive">全面增强</a-select-option>
-                  <a-select-option value="focused">重点增强</a-select-option>
-                  <a-select-option value="creative">创意增强</a-select-option>
-                  <a-select-option value="practical">实用增强</a-select-option>
+                  <a-select-option value="comprehensive">{{ t('worldSetting.enhanceType.comprehensive') }}</a-select-option>
+                  <a-select-option value="focused">{{ t('worldSetting.enhanceType.focused') }}</a-select-option>
+                  <a-select-option value="creative">{{ t('worldSetting.enhanceType.creative') }}</a-select-option>
+                  <a-select-option value="practical">{{ t('worldSetting.enhanceType.practical') }}</a-select-option>
                 </a-select>
               </a-form-item>
 
-              <a-form-item label="重点扩展方面">
+              <a-form-item :label="t('worldSetting.expansionAspects')">
                 <a-checkbox-group v-model:value="expansionOptions.aspects">
                   <a-row>
                     <a-col v-for="aspect in getExpansionAspects" :key="aspect" :span="8">
@@ -543,10 +543,10 @@
                 </a-checkbox-group>
               </a-form-item>
 
-              <a-form-item label="与情节的关联">
+              <a-form-item :label="t('worldSetting.plotRelevance')">
                 <a-textarea
                   v-model:value="expansionOptions.plotRelevance"
-                  placeholder="描述这个设定在故事中的作用和重要性..."
+                  :placeholder="t('worldSetting.plotRelevancePlaceholder')"
                   :rows="3"
                 />
               </a-form-item>
@@ -556,16 +556,16 @@
           <!-- 细节扩展配置 -->
           <div v-else-if="aiModalType === 'expand'" class="space-y-4">
             <a-form layout="vertical">
-              <a-form-item label="详细程度">
+              <a-form-item :label="t('worldSetting.detailLevel')">
                 <a-select v-model:value="expansionOptions.detailLevel">
-                  <a-select-option value="brief">简要补充</a-select-option>
-                  <a-select-option value="standard">标准详细</a-select-option>
-                  <a-select-option value="comprehensive">全面深入</a-select-option>
-                  <a-select-option value="immersive">沉浸式描述</a-select-option>
+                  <a-select-option value="brief">{{ t('worldSetting.detailLevelOptions.brief') }}</a-select-option>
+                  <a-select-option value="standard">{{ t('worldSetting.detailLevelOptions.standard') }}</a-select-option>
+                  <a-select-option value="comprehensive">{{ t('worldSetting.detailLevelOptions.comprehensive') }}</a-select-option>
+                  <a-select-option value="immersive">{{ t('worldSetting.detailLevelOptions.immersive') }}</a-select-option>
                 </a-select>
               </a-form-item>
 
-              <a-form-item label="重点关注领域">
+              <a-form-item :label="t('worldSetting.focusAreas')">
                 <a-checkbox-group v-model:value="expansionOptions.focusAreas">
                   <a-row>
                     <a-col v-for="area in getFocusAreas" :key="area" :span="8">
@@ -580,13 +580,13 @@
           <!-- AI建议配置 -->
           <div v-else-if="aiModalType === 'suggestions'" class="space-y-4">
             <a-form layout="vertical">
-              <a-form-item label="建议类型">
+              <a-form-item :label="t('worldSetting.suggestionType')">
                 <a-select v-model:value="expansionOptions.suggestionType">
-                  <a-select-option value="general">综合分析</a-select-option>
-                  <a-select-option value="completeness">完整性检查</a-select-option>
-                  <a-select-option value="creativity">创意发展</a-select-option>
-                  <a-select-option value="consistency">一致性检查</a-select-option>
-                  <a-select-option value="integration">情节融合</a-select-option>
+                  <a-select-option value="general">{{ t('worldSetting.suggestionTypeOptions.general') }}</a-select-option>
+                  <a-select-option value="completeness">{{ t('worldSetting.suggestionTypeOptions.completeness') }}</a-select-option>
+                  <a-select-option value="creativity">{{ t('worldSetting.suggestionTypeOptions.creativity') }}</a-select-option>
+                  <a-select-option value="consistency">{{ t('worldSetting.suggestionTypeOptions.consistency') }}</a-select-option>
+                  <a-select-option value="integration">{{ t('worldSetting.suggestionTypeOptions.integration') }}</a-select-option>
                 </a-select>
               </a-form-item>
             </a-form>
@@ -595,10 +595,10 @@
           <!-- 一致性检查配置 -->
           <div v-else-if="aiModalType === 'consistency'" class="space-y-4">
             <a-form layout="vertical">
-              <a-form-item label="检查范围">
+              <a-form-item :label="t('worldSetting.scope')">
                 <a-select v-model:value="expansionOptions.scope">
-                  <a-select-option value="setting">仅当前设定</a-select-option>
-                  <a-select-option value="full">全面检查</a-select-option>
+                  <a-select-option value="setting">{{ t('worldSetting.scopeOptions.setting') }}</a-select-option>
+                  <a-select-option value="full">{{ t('worldSetting.scopeOptions.full') }}</a-select-option>
                 </a-select>
               </a-form-item>
             </a-form>
@@ -614,7 +614,7 @@
               <template #icon>
                 <RobotOutlined />
               </template>
-              开始AI分析
+              {{ t('worldSetting.startAIAnalysis') }}
             </a-button>
           </div>
         </div>
@@ -624,28 +624,28 @@
           <!-- 智能增强结果 -->
           <div v-if="aiModalType === 'enhance' && aiResult" class="space-y-4">
             <div class="theme-ai-enhance-bg theme-ai-enhance-border p-4 rounded-lg border">
-              <h4 class="text-sm font-semibold mb-2 theme-ai-enhance-title">增强描述</h4>
-              <p class="text-sm theme-ai-enhance-text">{{ aiResult.enhancedDescription || '暂无内容' }}</p>
+              <h4 class="text-sm font-semibold mb-2 theme-ai-enhance-title">{{ t('worldSetting.enhancedDescription') }}</h4>
+              <p class="text-sm theme-ai-enhance-text">{{ aiResult.enhancedDescription || t('common.noContent') }}</p>
               <a-button
                 type="link"
                 size="small"
                 @click="applySingleField('description', aiResult.enhancedDescription)"
                 v-if="aiResult.enhancedDescription"
               >
-                应用到描述
+                {{ t('worldSetting.applyToDescription') }}
               </a-button>
             </div>
 
             <!-- 详细字段内容 -->
             <div v-if="aiResult.detailsFields" class="theme-ai-fields-bg theme-ai-fields-border p-4 rounded-lg border">
               <div class="flex items-center justify-between mb-3">
-                <h4 class="text-sm font-semibold theme-ai-fields-title">{{ getSettingTypeName(selectedSetting.type) }}字段</h4>
+                <h4 class="text-sm font-semibold theme-ai-fields-title">{{ `${getSettingTypeName(selectedSetting.type)} ${t('worldSetting.fields')}` }}</h4>
                 <a-button 
                   type="primary" 
                   size="small"
                   @click="applyAllFields"
                 >
-                  应用所有字段
+                  {{ t('worldSetting.applyAllFields') }}
                 </a-button>
               </div>
               
@@ -675,7 +675,7 @@
                       type="link" 
                       @click="applySingleField(fieldKey, value)"
                     >
-                      应用
+                      {{ t('common.apply') }}
                     </a-button>
                   </div>
                 </div>
@@ -683,7 +683,7 @@
             </div>
 
             <div v-if="aiResult.expansionSuggestions?.length" class="theme-ai-suggestion-bg theme-ai-suggestion-border p-4 rounded-lg border">
-              <h4 class="text-sm font-semibold mb-2 theme-ai-suggestion-title">扩展建议</h4>
+              <h4 class="text-sm font-semibold mb-2 theme-ai-suggestion-title">{{ t('worldSetting.expansionSuggestions') }}</h4>
               <ul class="text-sm theme-ai-suggestion-text space-y-1">
                 <li v-for="suggestion in aiResult.expansionSuggestions" :key="suggestion" class="flex items-start">
                   <BulbOutlined class="theme-ai-suggestion-title mr-2 mt-0.5 flex-shrink-0" />
@@ -696,16 +696,16 @@
           <!-- 细节扩展结果 -->
           <div v-else-if="aiModalType === 'expand' && aiResult" class="space-y-4">
             <div class="theme-ai-fields-bg theme-ai-fields-border p-4 rounded-lg border">
-              <h4 class="text-sm font-semibold mb-2 theme-ai-fields-title">详细描述</h4>
-              <p class="text-sm theme-ai-fields-text">{{ aiResult.detailedDescription || '暂无内容' }}</p>
+              <h4 class="text-sm font-semibold mb-2 theme-ai-fields-title">{{ t('worldSetting.detailDescription') }}</h4>
+              <p class="text-sm theme-ai-fields-text">{{ aiResult.detailedDescription || t('common.noContent') }}</p>
             </div>
 
             <div v-if="aiResult.sensoryDetails" class="theme-ai-enhance-bg theme-ai-enhance-border p-4 rounded-lg border">
-              <h4 class="text-sm font-semibold mb-2 theme-ai-enhance-title">感官描述</h4>
+              <h4 class="text-sm font-semibold mb-2 theme-ai-enhance-title">{{ t('worldSetting.sensoryDetails') }}</h4>
               <div class="grid grid-cols-2 gap-2">
                 <div v-for="(detail, sense) in aiResult.sensoryDetails" :key="sense" class="text-xs">
-                  <strong>{{ sense === 'visual' ? '视觉' : sense === 'auditory' ? '听觉' : sense === 'tactile' ? '触觉' : sense === 'olfactory' ? '嗅觉' : '味觉' }}：</strong>
-                  <span class="theme-ai-enhance-text">{{ detail || '待完善' }}</span>
+                  <strong>{{ t(`worldSetting.sense.${sense}`) }}：</strong>
+                  <span class="theme-ai-enhance-text">{{ detail || t('worldSetting.pendingContent') }}</span>
                 </div>
               </div>
             </div>
@@ -714,7 +714,7 @@
           <!-- AI建议结果 -->
           <div v-else-if="aiModalType === 'suggestions' && aiResult" class="space-y-4">
             <div v-if="aiResult.actionableItems?.length" class="space-y-2">
-              <h4 class="text-sm font-semibold">可执行建议</h4>
+              <h4 class="text-sm font-semibold">{{ t('worldSetting.actionableItems') }}</h4>
               <div
                 v-for="item in aiResult.actionableItems"
                 :key="item.description"
@@ -724,14 +724,14 @@
                   <div class="flex-1">
                     <div class="flex items-center space-x-2 mb-1">
                       <a-tag size="small" :color="item.priority === 'high' ? 'red' : item.priority === 'medium' ? 'orange' : 'blue'">
-                        {{ item.priority === 'high' ? '高' : item.priority === 'medium' ? '中' : '低' }}
+                        {{ item.priority === 'high' ? t('common.priority.high') : item.priority === 'medium' ? t('common.priority.medium') : t('common.priority.low') }}
                       </a-tag>
                       <span class="text-xs text-gray-600">{{ item.category }}</span>
                     </div>
                     <p class="text-sm">{{ item.description }}</p>
                   </div>
                   <a-button size="small" type="link" @click="applyAISuggestion(item)">
-                    应用
+                    {{ t('common.apply') }}
                   </a-button>
                 </div>
               </div>
@@ -742,12 +742,12 @@
           <div v-else-if="aiModalType === 'consistency' && aiResult" class="space-y-4">
             <div class="theme-ai-enhance-bg theme-ai-enhance-border p-4 rounded-lg border">
               <h4 class="text-sm font-semibold mb-2 theme-ai-enhance-title">
-                总体评分：{{ aiResult.overallScore || 0 }}/100
+                {{ t('worldSetting.overallScore') }} {{ aiResult.overallScore || 0 }}/100
               </h4>
             </div>
 
             <div v-if="aiResult.issues?.length" class="space-y-2">
-              <h4 class="text-sm font-semibold">发现的问题</h4>
+              <h4 class="text-sm font-semibold">{{ t('worldSetting.foundIssues') }}</h4>
               <div
                 v-for="issue in aiResult.issues"
                 :key="issue.description"
@@ -755,11 +755,11 @@
               >
                 <div class="flex items-start space-x-2">
                   <a-tag size="small" :color="issue.severity === 'high' ? 'red' : issue.severity === 'medium' ? 'orange' : 'blue'">
-                    {{ issue.severity === 'high' ? '严重' : issue.severity === 'medium' ? '中等' : '轻微' }}
+                    {{ issue.severity === 'high' ? t('common.severity.high') : issue.severity === 'medium' ? t('common.severity.medium') : t('common.severity.low') }}
                   </a-tag>
                   <div class="flex-1">
                     <p class="text-sm font-medium">{{ issue.description }}</p>
-                    <p class="text-xs text-gray-600 mt-1">建议：{{ issue.suggestion }}</p>
+                    <p class="text-xs text-gray-600 mt-1">{{ t('common.suggestion') }} {{ issue.suggestion }}</p>
                   </div>
                 </div>
               </div>
@@ -768,8 +768,8 @@
 
           <div class="text-center mt-6 pt-4 border-t">
             <a-space>
-              <a-button @click="aiResult = null">重新配置</a-button>
-              <a-button type="primary" @click="showAIModal = false">完成</a-button>
+              <a-button @click="aiResult = null">{{ t('common.reconfigure') }}</a-button>
+              <a-button type="primary" @click="showAIModal = false">{{ t('common.complete') }}</a-button>
             </a-space>
           </div>
         </div>
@@ -779,7 +779,7 @@
     <!-- 批量生成世界设定模态框 -->
     <a-modal
       v-model:open="showBatchGenerateModal"
-      title="AI批量生成世界设定"
+      :title="t('worldSetting.batchGenerateTitle')"
       width="1200px"
       :footer="null"
       :destroyOnClose="true"
@@ -790,33 +790,33 @@
           <a-form layout="vertical">
             <a-row :gutter="24">
               <a-col :span="12">
-                <a-form-item label="生成模式">
+                <a-form-item :label="t('worldSetting.generationMode')">
                   <a-select v-model:value="batchGenerateOptions.generationMode">
-                    <a-select-option value="comprehensive">全面生成 - 创建完整的世界设定体系</a-select-option>
-                    <a-select-option value="focused">重点生成 - 专注于核心设定</a-select-option>
-                    <a-select-option value="creative">创意生成 - 强调独特性和创新</a-select-option>
-                    <a-select-option value="practical">实用生成 - 注重实用性和可操作性</a-select-option>
+                    <a-select-option value="comprehensive">{{ t('worldSetting.mode.comprehensive') }}</a-select-option>
+                    <a-select-option value="focused">{{ t('worldSetting.mode.focused') }}</a-select-option>
+                    <a-select-option value="creative">{{ t('worldSetting.mode.creative') }}</a-select-option>
+                    <a-select-option value="practical">{{ t('worldSetting.mode.practical') }}</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
               <a-col :span="12">
-                <a-form-item label="设定类型">
+                <a-form-item :label="t('worldSetting.settingTypes')">
                   <a-checkbox-group v-model:value="batchGenerateOptions.settingTypes">
                     <a-space direction="vertical">
-                      <a-checkbox value="worldview">世界观设定</a-checkbox>
-                      <a-checkbox value="location">地理位置</a-checkbox>
-                      <a-checkbox value="rule">规则体系</a-checkbox>
-                      <a-checkbox value="culture">文化背景</a-checkbox>
+                      <a-checkbox value="worldview">{{ t('worldSetting.worldview') }}</a-checkbox>
+                      <a-checkbox value="location">{{ t('worldSetting.location') }}</a-checkbox>
+                      <a-checkbox value="rule">{{ t('worldSetting.rule') }}</a-checkbox>
+                      <a-checkbox value="culture">{{ t('worldSetting.culture') }}</a-checkbox>
                     </a-space>
                   </a-checkbox-group>
                 </a-form-item>
               </a-col>
             </a-row>
 
-            <a-form-item label="生成数量配置">
+            <a-form-item :label="t('worldSetting.generationConfig')">
               <a-row :gutter="16">
                 <a-col :span="6" v-if="batchGenerateOptions.settingTypes.includes('worldview')">
-                  <a-form-item label="世界观设定">
+                  <a-form-item :label="t('worldSetting.worldview')">
                     <a-input-number
                       v-model:value="batchGenerateOptions.count.worldview"
                       :min="0"
@@ -826,7 +826,7 @@
                   </a-form-item>
                 </a-col>
                 <a-col :span="6" v-if="batchGenerateOptions.settingTypes.includes('location')">
-                  <a-form-item label="地理位置">
+                  <a-form-item :label="t('worldSetting.location')">
                     <a-input-number
                       v-model:value="batchGenerateOptions.count.location"
                       :min="0"
@@ -836,7 +836,7 @@
                   </a-form-item>
                 </a-col>
                 <a-col :span="6" v-if="batchGenerateOptions.settingTypes.includes('rule')">
-                  <a-form-item label="规则体系">
+                  <a-form-item :label="t('worldSetting.rule')">
                     <a-input-number
                       v-model:value="batchGenerateOptions.count.rule"
                       :min="0"
@@ -846,7 +846,7 @@
                   </a-form-item>
                 </a-col>
                 <a-col :span="6" v-if="batchGenerateOptions.settingTypes.includes('culture')">
-                  <a-form-item label="文化背景">
+                  <a-form-item :label="t('worldSetting.culture')">
                     <a-input-number
                       v-model:value="batchGenerateOptions.count.culture"
                       :min="0"
@@ -860,16 +860,16 @@
 
             <!-- 自定义提示 -->
             <a-collapse>
-              <a-collapse-panel key="custom" header="自定义生成要求（可选）">
+              <a-collapse-panel key="custom" :header="t('worldSetting.customRequirements')">
                 <div class="space-y-4">
                   <a-form-item
                     v-for="type in batchGenerateOptions.settingTypes"
                     :key="type"
-                    :label="`${getSettingTypeName(type)}特殊要求`"
+                    :label="t('worldSetting.specialRequirements', { type: getSettingTypeName(type) })"
                   >
                     <a-textarea
                       v-model:value="batchGenerateOptions.customPrompts[type]"
-                      :placeholder="`对${getSettingTypeName(type)}的特殊要求...`"
+                      :placeholder="t('worldSetting.specialRequirementsPlaceholder', { type: getSettingTypeName(type) })"
                       :rows="2"
                     />
                   </a-form-item>
@@ -888,7 +888,7 @@
                 <template #icon>
                   <RobotOutlined />
                 </template>
-                开始批量生成
+                {{ t('worldSetting.startBatchGenerate') }}
               </a-button>
             </div>
           </a-form>
@@ -898,7 +898,7 @@
         <div v-else class="result-section">
           <div class="mb-4">
             <a-alert
-              :message="`成功生成 ${getTotalGeneratedCount()} 个世界设定`"
+              :message="t('worldSetting.successGenerated', { count: getTotalGeneratedCount() })"
               type="success"
               show-icon
               class="mb-4"
@@ -933,7 +933,7 @@
                     <!-- 详细信息预览 -->
                     <div class="mt-3 pl-6">
                       <a-collapse size="small">
-                        <a-collapse-panel key="details" header="查看详细信息">
+                        <a-collapse-panel key="details" :header="t('common.viewDetails')">
                           <div class="grid grid-cols-2 gap-2">
                             <div
                               v-for="(value, key) in setting.details"
@@ -959,16 +959,16 @@
           <!-- 操作按钮 -->
           <div class="text-center pt-4 border-t theme-border">
             <a-space>
-              <a-button @click="resetBatchGenerate">重新配置</a-button>
+              <a-button @click="resetBatchGenerate">{{ t('common.reconfigure') }}</a-button>
               <a-button
                 type="primary"
                 :loading="applyBatchLoading"
                 @click="applySelectedSettings"
                 :disabled="getSelectedSettingsCount() === 0"
               >
-                应用选中的设定 ({{ getSelectedSettingsCount() }})
+                {{ t('worldSetting.applySelected', { count: getSelectedSettingsCount() }) }}
               </a-button>
-              <a-button @click="showBatchGenerateModal = false">完成</a-button>
+              <a-button @click="showBatchGenerateModal = false">{{ t('common.complete') }}</a-button>
             </a-space>
           </div>
         </div>
@@ -999,8 +999,11 @@ import {
 import type { WorldSetting } from '@/types'
 import { settingService } from '@/services/settingService'
 import { useProjectStore } from '@/stores/project'
+import { useI18n } from 'vue-i18n'
 
 const projectStore = useProjectStore()
+const { t } = useI18n()
+const CONTENT_ENHANCEMENT_CATEGORIES = ['内容完善', 'Content Enhancement']
 
 const allSettings = ref<WorldSetting[]>([])
 const loading = ref(false)
@@ -1027,26 +1030,26 @@ const currentCategorySettings = computed(() => {
 const categoryInfoList = computed(() => [
   {
     key: 'worldview',
-    title: '世界观设定',
-    description: '构建故事的整体世界观、历史背景和核心设定',
+    title: t('worldSetting.worldview'),
+    description: t('worldSetting.worldviewDesc'),
     icon: GlobalOutlined
   },
   {
     key: 'location',
-    title: '地理位置',
-    description: '设定故事发生的场所、建筑和地理环境',
+    title: t('worldSetting.location'),
+    description: t('worldSetting.locationDesc'),
     icon: EnvironmentOutlined
   },
   {
     key: 'rule',
-    title: '规则体系',
-    description: '定义世界运行的规则、体系和机制',
+    title: t('worldSetting.rule'),
+    description: t('worldSetting.ruleDesc'),
     icon: FileTextOutlined
   },
   {
     key: 'culture',
-    title: '文化背景',
-    description: '描述社会文化、习俗传统和价值观念',
+    title: t('worldSetting.culture'),
+    description: t('worldSetting.cultureDesc'),
     icon: CrownOutlined
   }
 ])
@@ -1079,21 +1082,19 @@ const selectSetting = (setting: WorldSetting) => {
     detailsText: typeof setting.details === 'object'
       ? Object.entries(setting.details).map(([key, value]) => `${key}: ${value}`).join('\n\n')
       : (setting.details || ''),
-    relations: [
-      { settingId: '2', type: 'contains', description: '魔法学院坐落在这个大陆上' }
-    ],
-    notes: '这是创作的核心世界观设定，需要保持一致性。'
+    relations: Array.isArray((setting as any).relations) ? [...(setting as any).relations] : [],
+    notes: (setting as any).notes || ''
   }
 }
 
 const getCategoryTitle = (category: string) => {
-  const titles = {
-    'worldview': '世界观设定',
-    'location': '地理位置',
-    'rule': '规则体系',
-    'culture': '文化背景'
+  const titles: Record<string, string> = {
+    worldview: t('worldSetting.worldview'),
+    location: t('worldSetting.location'),
+    rule: t('worldSetting.rule'),
+    culture: t('worldSetting.culture')
   }
-  return titles[category as keyof typeof titles] || category
+  return titles[category] || category
 }
 
 const getTypeText = (type: string) => {
@@ -1137,10 +1138,10 @@ const toggleLock = async () => {
       allSettings.value[index] = { ...allSettings.value[index], ...updatedSetting }
     }
     
-    message.success(updatedSetting.isLocked ? '设定已锁定' : '设定已解锁')
+    message.success(updatedSetting.isLocked ? t('worldSetting.lockSuccess') : t('worldSetting.unlockSuccess'))
   } catch (error) {
     console.error('Toggle lock failed:', error)
-    message.error('操作失败，请重试')
+    message.error(t('message.updateFailed'))
   } finally {
     loading.value = false
   }
@@ -1167,10 +1168,10 @@ const saveSetting = async () => {
       allSettings.value[index] = { ...allSettings.value[index], ...updatedSetting }
     }
 
-    message.success('保存成功')
+    message.success(t('message.saveSuccess'))
   } catch (error) {
     console.error('Save setting failed:', error)
-    message.error('保存失败，请重试')
+    message.error(t('message.saveFailed'))
   } finally {
     loading.value = false
   }
@@ -1180,11 +1181,11 @@ const deleteSetting = () => {
   if (!selectedSetting.value) return
   
   Modal.confirm({
-    title: '确认删除',
-    content: `确定要删除设定「${selectedSetting.value.name}」吗？此操作不可撤销。`,
-    okText: '删除',
+    title: t('worldSetting.deleteConfirm'),
+    content: t('worldSetting.deleteWarning', { name: selectedSetting.value.name }),
+    okText: t('common.delete'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     async onOk() {
       try {
         loading.value = true
@@ -1197,10 +1198,10 @@ const deleteSetting = () => {
           selectSetting(currentCategorySettings.value[0])
         }
         
-        message.success('删除成功')
+        message.success(t('message.deleteSuccess'))
       } catch (error) {
         console.error('Delete setting failed:', error)
-        message.error('删除失败，请重试')
+        message.error(t('message.deleteFailed'))
       } finally {
         loading.value = false
       }
@@ -1251,13 +1252,13 @@ const handleAIAction = ({ key }: { key: string }) => {
   aiResult.value = null
 
   const titles = {
-    enhance: '智能增强设定',
-    expand: '细节扩展',
-    suggestions: 'AI建议分析',
-    consistency: '一致性检查'
+    enhance: t('worldSetting.enhanceModalTitle'),
+    expand: t('worldSetting.expandModalTitle'),
+    suggestions: t('worldSetting.suggestionsModalTitle'),
+    consistency: t('worldSetting.consistencyModalTitle')
   }
 
-  aiModalTitle.value = titles[key as keyof typeof titles] || 'AI工具'
+  aiModalTitle.value = titles[key as keyof typeof titles] || t('worldSetting.aiTools')
   showAIModal.value = true
 }
 
@@ -1298,10 +1299,10 @@ const executeAIAction = async () => {
         break
     }
 
-    message.success('AI分析完成')
+    message.success(t('worldSetting.aiAnalysisSuccess'))
   } catch (error) {
-    console.error('AI操作失败:', error)
-    message.error('AI操作失败，请重试')
+    console.error('AI action failed:', error)
+    message.error(t('worldSetting.aiActionFailed'))
   } finally {
     aiLoading.value = false
   }
@@ -1309,9 +1310,9 @@ const executeAIAction = async () => {
 
 // 应用AI建议
 const applyAISuggestion = (suggestion: any) => {
-  if (suggestion.category === '内容完善' && aiResult.value?.enhancedDescription) {
+  if (CONTENT_ENHANCEMENT_CATEGORIES.includes(suggestion.category) && aiResult.value?.enhancedDescription) {
     editingSetting.value.description = aiResult.value.enhancedDescription
-    message.success('已应用AI建议')
+    message.success(t('worldSetting.applySuggestionSuccess'))
   }
 }
 
@@ -1322,33 +1323,34 @@ const getFieldName = (fieldKey: string, settingType?: string) => {
 
   const fieldMappings = {
     worldview: {
-      era: '时代背景',
-      factions: '主要势力',
-      history: '世界历史',
-      specialElements: '特殊元素'
+      era: 'worldSetting.fieldNames.era',
+      factions: 'worldSetting.fieldNames.factions',
+      history: 'worldSetting.fieldNames.history',
+      specialElements: 'worldSetting.fieldNames.specialElements'
     },
     location: {
-      locationType: '位置类型',
-      climate: '气候环境',
-      population: '人口规模',
-      geography: '地理特征',
-      importantPlaces: '重要场所'
+      locationType: 'worldSetting.fieldNames.locationType',
+      climate: 'worldSetting.fieldNames.climate',
+      population: 'worldSetting.fieldNames.population',
+      geography: 'worldSetting.fieldNames.geography',
+      importantPlaces: 'worldSetting.fieldNames.importantPlaces'
     },
     rule: {
-      ruleTypes: '规则类型',
-      coreRules: '核心规则',
-      limitations: '限制与约束'
+      ruleTypes: 'worldSetting.fieldNames.ruleTypes',
+      coreRules: 'worldSetting.fieldNames.coreRules',
+      limitations: 'worldSetting.fieldNames.limitations'
     },
     culture: {
-      language: '主要语言',
-      religion: '宗教信仰',
-      traditions: '文化传统',
-      socialStructure: '社会结构',
-      values: '价值观念'
+      language: 'worldSetting.fieldNames.language',
+      religion: 'worldSetting.fieldNames.religion',
+      traditions: 'worldSetting.fieldNames.traditions',
+      socialStructure: 'worldSetting.fieldNames.socialStructure',
+      values: 'worldSetting.fieldNames.values'
     }
   }
 
-  return fieldMappings[type as keyof typeof fieldMappings]?.[fieldKey as keyof any] || fieldKey
+  const key = fieldMappings[type as keyof typeof fieldMappings]?.[fieldKey as keyof any]
+  return key ? t(key) : fieldKey
 }
 
 // 应用单个字段
@@ -1368,7 +1370,7 @@ const applySingleField = async (fieldKey: string, value: any) => {
       
       editingSetting.value.description = value
       selectedSetting.value.description = value
-      message.success('已应用增强描述')
+      message.success(t('worldSetting.applyEnhancedDescription'))
     } else {
       // 应用详细字段
       await settingService.applyEnhancement(selectedSetting.value.id, {
@@ -1382,7 +1384,7 @@ const applySingleField = async (fieldKey: string, value: any) => {
       }
       editingSetting.value.details[fieldKey] = value
       
-      message.success(`已应用${getFieldName(fieldKey)}`)
+      message.success(t('worldSetting.applyFieldSuccess', { field: getFieldName(fieldKey) }))
     }
     
     // 重新加载设定以确保数据一致性
@@ -1391,8 +1393,8 @@ const applySingleField = async (fieldKey: string, value: any) => {
     editingSetting.value = { ...updatedSetting }
     
   } catch (error) {
-    console.error('应用字段失败:', error)
-    message.error('应用失败，请重试')
+    console.error('Apply field failed:', error)
+    message.error(t('message.updateFailed'))
   } finally {
     loading.value = false
   }
@@ -1422,7 +1424,7 @@ const applyAllFields = async () => {
       editingSetting.value.details[fieldKey] = aiResult.value.detailsFields[fieldKey]
     })
     
-    message.success(`已应用所有${getSettingTypeName(selectedSetting.value.type)}字段`)
+    message.success(t('worldSetting.applyAllFieldsSuccess', { type: getSettingTypeName(selectedSetting.value.type) }))
     
     // 重新加载设定以确保数据一致性
     const updatedSetting = await settingService.getById(selectedSetting.value.id)
@@ -1430,8 +1432,8 @@ const applyAllFields = async () => {
     editingSetting.value = { ...updatedSetting }
     
   } catch (error) {
-    console.error('应用所有字段失败:', error)
-    message.error('应用失败，请重试')
+    console.error('Apply all fields failed:', error)
+    message.error(t('message.updateFailed'))
   } finally {
     loading.value = false
   }
@@ -1439,13 +1441,7 @@ const applyAllFields = async () => {
 
 // 获取设定类型名称（如果已存在则使用现有的）
 const getSettingTypeName = (type: string) => {
-  const names = {
-    'worldview': '世界观设定',
-    'location': '地理位置',
-    'rule': '规则体系',
-    'culture': '文化背景'
-  }
-  return names[type as keyof typeof names] || type
+  return getCategoryTitle(type)
 }
 
 // 获取扩展选项
@@ -1453,17 +1449,20 @@ const getExpansionAspects = computed(() => {
   if (!selectedSetting.value) return []
 
   const aspectsByType = {
-    worldview: ['历史背景', '政治体系', '经济制度', '社会结构', '文化传统', '科技水平'],
-    location: ['地理特征', '建筑风格', '人口分布', '功能区域', '交通网络', '自然环境'],
-    rule: ['运作机制', '适用范围', '限制条件', '例外情况', '执行流程', '违规后果'],
-    culture: ['传统习俗', '价值观念', '艺术形式', '语言特色', '宗教信仰', '社会礼仪']
+    worldview: ['history', 'politics', 'economy', 'society', 'culture', 'technology'],
+    location: ['geography', 'architecture', 'population', 'functionalAreas', 'transportation', 'environment'],
+    rule: ['mechanism', 'scope', 'limitations', 'exceptions', 'process', 'consequences'],
+    culture: ['customs', 'values', 'arts', 'language', 'religion', 'etiquette']
   }
 
-  return aspectsByType[selectedSetting.value.type as keyof typeof aspectsByType] || []
+  const type = selectedSetting.value.type as keyof typeof aspectsByType
+  const aspects = aspectsByType[type] || []
+  return aspects.map(aspect => t(`worldSetting.aspectOptions.${type}.${aspect}`))
 })
 
 const getFocusAreas = computed(() => {
-  return ['感官描述', '氛围营造', '功能细节', '文化内涵', '互动要素', '叙事潜力']
+  const areas = t('worldSetting.focusAreasList') as unknown
+  return Array.isArray(areas) ? areas : []
 })
 
 // 旧的AI扩展方法保持兼容
@@ -1488,12 +1487,12 @@ const removeRelation = (index: number) => {
 
 const addSetting = async () => {
   if (!newSetting.value.type || !newSetting.value.name) {
-    message.error('请填写必填字段')
+    message.error(t('worldSetting.fillRequired'))
     return
   }
 
   if (!projectStore.currentProject?.id) {
-    message.error('请先选择作品')
+    message.error(t('worldSetting.selectProject'))
     return
   }
 
@@ -1516,10 +1515,10 @@ const addSetting = async () => {
 
     showAddSettingModal.value = false
     newSetting.value = { type: '', name: '', description: '' }
-    message.success('创建成功')
+    message.success(t('message.createSuccess'))
   } catch (error) {
     console.error('Create setting failed:', error)
-    message.error('创建失败，请重试')
+    message.error(t('message.createFailed'))
   } finally {
     loading.value = false
   }
@@ -1559,7 +1558,7 @@ const loadSettings = async () => {
     }
   } catch (error) {
     console.error('Load settings failed:', error)
-    message.error('加载设定失败，请重试')
+    message.error(t('worldSetting.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -1578,12 +1577,12 @@ watch(() => projectStore.currentProject?.id, (newProjectId) => {
 // 批量生成相关方法
 const executeBatchGenerate = async () => {
   if (!projectStore.currentProject?.id) {
-    message.error('请先选择作品')
+    message.error(t('worldSetting.selectProject'))
     return
   }
 
   if (batchGenerateOptions.value.settingTypes.length === 0) {
-    message.error('请选择至少一种设定类型')
+    message.error(t('worldSetting.selectSettingType'))
     return
   }
 
@@ -1612,10 +1611,10 @@ const executeBatchGenerate = async () => {
     })
     batchSelectedSettings.value = selected
 
-    message.success('批量生成完成')
+    message.success(t('worldSetting.batchGenerateSuccess'))
   } catch (error) {
-    console.error('批量生成失败:', error)
-    message.error('批量生成失败，请重试')
+    console.error('Batch generation failed:', error)
+    message.error(t('worldSetting.batchGenerateFailed'))
   } finally {
     batchGenerateLoading.value = false
   }
@@ -1651,7 +1650,7 @@ const applySelectedSettings = async () => {
   })
 
   if (selectedSettings.length === 0) {
-    message.warning('请选择要创建的设定')
+    message.warning(t('worldSetting.selectSettingsToApply'))
     return
   }
 
@@ -1670,10 +1669,10 @@ const applySelectedSettings = async () => {
     showBatchGenerateModal.value = false
     resetBatchGenerate()
 
-    message.success(`成功创建 ${result.createdCount} 个世界设定`)
+    message.success(t('worldSetting.applyBatchSuccess', { count: result.createdCount }))
   } catch (error) {
-    console.error('应用设定失败:', error)
-    message.error('应用设定失败，请重试')
+    console.error('Apply settings failed:', error)
+    message.error(t('worldSetting.applyBatchFailed'))
   } finally {
     applyBatchLoading.value = false
   }
