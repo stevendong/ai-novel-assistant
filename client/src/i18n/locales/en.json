@@ -113,6 +113,183 @@
     "offline": "Offline",
     "latency": "{latency}ms"
   },
+  "chapterEditor": {
+    "view": {
+      "notFound": "Chapter not found"
+    },
+    "loading": {
+      "switching": "Switching chapter...",
+      "loading": "Loading..."
+    },
+    "fullscreen": {
+      "title": "Chapter {number}: {title}",
+      "wordCount": "{count}",
+      "wordTarget": "/ {target}",
+      "exit": "Exit fullscreen"
+    },
+    "common": {
+      "wordUnit": "words"
+    },
+    "meta": {
+      "updatedAt": "Updated {time}",
+      "wordCount": "{count} words",
+      "targetWordCount": "Target {target} words"
+    },
+    "actions": {
+      "changeStatus": "Change status",
+      "deleteChapter": "Delete chapter",
+      "saving": "Saving...",
+      "autoSaved": "Auto-saved"
+    },
+    "tabs": {
+      "content": "Content",
+      "basic": "Basic Info",
+      "characters": "Characters",
+      "settings": "Settings",
+      "consistency": "Consistency"
+    },
+    "editor": {
+      "placeholder": "Start writing the chapter..."
+    },
+    "modals": {
+      "updateStatusTitle": "Update Chapter Status",
+      "selectStatusLabel": "Select status"
+    },
+    "confirm": {
+      "unsavedChangesTitle": "Unsaved changes",
+      "unsavedChangesMessage": "Save your current changes before switching chapters?",
+      "saveAndSwitch": "Save & switch",
+      "discardChanges": "Discard changes",
+      "deleteTitle": "Delete this chapter?",
+      "deleteMessage": "This action cannot be undone."
+    },
+    "messages": {
+      "titleRequired": "Please enter a chapter title",
+      "noChanges": "No changes to save",
+      "loadFailed": "Failed to load chapter",
+      "statusUpdateSuccess": "Status updated",
+      "statusUpdateFailed": "Failed to update status"
+    },
+    "basic": {
+      "titleLabel": "Chapter title",
+      "titlePlaceholder": "Enter chapter title",
+      "numberLabel": "Chapter number",
+      "targetWordCountLabel": "Target words",
+      "targetWordCountPlaceholder": "Unlimited",
+      "outlineLabel": "Chapter outline",
+      "outlinePlaceholder": "Describe the chapter outline or ask AI to generate one"
+    },
+    "plotPoints": {
+      "sectionTitle": "Plot Points",
+      "tooltip": "Add key plot beats to keep this chapter organized",
+      "placeholder": "Describe this plot point...",
+      "actions": {
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "remove": "Remove"
+      },
+      "empty": "No plot points yet",
+      "add": "Add plot point",
+      "summary": "{count} plot points",
+      "types": {
+        "conflict": "Conflict",
+        "discovery": "Discovery",
+        "emotion": "Emotion",
+        "action": "Action",
+        "dialogue": "Dialogue"
+      }
+    },
+    "characters": {
+      "title": "Related Characters",
+      "count": "{count} characters",
+      "add": "Add character",
+      "addFirst": "Add first character",
+      "empty": "No characters linked yet",
+      "noDescription": "No description",
+      "actions": {
+        "remove": "Remove",
+        "removeConfirm": "Remove this character?"
+      },
+      "modal": {
+        "title": "Add character to chapter",
+        "selectLabel": "Choose character",
+        "selectPlaceholder": "Select a character to add",
+        "roleLabel": "Role in this chapter"
+      },
+      "roles": {
+        "main": "Main",
+        "supporting": "Supporting",
+        "mentioned": "Mentioned",
+        "mainFull": "Main character",
+        "supportingFull": "Supporting character",
+        "mentionedFull": "Mentioned only"
+      },
+      "hints": {
+        "main": "Main characters have a central presence in the chapter",
+        "supporting": "Supporting characters appear with notable focus",
+        "mentioned": "Mentioned characters are referenced briefly"
+      },
+      "messages": {
+        "loadFailed": "Failed to load characters",
+        "addSuccess": "Character added",
+        "addFailed": "Failed to add character",
+        "updateRoleSuccess": "Role updated",
+        "updateFailed": "Failed to update role",
+        "removeSuccess": "Character removed",
+        "removeFailed": "Failed to remove character"
+      },
+      "formErrors": {
+        "selectCharacter": "Please select a character"
+      }
+    }
+  },
+  "chapterNavigation": {
+    "title": "Chapter Navigator",
+    "addChapter": "New Chapter",
+    "searchPlaceholder": "Search chapters...",
+    "statusPlaceholder": "Filter by status",
+    "statusAll": "All statuses",
+    "chapterNumber": "Chapter {number}",
+    "wordCount": "{count} words",
+    "loadMore": "Loaded {loaded} / {total} chapters",
+    "empty": "No chapters yet",
+    "miniAddTooltip": "New Chapter ({shortcut})",
+    "miniItemTooltip": "Chapter {number}: {title}",
+    "miniLoadMoreTooltip": "{loaded}/{total}",
+    "addModal": {
+      "title": "New Chapter",
+      "titleLabel": "Chapter title",
+      "titlePlaceholder": "Enter chapter title",
+      "outlineLabel": "Chapter outline",
+      "outlinePlaceholder": "Enter chapter outline (optional)",
+      "infoMessage": "Tip",
+      "infoDescription": "This chapter will be created as Chapter {number} with status {status}"
+    },
+    "messages": {
+      "selectProject": "Please select a novel first",
+      "missingNovelId": "Novel ID not found",
+      "createSuccess": "Chapter created successfully",
+      "createFailure": "Failed to create chapter"
+    },
+    "validation": {
+      "titleRequired": "Please enter a chapter title"
+    }
+  },
+  "chapterTopNav": {
+    "backTooltip": "Back to chapter list",
+    "backLabel": "Chapter List",
+    "prevTooltip": "Previous: {title}",
+    "noPrev": "No previous chapter",
+    "prevLabel": "Previous",
+    "chapterNumber": "Chapter {number}",
+    "untitled": "Untitled chapter",
+    "quickJump": "Quick Jump",
+    "loadMore": "Loaded {loaded} / {total} chapters",
+    "nextTooltip": "Next: {title}",
+    "noNext": "No next chapter",
+    "nextLabel": "Next",
+    "keyboardHints": "{modifier} + ←/→"
+  },
   "progress": {
     "title": "Progress Overview",
     "subtitle": "Track your writing journey and stay motivated",
@@ -571,6 +748,8 @@
       "draft": "Draft",
       "writing": "Writing",
       "reviewing": "Reviewing",
+      "outlined": "Outlined",
+      "editing": "Editing",
       "completed": "Completed",
       "published": "Published",
       "planning": "Planning"

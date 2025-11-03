@@ -7,7 +7,7 @@
       @deleted="handleDeleted"
     />
     <div v-else class="no-chapter">
-      <a-empty description="未找到章节" />
+      <a-empty :description="t('chapterEditor.view.notFound')" />
     </div>
   </div>
 </template>
@@ -15,10 +15,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import ChapterEditor from '@/components/chapter/ChapterEditor.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const chapterId = computed(() => route.params.id as string)
 

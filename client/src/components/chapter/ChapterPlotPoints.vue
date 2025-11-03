@@ -1,8 +1,8 @@
 <template>
   <div class="chapter-plot-points">
     <div class="plot-points-header">
-      <h4 class="section-title">剧情要点</h4>
-      <a-tooltip title="添加关键的剧情点,帮助组织章节内容">
+      <h4 class="section-title">{{ t('chapterEditor.plotPoints.sectionTitle') }}</h4>
+      <a-tooltip :title="t('chapterEditor.plotPoints.tooltip')">
         <QuestionCircleOutlined class="help-icon" />
       </a-tooltip>
     </div>
@@ -22,26 +22,26 @@
               @change="handleChange"
             >
               <a-select-option value="conflict">
-                <ThunderboltOutlined /> 冲突
+                <ThunderboltOutlined /> {{ getTypeLabel('conflict') }}
               </a-select-option>
               <a-select-option value="discovery">
-                <BulbOutlined /> 发现
+                <BulbOutlined /> {{ getTypeLabel('discovery') }}
               </a-select-option>
               <a-select-option value="emotion">
-                <HeartOutlined /> 情感
+                <HeartOutlined /> {{ getTypeLabel('emotion') }}
               </a-select-option>
               <a-select-option value="action">
-                <RocketOutlined /> 动作
+                <RocketOutlined /> {{ getTypeLabel('action') }}
               </a-select-option>
               <a-select-option value="dialogue">
-                <CommentOutlined /> 对话
+                <CommentOutlined /> {{ getTypeLabel('dialogue') }}
               </a-select-option>
             </a-select>
           </div>
 
           <a-input
             v-model:value="point.description"
-            placeholder="描述这个情节要点..."
+            :placeholder="t('chapterEditor.plotPoints.placeholder')"
             class="plot-point-description"
             @change="handleChange"
           />
@@ -52,7 +52,7 @@
               size="small"
               :disabled="index === 0"
               @click="moveUp(index)"
-              title="上移"
+              :title="t('chapterEditor.plotPoints.actions.moveUp')"
             >
               <template #icon><ArrowUpOutlined /></template>
             </a-button>
@@ -61,7 +61,7 @@
               size="small"
               :disabled="index === plotPoints.length - 1"
               @click="moveDown(index)"
-              title="下移"
+              :title="t('chapterEditor.plotPoints.actions.moveDown')"
             >
               <template #icon><ArrowDownOutlined /></template>
             </a-button>
@@ -70,7 +70,7 @@
               danger
               size="small"
               @click="removePlotPoint(index)"
-              title="删除"
+              :title="t('chapterEditor.plotPoints.actions.remove')"
             >
               <template #icon><DeleteOutlined /></template>
             </a-button>
@@ -80,7 +80,7 @@
 
       <a-empty
         v-if="plotPoints.length === 0"
-        description="暂无剧情要点"
+        :description="t('chapterEditor.plotPoints.empty')"
         :image="Empty.PRESENTED_IMAGE_SIMPLE"
         class="empty-state"
       />
@@ -93,14 +93,14 @@
       class="add-plot-point-btn"
     >
       <template #icon><PlusOutlined /></template>
-      添加剧情要点
+      {{ t('chapterEditor.plotPoints.add') }}
     </a-button>
 
     <div v-if="plotPoints.length > 0" class="plot-points-stats">
       <a-space :size="4">
         <InfoCircleOutlined class="stats-icon" />
         <span class="stats-text">
-          共 {{ plotPoints.length }} 个剧情要点
+          {{ t('chapterEditor.plotPoints.summary', { count: plotPoints.length }) }}
         </span>
         <a-divider type="vertical" />
         <span class="stats-breakdown">
@@ -115,6 +115,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Empty } from 'ant-design-vue'
 import {
   PlusOutlined,
@@ -141,6 +142,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t } = useI18n()
 
 // 内部剧情点列表
 const plotPoints = ref<PlotPoint[]>([])
@@ -196,14 +198,9 @@ const typeStats = computed(() => {
 
 // 获取类型标签
 const getTypeLabel = (type: string): string => {
-  const labels: Record<string, string> = {
-    'conflict': '冲突',
-    'discovery': '发现',
-    'emotion': '情感',
-    'action': '动作',
-    'dialogue': '对话'
-  }
-  return labels[type] || type
+  const key = `chapterEditor.plotPoints.types.${type}`
+  const translated = t(key)
+  return translated === key ? type : translated
 }
 
 // 添加剧情要点

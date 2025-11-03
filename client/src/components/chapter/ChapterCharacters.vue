@@ -2,9 +2,9 @@
   <div class="chapter-characters">
     <div class="characters-header">
       <div class="header-title">
-        <h3>相关角色</h3>
+        <h3>{{ t('chapterEditor.characters.title') }}</h3>
         <a-tag v-if="characters.length > 0" color="blue">
-          {{ characters.length }} 个角色
+          {{ t('chapterEditor.characters.count', { count: characters.length }) }}
         </a-tag>
       </div>
       <a-button
@@ -12,7 +12,7 @@
         @click="showAddModal = true"
       >
         <template #icon><PlusOutlined /></template>
-        添加角色
+        {{ t('chapterEditor.characters.add') }}
       </a-button>
     </div>
 
@@ -26,7 +26,7 @@
         <a-list-item class="character-item">
           <a-list-item-meta
             :title="item.character.name"
-            :description="item.character.description || '暂无描述'"
+            :description="item.character.description || t('chapterEditor.characters.noDescription')"
           >
             <template #avatar>
               <a-avatar
@@ -47,20 +47,20 @@
                 @change="handleRoleChange(item)"
               >
                 <a-select-option value="main">
-                  <UserOutlined /> 主要
+                  <UserOutlined /> {{ getRoleLabel('main') }}
                 </a-select-option>
                 <a-select-option value="supporting">
-                  <TeamOutlined /> 配角
+                  <TeamOutlined /> {{ getRoleLabel('supporting') }}
                 </a-select-option>
                 <a-select-option value="mentioned">
-                  <CommentOutlined /> 提及
+                  <CommentOutlined /> {{ getRoleLabel('mentioned') }}
                 </a-select-option>
               </a-select>
 
               <a-popconfirm
-                title="确定要移除这个角色吗？"
-                ok-text="确定"
-                cancel-text="取消"
+                :title="t('chapterEditor.characters.actions.removeConfirm')"
+                :ok-text="t('common.confirm')"
+                :cancel-text="t('common.cancel')"
                 @confirm="handleRemove(item.characterId)"
               >
                 <a-button
@@ -69,7 +69,7 @@
                   size="small"
                 >
                   <template #icon><DeleteOutlined /></template>
-                  移除
+                  {{ t('chapterEditor.characters.actions.remove') }}
                 </a-button>
               </a-popconfirm>
             </div>
@@ -81,7 +81,7 @@
     <!-- 空状态 -->
     <a-empty
       v-else
-      description="暂无关联角色"
+      :description="t('chapterEditor.characters.empty')"
       class="empty-state"
     >
       <template #image>
@@ -89,7 +89,7 @@
       </template>
       <a-button type="primary" @click="showAddModal = true">
         <template #icon><PlusOutlined /></template>
-        添加第一个角色
+        {{ t('chapterEditor.characters.addFirst') }}
       </a-button>
     </a-empty>
 
@@ -98,17 +98,17 @@
       <a-space :size="12">
         <span class="stat-item">
           <UserOutlined />
-          主要: {{ roleStats.main }}
+          {{ getRoleLabel('main') }}: {{ roleStats.main }}
         </span>
         <a-divider type="vertical" />
         <span class="stat-item">
           <TeamOutlined />
-          配角: {{ roleStats.supporting }}
+          {{ getRoleLabel('supporting') }}: {{ roleStats.supporting }}
         </span>
         <a-divider type="vertical" />
         <span class="stat-item">
           <CommentOutlined />
-          提及: {{ roleStats.mentioned }}
+          {{ getRoleLabel('mentioned') }}: {{ roleStats.mentioned }}
         </span>
       </a-space>
     </div>
@@ -116,20 +116,20 @@
     <!-- 添加角色模态框 -->
     <a-modal
       v-model:open="showAddModal"
-      title="添加角色到章节"
+      :title="t('chapterEditor.characters.modal.title')"
       :confirm-loading="loading"
       @ok="handleAdd"
       @cancel="resetAddForm"
     >
       <a-form layout="vertical">
         <a-form-item
-          label="选择角色"
+          :label="t('chapterEditor.characters.modal.selectLabel')"
           :validate-status="formError.character ? 'error' : ''"
           :help="formError.character"
         >
           <a-select
             v-model:value="selectedCharacterId"
-            placeholder="请选择要添加的角色"
+            :placeholder="t('chapterEditor.characters.modal.selectPlaceholder')"
             show-search
             option-filter-prop="label"
             :loading="loadingCharacters"
@@ -146,29 +146,29 @@
                   {{ char.name?.charAt(0) }}
                 </a-avatar>
                 <span class="character-name">{{ char.name }}</span>
-                <span class="character-desc">{{ char.description }}</span>
+                <span class="character-desc">{{ char.description || t('chapterEditor.characters.noDescription') }}</span>
               </div>
             </a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item label="在本章节中的角色">
+        <a-form-item :label="t('chapterEditor.characters.modal.roleLabel')">
           <a-radio-group v-model:value="selectedRole" button-style="solid">
             <a-radio-button value="main">
-              <UserOutlined /> 主要角色
+              <UserOutlined /> {{ t('chapterEditor.characters.roles.mainFull') }}
             </a-radio-button>
             <a-radio-button value="supporting">
-              <TeamOutlined /> 配角
+              <TeamOutlined /> {{ t('chapterEditor.characters.roles.supportingFull') }}
             </a-radio-button>
             <a-radio-button value="mentioned">
-              <CommentOutlined /> 仅提及
+              <CommentOutlined /> {{ t('chapterEditor.characters.roles.mentionedFull') }}
             </a-radio-button>
           </a-radio-group>
           <div class="role-hint">
             <InfoCircleOutlined />
-            <span v-if="selectedRole === 'main'">主要角色会在章节中占据核心位置</span>
-            <span v-else-if="selectedRole === 'supporting'">配角会在章节中有一定戏份</span>
-            <span v-else>仅提及的角色只会被简单提到</span>
+            <span v-if="selectedRole === 'main'">{{ t('chapterEditor.characters.hints.main') }}</span>
+            <span v-else-if="selectedRole === 'supporting'">{{ t('chapterEditor.characters.hints.supporting') }}</span>
+            <span v-else>{{ t('chapterEditor.characters.hints.mentioned') }}</span>
           </div>
         </a-form-item>
       </a-form>
@@ -178,6 +178,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
@@ -204,6 +205,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t } = useI18n()
 
 // 内部状态
 const characters = ref<ChapterCharacter[]>([])
@@ -243,6 +245,12 @@ const roleStats = computed(() => {
   return stats
 })
 
+const getRoleLabel = (role: string) => {
+  const key = `chapterEditor.characters.roles.${role}`
+  const translated = t(key)
+  return translated === key ? role : translated
+}
+
 // 过滤已添加的角色（暂时未使用，但保留以便将来优化）
 const availableCharactersFiltered = computed(() => {
   const addedIds = new Set(characters.value.map(c => c.characterId))
@@ -257,7 +265,7 @@ const loadAvailableCharacters = async () => {
     availableCharacters.value = response.data
   } catch (error) {
     console.error('Failed to load characters:', error)
-    message.error('加载角色列表失败')
+    message.error(t('chapterEditor.characters.messages.loadFailed'))
   } finally {
     loadingCharacters.value = false
   }
@@ -267,7 +275,7 @@ const loadAvailableCharacters = async () => {
 const handleAdd = async () => {
   // 验证
   if (!selectedCharacterId.value) {
-    formError.value.character = '请选择角色'
+    formError.value.character = t('chapterEditor.characters.formErrors.selectCharacter')
     return
   }
 
@@ -279,7 +287,7 @@ const handleAdd = async () => {
       selectedRole.value
     )
 
-    message.success('添加角色成功')
+    message.success(t('chapterEditor.characters.messages.addSuccess'))
     showAddModal.value = false
     resetAddForm()
 
@@ -287,7 +295,7 @@ const handleAdd = async () => {
     emit('refresh')
   } catch (error) {
     console.error('Failed to add character:', error)
-    message.error('添加角色失败')
+    message.error(t('chapterEditor.characters.messages.addFailed'))
   } finally {
     loading.value = false
   }
@@ -301,10 +309,10 @@ const handleRoleChange = async (item: ChapterCharacter) => {
       item.characterId,
       item.role
     )
-    message.success('更新角色类型成功')
+    message.success(t('chapterEditor.characters.messages.updateRoleSuccess'))
   } catch (error) {
     console.error('Failed to update character role:', error)
-    message.error('更新失败')
+    message.error(t('chapterEditor.characters.messages.updateFailed'))
     // 刷新数据恢复原状
     emit('refresh')
   }
@@ -314,13 +322,13 @@ const handleRoleChange = async (item: ChapterCharacter) => {
 const handleRemove = async (characterId: string) => {
   try {
     await chapterService.removeCharacterFromChapter(props.chapterId, characterId)
-    message.success('移除角色成功')
+    message.success(t('chapterEditor.characters.messages.removeSuccess'))
 
     // 通知父组件刷新数据
     emit('refresh')
   } catch (error) {
     console.error('Failed to remove character:', error)
-    message.error('移除角色失败')
+    message.error(t('chapterEditor.characters.messages.removeFailed'))
   }
 }
 

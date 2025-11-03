@@ -1,19 +1,19 @@
 <template>
   <div class="chapter-top-navigation">
     <!-- 返回章节列表按钮 -->
-    <a-tooltip title="返回章节列表">
+    <a-tooltip :title="t('chapterTopNav.backTooltip')">
       <a-button
         type="text"
         @click="handleBackToList"
         class="nav-button back-button"
       >
         <template #icon><UnorderedListOutlined /></template>
-        <span class="nav-text">章节列表</span>
+        <span class="nav-text">{{ t('chapterTopNav.backLabel') }}</span>
       </a-button>
     </a-tooltip>
 
     <!-- 上一章按钮 -->
-    <a-tooltip :title="prevChapter ? `上一章：${prevChapter.title}` : '没有上一章'">
+    <a-tooltip :title="prevChapter ? t('chapterTopNav.prevTooltip', { title: prevChapter.title || t('chapterTopNav.untitled') }) : t('chapterTopNav.noPrev')">
       <a-button
         type="text"
         :disabled="!prevChapter"
@@ -21,18 +21,18 @@
         class="nav-button"
       >
         <template #icon><LeftOutlined /></template>
-        <span class="nav-text">上一章</span>
+        <span class="nav-text">{{ t('chapterTopNav.prevLabel') }}</span>
       </a-button>
     </a-tooltip>
 
     <!-- 当前章节信息 -->
     <div class="current-chapter">
       <div class="chapter-badge">
-        第{{ currentChapter?.chapterNumber }}章
+        {{ t('chapterTopNav.chapterNumber', { number: currentChapter?.chapterNumber ?? '-' }) }}
       </div>
       <a-divider type="vertical" />
       <div class="chapter-title-display">
-        {{ currentChapter?.title || '未命名章节' }}
+        {{ currentChapter?.title || t('chapterTopNav.untitled') }}
       </div>
 
       <!-- 快速跳转下拉菜单 -->
@@ -42,7 +42,7 @@
         </a-button>
         <template #overlay>
           <div class="chapter-jump-menu-container">
-            <div class="menu-header">快速跳转</div>
+            <div class="menu-header">{{ t('chapterTopNav.quickJump') }}</div>
             <div class="menu-list" ref="menuListRef">
               <div
                 v-for="chapter in sortedChapters"
@@ -54,16 +54,16 @@
                 @click="handleMenuClick(chapter.id)"
               >
                 <span class="menu-chapter-number">
-                  第{{ chapter.chapterNumber }}章
+                  {{ t('chapterTopNav.chapterNumber', { number: chapter.chapterNumber }) }}
                 </span>
                 <span class="menu-chapter-title">
-                  {{ chapter.title }}
+                  {{ chapter.title || t('chapterTopNav.untitled') }}
                 </span>
                 <a-tag
                   :color="getStatusColor(chapter.status)"
                   size="small"
                 >
-                  {{ getStatusText(chapter.status) }}
+                  {{ getStatusLabel(chapter.status) }}
                 </a-tag>
               </div>
 
@@ -71,7 +71,7 @@
               <div v-if="loading || hasMore" class="menu-load-more">
                 <a-spin v-if="loading" size="small" />
                 <span v-else class="load-more-text">
-                  已加载 {{ allChapters.length }} / {{ total }} 章
+                  {{ t('chapterTopNav.loadMore', { loaded: formatNumber(allChapters.length), total: formatNumber(total || 0) }) }}
                 </span>
               </div>
             </div>
@@ -81,27 +81,28 @@
     </div>
 
     <!-- 下一章按钮 -->
-    <a-tooltip :title="nextChapter ? `下一章：${nextChapter.title}` : '没有下一章'">
+    <a-tooltip :title="nextChapter ? t('chapterTopNav.nextTooltip', { title: nextChapter.title || t('chapterTopNav.untitled') }) : t('chapterTopNav.noNext')">
       <a-button
         type="text"
         :disabled="!nextChapter"
         @click="handleNext"
         class="nav-button"
       >
-        <span class="nav-text">下一章</span>
+        <span class="nav-text">{{ t('chapterTopNav.nextLabel') }}</span>
         <template #icon><RightOutlined /></template>
       </a-button>
     </a-tooltip>
 
     <!-- 快捷键提示 -->
     <div class="keyboard-hints">
-      {{ isMac ? '⌘' : 'Ctrl' }} + ←/→
+      {{ t('chapterTopNav.keyboardHints', { modifier: isMac ? '⌘' : 'Ctrl' }) }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
   LeftOutlined,
@@ -110,6 +111,7 @@ import {
   UnorderedListOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
+import { getChapterStatusColor, getChapterStatusText } from '@/constants/status'
 
 interface Props {
   currentChapter?: Chapter
@@ -134,6 +136,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 const router = useRouter()
+const { t, locale } = useI18n()
 
 // 菜单容器 ref
 const menuListRef = ref<HTMLElement | null>(null)
@@ -144,6 +147,16 @@ const dropdownVisible = ref(false)
 const isMac = computed(() => {
   return navigator.platform.toUpperCase().indexOf('MAC') >= 0
 })
+
+const localeCode = computed(() => (locale.value === 'zh' ? 'zh-CN' : 'en-US'))
+
+const formatNumber = (value: number) => value.toLocaleString(localeCode.value)
+
+const getStatusLabel = (status: string) => {
+  const key = `chapter.status.${status}`
+  const translated = t(key)
+  return translated === key ? getChapterStatusText(status) : translated
+}
 
 // 排序后的章节列表
 const sortedChapters = computed(() => {
@@ -235,25 +248,7 @@ watch(dropdownVisible, async (visible) => {
   }
 })
 
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    planning: 'blue',
-    writing: 'orange',
-    reviewing: 'purple',
-    completed: 'green'
-  }
-  return colors[status] || 'default'
-}
-
-const getStatusText = (status: string) => {
-  const texts: Record<string, string> = {
-    planning: '规划中',
-    writing: '写作中',
-    reviewing: 'purple',
-    completed: '已完成'
-  }
-  return texts[status] || status
-}
+const getStatusColor = (status: string) => getChapterStatusColor(status)
 
 // 暴露方法供父组件使用
 defineExpose({

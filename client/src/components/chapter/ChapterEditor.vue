@@ -21,7 +21,7 @@
     <!-- 主编辑区域 -->
     <div class="chapter-editor">
       <div v-if="!chapter || switching" class="loading-state">
-        <a-spin size="large" :tip="switching ? '切换章节中...' : '加载中...'" />
+        <a-spin size="large" :tip="switching ? t('chapterEditor.loading.switching') : t('chapterEditor.loading.loading')" />
       </div>
 
       <div v-else class="editor-content">
@@ -30,15 +30,17 @@
         <div class="toolbar-left">
           <h3 class="toolbar-title">
             <FileTextOutlined />
-            第{{ chapter.chapterNumber }}章：{{ chapter.title }}
+            {{ t('chapterEditor.fullscreen.title', { number: chapter.chapterNumber, title: chapter.title }) }}
           </h3>
         </div>
         <div class="toolbar-center">
           <span class="word-count-display">
             <FileWordOutlined />
-            {{ wordCount.toLocaleString() }}
-            <span v-if="chapter.targetWordCount"> / {{ chapter.targetWordCount.toLocaleString() }}</span>
-            字
+            {{ t('chapterEditor.fullscreen.wordCount', { count: wordCount.toLocaleString() }) }}
+            <span v-if="chapter.targetWordCount">
+              {{ t('chapterEditor.fullscreen.wordTarget', { target: chapter.targetWordCount.toLocaleString() }) }}
+            </span>
+            {{ t('chapterEditor.common.wordUnit') }}
           </span>
         </div>
         <div class="toolbar-right">
@@ -54,13 +56,13 @@
                 {{ saveButtonText }}
               </a-button>
             </a-tooltip>
-            <a-tooltip :title="isMac ? '⌘+Shift+F 或 Esc' : 'Ctrl+Shift+F 或 Esc'">
+            <a-tooltip :title="isMac ? '⌘+Shift+F / Esc' : 'Ctrl+Shift+F / Esc'">
               <a-button
                 size="small"
                 @click="exitFullscreen"
               >
                 <template #icon><FullscreenExitOutlined /></template>
-                退出全屏
+                {{ t('chapterEditor.fullscreen.exit') }}
               </a-button>
             </a-tooltip>
           </a-space>
@@ -91,16 +93,16 @@
                 <a-space :size="8">
                   <span class="meta-item">
                     <ClockCircleOutlined />
-                    更新于 {{ formatDate(chapter.updatedAt) }}
+                    {{ t('chapterEditor.meta.updatedAt', { time: formatDate(chapter.updatedAt) }) }}
                   </span>
                   <a-divider type="vertical" />
                   <span class="meta-item">
                     <FileWordOutlined />
-                    {{ wordCount.toLocaleString() }} 字
+                    {{ t('chapterEditor.meta.wordCount', { count: wordCount.toLocaleString() }) }}
                   </span>
                   <a-divider type="vertical" v-if="chapter.targetWordCount" />
                   <span v-if="chapter.targetWordCount" class="meta-item">
-                    目标 {{ chapter.targetWordCount.toLocaleString() }} 字
+                    {{ t('chapterEditor.meta.targetWordCount', { target: chapter.targetWordCount.toLocaleString() }) }}
                   </span>
                 </a-space>
               </div>
@@ -111,7 +113,7 @@
           <div class="header-actions">
             <a-space :size="8" wrap>
               <a-tag :color="getChapterStatusColor(chapter.status)">
-                {{ getChapterStatusText(chapter.status) }}
+                {{ getChapterStatusLabel(chapter.status) }}
               </a-tag>
 
               <a-tooltip :title="isMac ? '⌘+S' : 'Ctrl+S'">
@@ -133,12 +135,12 @@
                   <a-menu>
                     <a-menu-item key="status" @click="showStatusModal = true">
                       <SwapOutlined />
-                      更改状态
+                      {{ t('chapterEditor.actions.changeStatus') }}
                     </a-menu-item>
                     <a-menu-divider />
                     <a-menu-item key="delete" danger @click="handleDelete">
                       <DeleteOutlined />
-                      删除章节
+                      {{ t('chapterEditor.actions.deleteChapter') }}
                     </a-menu-item>
                   </a-menu>
                 </template>
@@ -152,7 +154,7 @@
       <a-card class="editor-card" v-if="!isFullscreen">
         <a-tabs v-model:activeKey="activeTab" type="card">
           <!-- 正文内容 Tab -->
-          <a-tab-pane key="content" tab="正文内容">
+          <a-tab-pane key="content" :tab="t('chapterEditor.tabs.content')">
             <div class="content-editor">
               <!-- 工具栏：AI生成器 + 全屏按钮 -->
               <div class="content-editor-toolbar">
@@ -179,7 +181,7 @@
                       class="fullscreen-toggle-btn"
                     >
                       <template #icon><FullscreenOutlined /></template>
-                      全屏编辑
+                      {{ t('common.fullscreenEdit') }}
                     </a-button>
                   </a-tooltip>
                 </div>
@@ -193,14 +195,14 @@
                 :chapter-id="chapter.id"
                 :target-word-count="formData.targetWordCount"
                 :enable-ai-suggestion="true"
-                placeholder="开始编写章节内容..."
+                :placeholder="t('chapterEditor.editor.placeholder')"
                 @update:word-count="handleWordCountUpdate"
               />
             </div>
           </a-tab-pane>
 
           <!-- 基本信息 Tab -->
-          <a-tab-pane key="basic" tab="基本信息">
+          <a-tab-pane key="basic" :tab="t('chapterEditor.tabs.basic')">
             <div class="editor-form">
               <!-- 基本信息组件 -->
               <ChapterBasicInfo
@@ -223,7 +225,7 @@
           </a-tab-pane>
 
           <!-- 角色关联 Tab -->
-          <a-tab-pane key="characters" tab="角色关联">
+          <a-tab-pane key="characters" :tab="t('chapterEditor.tabs.characters')">
             <div class="relations-section">
               <ChapterCharacters
                 v-model="formData.characters"
@@ -235,7 +237,7 @@
           </a-tab-pane>
 
           <!-- 设定关联 Tab -->
-          <a-tab-pane key="settings" tab="设定关联">
+          <a-tab-pane key="settings" :tab="t('chapterEditor.tabs.settings')">
             <div class="relations-section">
               <ChapterSettings
                 v-model="formData.settings"
@@ -247,7 +249,7 @@
           </a-tab-pane>
 
           <!-- 一致性检查 Tab -->
-          <a-tab-pane key="consistency" tab="一致性检查">
+          <a-tab-pane key="consistency" :tab="t('chapterEditor.tabs.consistency')">
             <div class="consistency-section">
               <ChapterConsistency
                 :model-value="chapter?.consistencyLog || []"
@@ -268,7 +270,7 @@
           :chapter-id="chapter.id"
           :target-word-count="formData.targetWordCount"
           :enable-ai-suggestion="true"
-          placeholder="开始编写章节内容..."
+          :placeholder="t('chapterEditor.editor.placeholder')"
           @update:word-count="handleWordCountUpdate"
         />
       </div>
@@ -277,14 +279,14 @@
     <!-- 更改状态 Modal -->
     <a-modal
       v-model:open="showStatusModal"
-      title="更改章节状态"
+      :title="t('chapterEditor.modals.updateStatusTitle')"
       @ok="handleChangeStatus"
     >
       <a-form layout="vertical">
-        <a-form-item label="选择状态">
+        <a-form-item :label="t('chapterEditor.modals.selectStatusLabel')">
           <a-select v-model:value="selectedStatus">
             <a-select-option
-              v-for="status in getAllChapterStatuses()"
+              v-for="status in chapterStatusOptions"
               :key="status.value"
               :value="status.value"
             >
@@ -300,6 +302,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -336,6 +339,7 @@ const props = defineProps<Props>()
 const emit = defineEmits(['saved', 'deleted', 'navigate'])
 
 const router = useRouter()
+const { t, locale } = useI18n()
 
 // 状态
 const chapter = ref<Chapter | null>(null)
@@ -351,6 +355,12 @@ const pageSize = ref(20)
 const totalChapters = ref(0)
 const maxChapterNumber = ref(0)
 const hasMoreChapters = computed(() => allChapters.value.length < totalChapters.value)
+
+const getChapterStatusLabel = (status: string) => {
+  const key = `chapter.status.${status}`
+  const translated = t(key)
+  return translated === key ? getChapterStatusText(status) : translated
+}
 
 const formData = ref({
   title: '',
@@ -368,6 +378,13 @@ const saving = ref(false)
 const showStatusModal = ref(false)
 const selectedStatus = ref<ChapterStatus | undefined>(undefined)
 
+const chapterStatusOptions = computed(() =>
+  getAllChapterStatuses().map(status => ({
+    ...status,
+    label: getChapterStatusLabel(status.value)
+  }))
+)
+
 // 全屏相关
 const isFullscreen = ref(false)
 
@@ -375,7 +392,8 @@ const isFullscreen = ref(false)
 const autoSaveEnabled = ref(true)
 const autoSaveInterval = 30000 // 30秒
 const lastSavedData = ref<string>('')
-const saveButtonText = ref('保存')
+const saveButtonTextKey = ref('common.save')
+const saveButtonText = computed(() => t(saveButtonTextKey.value))
 const isMac = ref(false)
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -425,7 +443,7 @@ const loadChapter = async () => {
     lastSavedData.value = JSON.stringify(formData.value)
   } catch (error) {
     console.error('Failed to load chapter:', error)
-    message.error('加载章节失败')
+    message.error(t('chapterEditor.messages.loadFailed'))
   }
 }
 
@@ -487,10 +505,10 @@ const handleChapterSelect = async (selectedChapter: Chapter) => {
   const currentData = JSON.stringify(formData.value)
   if (currentData !== lastSavedData.value) {
     Modal.confirm({
-      title: '有未保存的更改',
-      content: '切换章节前是否保存当前更改？',
-      okText: '保存并切换',
-      cancelText: '放弃更改',
+      title: t('chapterEditor.confirm.unsavedChangesTitle'),
+      content: t('chapterEditor.confirm.unsavedChangesMessage'),
+      okText: t('chapterEditor.confirm.saveAndSwitch'),
+      cancelText: t('chapterEditor.confirm.discardChanges'),
       async onOk() {
         await handleSave()
         navigateToChapter(selectedChapter.id)
@@ -549,7 +567,7 @@ const handleChapterCreated = async (newChapter: Chapter) => {
 const handleSave = async (isAutoSave = false) => {
   if (!formData.value.title.trim()) {
     if (!isAutoSave) {
-      message.error('请输入章节标题')
+      message.error(t('chapterEditor.messages.titleRequired'))
     }
     return
   }
@@ -558,13 +576,13 @@ const handleSave = async (isAutoSave = false) => {
   const currentData = JSON.stringify(formData.value)
   if (currentData === lastSavedData.value) {
     if (!isAutoSave) {
-      message.info('没有需要保存的更改')
+      message.info(t('chapterEditor.messages.noChanges'))
     }
     return
   }
 
   saving.value = true
-  saveButtonText.value = '保存中...'
+  saveButtonTextKey.value = 'chapterEditor.actions.saving'
 
   try {
     const updated = await chapterService.updateChapter(props.chapterId, {
@@ -583,22 +601,22 @@ const handleSave = async (isAutoSave = false) => {
     await loadAllChapters()
 
     if (isAutoSave) {
-      saveButtonText.value = '已自动保存'
+      saveButtonTextKey.value = 'chapterEditor.actions.autoSaved'
       setTimeout(() => {
-        saveButtonText.value = '保存'
+        saveButtonTextKey.value = 'common.save'
       }, 2000)
     } else {
-      message.success('保存成功')
-      saveButtonText.value = '保存'
+      message.success(t('common.saveSuccess'))
+      saveButtonTextKey.value = 'common.save'
     }
 
     emit('saved', updated)
   } catch (error) {
     console.error('Failed to save chapter:', error)
     if (!isAutoSave) {
-      message.error('保存失败')
+      message.error(t('common.saveFailure'))
     }
-    saveButtonText.value = '保存'
+    saveButtonTextKey.value = 'common.save'
   } finally {
     saving.value = false
   }
@@ -607,20 +625,20 @@ const handleSave = async (isAutoSave = false) => {
 // 删除章节
 const handleDelete = () => {
   Modal.confirm({
-    title: '确定要删除这个章节吗？',
-    content: '删除后无法恢复',
-    okText: '确定',
+    title: t('chapterEditor.confirm.deleteTitle'),
+    content: t('chapterEditor.confirm.deleteMessage'),
+    okText: t('common.confirm'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     async onOk() {
       try {
         await chapterService.deleteChapter(props.chapterId)
-        message.success('删除成功')
+        message.success(t('common.deleteSuccess'))
         emit('deleted')
         router.push({ name: 'chapters' })
       } catch (error) {
         console.error('Failed to delete chapter:', error)
-        message.error('删除失败')
+        message.error(t('common.deleteFailure'))
       }
     }
   })
@@ -641,11 +659,11 @@ const handleChangeStatus = async () => {
     // 刷新章节列表以更新导航栏显示的状态
     await loadAllChapters()
 
-    message.success('状态更新成功')
+    message.success(t('chapterEditor.messages.statusUpdateSuccess'))
     showStatusModal.value = false
   } catch (error) {
     console.error('Failed to change status:', error)
-    message.error('状态更新失败')
+    message.error(t('chapterEditor.messages.statusUpdateFailed'))
   }
 }
 
@@ -679,7 +697,8 @@ const handleContentGenerated = (content: string) => {
 // 工具方法
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
-  return date.toLocaleString('zh-CN')
+  const localeCode = locale.value === 'zh' ? 'zh-CN' : 'en-US'
+  return date.toLocaleString(localeCode)
 }
 
 // 自动保存逻辑

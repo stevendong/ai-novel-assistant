@@ -7,10 +7,10 @@
     >
       <a-row :gutter="16">
         <a-col :span="12">
-          <a-form-item label="章节标题" required>
+          <a-form-item :label="t('chapterEditor.basic.titleLabel')" required>
             <a-input
               v-model:value="formData.title"
-              placeholder="请输入章节标题"
+              :placeholder="t('chapterEditor.basic.titlePlaceholder')"
               :maxlength="100"
               show-count
               @change="handleChange"
@@ -18,7 +18,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="6">
-          <a-form-item label="章节号">
+          <a-form-item :label="t('chapterEditor.basic.numberLabel')">
             <a-input-number
               v-model:value="formData.chapterNumber"
               :min="1"
@@ -28,11 +28,11 @@
           </a-form-item>
         </a-col>
         <a-col :span="6">
-          <a-form-item label="目标字数">
+          <a-form-item :label="t('chapterEditor.basic.targetWordCountLabel')">
             <a-input-number
               v-model:value="formData.targetWordCount"
               :min="0"
-              placeholder="不限"
+              :placeholder="t('chapterEditor.basic.targetWordCountPlaceholder')"
               style="width: 100%"
               @change="handleChange"
             />
@@ -40,7 +40,7 @@
         </a-col>
       </a-row>
 
-      <a-form-item label="章节大纲">
+      <a-form-item :label="t('chapterEditor.basic.outlineLabel')">
         <div class="outline-editor-wrapper">
           <OutlineAIGenerator
             v-if="novelId && chapterId"
@@ -58,7 +58,7 @@
           />
           <a-textarea
             v-model:value="formData.outline"
-            placeholder="请输入章节大纲，或点击AI生成按钮一键生成"
+            :placeholder="t('chapterEditor.basic.outlinePlaceholder')"
             :rows="6"
             :maxlength="2000"
             show-count
@@ -72,6 +72,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Character, WorldSetting, PlotPoint } from '@/types'
 import OutlineAIGenerator from './OutlineAIGenerator.vue'
 import type { ChapterOutlineData } from '@/services/aiService'
@@ -103,6 +104,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+const { t } = useI18n()
 
 // 内部表单数据
 const formData = ref<BasicInfoData>({

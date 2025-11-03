@@ -113,6 +113,168 @@
     "offline": "离线",
     "latency": "{latency}毫秒"
   },
+  "chapterEditor": {
+    "view": {
+      "notFound": "未找到章节"
+    },
+    "loading": {
+      "switching": "切换章节中...",
+      "loading": "加载中..."
+    },
+    "fullscreen": {
+      "title": "第{number}章：{title}",
+      "wordCount": "{count}",
+      "wordTarget": "/ {target}",
+      "exit": "退出全屏"
+    },
+    "common": {
+      "wordUnit": "字"
+    },
+    "meta": {
+      "updatedAt": "更新于 {time}",
+      "wordCount": "{count} 字",
+      "targetWordCount": "目标 {target} 字"
+    },
+    "actions": {
+      "changeStatus": "更改状态",
+      "deleteChapter": "删除章节",
+      "saving": "保存中...",
+      "autoSaved": "已自动保存"
+    },
+    "tabs": {
+      "content": "正文内容",
+      "basic": "基本信息",
+      "characters": "角色关联",
+      "settings": "设定关联",
+      "consistency": "一致性检查"
+    },
+    "editor": {
+      "placeholder": "开始编写章节内容..."
+    },
+    "modals": {
+      "updateStatusTitle": "更改章节状态",
+      "selectStatusLabel": "选择状态"
+    },
+    "confirm": {
+      "unsavedChangesTitle": "有未保存的更改",
+      "unsavedChangesMessage": "切换章节前是否保存当前更改？",
+      "saveAndSwitch": "保存并切换",
+      "discardChanges": "放弃更改",
+      "deleteTitle": "确定要删除这个章节吗？",
+      "deleteMessage": "删除后无法恢复"
+    },
+    "messages": {
+      "titleRequired": "请输入章节标题",
+      "noChanges": "没有需要保存的更改",
+      "loadFailed": "加载章节失败",
+      "statusUpdateSuccess": "状态更新成功",
+      "statusUpdateFailed": "状态更新失败"
+    },
+    "basic": {
+      "titleLabel": "章节标题",
+      "titlePlaceholder": "请输入章节标题",
+      "numberLabel": "章节号",
+      "targetWordCountLabel": "目标字数",
+      "targetWordCountPlaceholder": "不限",
+      "outlineLabel": "章节大纲",
+      "outlinePlaceholder": "请输入章节大纲，或使用 AI 生成"
+    },
+    "plotPoints": {
+      "sectionTitle": "剧情要点",
+      "tooltip": "添加关键的剧情点，帮助组织章节内容",
+      "placeholder": "描述这个情节要点...",
+      "actions": {
+        "moveUp": "上移",
+        "moveDown": "下移",
+        "remove": "删除"
+      },
+      "empty": "暂无剧情要点",
+      "add": "添加剧情要点",
+      "summary": "共 {count} 个剧情要点",
+      "types": {
+        "conflict": "冲突",
+        "discovery": "发现",
+        "emotion": "情感",
+        "action": "动作",
+        "dialogue": "对话"
+      }
+    },
+    "characters": {
+      "title": "相关角色",
+      "count": "{count} 个角色",
+      "add": "添加角色",
+      "addFirst": "添加第一个角色",
+      "empty": "暂无关联角色",
+      "noDescription": "暂无描述",
+      "actions": {
+        "remove": "移除",
+        "removeConfirm": "确定要移除这个角色吗？"
+      },
+      "modal": {
+        "title": "添加角色到章节",
+        "selectLabel": "选择角色",
+        "selectPlaceholder": "请选择要添加的角色",
+        "roleLabel": "在本章节中的角色"
+      },
+      "roles": {
+        "main": "主要",
+        "supporting": "配角",
+        "mentioned": "提及",
+        "mainFull": "主要角色",
+        "supportingFull": "配角",
+        "mentionedFull": "仅提及"
+      },
+      "hints": {
+        "main": "主要角色会在章节中占据核心位置",
+        "supporting": "配角会在章节中有一定戏份",
+        "mentioned": "仅提及的角色只会被简单提到"
+      },
+      "messages": {
+        "loadFailed": "加载角色列表失败",
+        "addSuccess": "添加角色成功",
+        "addFailed": "添加角色失败",
+        "updateRoleSuccess": "更新角色类型成功",
+        "updateFailed": "更新失败",
+        "removeSuccess": "移除角色成功",
+        "removeFailed": "移除角色失败"
+      },
+      "formErrors": {
+        "selectCharacter": "请选择角色"
+      }
+    }
+  },
+  "chapterNavigation": {
+    "title": "章节导航",
+    "addChapter": "新增章节",
+    "searchPlaceholder": "搜索章节...",
+    "statusPlaceholder": "筛选状态",
+    "statusAll": "全部状态",
+    "chapterNumber": "第{number}章",
+    "wordCount": "{count} 字",
+    "loadMore": "已加载 {loaded} / {total} 章",
+    "empty": "暂无章节",
+    "miniAddTooltip": "新增章节（{shortcut}）",
+    "miniItemTooltip": "第{number}章：{title}",
+    "miniLoadMoreTooltip": "{loaded}/{total}",
+    "addModal": {
+      "title": "新增章节",
+      "titleLabel": "章节标题",
+      "titlePlaceholder": "请输入章节标题",
+      "outlineLabel": "章节大纲",
+      "outlinePlaceholder": "请输入章节大纲（可选）",
+      "infoMessage": "提示",
+      "infoDescription": "新章节将自动编号为第 {number} 章，状态为 {status}"
+    },
+    "messages": {
+      "selectProject": "请先选择作品",
+      "missingNovelId": "未找到作品 ID",
+      "createSuccess": "章节创建成功",
+      "createFailure": "章节创建失败"
+    },
+    "validation": {
+      "titleRequired": "请输入章节标题"
+    }
+  },
   "progress": {
     "title": "进度统计",
     "subtitle": "追踪您的创作进程，激发写作动力",
@@ -571,6 +733,8 @@
       "draft": "草稿",
       "writing": "写作中",
       "reviewing": "审阅中",
+      "outlined": "大纲完成",
+      "editing": "编辑中",
       "completed": "已完成",
       "published": "已发布",
       "planning": "规划中"

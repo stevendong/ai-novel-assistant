@@ -4,7 +4,7 @@
     <div class="sidebar-header">
       <div class="header-title" v-if="!isCollapsed">
         <BookOutlined />
-        <span>章节导航</span>
+        <span>{{ t('chapterNavigation.title') }}</span>
       </div>
       <a-button
         type="text"
@@ -29,7 +29,7 @@
         class="create-chapter-btn"
       >
         <template #icon><PlusOutlined /></template>
-        新增章节
+        {{ t('chapterNavigation.addChapter') }}
       </a-button>
     </div>
 
@@ -39,7 +39,7 @@
         <!-- 搜索框 -->
         <a-input
           v-model:value="searchText"
-          placeholder="搜索章节..."
+          :placeholder="t('chapterNavigation.searchPlaceholder')"
           size="small"
           allow-clear
         >
@@ -51,16 +51,19 @@
         <!-- 筛选器 -->
         <a-select
           v-model:value="statusFilter"
-          placeholder="筛选状态"
+          :placeholder="t('chapterNavigation.statusPlaceholder')"
           size="small"
           style="width: 100%"
           allow-clear
         >
-          <a-select-option value="">全部状态</a-select-option>
-          <a-select-option value="planning">规划中</a-select-option>
-          <a-select-option value="writing">写作中</a-select-option>
-          <a-select-option value="reviewing">审核中</a-select-option>
-          <a-select-option value="completed">已完成</a-select-option>
+          <a-select-option value="">{{ t('chapterNavigation.statusAll') }}</a-select-option>
+          <a-select-option
+            v-for="option in statusOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </a-select-option>
         </a-select>
       </a-space>
     </div>
@@ -78,7 +81,7 @@
       >
         <div class="chapter-main">
           <div class="chapter-number">
-            第{{ chapter.chapterNumber }}章
+            {{ t('chapterNavigation.chapterNumber', { number: chapter.chapterNumber }) }}
           </div>
           <div class="chapter-title">
             {{ chapter.title }}
@@ -90,10 +93,10 @@
             :color="getStatusColor(chapter.status)"
             size="small"
           >
-            {{ getStatusText(chapter.status) }}
+            {{ getStatusLabel(chapter.status) }}
           </a-tag>
           <span class="word-count">
-            {{ getWordCount(chapter.content) }}字
+            {{ t('chapterNavigation.wordCount', { count: formatNumber(getWordCount(chapter.content)) }) }}
           </span>
         </div>
 
@@ -118,7 +121,7 @@
       <div v-if="loading || hasMore" class="load-more-indicator">
         <a-spin v-if="loading" size="small" />
         <span v-if="!loading && hasMore" class="load-more-text">
-          已加载 {{ chapters.length }} / {{ total }} 章
+          {{ t('chapterNavigation.loadMore', { loaded: formatNumber(chapters.length), total: formatNumber(total || 0) }) }}
         </span>
       </div>
 
@@ -126,14 +129,14 @@
       <div v-if="filteredChapters.length === 0 && !loading" class="empty-state">
         <a-empty
           :image="emptyImage"
-          description="暂无章节"
+          :description="t('chapterNavigation.empty')"
         />
       </div>
     </div>
 
     <!-- 折叠状态下的新增按钮（固定） -->
     <div class="sidebar-mini-add-section" v-else>
-      <a-tooltip :title="`新增章节 (${addChapterShortcut})`" placement="right">
+      <a-tooltip :title="t('chapterNavigation.miniAddTooltip', { shortcut: addChapterShortcut })" placement="right">
         <div
           class="chapter-mini-add-btn"
           @click="showAddChapterModal"
@@ -148,7 +151,7 @@
       <a-tooltip
         v-for="chapter in filteredChapters"
         :key="chapter.id"
-        :title="`第${chapter.chapterNumber}章：${chapter.title}`"
+        :title="t('chapterNavigation.miniItemTooltip', { number: chapter.chapterNumber, title: chapter.title || '-' })"
         placement="right"
       >
         <div
@@ -165,7 +168,11 @@
       <!-- 加载更多指示器（折叠状态） -->
       <div v-if="loading || hasMore" class="load-more-mini-indicator">
         <a-spin v-if="loading" size="small" />
-        <a-tooltip v-else-if="hasMore" :title="`${chapters.length}/${total}`" placement="right">
+        <a-tooltip
+          v-else-if="hasMore"
+          :title="t('chapterNavigation.miniLoadMoreTooltip', { loaded: formatNumber(chapters.length), total: formatNumber(total || 0) })"
+          placement="right"
+        >
           <div class="load-more-mini-dot">···</div>
         </a-tooltip>
       </div>
@@ -174,7 +181,7 @@
     <!-- 新增章节对话框 -->
     <a-modal
       v-model:open="addChapterVisible"
-      title="新增章节"
+      :title="t('chapterNavigation.addModal.title')"
       width="500px"
       @ok="handleAddChapter"
       :confirm-loading="creating"
@@ -182,24 +189,24 @@
     >
       <a-form layout="vertical">
         <a-form-item
-          label="章节标题"
+          :label="t('chapterNavigation.addModal.titleLabel')"
           :required="true"
           :validate-status="titleError ? 'error' : ''"
           :help="titleError"
         >
           <a-input
             v-model:value="newChapterForm.title"
-            placeholder="请输入章节标题"
+            :placeholder="t('chapterNavigation.addModal.titlePlaceholder')"
             :maxlength="100"
             show-count
             @pressEnter="handleAddChapter"
           />
         </a-form-item>
 
-        <a-form-item label="章节大纲">
+        <a-form-item :label="t('chapterNavigation.addModal.outlineLabel')">
           <a-textarea
             v-model:value="newChapterForm.outline"
-            placeholder="请输入章节大纲（可选）"
+            :placeholder="t('chapterNavigation.addModal.outlinePlaceholder')"
             :rows="4"
             :maxlength="500"
             show-count
@@ -207,8 +214,8 @@
         </a-form-item>
 
         <a-alert
-          message="提示"
-          :description="`新章节将自动编号为第 ${nextChapterNumber} 章，状态为'规划中'`"
+          :message="t('chapterNavigation.addModal.infoMessage')"
+          :description="t('chapterNavigation.addModal.infoDescription', { number: nextChapterNumber, status: getStatusLabel(planningStatus) })"
           type="info"
           show-icon
           style="margin-top: 8px"
@@ -220,6 +227,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { message, Empty } from 'ant-design-vue'
 import {
   BookOutlined,
@@ -230,6 +238,12 @@ import {
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 import { chapterService } from '@/services/chapterService'
+import {
+  ChapterStatus,
+  getChapterStatusColor,
+  getChapterStatusText,
+  getAllChapterStatuses
+} from '@/constants/status'
 
 interface Props {
   chapters: Chapter[]
@@ -257,6 +271,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+const { t, locale } = useI18n()
 
 // localStorage key
 const STORAGE_KEY = 'chapter-nav-sidebar-collapsed'
@@ -277,6 +292,24 @@ const isCollapsed = ref(getInitialCollapsedState())
 const searchText = ref('')
 const statusFilter = ref('')
 const emptyImage = Empty.PRESENTED_IMAGE_SIMPLE
+const localeCode = computed(() => (locale.value === 'zh' ? 'zh-CN' : 'en-US'))
+
+const formatNumber = (value: number) => value.toLocaleString(localeCode.value)
+
+const getStatusLabel = (status: string) => {
+  const key = `chapter.status.${status}`
+  const translated = t(key)
+  return translated === key ? getChapterStatusText(status) : translated
+}
+
+const statusOptions = computed(() =>
+  getAllChapterStatuses().map(status => ({
+    value: status.value,
+    label: getStatusLabel(status.value)
+  }))
+)
+
+const planningStatus = ChapterStatus.PLANNING
 
 // 列表容器 ref
 const chapterListRef = ref<HTMLElement | null>(null)
@@ -408,7 +441,7 @@ const handleCreateChapter = () => {
 // 显示新增章节对话框
 const showAddChapterModal = () => {
   if (!props.novelId) {
-    message.error('请先选择作品')
+    message.error(t('chapterNavigation.messages.selectProject'))
     return
   }
 
@@ -434,12 +467,12 @@ const handleCancelAdd = () => {
 const handleAddChapter = async () => {
   // 验证标题
   if (!newChapterForm.value.title.trim()) {
-    titleError.value = '请输入章节标题'
+    titleError.value = t('chapterNavigation.validation.titleRequired')
     return
   }
 
   if (!props.novelId) {
-    message.error('未找到作品ID')
+    message.error(t('chapterNavigation.messages.missingNovelId'))
     return
   }
 
@@ -454,7 +487,7 @@ const handleAddChapter = async () => {
       outline: newChapterForm.value.outline.trim()
     })
 
-    message.success('章节创建成功')
+    message.success(t('chapterNavigation.messages.createSuccess'))
     addChapterVisible.value = false
 
     // 重置表单
@@ -468,31 +501,13 @@ const handleAddChapter = async () => {
     emit('refresh')
   } catch (error) {
     console.error('Failed to create chapter:', error)
-    message.error('章节创建失败')
+    message.error(t('chapterNavigation.messages.createFailure'))
   } finally {
     creating.value = false
   }
 }
 
-const getStatusColor = (status: string) => {
-  const colors: Record<string, string> = {
-    planning: 'blue',
-    writing: 'orange',
-    reviewing: 'purple',
-    completed: 'green'
-  }
-  return colors[status] || 'default'
-}
-
-const getStatusText = (status: string) => {
-  const texts: Record<string, string> = {
-    planning: '规划中',
-    writing: '写作中',
-    reviewing: '审核中',
-    completed: '已完成'
-  }
-  return texts[status] || status
-}
+const getStatusColor = (status: string) => getChapterStatusColor(status)
 
 const getWordCount = (content?: string) => {
   if (!content) return 0
