@@ -4,7 +4,7 @@ import i18n, { getCurrentLocale } from '@/i18n'
 const API_BASE = '/api'
 
 const translate = (key: string, params?: Record<string, unknown>) => {
-  return i18n.global.t(key, params) as string
+  return i18n.global.t(key, params || {}) as string
 }
 
 export interface AIResponse {
@@ -1203,7 +1203,7 @@ ${existingContent.slice(0, 500)}...
         signal
       })
 
-      const parsed = this.parseSuggestionResponse(response, count)
+      const parsed = this.parseSuggestionResponse(response, count, maxLength)
 
       return {
         ...parsed,
@@ -1269,7 +1269,7 @@ ${context}
   /**
    * 解析建议响应
    */
-  private parseSuggestionResponse(response: any, count: number): SuggestionResponse {
+  private parseSuggestionResponse(response: any, count: number, maxLength: number): SuggestionResponse {
     try {
       let content = ''
       if (typeof response === 'string') {

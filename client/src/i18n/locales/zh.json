@@ -59,6 +59,25 @@
     "suggestion": "建议：",
     "pending": "待完善"
   },
+  "status": {
+    "novel": {
+      "concept": "构思中",
+      "draft": "草稿",
+      "planning": "策划中",
+      "writing": "写作中",
+      "editing": "编辑中",
+      "completed": "已完成",
+      "published": "已发布"
+    },
+    "chapter": {
+      "planning": "策划中",
+      "outlined": "大纲完成",
+      "writing": "写作中",
+      "reviewing": "审核中",
+      "editing": "编辑中",
+      "completed": "已完成"
+    }
+  },
   "aiChat": {
     "quickActions": {
       "help": "查看帮助",

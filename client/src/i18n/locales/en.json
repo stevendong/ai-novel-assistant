@@ -59,6 +59,25 @@
     "suggestion": "Suggestion:",
     "pending": "Pending"
   },
+  "status": {
+    "novel": {
+      "concept": "Concept",
+      "draft": "Draft",
+      "planning": "Planning",
+      "writing": "Writing",
+      "editing": "Editing",
+      "completed": "Completed",
+      "published": "Published"
+    },
+    "chapter": {
+      "planning": "Planning",
+      "outlined": "Outlined",
+      "writing": "Writing",
+      "reviewing": "Reviewing",
+      "editing": "Editing",
+      "completed": "Completed"
+    }
+  },
   "aiChat": {
     "quickActions": {
       "help": "View help",

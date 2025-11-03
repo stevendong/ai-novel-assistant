@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+
 // 统一的状态管理配置
 
 // 小说状态枚举
@@ -21,8 +23,8 @@ export enum ChapterStatus {
   COMPLETED = 'completed'
 }
 
-// 小说状态中文映射
-export const NOVEL_STATUS_TEXT: Record<NovelStatus, string> = {
+// 小说状态默认文本（用于回退，当缺少翻译时）
+const NOVEL_STATUS_DEFAULT_TEXT: Record<NovelStatus, string> = {
   [NovelStatus.CONCEPT]: '构思中',
   [NovelStatus.DRAFT]: '草稿',
   [NovelStatus.PLANNING]: '策划中',
@@ -32,14 +34,34 @@ export const NOVEL_STATUS_TEXT: Record<NovelStatus, string> = {
   [NovelStatus.PUBLISHED]: '已发布'
 }
 
-// 章节状态中文映射
-export const CHAPTER_STATUS_TEXT: Record<ChapterStatus, string> = {
+// 章节状态默认文本（用于回退，当缺少翻译时）
+const CHAPTER_STATUS_DEFAULT_TEXT: Record<ChapterStatus, string> = {
   [ChapterStatus.PLANNING]: '策划中',
   [ChapterStatus.OUTLINED]: '大纲完成',
   [ChapterStatus.WRITING]: '写作中',
   [ChapterStatus.REVIEWING]: '审阅中',
   [ChapterStatus.EDITING]: '编辑中',
   [ChapterStatus.COMPLETED]: '已完成'
+}
+
+// 国际化 key 配置
+const NOVEL_STATUS_I18N_KEY: Record<NovelStatus, string> = {
+  [NovelStatus.CONCEPT]: 'status.novel.concept',
+  [NovelStatus.DRAFT]: 'status.novel.draft',
+  [NovelStatus.PLANNING]: 'status.novel.planning',
+  [NovelStatus.WRITING]: 'status.novel.writing',
+  [NovelStatus.EDITING]: 'status.novel.editing',
+  [NovelStatus.COMPLETED]: 'status.novel.completed',
+  [NovelStatus.PUBLISHED]: 'status.novel.published'
+}
+
+const CHAPTER_STATUS_I18N_KEY: Record<ChapterStatus, string> = {
+  [ChapterStatus.PLANNING]: 'status.chapter.planning',
+  [ChapterStatus.OUTLINED]: 'status.chapter.outlined',
+  [ChapterStatus.WRITING]: 'status.chapter.writing',
+  [ChapterStatus.REVIEWING]: 'status.chapter.reviewing',
+  [ChapterStatus.EDITING]: 'status.chapter.editing',
+  [ChapterStatus.COMPLETED]: 'status.chapter.completed'
 }
 
 // 小说状态颜色映射
@@ -103,13 +125,31 @@ export const CHAPTER_STATUS_TRANSITIONS: Record<ChapterStatus, ChapterStatus[]> 
   [ChapterStatus.COMPLETED]: [ChapterStatus.EDITING]
 }
 
+const translateStatus = (key: string, fallback?: string): string => {
+  const translated = i18n.global.t(key) as string
+  if (translated && translated !== key) {
+    return translated
+  }
+  return fallback ?? key
+}
+
 // 工具函数
 export const getNovelStatusText = (status: string): string => {
-  return NOVEL_STATUS_TEXT[status as NovelStatus] || status
+  const novelStatus = status as NovelStatus
+  const key = NOVEL_STATUS_I18N_KEY[novelStatus]
+  if (key) {
+    return translateStatus(key, NOVEL_STATUS_DEFAULT_TEXT[novelStatus])
+  }
+  return status
 }
 
 export const getChapterStatusText = (status: string): string => {
-  return CHAPTER_STATUS_TEXT[status as ChapterStatus] || status
+  const chapterStatus = status as ChapterStatus
+  const key = CHAPTER_STATUS_I18N_KEY[chapterStatus]
+  if (key) {
+    return translateStatus(key, CHAPTER_STATUS_DEFAULT_TEXT[chapterStatus])
+  }
+  return status
 }
 
 export const getNovelStatusColor = (status: string): string => {
@@ -132,7 +172,7 @@ export const isValidChapterStatus = (status: string): status is ChapterStatus =>
 export const getAllNovelStatuses = (): { value: NovelStatus; label: string; color: string }[] => {
   return Object.values(NovelStatus).map(status => ({
     value: status,
-    label: NOVEL_STATUS_TEXT[status],
+    label: getNovelStatusText(status),
     color: NOVEL_STATUS_COLOR[status]
   }))
 }
@@ -140,7 +180,7 @@ export const getAllNovelStatuses = (): { value: NovelStatus; label: string; colo
 export const getAllChapterStatuses = (): { value: ChapterStatus; label: string; color: string }[] => {
   return Object.values(ChapterStatus).map(status => ({
     value: status,
-    label: CHAPTER_STATUS_TEXT[status],
+    label: getChapterStatusText(status),
     color: CHAPTER_STATUS_COLOR[status]
   }))
 }
