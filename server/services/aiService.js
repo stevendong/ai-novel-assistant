@@ -91,15 +91,68 @@ class AIService {
     }
   }
 
+  shouldApplyAppCodeHeader(baseURL) {
+    return typeof baseURL === 'string' && baseURL.includes('aihubmix.com');
+  }
+
+  applyAppCodeHeader(baseURL, headers) {
+    if (!this.shouldApplyAppCodeHeader(baseURL)) {
+      return headers;
+    }
+
+    if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+      headers.set('APP-Code', 'AVSS2212');
+      return headers;
+    }
+
+    if (Array.isArray(headers)) {
+      const normalizedIndex = headers.findIndex(([key]) => String(key).toLowerCase() === 'app-code');
+      if (normalizedIndex !== -1) {
+        headers[normalizedIndex][1] = 'AVSS2212';
+        return headers;
+      }
+      return [...headers, ['APP-Code', 'AVSS2212']];
+    }
+
+    return {
+      ...(headers || {}),
+      'APP-Code': 'AVSS2212'
+    };
+  }
+
+  createFetchWithAppCodeHeader(baseURL, baseFetch = fetch) {
+    return (input, init = {}) => {
+      const headers = this.applyAppCodeHeader(baseURL, init?.headers);
+      return baseFetch(input, { ...init, headers });
+    };
+  }
+
+  createOpenAIClient(config) {
+    const clientOptions = {
+      apiKey: config.apiKey,
+      baseURL: config.baseURL
+    };
+
+    if (typeof config.timeout === 'number') {
+      clientOptions.timeout = config.timeout;
+    }
+
+    if (this.shouldApplyAppCodeHeader(config.baseURL)) {
+      clientOptions.defaultHeaders = {
+        ...(config.defaultHeaders || {}),
+        'APP-Code': 'AVSS2212'
+      };
+      clientOptions.fetch = this.createFetchWithAppCodeHeader(config.baseURL);
+    }
+
+    return new OpenAI(clientOptions);
+  }
+
   initializeProviders() {
     // Initialize OpenAI-compatible providers
     if (aiConfig.openai.apiKey) {
       this.providers.set('openai', {
-        client: new OpenAI({
-          apiKey: aiConfig.openai.apiKey,
-          baseURL: aiConfig.openai.baseURL,
-          timeout: aiConfig.openai.timeout
-        }),
+        client: this.createOpenAIClient(aiConfig.openai),
         type: 'openai',
         models: {
           chat: aiConfig.openai.model,
@@ -143,10 +196,7 @@ class AIService {
     // Support for custom OpenAI-compatible providers
     if (aiConfig.custom.name && aiConfig.custom.apiKey && aiConfig.custom.baseURL) {
       this.providers.set(aiConfig.custom.name, {
-        client: new OpenAI({
-          apiKey: aiConfig.custom.apiKey,
-          baseURL: aiConfig.custom.baseURL
-        }),
+        client: this.createOpenAIClient(aiConfig.custom),
         type: 'openai',
         models: {
           chat: aiConfig.custom.model || 'gpt-3.5-turbo'
@@ -272,11 +322,11 @@ class AIService {
 
       const response = await fetch(`${provider.config.baseURL}/v1/messages`, {
         method: 'POST',
-        headers: {
+        headers: this.applyAppCodeHeader(provider.config.baseURL, {
           'Content-Type': 'application/json',
           'x-api-key': provider.config.apiKey,
           'anthropic-version': '2023-06-01'
-        },
+        }),
         body: JSON.stringify(requestData)
       });
 
@@ -349,9 +399,9 @@ class AIService {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
+        headers: this.applyAppCodeHeader(provider.config.baseURL, {
           'Content-Type': 'application/json'
-        },
+        }),
         body: JSON.stringify(requestData),
         signal: options.signal
       });
@@ -446,11 +496,11 @@ class AIService {
 
       const response = await fetch(`${provider.config.baseURL}/v1/messages`, {
         method: 'POST',
-        headers: {
+        headers: this.applyAppCodeHeader(provider.config.baseURL, {
           'Content-Type': 'application/json',
           'x-api-key': provider.config.apiKey,
           'anthropic-version': '2023-06-01'
-        },
+        }),
         body: JSON.stringify(requestData)
       });
 
@@ -508,9 +558,9 @@ class AIService {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
+        headers: this.applyAppCodeHeader(provider.config.baseURL, {
           'Content-Type': 'application/json'
-        },
+        }),
         body: JSON.stringify(requestData),
         signal: options.signal
       });
