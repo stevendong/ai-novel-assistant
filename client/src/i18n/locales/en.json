@@ -22,6 +22,7 @@
     "showAll": "Show All",
     "collapse": "Collapse",
     "viewAll": "View All",
+    "view": "View",
     "open": "Open",
     "duplicate": "Duplicate",
     "characters": "characters",
@@ -57,6 +58,157 @@
     },
     "suggestion": "Suggestion:",
     "pending": "Pending"
+  },
+  "progress": {
+    "title": "Progress Overview",
+    "subtitle": "Track your writing journey and stay motivated",
+    "metrics": {
+      "totalWords": "Total Words",
+      "totalWordsSubtitle": "Words Written",
+      "completedChapters": "Completed Chapters ({percent}%)",
+      "completedSuffix": "/{total}",
+      "completedSubtitle": "Chapter Progress",
+      "writingDays": "Writing Days",
+      "writingDaysSubtitle": "Writing Journey",
+      "dayUnit": "days",
+      "averageWordsPerDay": "Average Output",
+      "averageSubtitle": "Daily Productivity",
+      "averageUnit": "words/day"
+    },
+    "activity": {
+      "title": "Writing Activity",
+      "pastYear": "Past Year: {count} contributions",
+      "streak": "Current streak: {days} days",
+      "totalWords": "Total words: {words}",
+      "monthTooltip": "{month} {year}",
+      "legendMin": "Less",
+      "legendMax": "More",
+      "currentMonth": "This Month",
+      "monthNames": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "contribution": "Wrote {words} words",
+      "date": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "twoDaysAgo": "Two days ago",
+        "daysAgo": "{days} days ago"
+      },
+      "tooltip": {
+        "none": "{date} ({weekday})\\nNo writing",
+        "low": "{date} ({weekday})\\n{words} words - Light writing",
+        "medium": "{date} ({weekday})\\n{words} words - Steady writing",
+        "high": "{date} ({weekday})\\n{words} words - High output",
+        "extreme": "{date} ({weekday})\\n{words} words - Exceptional output!"
+      }
+    },
+    "recent": {
+      "title": "Recent Highlights",
+      "todayLabel": "Today",
+      "weekLabel": "This Week",
+      "monthLabel": "This Month",
+      "wordsAdded": "+{count} words"
+    },
+    "goals": {
+      "title": "Writing Goals",
+      "setButton": "Set Goals",
+      "dailyLabel": "Daily Goal",
+      "weeklyLabel": "Weekly Goal",
+      "monthlyLabel": "Monthly Goal",
+      "progressText": "{current} / {target} words",
+      "wordUnit": "words",
+      "dailyHint": "A healthy range is 500-3,000 words",
+      "weeklyHint": "Usually 5-7 times the daily goal",
+      "monthlyHint": "Professional writers target 30,000-100,000 words",
+      "modal": {
+        "title": "Set Writing Goals"
+      }
+    },
+    "overall": {
+      "title": "Overall Progress",
+      "progressLabel": "Completion",
+      "estimatedCompletion": "Estimated completion: {date}",
+      "noEstimate": "No estimate yet",
+      "circleLabel": "Project completion"
+    },
+    "chapters": {
+      "title": "Chapter Details",
+      "newChapter": "New Chapter",
+      "subtitle": "Progress and status for each chapter",
+      "deleteConfirmTitle": "Delete Chapter",
+      "deleteConfirmContent": "Delete the chapter \"{title}\"? This action cannot be undone.",
+      "batch": {
+        "selected": "{count} chapters selected",
+        "setWriting": "Mark as Writing",
+        "setCompleted": "Mark as Completed",
+        "delete": "Delete Selected",
+        "clear": "Clear Selection",
+        "updateTitle": "Update Status in Bulk",
+        "updateContent": "Update the status of {count} chapters to \"{status}\"?",
+        "deleteTitle": "Delete Chapters in Bulk",
+        "deleteContent": "Delete {count} selected chapters? This cannot be undone."
+      },
+      "table": {
+        "columns": {
+          "title": "Title",
+          "status": "Status",
+          "wordCount": "Word Count",
+          "progress": "Progress",
+          "updatedAt": "Updated",
+          "actions": "Actions"
+        }
+      }
+    },
+    "achievements": {
+      "title": "Writing Achievements",
+      "earned": "Unlocked",
+      "locked": "Locked",
+      "list": {
+        "first": {
+          "title": "First Lines",
+          "description": "Complete the first chapter"
+        },
+        "second": {
+          "title": "Daily Habit",
+          "description": "Write for 7 days in a row"
+        },
+        "third": {
+          "title": "Goal Crusher",
+          "description": "Reach a monthly goal"
+        },
+        "fourth": {
+          "title": "Refiner",
+          "description": "Revise chapters 10 times"
+        },
+        "fifth": {
+          "title": "Master Novelist",
+          "description": "Write 100,000 words"
+        },
+        "sixth": {
+          "title": "Persistent Author",
+          "description": "Write for 30 consecutive days"
+        }
+      }
+    },
+    "messages": {
+      "statsFallback": "Failed to load statistics. Showing default values.",
+      "chaptersFailed": "Failed to load chapter data",
+      "goalsFallback": "Failed to load writing goals. Showing defaults.",
+      "loadError": "Something went wrong while loading data. Please check your connection.",
+      "chapterDeleteSuccess": "Chapter deleted successfully",
+      "chapterDeleteFailed": "Failed to delete chapter. Please try again.",
+      "refreshSuccess": "Data refreshed",
+      "batchUpdateSuccess": "Updated {count} chapters",
+      "batchUpdateFailed": "Bulk update failed. Please try again.",
+      "batchDeleteSuccess": "Deleted {count} chapters",
+      "batchDeleteFailed": "Bulk deletion failed. Please try again.",
+      "goalsSaved": "Writing goals saved",
+      "goalsSaveFailed": "Failed to save goals. Please try again."
+    },
+    "common": {
+      "tenThousandUnit": "w",
+      "thousandUnit": "k",
+      "millionUnit": "M"
+    }
   },
   "app": {
     "title": "AI Novel Assistant",

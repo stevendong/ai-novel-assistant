@@ -7,9 +7,9 @@
           <div class="page-header">
             <h1 class="page-title">
               <DashboardOutlined />
-              进度统计
+              {{ t('progress.title') }}
             </h1>
-            <p class="page-subtitle">追踪您的创作进程，激发写作动力</p>
+            <p class="page-subtitle">{{ t('progress.subtitle') }}</p>
           </div>
         </a-col>
       </a-row>
@@ -22,7 +22,7 @@
               <EditOutlined class="metric-icon" />
             </template>
             <a-statistic
-              title="总字数"
+              :title="t('progress.metrics.totalWords')"
               :value="totalWords"
               :value-style="{ color: '#1890ff' }"
             >
@@ -30,7 +30,7 @@
                 {{ formattedTotalWords }}
               </template>
             </a-statistic>
-            <div class="metric-subtitle">累计创作</div>
+            <div class="metric-subtitle">{{ t('progress.metrics.totalWordsSubtitle') }}</div>
           </a-card>
         </a-col>
 
@@ -40,12 +40,12 @@
               <CheckCircleOutlined class="metric-icon" />
             </template>
             <a-statistic
-              :title="`完成章节 (${totalChapters > 0 ? Math.round((completedChapters/totalChapters)*100) : 0}%)`"
+              :title="t('progress.metrics.completedChapters', { percent: totalChapters > 0 ? Math.round((completedChapters/totalChapters)*100) : 0 })"
               :value="completedChapters"
-              :suffix="`/${totalChapters}`"
+              :suffix="t('progress.metrics.completedSuffix', { total: formatNumber(totalChapters) })"
               :value-style="{ color: '#52c41a' }"
             />
-            <div class="metric-subtitle">章节进度</div>
+            <div class="metric-subtitle">{{ t('progress.metrics.completedSubtitle') }}</div>
           </a-card>
         </a-col>
 
@@ -55,12 +55,12 @@
               <CalendarOutlined class="metric-icon" />
             </template>
             <a-statistic
-              title="写作天数"
+              :title="t('progress.metrics.writingDays')"
               :value="writingDays"
-              suffix="天"
+              :suffix="t('progress.metrics.dayUnit')"
               :value-style="{ color: '#722ed1' }"
             />
-            <div class="metric-subtitle">创作历程</div>
+            <div class="metric-subtitle">{{ t('progress.metrics.writingDaysSubtitle') }}</div>
           </a-card>
         </a-col>
 
@@ -70,12 +70,12 @@
               <BarChartOutlined class="metric-icon" />
             </template>
             <a-statistic
-              title="日均产量"
+              :title="t('progress.metrics.averageWordsPerDay')"
               :value="averageWordsPerDay"
-              suffix="字/天"
+              :suffix="t('progress.metrics.averageUnit')"
               :value-style="{ color: '#fa8c16' }"
             />
-            <div class="metric-subtitle">平均效率</div>
+            <div class="metric-subtitle">{{ t('progress.metrics.averageSubtitle') }}</div>
           </a-card>
         </a-col>
       </a-row>
@@ -87,19 +87,19 @@
             <template #title>
               <div class="card-title">
                 <LineChartOutlined />
-                写作活跃度
+                {{ t('progress.activity.title') }}
               </div>
             </template>
             <template #extra>
               <div class="activity-stats">
                 <a-tag color="blue">
-                  过去一年：{{ totalContributions }} 次贡献
+                  {{ t('progress.activity.pastYear', { count: totalContributions }) }}
                 </a-tag>
                 <a-tag color="green" v-if="currentStreakDays > 0">
-                  连续写作：{{ currentStreakDays }} 天
+                  {{ t('progress.activity.streak', { days: currentStreakDays }) }}
                 </a-tag>
                 <a-tag color="purple">
-                  总字数：{{ formatWordCount(totalWordsThisYear) }}
+                  {{ t('progress.activity.totalWords', { words: formatNumber(totalWordsThisYear) }) }}
                 </a-tag>
               </div>
             </template>
@@ -112,7 +112,7 @@
                   v-for="month in months"
                   :key="month.index"
                   :class="{ 'current-month': month.isCurrent }"
-                  :title="`${month.year}年${month.name}`"
+                  :title="t('progress.activity.monthTooltip', { year: month.year, month: month.name })"
                   :style="{ left: `${month.leftOffset}px` }"
                 >
                   {{ month.displayName }}
@@ -146,7 +146,7 @@
 
               <!-- 图例 -->
               <div class="legend">
-                <span class="legend-text">少</span>
+                <span class="legend-text">{{ t('progress.activity.legendMin') }}</span>
                 <div class="legend-colors">
                   <div class="activity-day activity-level-0"></div>
                   <div class="activity-day activity-level-1"></div>
@@ -154,7 +154,7 @@
                   <div class="activity-day activity-level-3"></div>
                   <div class="activity-day activity-level-4"></div>
                 </div>
-                <span class="legend-text">多</span>
+                <span class="legend-text">{{ t('progress.activity.legendMax') }}</span>
               </div>
             </div>
           </a-card>
@@ -169,7 +169,7 @@
             <template #title>
               <div class="card-title">
                 <TrophyOutlined />
-                近期成果
+                {{ t('progress.recent.title') }}
               </div>
             </template>
 
@@ -177,8 +177,10 @@
               <a-card size="small" class="achievement-item achievement-today">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <div>
-                    <div class="achievement-label">今日新增</div>
-                    <div class="achievement-value">+{{ todayWords }}字</div>
+                    <div class="achievement-label">{{ t('progress.recent.todayLabel') }}</div>
+                    <div class="achievement-value">
+                      {{ t('progress.recent.wordsAdded', { count: todayWords }) }}
+                    </div>
                   </div>
                   <PlusOutlined class="achievement-icon" />
                 </div>
@@ -187,8 +189,10 @@
               <a-card size="small" class="achievement-item achievement-week">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <div>
-                    <div class="achievement-label">本周新增</div>
-                    <div class="achievement-value">+{{ weekWords }}字</div>
+                    <div class="achievement-label">{{ t('progress.recent.weekLabel') }}</div>
+                    <div class="achievement-value">
+                      {{ t('progress.recent.wordsAdded', { count: weekWords }) }}
+                    </div>
                   </div>
                   <RiseOutlined class="achievement-icon" />
                 </div>
@@ -197,8 +201,10 @@
               <a-card size="small" class="achievement-item achievement-month">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <div>
-                    <div class="achievement-label">本月新增</div>
-                    <div class="achievement-value">+{{ monthWords }}字</div>
+                    <div class="achievement-label">{{ t('progress.recent.monthLabel') }}</div>
+                    <div class="achievement-value">
+                      {{ t('progress.recent.wordsAdded', { count: monthWords }) }}
+                    </div>
                   </div>
                   <UnorderedListOutlined class="achievement-icon" />
                 </div>
@@ -213,21 +219,23 @@
             <template #title>
               <div class="card-title">
                 <AimOutlined />
-                写作目标
+                {{ t('progress.goals.title') }}
               </div>
             </template>
             <template #extra>
               <a-button @click="openGoalModal" type="primary" size="small">
                 <AimOutlined />
-                设置目标
+                {{ t('progress.goals.setButton') }}
               </a-button>
             </template>
 
             <a-space direction="vertical" size="middle" style="width: 100%;">
               <div class="goal-item">
                 <div class="goal-header">
-                  <span class="goal-label">日目标</span>
-                  <span class="goal-text">{{ todayWords }} / {{ dailyGoal }} 字</span>
+                  <span class="goal-label">{{ t('progress.goals.dailyLabel') }}</span>
+                  <span class="goal-text">
+                    {{ t('progress.goals.progressText', { current: todayWords, target: dailyGoal }) }}
+                  </span>
                 </div>
                 <a-progress
                   :percent="Math.min((todayWords / dailyGoal) * 100, 100)"
@@ -238,8 +246,10 @@
 
               <div class="goal-item">
                 <div class="goal-header">
-                  <span class="goal-label">周目标</span>
-                  <span class="goal-text">{{ weekWords }} / {{ weeklyGoal }} 字</span>
+                  <span class="goal-label">{{ t('progress.goals.weeklyLabel') }}</span>
+                  <span class="goal-text">
+                    {{ t('progress.goals.progressText', { current: weekWords, target: weeklyGoal }) }}
+                  </span>
                 </div>
                 <a-progress
                   :percent="Math.min((weekWords / weeklyGoal) * 100, 100)"
@@ -250,8 +260,10 @@
 
               <div class="goal-item">
                 <div class="goal-header">
-                  <span class="goal-label">月目标</span>
-                  <span class="goal-text">{{ monthWords }} / {{ monthlyGoal }} 字</span>
+                  <span class="goal-label">{{ t('progress.goals.monthlyLabel') }}</span>
+                  <span class="goal-text">
+                    {{ t('progress.goals.progressText', { current: monthWords, target: monthlyGoal }) }}
+                  </span>
                 </div>
                 <a-progress
                   :percent="Math.min((monthWords / monthlyGoal) * 100, 100)"
@@ -271,7 +283,7 @@
             <template #title>
               <div class="card-title">
                 <BookOutlined />
-                整体作品进度
+                {{ t('progress.overall.title') }}
               </div>
             </template>
 
@@ -279,7 +291,7 @@
               <a-col :xs="24" :md="14">
                 <div class="progress-info">
                   <div class="progress-header">
-                    <span class="progress-label">完成进度</span>
+                    <span class="progress-label">{{ t('progress.overall.progressLabel') }}</span>
                     <span class="progress-percentage">{{ overallProgress }}%</span>
                   </div>
                   <a-progress
@@ -291,7 +303,7 @@
                   />
                   <div class="estimated-completion">
                     <CalendarOutlined />
-                    <span class="ml-2">预计完成：{{ estimatedCompletionDate }}</span>
+                    <span class="ml-2">{{ t('progress.overall.estimatedCompletion', { date: estimatedCompletionDate }) }}</span>
                   </div>
                 </div>
               </a-col>
@@ -305,7 +317,7 @@
                     stroke-color="#722ed1"
                     :format="percent => `${percent}%`"
                   />
-                  <p class="circle-label">作品完成度</p>
+                  <p class="circle-label">{{ t('progress.overall.circleLabel') }}</p>
                 </div>
               </a-col>
             </a-row>
@@ -320,14 +332,14 @@
             <template #title>
               <div class="card-title">
                 <ReadOutlined />
-                章节详情
+                {{ t('progress.chapters.title') }}
               </div>
             </template>
             <template #extra>
               <a-space>
                 <a-button @click="refreshData" size="small">
                   <ReloadOutlined />
-                  刷新
+                  {{ t('common.refresh') }}
                 </a-button>
                 <a-button
                   type="primary"
@@ -335,12 +347,12 @@
                   @click="createNewChapter"
                 >
                   <PlusOutlined />
-                  新建章节
+                  {{ t('progress.chapters.newChapter') }}
                 </a-button>
               </a-space>
             </template>
 
-            <div class="card-subtitle mb-4">各章节的创作进度和状态</div>
+            <div class="card-subtitle mb-4">{{ t('progress.chapters.subtitle') }}</div>
 
             <a-table
               :dataSource="chapterProgress"
@@ -387,11 +399,11 @@
                   <a-space>
                     <a-button type="link" size="small" @click="viewChapter(record)">
                       <EyeOutlined />
-                      查看
+                      {{ t('common.view') }}
                     </a-button>
                     <a-button type="link" size="small" @click="editChapter(record)">
                       <EditOutlined />
-                      编辑
+                      {{ t('common.edit') }}
                     </a-button>
                     <a-button
                       type="link"
@@ -401,7 +413,7 @@
                       :disabled="record.status === 'completed'"
                     >
                       <DeleteOutlined />
-                      删除
+                      {{ t('common.delete') }}
                     </a-button>
                   </a-space>
                 </template>
@@ -411,7 +423,7 @@
             <!-- 批量操作栏 -->
             <div v-if="selectedChapterKeys.length > 0" class="batch-actions">
               <a-alert
-                :message="`已选择 ${selectedChapterKeys.length} 个章节`"
+                :message="t('progress.chapters.batch.selected', { count: selectedChapterKeys.length })"
                 type="info"
                 show-icon
                 class="mb-3"
@@ -419,16 +431,16 @@
                 <template #action>
                   <a-space>
                     <a-button size="small" @click="batchUpdateStatus('writing')">
-                      批量设为写作中
+                      {{ t('progress.chapters.batch.setWriting') }}
                     </a-button>
                     <a-button size="small" @click="batchUpdateStatus('completed')">
-                      批量设为已完成
+                      {{ t('progress.chapters.batch.setCompleted') }}
                     </a-button>
                     <a-button size="small" danger @click="batchDeleteChapters">
-                      批量删除
+                      {{ t('progress.chapters.batch.delete') }}
                     </a-button>
                     <a-button size="small" @click="clearSelection">
-                      清除选择
+                      {{ t('progress.chapters.batch.clear') }}
                     </a-button>
                   </a-space>
                 </template>
@@ -441,47 +453,47 @@
       <!-- 写作目标设置模态框 -->
       <a-modal
         v-model:open="goalModalVisible"
-        title="设置写作目标"
-        ok-text="保存"
-        cancel-text="取消"
+        :title="t('progress.goals.modal.title')"
+        :ok-text="t('common.save')"
+        :cancel-text="t('common.cancel')"
         @ok="saveGoals"
         width="500px"
       >
         <a-form layout="vertical">
-          <a-form-item label="日目标">
+          <a-form-item :label="t('progress.goals.dailyLabel')">
             <a-input-number
               v-model:value="goalForm.daily"
               :min="100"
               :max="10000"
               :step="100"
               style="width: 100%"
-              addon-after="字"
+              :addon-after="t('progress.goals.wordUnit')"
             />
-            <div class="goal-hint">建议设置在 500-3000 字之间</div>
+            <div class="goal-hint">{{ t('progress.goals.dailyHint') }}</div>
           </a-form-item>
 
-          <a-form-item label="周目标">
+          <a-form-item :label="t('progress.goals.weeklyLabel')">
             <a-input-number
               v-model:value="goalForm.weekly"
               :min="1000"
               :max="50000"
               :step="500"
               style="width: 100%"
-              addon-after="字"
+              :addon-after="t('progress.goals.wordUnit')"
             />
-            <div class="goal-hint">通常是日目标的 5-7 倍</div>
+            <div class="goal-hint">{{ t('progress.goals.weeklyHint') }}</div>
           </a-form-item>
 
-          <a-form-item label="月目标">
+          <a-form-item :label="t('progress.goals.monthlyLabel')">
             <a-input-number
               v-model:value="goalForm.monthly"
               :min="5000"
               :max="200000"
               :step="1000"
               style="width: 100%"
-              addon-after="字"
+              :addon-after="t('progress.goals.wordUnit')"
             />
-            <div class="goal-hint">专业作家通常设置在 30000-100000 字</div>
+            <div class="goal-hint">{{ t('progress.goals.monthlyHint') }}</div>
           </a-form-item>
         </a-form>
       </a-modal>
@@ -493,7 +505,7 @@
             <template #title>
               <div class="card-title">
                 <TrophyOutlined />
-                写作成就
+                {{ t('progress.achievements.title') }}
               </div>
             </template>
 
@@ -528,11 +540,11 @@
                         class="achievement-earned-tag"
                       >
                         <CheckOutlined />
-                        已获得
+                        {{ t('progress.achievements.earned') }}
                       </a-tag>
                       <a-tag v-else color="default" class="achievement-locked-tag">
                         <LockOutlined />
-                        未解锁
+                        {{ t('progress.achievements.locked') }}
                       </a-tag>
                     </div>
                   </div>
@@ -575,7 +587,7 @@ import {
 import type { NovelStatistics, ChapterProgress, WritingGoals, Achievement } from '@/types'
 import { novelService } from '@/services/novelService'
 import { chapterService } from '@/services/chapterService'
-import { formatWordCount as formatWordCountUtil } from '@/utils/textUtils'
+import { useI18n } from 'vue-i18n'
 
 // Props - 当前项目ID
 const props = defineProps<{
@@ -584,6 +596,7 @@ const props = defineProps<{
 
 // Router
 const router = useRouter()
+const { t, tm, locale } = useI18n()
 
 // 响应式数据
 const statistics = ref<NovelStatistics | null>(null)
@@ -613,7 +626,7 @@ const totalWords = computed(() => {
 
 // 格式化的总字数显示
 const formattedTotalWords = computed(() => {
-  return formatWordCountUtil(totalWords.value)
+  return formatNumber(totalWords.value)
 })
 
 const completedChapters = computed(() => {
@@ -673,18 +686,38 @@ const overallProgress = computed(() => {
 
 const estimatedCompletionDate = computed(() => {
   const date = statistics.value?.overview?.estimatedCompletionDate
-  return date && typeof date === 'string' ? date : '暂无预计'
+  if (date && typeof date === 'string') {
+    const parsed = new Date(date)
+    if (!Number.isNaN(parsed.getTime())) {
+      return new Intl.DateTimeFormat(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }).format(parsed)
+    }
+  }
+  return t('progress.overall.noEstimate')
 })
 
 // Mock achievements - 实际项目中可以从 API 获取
-const achievements = ref<Achievement[]>([
-  { id: '1', icon: '✍️', title: '初试笔墨', description: '完成第一章', earned: true },
-  { id: '2', icon: '📖', title: '日积月累', description: '连续写作7天', earned: true },
-  { id: '3', icon: '🎯', title: '目标达成', description: '达成月目标', earned: false },
-  { id: '4', icon: '💎', title: '精益求精', description: '修改章节10次', earned: false },
-  { id: '5', icon: '🏆', title: '创作大师', description: '完成10万字', earned: false },
-  { id: '6', icon: '🌟', title: '持之以恒', description: '连续写作30天', earned: false }
-])
+const achievementDefinitions = [
+  { id: '1', icon: '✍️', titleKey: 'progress.achievements.list.first.title', descriptionKey: 'progress.achievements.list.first.description', earned: true },
+  { id: '2', icon: '📖', titleKey: 'progress.achievements.list.second.title', descriptionKey: 'progress.achievements.list.second.description', earned: true },
+  { id: '3', icon: '🎯', titleKey: 'progress.achievements.list.third.title', descriptionKey: 'progress.achievements.list.third.description', earned: false },
+  { id: '4', icon: '💎', titleKey: 'progress.achievements.list.fourth.title', descriptionKey: 'progress.achievements.list.fourth.description', earned: false },
+  { id: '5', icon: '🏆', titleKey: 'progress.achievements.list.fifth.title', descriptionKey: 'progress.achievements.list.fifth.description', earned: false },
+  { id: '6', icon: '🌟', titleKey: 'progress.achievements.list.sixth.title', descriptionKey: 'progress.achievements.list.sixth.description', earned: false }
+] as const
+
+const achievements = computed<Achievement[]>(() =>
+  achievementDefinitions.map(item => ({
+    id: item.id,
+    icon: item.icon,
+    title: t(item.titleKey),
+    description: t(item.descriptionKey),
+    earned: item.earned
+  }))
+)
 
 // 活跃度图表数据
 interface ActivityDay {
@@ -695,7 +728,7 @@ interface ActivityDay {
 }
 
 // 周标签
-const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const weekDays = computed(() => (tm('progress.activity.weekdays') as string[]) || [])
 
 // 活跃度数据 - 使用ref以便响应式更新
 const activityData = ref<ActivityDay[]>([])
@@ -759,7 +792,7 @@ const generateActivityData = () => {
       date: dateStr,
       level,
       wordCount,
-      contributions: wordCount > 0 ? [`写作 ${wordCount} 字`] : []
+      contributions: wordCount > 0 ? [t('progress.activity.contribution', { words: wordCount })] : []
     })
   }
 
@@ -771,20 +804,21 @@ watch([chapterProgress, statistics], () => {
   generateActivityData()
 }, { immediate: true, deep: true })
 
+watch(() => locale.value, () => {
+  generateActivityData()
+})
+
 // 月份标签
 const months = computed(() => {
-  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月',
-                     '7月', '8月', '9月', '10月', '11月', '12月']
+  const monthNames = (tm('progress.activity.monthNames') as string[]) || []
+  const currentMonthLabel = t('progress.activity.currentMonth')
   const result = []
   const now = new Date()
   const oneYearAgo = new Date(now)
   oneYearAgo.setFullYear(now.getFullYear() - 1)
 
-  // 计算一年中每个月的起始周位置
   let currentDate = new Date(oneYearAgo)
-  const startOfYear = new Date(currentDate)
 
-  // 找到年初第一个周日（热力图从周日开始）
   while (currentDate.getDay() !== 0) {
     currentDate.setDate(currentDate.getDate() - 1)
   }
@@ -794,20 +828,21 @@ const months = computed(() => {
     const isCurrentMonth = month.getFullYear() === now.getFullYear() &&
                           month.getMonth() === now.getMonth()
 
-    // 计算该月第一天是一年中的第几周
     const monthFirstDay = new Date(month.getFullYear(), month.getMonth(), 1)
     const diffTime = monthFirstDay.getTime() - currentDate.getTime()
     const weekIndex = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7))
 
+    const monthIndex = ((month.getMonth() % 12) + 12) % 12
+    const monthName = monthNames[monthIndex] || `${monthIndex + 1}`
+
     result.push({
       index: i,
-      name: monthNames[month.getMonth()],
+      name: monthName,
       month: month.getMonth(),
       year: month.getFullYear(),
       isCurrent: isCurrentMonth,
-      displayName: isCurrentMonth ? '本月' : monthNames[month.getMonth()],
-      weekIndex: Math.max(0, weekIndex), // 确保不为负数
-      // 每个网格列宽14px（10px格子 + 2px间隙 + 2px边距）
+      displayName: isCurrentMonth ? currentMonthLabel : monthName,
+      weekIndex: Math.max(0, weekIndex),
       leftOffset: Math.max(0, weekIndex) * 14
     })
   }
@@ -845,16 +880,6 @@ const currentStreakDays = computed(() => {
   return streak
 })
 
-// 格式化字数显示
-const formatWordCount = (count: number): string => {
-  if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)}万`
-  } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`
-  }
-  return count.toString()
-}
-
 // 格式化活跃度日期显示（相对时间）
 const formatActivityDate = (dateString: string): string => {
   const date = new Date(dateString)
@@ -866,33 +891,39 @@ const formatActivityDate = (dateString: string): string => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   if (diffDays === 0) {
-    return '今天'
+    return t('progress.activity.date.today')
   } else if (diffDays === 1) {
-    return '昨天'
+    return t('progress.activity.date.yesterday')
   } else if (diffDays === 2) {
-    return '前天'
+    return t('progress.activity.date.twoDaysAgo')
   } else if (diffDays <= 7) {
-    return `${diffDays}天前`
+    return t('progress.activity.date.daysAgo', { days: diffDays })
   } else {
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
+    return new Intl.DateTimeFormat(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date)
   }
 }
 
 // 工具提示
 const getTooltip = (day: ActivityDay): string => {
   const dateDisplay = formatActivityDate(day.date)
-  const weekDay = new Date(day.date).toLocaleDateString('zh-CN', { weekday: 'long' })
+  const weekDay = new Intl.DateTimeFormat(locale.value === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long' }).format(new Date(day.date))
+
+  const params = { date: dateDisplay, weekday: weekDay, words: day.wordCount }
 
   if (day.wordCount === 0) {
-    return `${dateDisplay} (${weekDay})\n未写作`
+    return t('progress.activity.tooltip.none', params)
   } else if (day.wordCount < 500) {
-    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 少量写作`
+    return t('progress.activity.tooltip.low', params)
   } else if (day.wordCount < 1000) {
-    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 正常写作`
+    return t('progress.activity.tooltip.medium', params)
   } else if (day.wordCount < 2000) {
-    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 高产出`
+    return t('progress.activity.tooltip.high', params)
   } else {
-    return `${dateDisplay} (${weekDay})\n${day.wordCount} 字 - 超高产出！`
+    return t('progress.activity.tooltip.extreme', params)
   }
 }
 
@@ -908,10 +939,26 @@ const hideTooltip = () => {
 // 格式化数字的通用函数
 const formatNumber = (num: number): string => {
   if (!num || num === 0) return '0'
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万'
+
+  const localeCode = locale.value === 'zh' ? 'zh-CN' : 'en-US'
+  const formatter = new Intl.NumberFormat(localeCode)
+
+  if (locale.value === 'zh') {
+    if (num >= 10000) {
+      return `${(num / 10000).toFixed(1)}${t('progress.common.tenThousandUnit')}`
+    }
+    return formatter.format(num)
   }
-  return num.toLocaleString()
+
+  if (num >= 1_000_000) {
+    return `${(num / 1_000_000).toFixed(1)}${t('progress.common.millionUnit')}`
+  }
+
+  if (num >= 1_000) {
+    return `${(num / 1_000).toFixed(1)}${t('progress.common.thousandUnit')}`
+  }
+
+  return formatter.format(num)
 }
 
 // 加载数据
@@ -952,7 +999,7 @@ const loadStatisticsData = async (novelId: string) => {
       console.log('Statistics loaded:', stats.value)
     } else {
       console.error('Failed to load statistics:', stats.reason)
-      message.warning('统计数据加载失败，将显示默认值')
+    message.warning(t('progress.messages.statsFallback'))
       // 设置默认统计数据
       statistics.value = {
         overview: {
@@ -987,7 +1034,7 @@ const loadStatisticsData = async (novelId: string) => {
       console.log('Chapter progress loaded:', progress.value.length, 'chapters')
     } else {
       console.error('Failed to load chapter progress:', progress.reason)
-      message.warning('章节数据加载失败')
+    message.warning(t('progress.messages.chaptersFailed'))
       chapterProgress.value = []
     }
 
@@ -997,7 +1044,7 @@ const loadStatisticsData = async (novelId: string) => {
       console.log('Writing goals loaded:', goals.value)
     } else {
       console.error('Failed to load writing goals:', goals.reason)
-      message.warning('写作目标加载失败，将显示默认值')
+    message.warning(t('progress.messages.goalsFallback'))
       // 设置默认目标
       writingGoals.value = {
         daily: { target: 1000, achieved: 0, progress: 0 },
@@ -1010,7 +1057,7 @@ const loadStatisticsData = async (novelId: string) => {
     clearSelection()
   } catch (error) {
     console.error('Failed to load statistics:', error)
-    message.error('加载数据时发生错误，请检查网络连接')
+    message.error(t('progress.messages.loadError'))
   } finally {
     loading.value = false
     chaptersLoading.value = false
@@ -1018,55 +1065,55 @@ const loadStatisticsData = async (novelId: string) => {
 }
 
 // 表格列配置
-const chapterColumns: ColumnsType = [
+const chapterColumns = computed<ColumnsType>(() => [
   {
-    title: '章节',
+    title: t('progress.chapters.table.columns.title'),
     dataIndex: 'title',
     key: 'title',
     width: 200,
     ellipsis: true
   },
   {
-    title: '状态',
+    title: t('progress.chapters.table.columns.status'),
     dataIndex: 'status',
     key: 'status',
     width: 100,
     filters: [
-      { text: '规划中', value: 'planning' },
-      { text: '写作中', value: 'writing' },
-      { text: '审核中', value: 'reviewing' },
-      { text: '已完成', value: 'completed' }
+      { text: t('chapter.status.planning'), value: 'planning' },
+      { text: t('chapter.status.writing'), value: 'writing' },
+      { text: t('chapter.status.reviewing'), value: 'reviewing' },
+      { text: t('chapter.status.completed'), value: 'completed' }
     ],
     onFilter: (value, record) => record.status === value
   },
   {
-    title: '字数',
+    title: t('progress.chapters.table.columns.wordCount'),
     dataIndex: 'wordCount',
     key: 'wordCount',
     width: 100,
     sorter: (a, b) => (a.wordCount || 0) - (b.wordCount || 0)
   },
   {
-    title: '进度',
+    title: t('progress.chapters.table.columns.progress'),
     dataIndex: 'progress',
     key: 'progress',
     width: 150,
     sorter: (a, b) => a.progress - b.progress
   },
   {
-    title: '更新时间',
+    title: t('progress.chapters.table.columns.updatedAt'),
     dataIndex: 'updatedAt',
     key: 'updatedAt',
     width: 120,
     sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
   },
   {
-    title: '操作',
+    title: t('progress.chapters.table.columns.actions'),
     key: 'actions',
     width: 200,
     fixed: 'right'
   }
-]
+])
 
 // 章节状态相关函数
 const getChapterStatusColor = (status: string) => {
@@ -1080,23 +1127,19 @@ const getChapterStatusColor = (status: string) => {
 }
 
 const getChapterStatusText = (status: string) => {
-  const texts = {
-    'planning': '规划中',
-    'writing': '写作中',
-    'reviewing': '审核中',
-    'completed': '已完成'
-  }
-  return texts[status as keyof typeof texts] || '未知'
+  const key = `chapter.status.${status}`
+  const translated = t(key)
+  return translated === key ? status : translated
 }
 
 // 格式化日期
 const formatDate = (date: string | Date) => {
   if (!date) return '-'
   const d = new Date(date)
-  return d.toLocaleDateString('zh-CN', {
+  return new Intl.DateTimeFormat(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
     month: 'short',
     day: 'numeric'
-  })
+  }).format(d)
 }
 
 // 操作函数
@@ -1118,20 +1161,20 @@ const viewChapter = (chapter: ChapterProgress) => {
 // 删除章节
 const deleteChapter = (chapter: ChapterProgress) => {
   Modal.confirm({
-    title: '确认删除章节',
+    title: t('progress.chapters.deleteConfirmTitle'),
     icon: h(ExclamationCircleOutlined),
-    content: `确定要删除章节"${chapter.title}"吗？此操作不可恢复！`,
-    okText: '确认删除',
+    content: t('progress.chapters.deleteConfirmContent', { title: chapter.title }),
+    okText: t('common.confirmDelete'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     async onOk() {
       try {
         await chapterService.deleteChapter(chapter.id)
-        message.success('章节删除成功')
+    message.success(t('progress.messages.chapterDeleteSuccess'))
         await refreshData()
       } catch (error) {
         console.error('Delete chapter failed:', error)
-        message.error('删除失败，请稍后重试')
+    message.error(t('progress.messages.chapterDeleteFailed'))
       }
     }
   })
@@ -1155,7 +1198,7 @@ const refreshData = async () => {
   } else {
     await loadData()
   }
-  message.success('数据已刷新')
+  message.success(t('progress.messages.refreshSuccess'))
 }
 
 // 选择章节
@@ -1175,10 +1218,13 @@ const batchUpdateStatus = async (status: string) => {
   if (selectedChapterKeys.value.length === 0) return
 
   Modal.confirm({
-    title: '批量更新状态',
-    content: `确定要将选中的 ${selectedChapterKeys.value.length} 个章节状态更新为"${getChapterStatusText(status)}"吗？`,
-    okText: '确认',
-    cancelText: '取消',
+    title: t('progress.chapters.batch.updateTitle'),
+    content: t('progress.chapters.batch.updateContent', {
+      count: selectedChapterKeys.value.length,
+      status: getChapterStatusText(status)
+    }),
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
     async onOk() {
       try {
         chaptersLoading.value = true
@@ -1187,12 +1233,12 @@ const batchUpdateStatus = async (status: string) => {
             chapterService.updateChapter(id, { status })
           )
         )
-        message.success(`已成功更新 ${selectedChapterKeys.value.length} 个章节状态`)
+    message.success(t('progress.messages.batchUpdateSuccess', { count: selectedChapterKeys.value.length }))
         clearSelection()
         await refreshData()
       } catch (error) {
         console.error('Batch update failed:', error)
-        message.error('批量更新失败，请稍后重试')
+    message.error(t('progress.messages.batchUpdateFailed'))
       } finally {
         chaptersLoading.value = false
       }
@@ -1205,24 +1251,24 @@ const batchDeleteChapters = async () => {
   if (selectedChapterKeys.value.length === 0) return
 
   Modal.confirm({
-    title: '批量删除章节',
+    title: t('progress.chapters.batch.deleteTitle'),
     icon: h(ExclamationCircleOutlined),
-    content: `确定要删除选中的 ${selectedChapterKeys.value.length} 个章节吗？此操作不可恢复！`,
-    okText: '确认删除',
+    content: t('progress.chapters.batch.deleteContent', { count: selectedChapterKeys.value.length }),
+    okText: t('common.confirmDelete'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     async onOk() {
       try {
         chaptersLoading.value = true
         await Promise.all(
           selectedChapterKeys.value.map(id => chapterService.deleteChapter(id))
         )
-        message.success(`已成功删除 ${selectedChapterKeys.value.length} 个章节`)
+    message.success(t('progress.messages.batchDeleteSuccess', { count: selectedChapterKeys.value.length }))
         clearSelection()
         await refreshData()
       } catch (error) {
         console.error('Batch delete failed:', error)
-        message.error('批量删除失败，请稍后重试')
+    message.error(t('progress.messages.batchDeleteFailed'))
       } finally {
         chaptersLoading.value = false
       }
@@ -1255,11 +1301,11 @@ const saveGoals = async () => {
       writingGoals.value.monthly.target = goalForm.value.monthly
     }
 
-    message.success('写作目标已保存')
+  message.success(t('progress.messages.goalsSaved'))
     goalModalVisible.value = false
   } catch (error) {
     console.error('Save goals failed:', error)
-    message.error('保存失败，请稍后重试')
+  message.error(t('progress.messages.goalsSaveFailed'))
   }
 }
 

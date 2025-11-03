@@ -22,6 +22,7 @@
     "showAll": "显示全部",
     "collapse": "收起",
     "viewAll": "查看全部",
+    "view": "查看",
     "open": "打开",
     "duplicate": "复制",
     "characters": "字",
@@ -57,6 +58,157 @@
     },
     "suggestion": "建议：",
     "pending": "待完善"
+  },
+  "progress": {
+    "title": "进度统计",
+    "subtitle": "追踪您的创作进程，激发写作动力",
+    "metrics": {
+      "totalWords": "总字数",
+      "totalWordsSubtitle": "累计创作",
+      "completedChapters": "完成章节 ({percent}%)",
+      "completedSuffix": "/{total}",
+      "completedSubtitle": "章节进度",
+      "writingDays": "写作天数",
+      "writingDaysSubtitle": "创作历程",
+      "dayUnit": "天",
+      "averageWordsPerDay": "日均产量",
+      "averageSubtitle": "平均效率",
+      "averageUnit": "字/天"
+    },
+    "activity": {
+      "title": "写作活跃度",
+      "pastYear": "过去一年：{count} 次贡献",
+      "streak": "连续写作：{days} 天",
+      "totalWords": "总字数：{words}",
+      "monthTooltip": "{year}年{month}",
+      "legendMin": "少",
+      "legendMax": "多",
+      "currentMonth": "本月",
+      "monthNames": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+      "weekdays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+      "contribution": "写作 {words} 字",
+      "date": {
+        "today": "今天",
+        "yesterday": "昨天",
+        "twoDaysAgo": "前天",
+        "daysAgo": "{days}天前"
+      },
+      "tooltip": {
+        "none": "{date} ({weekday})\\n未写作",
+        "low": "{date} ({weekday})\\n{words} 字 - 少量写作",
+        "medium": "{date} ({weekday})\\n{words} 字 - 正常写作",
+        "high": "{date} ({weekday})\\n{words} 字 - 高产出",
+        "extreme": "{date} ({weekday})\\n{words} 字 - 超高产出！"
+      }
+    },
+    "recent": {
+      "title": "近期成果",
+      "todayLabel": "今日新增",
+      "weekLabel": "本周新增",
+      "monthLabel": "本月新增",
+      "wordsAdded": "+{count}字"
+    },
+    "goals": {
+      "title": "写作目标",
+      "setButton": "设置目标",
+      "dailyLabel": "日目标",
+      "weeklyLabel": "周目标",
+      "monthlyLabel": "月目标",
+      "progressText": "{current} / {target} 字",
+      "wordUnit": "字",
+      "dailyHint": "建议设置在 500-3000 字之间",
+      "weeklyHint": "通常是日目标的 5-7 倍",
+      "monthlyHint": "专业作家通常设置在 30000-100000 字",
+      "modal": {
+        "title": "设置写作目标"
+      }
+    },
+    "overall": {
+      "title": "整体作品进度",
+      "progressLabel": "完成进度",
+      "estimatedCompletion": "预计完成：{date}",
+      "noEstimate": "暂无预计",
+      "circleLabel": "作品完成度"
+    },
+    "chapters": {
+      "title": "章节详情",
+      "newChapter": "新建章节",
+      "subtitle": "各章节的创作进度和状态",
+      "deleteConfirmTitle": "确认删除章节",
+      "deleteConfirmContent": "确定要删除章节\"{title}\"吗？此操作不可恢复！",
+      "batch": {
+        "selected": "已选择 {count} 个章节",
+        "setWriting": "批量设为写作中",
+        "setCompleted": "批量设为已完成",
+        "delete": "批量删除",
+        "clear": "清除选择",
+        "updateTitle": "批量更新状态",
+        "updateContent": "确定要将选中的 {count} 个章节状态更新为\"{status}\"吗？",
+        "deleteTitle": "批量删除章节",
+        "deleteContent": "确定要删除选中的 {count} 个章节吗？此操作不可恢复！"
+      },
+      "table": {
+        "columns": {
+          "title": "章节",
+          "status": "状态",
+          "wordCount": "字数",
+          "progress": "进度",
+          "updatedAt": "更新时间",
+          "actions": "操作"
+        }
+      }
+    },
+    "achievements": {
+      "title": "写作成就",
+      "earned": "已获得",
+      "locked": "未解锁",
+      "list": {
+        "first": {
+          "title": "初试笔墨",
+          "description": "完成第一章"
+        },
+        "second": {
+          "title": "日积月累",
+          "description": "连续写作7天"
+        },
+        "third": {
+          "title": "目标达成",
+          "description": "达成月目标"
+        },
+        "fourth": {
+          "title": "精益求精",
+          "description": "修改章节10次"
+        },
+        "fifth": {
+          "title": "创作大师",
+          "description": "完成10万字"
+        },
+        "sixth": {
+          "title": "持之以恒",
+          "description": "连续写作30天"
+        }
+      }
+    },
+    "messages": {
+      "statsFallback": "统计数据加载失败，将显示默认值",
+      "chaptersFailed": "章节数据加载失败",
+      "goalsFallback": "写作目标加载失败，将显示默认值",
+      "loadError": "加载数据时发生错误，请检查网络连接",
+      "chapterDeleteSuccess": "章节删除成功",
+      "chapterDeleteFailed": "删除失败，请稍后重试",
+      "refreshSuccess": "数据已刷新",
+      "batchUpdateSuccess": "已成功更新 {count} 个章节状态",
+      "batchUpdateFailed": "批量更新失败，请稍后重试",
+      "batchDeleteSuccess": "已成功删除 {count} 个章节",
+      "batchDeleteFailed": "批量删除失败，请稍后重试",
+      "goalsSaved": "写作目标已保存",
+      "goalsSaveFailed": "保存失败，请稍后重试"
+    },
+    "common": {
+      "tenThousandUnit": "万",
+      "thousandUnit": "千",
+      "millionUnit": "百万"
+    }
   },
   "app": {
     "title": "个人智能创作管理系统",
