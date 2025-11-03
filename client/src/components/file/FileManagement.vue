@@ -4,17 +4,17 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-left">
-          <h1 class="page-title">文件管理</h1>
-          <p class="page-subtitle">管理您的项目资源文件</p>
+          <h1 class="page-title">{{ t('fileManagement.title') }}</h1>
+          <p class="page-subtitle">{{ t('fileManagement.subtitle') }}</p>
         </div>
         <div class="header-actions">
           <a-button @click="loadFiles" :loading="loading">
             <template #icon><ReloadOutlined /></template>
-            刷新
+            {{ t('common.refresh') }}
           </a-button>
           <a-button type="primary" @click="showUploadModal = true" size="large">
             <template #icon><UploadOutlined /></template>
-            上传文件
+            {{ t('fileManagement.actions.upload') }}
           </a-button>
         </div>
       </div>
@@ -30,7 +30,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ stats?.totalFiles || 0 }}</div>
-              <div class="stat-label">总文件数</div>
+              <div class="stat-label">{{ t('fileManagement.stats.totalFiles') }}</div>
             </div>
           </div>
         </a-col>
@@ -41,7 +41,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ getCategoryCount('worldbook') }}</div>
-              <div class="stat-label">世界书</div>
+              <div class="stat-label">{{ t('file.categories.worldbook') }}</div>
               <div class="stat-extra">{{ formatFileSize(getCategorySize('worldbook')) }}</div>
             </div>
           </div>
@@ -53,7 +53,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-value">{{ getCategoryCount('character') }}</div>
-              <div class="stat-label">角色卡</div>
+              <div class="stat-label">{{ t('file.categories.character') }}</div>
               <div class="stat-extra">{{ formatFileSize(getCategorySize('character')) }}</div>
             </div>
           </div>
@@ -68,7 +68,7 @@
                 <span class="size-number">{{ formatFileSizeNumber(stats?.totalSize || 0) }}</span>
                 <span class="size-unit">{{ formatFileSizeUnit(stats?.totalSize || 0) }}</span>
               </div>
-              <div class="stat-label">总容量</div>
+              <div class="stat-label">{{ t('fileManagement.stats.totalSize') }}</div>
             </div>
           </div>
         </a-col>
@@ -82,7 +82,7 @@
         <div class="toolbar-left">
           <a-input-search
             v-model:value="searchKeyword"
-            placeholder="搜索文件名..."
+            :placeholder="t('fileManagement.search.placeholder')"
             class="search-input"
             @search="handleSearch"
             allow-clear
@@ -92,41 +92,41 @@
 
           <a-select
             v-model:value="filterCategory"
-            placeholder="文件分类"
+            :placeholder="t('fileManagement.filters.categoryPlaceholder')"
             class="filter-select"
             @change="handleFilterChange"
             allow-clear
           >
             <a-select-option value="">
-              <AppstoreOutlined /> 全部分类
+              <AppstoreOutlined /> {{ t('fileManagement.filters.allCategories') }}
             </a-select-option>
             <a-select-option value="worldbook">
-              <BookOutlined /> 世界书
+              <BookOutlined /> {{ t('file.categories.worldbook') }}
             </a-select-option>
             <a-select-option value="character">
-              <TeamOutlined /> 角色卡
+              <TeamOutlined /> {{ t('file.categories.character') }}
             </a-select-option>
             <a-select-option value="document">
-              <FileTextOutlined /> 文档
+              <FileTextOutlined /> {{ t('file.categories.document') }}
             </a-select-option>
             <a-select-option value="image">
-              <PictureOutlined /> 图片
+              <PictureOutlined /> {{ t('file.categories.image') }}
             </a-select-option>
             <a-select-option value="other">
-              <FileOutlined /> 其他
+              <FileOutlined /> {{ t('file.categories.other') }}
             </a-select-option>
           </a-select>
 
           <a-select
             v-model:value="filterNovelId"
-            placeholder="关联项目"
+            :placeholder="t('fileManagement.filters.projectPlaceholder')"
             class="filter-select"
             @change="handleFilterChange"
             :loading="novelsLoading"
             allow-clear
           >
             <a-select-option value="">
-              <BookOutlined /> 全部项目
+              <BookOutlined /> {{ t('fileManagement.filters.allProjects') }}
             </a-select-option>
             <a-select-option
               v-for="novel in novels"
@@ -142,16 +142,16 @@
           <a-badge :count="selectedFileIds.length" :offset="[-5, 5]">
             <a-dropdown v-if="selectedFileIds.length > 0" :trigger="['click']">
               <a-button>
-                批量操作
+                {{ t('fileManagement.batch.title') }}
                 <DownOutlined />
               </a-button>
               <template #overlay>
                 <a-menu @click="handleBatchAction">
                   <a-menu-item key="delete" danger>
-                    <DeleteOutlined /> 删除选中
+                    <DeleteOutlined /> {{ t('fileManagement.batch.deleteSelected') }}
                   </a-menu-item>
                   <a-menu-item key="download">
-                    <DownloadOutlined /> 下载选中
+                    <DownloadOutlined /> {{ t('fileManagement.batch.downloadSelected') }}
                   </a-menu-item>
                 </a-menu>
               </template>
@@ -173,9 +173,9 @@
       <transition name="fade">
         <div v-if="viewMode === 'grid'" class="grid-view">
           <a-spin :spinning="loading" size="large">
-            <a-empty v-if="!loading && files.length === 0" description="暂无文件">
+            <a-empty v-if="!loading && files.length === 0" :description="t('fileManagement.empty.noFiles')">
               <a-button type="primary" @click="showUploadModal = true">
-                立即上传
+                {{ t('fileManagement.empty.uploadNow') }}
               </a-button>
             </a-empty>
 
@@ -237,12 +237,12 @@
 
                   <!-- 快捷操作 -->
                   <div class="file-actions" @click.stop>
-                    <a-tooltip title="查看详情">
+                    <a-tooltip :title="t('fileManagement.actions.viewDetails')">
                       <a-button type="text" size="small" @click="handleViewFile(file)">
                         <EyeOutlined />
                       </a-button>
                     </a-tooltip>
-                    <a-tooltip title="下载">
+                    <a-tooltip :title="t('fileManagement.actions.download')">
                       <a-button type="text" size="small" @click="handleDownload(file)">
                         <DownloadOutlined />
                       </a-button>
@@ -254,14 +254,14 @@
                       <template #overlay>
                         <a-menu @click="(e) => handleMenuAction(e.key, file)">
                           <a-menu-item key="edit">
-                            <EditOutlined /> 编辑信息
+                            <EditOutlined /> {{ t('fileManagement.actions.editInfo') }}
                           </a-menu-item>
                           <a-menu-item key="copy">
-                            <CopyOutlined /> 复制链接
+                            <CopyOutlined /> {{ t('fileManagement.actions.copyLink') }}
                           </a-menu-item>
                           <a-menu-divider />
                           <a-menu-item key="delete" danger>
-                            <DeleteOutlined /> 删除文件
+                            <DeleteOutlined /> {{ t('fileManagement.actions.deleteFile') }}
                           </a-menu-item>
                         </a-menu>
                       </template>
@@ -280,7 +280,7 @@
               :total="pagination.total"
               :show-size-changer="true"
               :show-quick-jumper="true"
-              :show-total="total => `共 ${total} 个文件`"
+              :show-total="total => t('fileManagement.pagination.total', { total })"
               :page-size-options="['12', '24', '48', '96']"
               @change="handlePaginationChange"
             />
@@ -292,7 +292,7 @@
       <transition name="fade">
         <div v-if="viewMode === 'list'" class="list-view">
           <a-table
-            :columns="columns"
+            :columns="tableColumns"
             :data-source="files"
             :loading="loading"
             :pagination="paginationConfig"
@@ -358,7 +358,7 @@
                 <span v-if="record.novel" class="novel-tag">
                   <BookOutlined /> {{ record.novel.title }}
                 </span>
-                <span v-else class="text-muted">-</span>
+                <span v-else class="text-muted">{{ t('common.notSet') }}</span>
               </template>
 
               <template v-else-if="column.key === 'createdAt'">
@@ -371,7 +371,7 @@
 
               <template v-else-if="column.key === 'actions'">
                 <a-space :size="4">
-                  <a-tooltip title="查看">
+                  <a-tooltip :title="t('fileManagement.actions.view')">
                     <a-button
                       type="text"
                       size="small"
@@ -380,7 +380,7 @@
                       <EyeOutlined />
                     </a-button>
                   </a-tooltip>
-                  <a-tooltip title="下载">
+                  <a-tooltip :title="t('fileManagement.actions.download')">
                     <a-button
                       type="text"
                       size="small"
@@ -396,14 +396,14 @@
                     <template #overlay>
                       <a-menu @click="(e) => handleMenuAction(e.key, record)">
                         <a-menu-item key="edit">
-                          <EditOutlined /> 编辑
+                          <EditOutlined /> {{ t('common.edit') }}
                         </a-menu-item>
                         <a-menu-item key="copy">
-                          <CopyOutlined /> 复制链接
+                          <CopyOutlined /> {{ t('fileManagement.actions.copyLink') }}
                         </a-menu-item>
                         <a-menu-divider />
                         <a-menu-item key="delete" danger>
-                          <DeleteOutlined /> 删除
+                          <DeleteOutlined /> {{ t('common.delete') }}
                         </a-menu-item>
                       </a-menu>
                     </template>
@@ -419,7 +419,7 @@
     <!-- 上传对话框 -->
     <a-modal
       v-model:open="showUploadModal"
-      title="上传文件"
+      :title="t('fileManagement.upload.title')"
       width="600px"
       :footer="null"
       centered
@@ -436,9 +436,9 @@
           <p class="upload-icon">
             <InboxOutlined />
           </p>
-          <p class="upload-text">点击或拖拽文件到此区域上传</p>
+          <p class="upload-text">{{ t('fileManagement.upload.dragText') }}</p>
           <p class="upload-hint">
-            支持任意格式文件，单个文件不超过 50MB
+            {{ t('fileManagement.upload.limitHint', { size: 50 }) }}
           </p>
         </a-upload-dragger>
 
@@ -447,35 +447,35 @@
           layout="vertical"
           class="upload-form"
         >
-          <a-form-item label="文件分类" required>
+          <a-form-item :label="t('fileManagement.shared.category')" required>
             <a-radio-group
               v-model:value="uploadForm.category"
               button-style="solid"
               class="category-radio"
             >
               <a-radio-button value="worldbook">
-                <BookOutlined /> 世界书
+                <BookOutlined /> {{ t('file.categories.worldbook') }}
               </a-radio-button>
               <a-radio-button value="character">
-                <TeamOutlined /> 角色卡
+                <TeamOutlined /> {{ t('file.categories.character') }}
               </a-radio-button>
               <a-radio-button value="document">
-                <FileTextOutlined /> 文档
+                <FileTextOutlined /> {{ t('file.categories.document') }}
               </a-radio-button>
               <a-radio-button value="image">
-                <PictureOutlined /> 图片
+                <PictureOutlined /> {{ t('file.categories.image') }}
               </a-radio-button>
               <a-radio-button value="other">
-                <FileOutlined /> 其他
+                <FileOutlined /> {{ t('file.categories.other') }}
               </a-radio-button>
             </a-radio-group>
           </a-form-item>
 
-          <a-form-item label="关联项目">
+          <a-form-item :label="t('fileManagement.shared.project')">
             <a-select
               v-model:value="uploadForm.novelId"
               :loading="novelsLoading"
-              placeholder="选择项目（可选）"
+              :placeholder="t('fileManagement.shared.projectPlaceholder')"
               allow-clear
             >
               <a-select-option
@@ -488,11 +488,11 @@
             </a-select>
           </a-form-item>
 
-          <a-form-item label="文件描述">
+          <a-form-item :label="t('fileManagement.shared.description')">
             <a-textarea
               v-model:value="uploadForm.description"
               :rows="3"
-              placeholder="添加文件描述（可选）"
+              :placeholder="t('fileManagement.shared.descriptionPlaceholder')"
               :maxlength="500"
               show-count
             />
@@ -501,7 +501,7 @@
 
         <div class="upload-actions">
           <a-button @click="showUploadModal = false">
-            取消
+            {{ t('common.cancel') }}
           </a-button>
           <a-button
             type="primary"
@@ -509,7 +509,7 @@
             :disabled="fileList.length === 0"
             @click="handleUpload"
           >
-            确定上传
+            {{ t('fileManagement.upload.confirm') }}
           </a-button>
         </div>
       </div>
@@ -518,49 +518,49 @@
     <!-- 编辑对话框 -->
     <a-modal
       v-model:open="showEditModal"
-      title="编辑文件信息"
+      :title="t('fileManagement.edit.title')"
       width="600px"
       @ok="handleUpdate"
       @cancel="resetEditForm"
       :confirm-loading="updating"
-      ok-text="保存"
-      cancel-text="取消"
+      :ok-text="t('common.save')"
+      :cancel-text="t('common.cancel')"
       centered
     >
       <a-form :model="editForm" layout="vertical">
-        <a-form-item label="文件名">
+        <a-form-item :label="t('fileManagement.shared.fileName')">
           <a-input :value="editForm.fileName" disabled />
         </a-form-item>
 
-        <a-form-item label="文件分类" required>
+        <a-form-item :label="t('fileManagement.shared.category')" required>
           <a-radio-group
             v-model:value="editForm.category"
             button-style="solid"
             class="category-radio"
           >
             <a-radio-button value="worldbook">
-              <BookOutlined /> 世界书
+              <BookOutlined /> {{ t('file.categories.worldbook') }}
             </a-radio-button>
             <a-radio-button value="character">
-              <TeamOutlined /> 角色卡
+              <TeamOutlined /> {{ t('file.categories.character') }}
             </a-radio-button>
             <a-radio-button value="document">
-              <FileTextOutlined /> 文档
+              <FileTextOutlined /> {{ t('file.categories.document') }}
             </a-radio-button>
             <a-radio-button value="image">
-              <PictureOutlined /> 图片
+              <PictureOutlined /> {{ t('file.categories.image') }}
             </a-radio-button>
             <a-radio-button value="other">
-              <FileOutlined /> 其他
+              <FileOutlined /> {{ t('file.categories.other') }}
             </a-radio-button>
           </a-radio-group>
         </a-form-item>
 
-        <a-form-item label="关联项目">
+        <a-form-item :label="t('fileManagement.shared.project')">
           <a-select
             v-model:value="editForm.novelId"
             :loading="novelsLoading"
-            placeholder="选择项目（可选）"
+            :placeholder="t('fileManagement.shared.projectPlaceholder')"
             allow-clear
           >
             <a-select-option
@@ -573,11 +573,11 @@
           </a-select>
         </a-form-item>
 
-        <a-form-item label="文件描述">
+        <a-form-item :label="t('fileManagement.shared.description')">
           <a-textarea
             v-model:value="editForm.description"
             :rows="3"
-            placeholder="添加文件描述（可选）"
+            :placeholder="t('fileManagement.shared.descriptionPlaceholder')"
             :maxlength="500"
             show-count
           />
@@ -588,7 +588,7 @@
     <!-- 文件详情抽屉 -->
     <a-drawer
       v-model:open="showDetailDrawer"
-      title="文件详情"
+      :title="t('fileManagement.detail.title')"
       width="500"
       class="detail-drawer"
     >
@@ -611,46 +611,52 @@
 
         <!-- 文件信息 -->
         <a-descriptions bordered :column="1" size="small">
-          <a-descriptions-item label="文件名">
+          <a-descriptions-item :label="t('fileManagement.detail.fields.name')">
             {{ currentFile.fileName }}
           </a-descriptions-item>
 
-          <a-descriptions-item label="文件大小">
+          <a-descriptions-item :label="t('fileManagement.detail.fields.size')">
             {{ formatFileSize(currentFile.fileSize) }}
           </a-descriptions-item>
 
-          <a-descriptions-item label="文件类型">
+          <a-descriptions-item :label="t('fileManagement.detail.fields.type')">
             {{ currentFile.fileType }}
           </a-descriptions-item>
 
-          <a-descriptions-item label="分类">
+          <a-descriptions-item :label="t('fileManagement.shared.category')">
             <a-tag :color="getCategoryColor(currentFile.category)">
               {{ getCategoryName(currentFile.category) }}
             </a-tag>
           </a-descriptions-item>
 
-          <a-descriptions-item label="关联项目">
+          <a-descriptions-item :label="t('fileManagement.shared.project')">
             <span v-if="currentFile.novel">
               <BookOutlined /> {{ currentFile.novel.title }}
             </span>
-            <span v-else class="text-muted">未关联</span>
+            <span v-else class="text-muted">{{ t('fileManagement.detail.noProject') }}</span>
           </a-descriptions-item>
 
-          <a-descriptions-item label="上传时间">
+          <a-descriptions-item :label="t('fileManagement.detail.fields.createdAt')">
             {{ formatDate(currentFile.createdAt) }}
           </a-descriptions-item>
 
-          <a-descriptions-item label="更新时间">
+          <a-descriptions-item :label="t('fileManagement.detail.fields.updatedAt')">
             {{ formatDate(currentFile.updatedAt) }}
           </a-descriptions-item>
 
-          <a-descriptions-item label="文件描述" v-if="currentFile.description">
+          <a-descriptions-item
+            v-if="currentFile.description"
+            :label="t('fileManagement.shared.description')"
+          >
             {{ currentFile.description }}
           </a-descriptions-item>
 
-          <a-descriptions-item label="文件链接">
+          <a-descriptions-item :label="t('fileManagement.detail.fields.url')">
             <a-typography-paragraph
-              :copyable="{ text: currentFile.fileUrl, tooltips: ['复制链接', '已复制!'] }"
+              :copyable="{
+                text: currentFile.fileUrl,
+                tooltips: [t('fileManagement.actions.copyLink'), t('fileManagement.messages.copied')]
+              }"
               class="file-url"
             >
               <a :href="currentFile.fileUrl" target="_blank" class="link-text">
@@ -664,19 +670,19 @@
         <div class="detail-actions">
           <a-space>
             <a-button @click="handleEdit(currentFile)">
-              <EditOutlined /> 编辑
+              <EditOutlined /> {{ t('common.edit') }}
             </a-button>
             <a-button @click="handleDownload(currentFile)">
-              <DownloadOutlined /> 下载
+              <DownloadOutlined /> {{ t('fileManagement.actions.download') }}
             </a-button>
             <a-popconfirm
-              title="确定删除此文件？"
-              ok-text="确定"
-              cancel-text="取消"
+              :title="t('fileManagement.detail.confirmDeleteTitle')"
+              :ok-text="t('common.confirm')"
+              :cancel-text="t('common.cancel')"
               @confirm="() => { handleDelete(currentFile); showDetailDrawer = false }"
             >
               <a-button danger>
-                <DeleteOutlined /> 删除
+                <DeleteOutlined /> {{ t('common.delete') }}
               </a-button>
             </a-popconfirm>
           </a-space>
@@ -689,6 +695,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { message, Modal } from 'ant-design-vue'
+import { useI18n } from 'vue-i18n'
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -712,6 +719,8 @@ import {
   CloudServerOutlined
 } from '@ant-design/icons-vue'
 import { api } from '@/utils/api'
+
+const { t, locale } = useI18n()
 
 // 数据状态
 const files = ref<any[]>([])
@@ -762,66 +771,76 @@ const editForm = reactive({
 })
 
 // 表格列定义
-const columns = [
-  {
-    title: '预览',
-    key: 'preview',
-    width: 60,
-    align: 'center'
-  },
-  {
-    title: '文件名',
-    key: 'fileName',
-    ellipsis: true
-  },
-  {
-    title: '分类',
-    key: 'category',
-    width: 100,
-    filters: [
-      { text: '世界书', value: 'worldbook' },
-      { text: '角色卡', value: 'character' },
-      { text: '文档', value: 'document' },
-      { text: '图片', value: 'image' },
-      { text: '其他', value: 'other' }
-    ]
-  },
-  {
-    title: '大小',
-    key: 'fileSize',
-    width: 100,
-    sorter: true
-  },
-  {
-    title: '关联项目',
-    key: 'novel',
-    width: 150,
-    ellipsis: true
-  },
-  {
-    title: '上传时间',
-    key: 'createdAt',
-    width: 120,
-    sorter: true
-  },
-  {
-    title: '操作',
-    key: 'actions',
-    width: 120,
-    fixed: 'right'
-  }
-]
+const tableColumns = computed(() => {
+  const currentLocale = locale.value
+  void currentLocale
+
+  return [
+    {
+      title: t('fileManagement.list.columns.preview'),
+      key: 'preview',
+      width: 60,
+      align: 'center'
+    },
+    {
+      title: t('fileManagement.list.columns.name'),
+      key: 'fileName',
+      ellipsis: true
+    },
+    {
+      title: t('fileManagement.shared.category'),
+      key: 'category',
+      width: 100,
+      filters: [
+        { text: t('file.categories.worldbook'), value: 'worldbook' },
+        { text: t('file.categories.character'), value: 'character' },
+        { text: t('file.categories.document'), value: 'document' },
+        { text: t('file.categories.image'), value: 'image' },
+        { text: t('file.categories.other'), value: 'other' }
+      ]
+    },
+    {
+      title: t('fileManagement.list.columns.size'),
+      key: 'fileSize',
+      width: 100,
+      sorter: true
+    },
+    {
+      title: t('fileManagement.shared.project'),
+      key: 'novel',
+      width: 150,
+      ellipsis: true
+    },
+    {
+      title: t('fileManagement.list.columns.createdAt'),
+      key: 'createdAt',
+      width: 120,
+      sorter: true
+    },
+    {
+      title: t('fileManagement.list.columns.actions'),
+      key: 'actions',
+      width: 120,
+      fixed: 'right'
+    }
+  ]
+})
 
 // 分页配置
-const paginationConfig = computed(() => ({
-  current: pagination.current,
-  pageSize: pagination.pageSize,
-  total: pagination.total,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => `共 ${total} 个文件`,
-  pageSizeOptions: ['10', '20', '50', '100']
-}))
+const paginationConfig = computed(() => {
+  const currentLocale = locale.value
+  void currentLocale
+
+  return {
+    current: pagination.current,
+    pageSize: pagination.pageSize,
+    total: pagination.total,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total: number) => t('fileManagement.pagination.total', { total }),
+    pageSizeOptions: ['10', '20', '50', '100']
+  }
+})
 
 // 行选择配置
 const rowSelection = computed(() => ({
@@ -856,7 +875,7 @@ const loadFiles = async () => {
     files.value = response.data.files
     pagination.total = response.data.pagination.total
   } catch (error: any) {
-    message.error(error.response?.data?.error || '加载文件列表失败')
+    message.error(error.response?.data?.error || t('fileManagement.messages.loadFilesFailed'))
   } finally {
     loading.value = false
   }
@@ -873,7 +892,7 @@ const loadStats = async () => {
     const response = await api.get('/api/upload/stats', { params })
     stats.value = response.data
   } catch (error: any) {
-    console.error('加载统计信息失败:', error)
+    console.error(t('fileManagement.messages.loadStatsFailed'), error)
   }
 }
 
@@ -884,7 +903,7 @@ const loadNovels = async () => {
     const response = await api.get('/api/novels')
     novels.value = response.data
   } catch (error: any) {
-    console.error('加载项目列表失败:', error)
+    console.error(t('fileManagement.messages.loadProjectsFailed'), error)
   } finally {
     novelsLoading.value = false
   }
@@ -912,7 +931,7 @@ const handlePaginationChange = () => {
 const beforeUpload = (file: File) => {
   const isLt50M = file.size / 1024 / 1024 < 50
   if (!isLt50M) {
-    message.error('文件大小不能超过 50MB!')
+    message.error(t('fileManagement.validation.fileTooLarge', { size: 50 }))
     return false
   }
   return false // 阻止自动上传
@@ -926,7 +945,7 @@ const handleRemoveFile = () => {
 // 上传文件
 const handleUpload = async () => {
   if (fileList.value.length === 0) {
-    message.warning('请选择要上传的文件')
+    message.warning(t('fileManagement.validation.selectFile'))
     return
   }
 
@@ -948,13 +967,13 @@ const handleUpload = async () => {
       }
     })
 
-    message.success('文件上传成功')
+    message.success(t('fileManagement.messages.uploadSuccess'))
     showUploadModal.value = false
     resetUploadForm()
     loadFiles()
     loadStats()
   } catch (error: any) {
-    message.error(error.response?.data?.error || '文件上传失败')
+    message.error(error.response?.data?.error || t('fileManagement.messages.uploadFailed'))
   } finally {
     uploading.value = false
   }
@@ -999,7 +1018,7 @@ const handleUpdate = async () => {
       description: editForm.description
     })
 
-    message.success('文件信息更新成功')
+    message.success(t('fileManagement.messages.updateSuccess'))
     showEditModal.value = false
     resetEditForm()
     loadFiles()
@@ -1012,7 +1031,7 @@ const handleUpdate = async () => {
       }
     }
   } catch (error: any) {
-    message.error(error.response?.data?.error || '更新文件信息失败')
+    message.error(error.response?.data?.error || t('fileManagement.messages.updateFailed'))
   } finally {
     updating.value = false
   }
@@ -1041,7 +1060,7 @@ const handleDownload = (record: any) => {
 // 复制链接
 const handleCopyLink = (record: any) => {
   navigator.clipboard.writeText(record.fileUrl)
-  message.success('链接已复制到剪贴板')
+  message.success(t('fileManagement.messages.copySuccess'))
 }
 
 // 菜单操作
@@ -1062,19 +1081,19 @@ const handleMenuAction = (key: string, file: any) => {
 // 删除文件
 const handleDelete = (record: any) => {
   Modal.confirm({
-    title: '确认删除',
-    content: `确定要删除文件 "${record.fileName}" 吗？此操作不可恢复。`,
-    okText: '确定',
+    title: t('fileManagement.delete.confirmTitle'),
+    content: t('fileManagement.delete.confirmContent', { name: record.fileName }),
+    okText: t('common.confirm'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     onOk: async () => {
       try {
         await api.delete(`/api/upload/files/${record.id}`)
-        message.success('文件删除成功')
+        message.success(t('fileManagement.messages.deleteSuccess'))
         loadFiles()
         loadStats()
       } catch (error: any) {
-        message.error(error.response?.data?.error || '删除文件失败')
+        message.error(error.response?.data?.error || t('fileManagement.messages.deleteFailed'))
       }
     }
   })
@@ -1092,27 +1111,27 @@ const handleBatchAction = ({ key }: { key: string }) => {
 // 批量删除
 const handleBatchDelete = () => {
   if (selectedFileIds.value.length === 0) {
-    message.warning('请选择要删除的文件')
+    message.warning(t('fileManagement.validation.selectForDelete'))
     return
   }
 
   Modal.confirm({
-    title: '确认批量删除',
-    content: `确定要删除选中的 ${selectedFileIds.value.length} 个文件吗？此操作不可恢复。`,
-    okText: '确定',
+    title: t('fileManagement.batch.confirmTitle'),
+    content: t('fileManagement.batch.confirmContent', { count: selectedFileIds.value.length }),
+    okText: t('common.confirm'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     onOk: async () => {
       try {
         await api.post('/api/upload/files/batch-delete', {
           fileIds: selectedFileIds.value
         })
-        message.success('批量删除成功')
+        message.success(t('fileManagement.batch.deleteSuccess'))
         selectedFileIds.value = []
         loadFiles()
         loadStats()
       } catch (error: any) {
-        message.error(error.response?.data?.error || '批量删除失败')
+        message.error(error.response?.data?.error || t('fileManagement.batch.deleteFailed'))
       }
     }
   })
@@ -1124,7 +1143,7 @@ const handleBatchDownload = () => {
   selectedFiles.forEach(file => {
     window.open(file.fileUrl, '_blank')
   })
-  message.success(`开始下载 ${selectedFiles.length} 个文件`)
+  message.success(t('fileManagement.batch.downloadStart', { count: selectedFiles.length }))
 }
 
 // 切换选择
@@ -1176,13 +1195,13 @@ const formatFileSizeUnit = (bytes: number) => {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
+  return new Intl.DateTimeFormat(locale.value || 'zh', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }).format(date)
 }
 
 const formatDateRelative = (dateString: string) => {
@@ -1194,13 +1213,13 @@ const formatDateRelative = (dateString: string) => {
   const hours = Math.floor(diff / 3600000)
   const days = Math.floor(diff / 86400000)
 
-  if (minutes < 1) return '刚刚'
-  if (minutes < 60) return `${minutes}分钟前`
-  if (hours < 24) return `${hours}小时前`
-  if (days < 7) return `${days}天前`
-  if (days < 30) return `${Math.floor(days / 7)}周前`
+  if (minutes < 1) return t('fileManagement.time.justNow')
+  if (minutes < 60) return t('fileManagement.time.minutesAgo', { count: minutes })
+  if (hours < 24) return t('fileManagement.time.hoursAgo', { count: hours })
+  if (days < 7) return t('fileManagement.time.daysAgo', { count: days })
+  if (days < 30) return t('fileManagement.time.weeksAgo', { count: Math.floor(days / 7) })
 
-  return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+  return new Intl.DateTimeFormat(locale.value || 'zh', { month: 'short', day: 'numeric' }).format(date)
 }
 
 const isImageFile = (mimeType: string) => {
@@ -1218,14 +1237,9 @@ const getFileIcon = (mimeType: string) => {
 }
 
 const getCategoryName = (category: string) => {
-  const names: Record<string, string> = {
-    worldbook: '世界书',
-    character: '角色卡',
-    document: '文档',
-    image: '图片',
-    other: '其他'
-  }
-  return names[category] || category
+  const key = `file.categories.${category}`
+  const translated = t(key)
+  return translated === key ? category : translated
 }
 
 const getCategoryColor = (category: string) => {

@@ -247,6 +247,117 @@
       "other": "Other"
     }
   },
+  "fileManagement": {
+    "title": "File Management",
+    "subtitle": "Manage your project resources",
+    "actions": {
+      "upload": "Upload File",
+      "viewDetails": "View Details",
+      "download": "Download",
+      "editInfo": "Edit Info",
+      "copyLink": "Copy Link",
+      "deleteFile": "Delete File",
+      "view": "View"
+    },
+    "stats": {
+      "totalFiles": "Total Files",
+      "totalSize": "Total Storage"
+    },
+    "search": {
+      "placeholder": "Search file name..."
+    },
+    "filters": {
+      "categoryPlaceholder": "File Category",
+      "allCategories": "All Categories",
+      "projectPlaceholder": "Linked Project",
+      "allProjects": "All Projects"
+    },
+    "batch": {
+      "title": "Bulk Actions",
+      "deleteSelected": "Delete Selected",
+      "downloadSelected": "Download Selected",
+      "confirmTitle": "Confirm Bulk Deletion",
+      "confirmContent": "Delete {count} selected files? This action cannot be undone.",
+      "deleteSuccess": "Deleted selected files",
+      "deleteFailed": "Bulk deletion failed",
+      "downloadStart": "Starting download for {count} files"
+    },
+    "empty": {
+      "noFiles": "No files yet",
+      "uploadNow": "Upload Now"
+    },
+    "pagination": {
+      "total": "Total {total} files"
+    },
+    "upload": {
+      "title": "Upload File",
+      "dragText": "Click or drag files here to upload",
+      "limitHint": "Any file type is supported, up to {size}MB each",
+      "confirm": "Upload"
+    },
+    "edit": {
+      "title": "Edit File Info"
+    },
+    "shared": {
+      "category": "File Category",
+      "project": "Linked Project",
+      "projectPlaceholder": "Select a project (optional)",
+      "description": "File Description",
+      "descriptionPlaceholder": "Add a description (optional)",
+      "fileName": "File Name"
+    },
+    "detail": {
+      "title": "File Details",
+      "noProject": "Not linked",
+      "confirmDeleteTitle": "Delete this file?",
+      "fields": {
+        "name": "File Name",
+        "size": "File Size",
+        "type": "File Type",
+        "createdAt": "Uploaded At",
+        "updatedAt": "Updated At",
+        "url": "File URL"
+      }
+    },
+    "list": {
+      "columns": {
+        "preview": "Preview",
+        "name": "File Name",
+        "size": "Size",
+        "createdAt": "Uploaded At",
+        "actions": "Actions"
+      }
+    },
+    "messages": {
+      "loadFilesFailed": "Failed to load files",
+      "loadStatsFailed": "Failed to load file stats",
+      "loadProjectsFailed": "Failed to load project list",
+      "uploadSuccess": "File uploaded successfully",
+      "uploadFailed": "File upload failed",
+      "updateSuccess": "File info updated",
+      "updateFailed": "Failed to update file info",
+      "copySuccess": "Link copied to clipboard",
+      "deleteSuccess": "File deleted successfully",
+      "deleteFailed": "Failed to delete file",
+      "copied": "Copied!"
+    },
+    "validation": {
+      "fileTooLarge": "File size must not exceed {size}MB",
+      "selectFile": "Please select a file to upload",
+      "selectForDelete": "Select files to delete"
+    },
+    "delete": {
+      "confirmTitle": "Confirm Deletion",
+      "confirmContent": "Delete file \"{name}\"? This action cannot be undone."
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{count} minute(s) ago",
+      "hoursAgo": "{count} hour(s) ago",
+      "daysAgo": "{count} day(s) ago",
+      "weeksAgo": "{count} week(s) ago"
+    }
+  },
   "project": {
     "title": "Project Management",
     "managementTitle": "Project Management",

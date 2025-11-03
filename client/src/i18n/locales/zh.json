@@ -247,6 +247,117 @@
       "other": "其他"
     }
   },
+  "fileManagement": {
+    "title": "文件管理",
+    "subtitle": "管理您的项目资源文件",
+    "actions": {
+      "upload": "上传文件",
+      "viewDetails": "查看详情",
+      "download": "下载",
+      "editInfo": "编辑信息",
+      "copyLink": "复制链接",
+      "deleteFile": "删除文件",
+      "view": "查看"
+    },
+    "stats": {
+      "totalFiles": "总文件数",
+      "totalSize": "总容量"
+    },
+    "search": {
+      "placeholder": "搜索文件名..."
+    },
+    "filters": {
+      "categoryPlaceholder": "文件分类",
+      "allCategories": "全部分类",
+      "projectPlaceholder": "关联项目",
+      "allProjects": "全部项目"
+    },
+    "batch": {
+      "title": "批量操作",
+      "deleteSelected": "删除选中",
+      "downloadSelected": "下载选中",
+      "confirmTitle": "确认批量删除",
+      "confirmContent": "确定要删除选中的 {count} 个文件吗？此操作不可恢复。",
+      "deleteSuccess": "批量删除成功",
+      "deleteFailed": "批量删除失败",
+      "downloadStart": "开始下载 {count} 个文件"
+    },
+    "empty": {
+      "noFiles": "暂无文件",
+      "uploadNow": "立即上传"
+    },
+    "pagination": {
+      "total": "共 {total} 个文件"
+    },
+    "upload": {
+      "title": "上传文件",
+      "dragText": "点击或拖拽文件到此区域上传",
+      "limitHint": "支持任意格式文件，单个文件不超过 {size}MB",
+      "confirm": "确定上传"
+    },
+    "edit": {
+      "title": "编辑文件信息"
+    },
+    "shared": {
+      "category": "文件分类",
+      "project": "关联项目",
+      "projectPlaceholder": "选择项目（可选）",
+      "description": "文件描述",
+      "descriptionPlaceholder": "添加文件描述（可选）",
+      "fileName": "文件名"
+    },
+    "detail": {
+      "title": "文件详情",
+      "noProject": "未关联",
+      "confirmDeleteTitle": "确定删除此文件？",
+      "fields": {
+        "name": "文件名",
+        "size": "文件大小",
+        "type": "文件类型",
+        "createdAt": "上传时间",
+        "updatedAt": "更新时间",
+        "url": "文件链接"
+      }
+    },
+    "list": {
+      "columns": {
+        "preview": "预览",
+        "name": "文件名",
+        "size": "大小",
+        "createdAt": "上传时间",
+        "actions": "操作"
+      }
+    },
+    "messages": {
+      "loadFilesFailed": "加载文件列表失败",
+      "loadStatsFailed": "加载统计信息失败",
+      "loadProjectsFailed": "加载项目列表失败",
+      "uploadSuccess": "文件上传成功",
+      "uploadFailed": "文件上传失败",
+      "updateSuccess": "文件信息更新成功",
+      "updateFailed": "更新文件信息失败",
+      "copySuccess": "链接已复制到剪贴板",
+      "deleteSuccess": "文件删除成功",
+      "deleteFailed": "删除文件失败",
+      "copied": "已复制!"
+    },
+    "validation": {
+      "fileTooLarge": "文件大小不能超过 {size}MB!",
+      "selectFile": "请选择要上传的文件",
+      "selectForDelete": "请选择要删除的文件"
+    },
+    "delete": {
+      "confirmTitle": "确认删除",
+      "confirmContent": "确定要删除文件 \"{name}\" 吗？此操作不可恢复。"
+    },
+    "time": {
+      "justNow": "刚刚",
+      "minutesAgo": "{count}分钟前",
+      "hoursAgo": "{count}小时前",
+      "daysAgo": "{count}天前",
+      "weeksAgo": "{count}周前"
+    }
+  },
   "project": {
     "title": "作品管理",
     "managementTitle": "作品管理",
