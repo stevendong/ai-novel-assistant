@@ -2056,7 +2056,20 @@
       "applyEmail": "admin@myaichatbox.com",
       "copyEmail": "Copy email",
       "copySuccess": "Email copied to clipboard",
-      "copyError": "Failed to copy email"
+      "copyError": "Failed to copy email",
+      "errors": {
+        "inviteRequired": "Please enter an invite code before submitting.",
+        "alreadyVerified": "You have already verified an invite code. No need to verify again.",
+        "invalidFormat": "The invite code format is invalid. Please double-check and try again.",
+        "invalidChecksum": "Invite code validation failed. Ensure the code is correct and try again.",
+        "notFound": "This invite code does not exist. Please confirm with the sender.",
+        "inactive": "This invite code has been disabled. Request a new one from the sender.",
+        "expired": "This invite code has expired. Please apply for a fresh code.",
+        "maxUsesReached": "This invite code has already been used the maximum number of times.",
+        "alreadyUsed": "You have already used this invite code.",
+        "ipLimit": "Too many invite code attempts from this IP within 24 hours. Please wait and try later.",
+        "serverError": "We could not verify the invite code due to a server issue. Please try again shortly."
+      }
     }
   },
   "user": {

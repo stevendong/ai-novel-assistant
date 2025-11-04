@@ -524,6 +524,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
         return res.status(400).json({
           error: 'Already Verified',
           message: '您已经验证过邀请码了，无需重复验证',
+          code: 'ALREADY_VERIFIED'
         });
       }
 
@@ -562,6 +563,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
       return res.status(400).json({
         error: 'Validation Error',
         message: 'Invite code is required',
+        code: 'INVITE_REQUIRED'
       });
     }
 
@@ -570,6 +572,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
       return res.status(400).json({
         error: 'Already Verified',
         message: '您已经验证过邀请码了，无需重复验证',
+        code: 'ALREADY_VERIFIED'
       });
     }
 
@@ -585,6 +588,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
       return res.status(400).json({
         error: 'Invite Code Error',
         message: inviteValidation.message,
+        code: inviteValidation.error,
       });
     }
 
@@ -653,6 +657,7 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
     res.status(500).json({
       error: 'Verification Failed',
       message: 'Failed to verify invite code',
+      code: 'SERVER_ERROR'
     });
   }
 });

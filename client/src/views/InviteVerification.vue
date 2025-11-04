@@ -195,6 +195,32 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const applyEmail = 'admin@myaichatbox.com'
 
+const errorMessageMap: Record<string, string> = {
+  INVITE_REQUIRED: 'auth.inviteVerification.errors.inviteRequired',
+  ALREADY_VERIFIED: 'auth.inviteVerification.errors.alreadyVerified',
+  INVALID_FORMAT: 'auth.inviteVerification.errors.invalidFormat',
+  INVALID_CHECKSUM: 'auth.inviteVerification.errors.invalidChecksum',
+  NOT_FOUND: 'auth.inviteVerification.errors.notFound',
+  INACTIVE: 'auth.inviteVerification.errors.inactive',
+  EXPIRED: 'auth.inviteVerification.errors.expired',
+  MAX_USES_REACHED: 'auth.inviteVerification.errors.maxUsesReached',
+  ALREADY_USED: 'auth.inviteVerification.errors.alreadyUsed',
+  IP_LIMIT_EXCEEDED: 'auth.inviteVerification.errors.ipLimit',
+  SERVER_ERROR: 'auth.inviteVerification.errors.serverError'
+}
+
+const getLocalizedErrorMessage = (code?: string, fallback?: string) => {
+  if (code && errorMessageMap[code]) {
+    return t(errorMessageMap[code])
+  }
+
+  if (fallback) {
+    return fallback
+  }
+
+  return t('auth.inviteVerification.verificationFailed')
+}
+
 const formData = reactive({
   inviteCode: ''
 })
@@ -223,7 +249,7 @@ const handleSubmit = async () => {
   try {
     const response = await authStore.apiClient.post('/api/auth/verify-invite', {
       inviteCode: formData.inviteCode
-    })
+    }, { skipErrorHandler: true })
 
     message.success(t('auth.inviteVerification.verificationSuccess'))
 
@@ -235,7 +261,8 @@ const handleSubmit = async () => {
   } catch (error: any) {
     console.error('Invite verification failed:', error)
 
-    const errorMessage = error.response?.data?.message || t('auth.inviteVerification.verificationFailed')
+    const apiError = error.response?.data
+    const errorMessage = getLocalizedErrorMessage(apiError?.code || apiError?.error, apiError?.message)
     message.error(errorMessage)
   } finally {
     loading.value = false

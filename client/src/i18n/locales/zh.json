@@ -2041,7 +2041,20 @@
       "applyEmail": "admin@myaichatbox.com",
       "copyEmail": "复制邮箱",
       "copySuccess": "邮箱地址已复制",
-      "copyError": "复制邮箱失败"
+      "copyError": "复制邮箱失败",
+      "errors": {
+        "inviteRequired": "提交前请先填写邀请码。",
+        "alreadyVerified": "您已经验证过邀请码，无需重复验证。",
+        "invalidFormat": "邀请码格式不正确，请检查后再试。",
+        "invalidChecksum": "邀请码校验失败，请确认邀请码是否正确。",
+        "notFound": "该邀请码不存在，请与邀请方确认。",
+        "inactive": "该邀请码已被禁用，请重新申请。",
+        "expired": "该邀请码已过期，请申请新的邀请码。",
+        "maxUsesReached": "该邀请码的使用次数已达上限。",
+        "alreadyUsed": "您已经使用过这个邀请码。",
+        "ipLimit": "该IP地址在24小时内使用邀请码次数过多，请稍后再试。",
+        "serverError": "服务器验证邀请码时出现问题，请稍后重试。"
+      }
     }
   },
   "user": {
