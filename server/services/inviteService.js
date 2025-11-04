@@ -360,14 +360,14 @@ class InviteService {
       })
     ])
 
-    // 每日使用统计 - SQLite 兼容语法
+    // 每日使用统计（兼容 PostgreSQL / SQLite）
     const dailyUsageRaw = await prisma.$queryRaw`
       SELECT
-        date(usedAt) as date,
+        DATE("usedAt") as date,
         COUNT(*) as count
-      FROM InviteUsage
-      WHERE usedAt >= ${startDate}
-      GROUP BY date(usedAt)
+      FROM "InviteUsage"
+      WHERE "usedAt" >= ${startDate}
+      GROUP BY DATE("usedAt")
       ORDER BY date DESC
     `
 
