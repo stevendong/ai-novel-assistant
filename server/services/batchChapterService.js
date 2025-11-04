@@ -1,6 +1,24 @@
 const aiService = require('./aiService')
 const prisma = require('../utils/prismaClient')
 
+const DEFAULT_LOCALE = 'zh'
+
+function normalizeLocale(locale) {
+  if (!locale) return DEFAULT_LOCALE
+  const value = String(locale).trim().toLowerCase()
+  if (!value) return DEFAULT_LOCALE
+  const base = value.split('-')[0]
+  return base || DEFAULT_LOCALE
+}
+
+function getLanguageRequirement(localeInput) {
+  const locale = normalizeLocale(localeInput)
+  if (locale.startsWith('en')) {
+    return 'Language requirement: Please provide the entire outline in English, keeping the tone and terminology suitable for English-language web fiction planning.'
+  }
+  return '语言要求：请使用简体中文输出全部内容，保持结构清晰、逻辑严密，并符合中文网络小说的创作风格。'
+}
+
 /**
  * 批量章节生成服务
  * 提供AI驱动的批量章节创建功能
@@ -12,7 +30,7 @@ class BatchChapterService {
    * @param {string} userId - 用户ID
    * @returns {Promise<Object>} 分析结果
    */
-  async analyzeNovelContext(novelId, userId) {
+  async analyzeNovelContext(novelId, userId, locale) {
     try {
       // 获取小说基本信息
       const novel = await prisma.novel.findFirst({
@@ -32,8 +50,10 @@ class BatchChapterService {
         throw new Error('小说不存在或无权限')
       }
 
+      const languageRequirement = getLanguageRequirement(locale)
+
       // 构建分析提示词
-      const analysisPrompt = this.buildAnalysisPrompt(novel)
+      const analysisPrompt = this.buildAnalysisPrompt(novel, languageRequirement)
 
       // 调用AI进行分析
       const aiResponse = await aiService.chat([
@@ -114,7 +134,8 @@ class BatchChapterService {
       mode, // continue, insert, branch, expand
       totalChapters,
       startPosition,
-      parameters
+      parameters,
+      locale
     } = params
 
     try {
@@ -128,6 +149,11 @@ class BatchChapterService {
       }
 
       // 创建批量生成记录
+      const extendedParameters = { ...(parameters || {}) }
+      if (locale) {
+        extendedParameters.__locale = locale
+      }
+
       const batchGeneration = await prisma.batchChapterGeneration.create({
         data: {
           novelId,
@@ -136,7 +162,7 @@ class BatchChapterService {
           mode,
           totalChapters,
           startPosition,
-          parameters: JSON.stringify(parameters),
+          parameters: JSON.stringify(extendedParameters),
           status: 'pending'
         }
       })
@@ -152,7 +178,7 @@ class BatchChapterService {
    * 执行批量章节生成
    * @param {string} batchId - 批次ID
    */
-  async executeBatchGeneration(batchId) {
+  async executeBatchGeneration(batchId, localeOverride) {
     try {
       // 获取批次信息
       const batch = await prisma.batchChapterGeneration.findUnique({
@@ -175,8 +201,11 @@ class BatchChapterService {
       // 更新状态为分析中
       await this.updateBatchStatus(batchId, 'analyzing', 10)
 
+      const parameters = JSON.parse(batch.parameters || '{}')
+      const locale = localeOverride !== undefined ? localeOverride : parameters.__locale
+
       // 分析小说上下文
-      const contextAnalysis = await this.analyzeNovelContext(batch.novelId, batch.userId)
+      const contextAnalysis = await this.analyzeNovelContext(batch.novelId, batch.userId, locale)
 
       // 保存分析结果
       await prisma.batchChapterGeneration.update({
@@ -188,10 +217,16 @@ class BatchChapterService {
         }
       })
 
-      const parameters = JSON.parse(batch.parameters)
-
       // 生成章节计划
-      const generationPrompt = this.buildGenerationPrompt(contextAnalysis, batch, parameters)
+      const sanitizedParameters = { ...parameters }
+      delete sanitizedParameters.__locale
+
+      const generationPrompt = this.buildGenerationPrompt(
+        contextAnalysis,
+        batch,
+        sanitizedParameters,
+        getLanguageRequirement(locale)
+      )
 
       const aiResponse = await aiService.chat([
         {
@@ -336,7 +371,7 @@ class BatchChapterService {
   /**
    * 构建分析提示词
    */
-  buildAnalysisPrompt(novel) {
+  buildAnalysisPrompt(novel, languageRequirement) {
     const recentChapters = novel.chapters
       .map(ch => `第${ch.chapterNumber}章：${ch.title}\n大纲：${ch.outline || '无'}\n`)
       .join('\n')
@@ -381,13 +416,15 @@ ${settings || '暂无设定'}
     "tone": "语调风格"
   },
   "potentialDirections": ["可能的剧情发展方向"]
-}`
+}
+
+${languageRequirement}`
   }
 
   /**
    * 构建生成提示词
    */
-  buildGenerationPrompt(contextAnalysis, batch, parameters) {
+  buildGenerationPrompt(contextAnalysis, batch, parameters, languageRequirement) {
     const mode = batch.mode
     const totalChapters = batch.totalChapters
     const modeInstructions = {
@@ -438,7 +475,9 @@ ${contextAnalysis.settings.map(s => `${s.name}（${s.type}）`).join(', ')}
 2. 角色行为符合性格设定
 3. 章节间节奏张弛有度
 4. 标题有吸引力且符合风格
-5. 大纲详细具体，便于后续写作`
+5. 大纲详细具体，便于后续写作
+
+${languageRequirement}`
   }
 
   /**

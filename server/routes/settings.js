@@ -4,6 +4,24 @@ const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
 
+const DEFAULT_LOCALE = 'zh';
+
+function normalizeLocale(locale) {
+  if (!locale) return DEFAULT_LOCALE;
+  const value = String(locale).trim().toLowerCase();
+  if (!value) return DEFAULT_LOCALE;
+  const base = value.split('-')[0];
+  return base || DEFAULT_LOCALE;
+}
+
+function getLanguageRequirement(localeInput) {
+  const locale = normalizeLocale(localeInput);
+  if (locale.startsWith('en')) {
+    return 'Language requirement: Please provide the entire response in English, keeping the tone aligned with English-language web fiction readers.';
+  }
+  return '语言要求：请使用简体中文输出全部内容，保持自然流畅并符合中文网络小说的阅读习惯。';
+}
+
 // 获取小说的所有世界设定
 router.get('/novel/:novelId', requireAuth, async (req, res) => {
   try {
@@ -161,7 +179,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 router.post('/:id/enhance', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { expandAspects = [], plotRelevance, expansionType = 'comprehensive' } = req.body;
+    const { expandAspects = [], plotRelevance, expansionType = 'comprehensive', locale } = req.body;
 
     const setting = await prisma.worldSetting.findUnique({
       where: { id },
@@ -192,6 +210,8 @@ router.post('/:id/enhance', requireAuth, async (req, res) => {
     const aiService = require('../services/aiService');
 
     // 构建增强提示词
+    const languageRequirement = getLanguageRequirement(locale);
+
     const enhancement = await aiService.generateResponse(
       {
         title: setting.novel.title,
@@ -201,7 +221,7 @@ router.post('/:id/enhance', requireAuth, async (req, res) => {
         settings: setting.novel.settings,
         chapters: setting.novel.chapters
       },
-      buildEnhancementPrompt(setting, expandAspects, plotRelevance, expansionType),
+      buildEnhancementPrompt(setting, expandAspects, plotRelevance, expansionType, languageRequirement),
       'creative',
       {
         taskType: 'world_building',
@@ -221,7 +241,7 @@ router.post('/:id/enhance', requireAuth, async (req, res) => {
 });
 
 // 构建增强提示词
-function buildEnhancementPrompt(setting, expandAspects, plotRelevance, expansionType) {
+function buildEnhancementPrompt(setting, expandAspects, plotRelevance, expansionType, languageRequirement) {
   const settingDetails = setting.details ? JSON.parse(setting.details) : {};
 
   let prompt = `请为世界设定"${setting.name}"进行AI扩展和完善。
@@ -304,6 +324,8 @@ function buildEnhancementPrompt(setting, expandAspects, plotRelevance, expansion
 1. 请确保detailsFields中包含所有必需字段且内容详实
 2. 对于ruleTypes字段，请提供具体的规则类型数组
 3. 所有字段内容都应该与当前设定的名称和描述保持一致`;
+
+  prompt += `\n\n${languageRequirement}`;
 
   return prompt;
 }
@@ -525,7 +547,7 @@ function getDefaultEnhancementStructure(settingType) {
 router.post('/:id/expand', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { focusAreas = [], detailLevel = 'standard' } = req.body;
+    const { focusAreas = [], detailLevel = 'standard', locale } = req.body;
 
     const setting = await prisma.worldSetting.findUnique({
       where: { id },
@@ -549,6 +571,8 @@ router.post('/:id/expand', requireAuth, async (req, res) => {
     const aiService = require('../services/aiService');
 
     // 构建细节扩展提示词
+    const languageRequirement = getLanguageRequirement(locale);
+
     const expansion = await aiService.generateResponse(
       {
         title: setting.novel.title,
@@ -557,7 +581,7 @@ router.post('/:id/expand', requireAuth, async (req, res) => {
         characters: setting.novel.characters,
         settings: setting.novel.settings
       },
-      buildExpansionPrompt(setting, focusAreas, detailLevel),
+      buildExpansionPrompt(setting, focusAreas, detailLevel, languageRequirement),
       'creative',
       {
         taskType: 'detail_expansion',
@@ -577,7 +601,7 @@ router.post('/:id/expand', requireAuth, async (req, res) => {
 });
 
 // 构建细节扩展提示词
-function buildExpansionPrompt(setting, focusAreas, detailLevel) {
+function buildExpansionPrompt(setting, focusAreas, detailLevel, languageRequirement) {
   const settingDetails = setting.details ? JSON.parse(setting.details) : {};
 
   let prompt = `请为世界设定"${setting.name}"进行详细扩展，增加丰富的细节描述。
@@ -643,6 +667,8 @@ function buildExpansionPrompt(setting, focusAreas, detailLevel) {
 }
 
 请确保描述生动具体，富有想象力，能够为读者营造强烈的代入感。`;
+
+  prompt += `\n\n${languageRequirement}`;
 
   return prompt;
 }
@@ -809,7 +835,7 @@ function getDefaultExpansionStructure(settingType) {
 router.post('/:id/suggestions', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { suggestionType = 'general' } = req.body;
+    const { suggestionType = 'general', locale } = req.body;
 
     const setting = await prisma.worldSetting.findUnique({
       where: { id },
@@ -835,6 +861,8 @@ router.post('/:id/suggestions', requireAuth, async (req, res) => {
     const aiService = require('../services/aiService');
 
     // 构建建议生成提示词
+    const languageRequirement = getLanguageRequirement(locale);
+
     const suggestions = await aiService.generateResponse(
       {
         title: setting.novel.title,
@@ -844,7 +872,7 @@ router.post('/:id/suggestions', requireAuth, async (req, res) => {
         settings: setting.novel.settings,
         chapters: setting.novel.chapters
       },
-      buildSuggestionsPrompt(setting, suggestionType),
+      buildSuggestionsPrompt(setting, suggestionType, languageRequirement),
       'analytical',
       {
         taskType: 'creative_analysis',
@@ -864,7 +892,7 @@ router.post('/:id/suggestions', requireAuth, async (req, res) => {
 });
 
 // 构建建议生成提示词
-function buildSuggestionsPrompt(setting, suggestionType) {
+function buildSuggestionsPrompt(setting, suggestionType, languageRequirement) {
   const settingDetails = setting.details ? JSON.parse(setting.details) : {};
 
   let prompt = `请为世界设定"${setting.name}"提供智能建议和优化方案。
@@ -925,7 +953,9 @@ function buildSuggestionsPrompt(setting, suggestionType) {
       "effort": "实施难度"
     }
   ]
-}`;
+}
+
+${languageRequirement}`;
 
   return prompt;
 }
@@ -1068,7 +1098,8 @@ router.post('/batch-generate/:novelId', requireAuth, async (req, res) => {
       settingTypes = ['worldview', 'location', 'rule', 'culture'],
       generationMode = 'comprehensive',
       customPrompts = {},
-      count = { worldview: 1, location: 2, rule: 1, culture: 1 }
+      count = { worldview: 1, location: 2, rule: 1, culture: 1 },
+      locale
     } = req.body;
 
     // 获取小说信息
@@ -1091,7 +1122,9 @@ router.post('/batch-generate/:novelId', requireAuth, async (req, res) => {
     const aiService = require('../services/aiService');
 
     // 构建批量生成提示词
-    const batchPrompt = buildBatchGenerationPrompt(novel, settingTypes, generationMode, customPrompts, count);
+    const languageRequirement = getLanguageRequirement(locale);
+
+    const batchPrompt = buildBatchGenerationPrompt(novel, settingTypes, generationMode, customPrompts, count, languageRequirement);
 
     // 调用AI生成
     const batchResult = await aiService.generateResponse(
@@ -1137,7 +1170,7 @@ router.post('/batch-generate/:novelId', requireAuth, async (req, res) => {
 });
 
 // 构建批量生成提示词
-function buildBatchGenerationPrompt(novel, settingTypes, generationMode, customPrompts, count) {
+function buildBatchGenerationPrompt(novel, settingTypes, generationMode, customPrompts, count, languageRequirement) {
   let prompt = `请为小说《${novel.title}》批量生成世界设定。
 
 **小说基本信息：**
@@ -1229,7 +1262,9 @@ function buildBatchGenerationPrompt(novel, settingTypes, generationMode, customP
 2. 每个设定都应该有独特的特色，避免重复
 3. details字段必须包含该类型设定的所有必需字段
 4. 设定之间应该有合理的关联性，构成完整的世界体系
-5. 生成的内容应该具有创意性和可用性，能够直接用于小说创作`;
+5. 生成的内容应该具有创意性和可用性，能够直接用于小说创作
+
+${languageRequirement}`;
 
   return prompt;
 }
@@ -1438,7 +1473,7 @@ router.post('/apply-batch/:novelId', requireAuth, async (req, res) => {
 router.post('/:id/consistency-check', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { scope = 'setting' } = req.body;
+    const { scope = 'setting', locale } = req.body;
 
     const setting = await prisma.worldSetting.findUnique({
       where: { id },
@@ -1462,6 +1497,8 @@ router.post('/:id/consistency-check', requireAuth, async (req, res) => {
     const aiService = require('../services/aiService');
 
     // 构建一致性检查提示词
+    const languageRequirement = getLanguageRequirement(locale);
+
     const consistencyResult = await aiService.generateResponse(
       {
         title: setting.novel.title,
@@ -1471,7 +1508,7 @@ router.post('/:id/consistency-check', requireAuth, async (req, res) => {
         settings: setting.novel.settings,
         chapters: setting.novel.chapters
       },
-      buildConsistencyPrompt(setting, scope),
+      buildConsistencyPrompt(setting, scope, languageRequirement),
       'analytical',
       {
         taskType: 'consistency_check',
@@ -1491,7 +1528,7 @@ router.post('/:id/consistency-check', requireAuth, async (req, res) => {
 });
 
 // 构建一致性检查提示词
-function buildConsistencyPrompt(setting, scope) {
+function buildConsistencyPrompt(setting, scope, languageRequirement) {
   const settingDetails = setting.details ? JSON.parse(setting.details) : {};
 
   let prompt = `请对世界设定"${setting.name}"进行一致性检查。
@@ -1562,7 +1599,9 @@ function buildConsistencyPrompt(setting, scope) {
     "crossReference": {"score": 88, "notes": "评价说明"},
     "characterCompatibility": {"score": 92, "notes": "评价说明"}
   }
-}`;
+}
+
+${languageRequirement}`;
 
   return prompt;
 }

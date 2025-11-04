@@ -6,6 +6,24 @@ const prisma = require('../utils/prismaClient');
 
 const router = express.Router();
 
+const DEFAULT_LOCALE = 'zh';
+
+function normalizeLocale(locale) {
+  if (!locale) return DEFAULT_LOCALE;
+  const value = String(locale).trim().toLowerCase();
+  if (!value) return DEFAULT_LOCALE;
+  const base = value.split('-')[0];
+  return base || DEFAULT_LOCALE;
+}
+
+function getLanguageRequirement(localeInput) {
+  const locale = normalizeLocale(localeInput);
+  if (locale.startsWith('en')) {
+    return 'Language requirement: Please respond entirely in English, using a tone and style that fit English-language web fiction readers.';
+  }
+  return '语言要求：请使用简体中文输出全部内容，保持自然流畅并符合中文网络小说的阅读习惯。';
+}
+
 // 配置 multer 用于内存存储
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -261,7 +279,7 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/enhance', async (req, res) => {
   try {
     const { id } = req.params;
-    const { enhanceAspects, context, constraints } = req.body;
+    const { enhanceAspects, context, constraints, locale } = req.body;
 
     const character = await prisma.character.findUnique({
       where: { id },
@@ -287,6 +305,7 @@ router.post('/:id/enhance', async (req, res) => {
 
     // 使用AI服务生成角色完善建议
     const aiService = require('../services/aiService');
+    const languageRequirement = getLanguageRequirement(locale);
 
     // 构建AI请求的系统提示
     const systemPrompt = `你是一个专业的小说角色创作助手。请根据提供的角色信息，生成全面的完善建议。
@@ -332,7 +351,9 @@ router.post('/:id/enhance', async (req, res) => {
 3. 建议具体、可操作，避免空泛描述
 4. 如果某方面已有内容，在原基础上扩展和深化
 5. 确保各个方面相互呼应，形成完整角色画像
-6. 提供的问题要能启发作者思考角色的深层动机和发展`;
+6. 提供的问题要能启发作者思考角色的深层动机和发展
+
+${languageRequirement}`;
 
     const userMessage = `请为角色"${character.name}"生成完善建议。
 
@@ -488,7 +509,7 @@ router.post('/:id/develop', async (req, res) => {
 // AI生成新角色
 router.post('/generate', async (req, res) => {
   try {
-    const { novelId, prompt, baseInfo } = req.body;
+    const { novelId, prompt, baseInfo, locale } = req.body;
 
     if (!novelId || !prompt) {
       return res.status(400).json({ error: 'Novel ID and prompt are required' });
@@ -511,6 +532,7 @@ router.post('/generate', async (req, res) => {
 
     // 使用AI服务生成角色
     const aiService = require('../services/aiService');
+    const languageRequirement = getLanguageRequirement(locale);
 
     // 构建AI请求的系统提示
     const systemPrompt = `你是一个专业的小说角色创作助手。请根据用户的提示生成一个完整的角色信息。
@@ -546,7 +568,9 @@ ${baseInfo?.description ? `已有描述：${baseInfo.description}` : ''}
 2. 角色要有鲜明的个性和深度
 3. 各个方面要相互呼应，形成完整角色画像
 4. 考虑角色在故事中的潜在作用
-5. 确保内容丰富且具体，避免空泛描述`;
+5. 确保内容丰富且具体，避免空泛描述
+
+${languageRequirement}`;
 
     const userMessage = `请根据以下提示生成一个完整的小说角色：
 
@@ -555,7 +579,7 @@ ${prompt}
 ${baseInfo?.name ? `\n用户提供的角色姓名：${baseInfo.name}（如果此姓名合适则使用，如果可以优化则提供更好的建议）` : '\n请为角色生成一个符合设定的姓名'}
 ${baseInfo?.description ? `\n现有描述：${baseInfo.description}` : ''}
 
-重要提示：请务必在JSON响应的character对象中包含"name"字段，提供一个符合角色设定和小说世界观的姓名。`;
+重要提示：请务必在JSON响应的character对象中包含"name"字段，提供一个符合角色设定和小说世界观的姓名。${languageRequirement}`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -564,7 +588,7 @@ ${baseInfo?.description ? `\n现有描述：${baseInfo.description}` : ''}
 
     try {
       const aiResponse = await aiService.chat(messages, {
-        temperature: 0.8, // 创意性任务使用较高temperature
+        temperature: 1, // 创意性任务使用较高temperature
         maxTokens: 3000,
         taskType: 'creative'
       });

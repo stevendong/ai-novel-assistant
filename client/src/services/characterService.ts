@@ -1,5 +1,6 @@
 import type { Character } from '@/types'
 import { api, type ApiResponse } from '@/utils/api'
+import { getCurrentLocale } from '@/i18n'
 
 const API_BASE = '/api'
 
@@ -142,21 +143,30 @@ class CharacterService {
 
   // AI完善角色
   async enhanceCharacter(id: string, request: CharacterEnhanceRequest): Promise<CharacterEnhanceResponse> {
-    const response = await api.post(`${API_BASE}/characters/${id}/enhance`, request)
+    const response = await api.post(`${API_BASE}/characters/${id}/enhance`, {
+      ...request,
+      locale: getCurrentLocale()
+    })
 
     return response.data
   }
 
   // AI发展角色弧线
   async developCharacter(id: string, request: CharacterDevelopRequest): Promise<CharacterDevelopResponse> {
-    const response = await api.post(`${API_BASE}/characters/${id}/develop`, request)
+    const response = await api.post(`${API_BASE}/characters/${id}/develop`, {
+      ...request,
+      locale: getCurrentLocale()
+    })
 
     return response.data
   }
 
   // AI生成新角色
   async generateCharacter(request: CharacterGenerateRequest): Promise<CharacterGenerateResponse> {
-    const response = await api.post(`${API_BASE}/characters/generate`, request)
+    const response = await api.post(`${API_BASE}/characters/generate`, {
+      ...request,
+      locale: getCurrentLocale()
+    })
 
     return response.data
   }

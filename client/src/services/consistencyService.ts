@@ -1,5 +1,6 @@
 import type { ConsistencyCheck } from '@/types'
 import { api, type ApiResponse } from '@/utils/api'
+import { getCurrentLocale } from '@/i18n'
 
 interface ConsistencyStats {
   totalIssues: number
@@ -88,7 +89,10 @@ export class ConsistencyService {
       'character', 'setting', 'timeline', 'logic'
     ]
   ): Promise<CheckResult> {
-    const response = await api.post(`${this.baseURL}/chapters/${chapterId}/check`, { types })
+    const response = await api.post(`${this.baseURL}/chapters/${chapterId}/check`, {
+      types,
+      locale: getCurrentLocale()
+    })
 
     return response.data
   }
@@ -103,7 +107,8 @@ export class ConsistencyService {
   ): Promise<BatchCheckResult> {
     const response = await api.post(`${this.baseURL}/novels/${novelId}/batch-check`, {
       chapterIds: options?.chapterIds,
-      types: options?.types || ['character', 'setting', 'timeline', 'logic']
+      types: options?.types || ['character', 'setting', 'timeline', 'logic'],
+      locale: getCurrentLocale()
     })
 
     return response.data

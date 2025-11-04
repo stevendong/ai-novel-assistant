@@ -10,6 +10,24 @@ const {
 
 const prisma = require('../utils/prismaClient');
 
+const DEFAULT_LOCALE = 'zh';
+
+function normalizeLocale(locale) {
+  if (!locale) return DEFAULT_LOCALE;
+  const value = String(locale).trim().toLowerCase();
+  if (!value) return DEFAULT_LOCALE;
+  const base = value.split('-')[0];
+  return base || DEFAULT_LOCALE;
+}
+
+function getLanguageRequirement(localeInput) {
+  const locale = normalizeLocale(localeInput);
+  if (locale.startsWith('en')) {
+    return 'Language requirement: Please provide the entire analysis in English, using terminology suited for English-language web fiction reviews.';
+  }
+  return '语言要求：请使用简体中文输出全部分析内容，保持专业、清晰，符合中文网络小说的表达习惯。';
+}
+
 // 验证AI配置
 try {
   validateConfig();
@@ -26,7 +44,7 @@ const openai = new OpenAI({
 
 class ConsistencyService {
   // 检查章节一致性
-  async checkChapterConsistency(chapterId, types = ['character', 'setting', 'timeline', 'logic']) {
+  async checkChapterConsistency(chapterId, types = ['character', 'setting', 'timeline', 'logic'], locale) {
     try {
       const chapter = await prisma.chapter.findUnique({
         where: { id: chapterId },
@@ -71,10 +89,11 @@ class ConsistencyService {
         }
       });
 
+      const languageRequirement = getLanguageRequirement(locale);
       const allIssues = [];
 
       // 并行执行不同类型的检查
-      const checkPromises = types.map(type => this.performSpecificCheck(chapter, previousChapters, type));
+      const checkPromises = types.map(type => this.performSpecificCheck(chapter, previousChapters, type, languageRequirement));
       const results = await Promise.all(checkPromises);
 
       // 合并所有检查结果
@@ -91,23 +110,23 @@ class ConsistencyService {
   }
 
   // 执行特定类型的检查
-  async performSpecificCheck(chapter, previousChapters, checkType) {
+  async performSpecificCheck(chapter, previousChapters, checkType, languageRequirement) {
     switch (checkType) {
       case 'character':
-        return await this.checkCharacterConsistency(chapter, previousChapters);
+        return await this.checkCharacterConsistency(chapter, previousChapters, languageRequirement);
       case 'setting':
-        return await this.checkSettingConsistency(chapter, previousChapters);
+        return await this.checkSettingConsistency(chapter, previousChapters, languageRequirement);
       case 'timeline':
-        return await this.checkTimelineConsistency(chapter, previousChapters);
+        return await this.checkTimelineConsistency(chapter, previousChapters, languageRequirement);
       case 'logic':
-        return await this.checkLogicConsistency(chapter, previousChapters);
+        return await this.checkLogicConsistency(chapter, previousChapters, languageRequirement);
       default:
         return [];
     }
   }
 
   // 角色一致性检查
-  async checkCharacterConsistency(chapter, previousChapters) {
+  async checkCharacterConsistency(chapter, previousChapters, languageRequirement) {
     const issues = [];
 
     // 构建角色信息上下文
@@ -119,7 +138,7 @@ class ConsistencyService {
 
       if (previousAppearances.length > 0) {
         // 使用AI检查角色一致性
-        const prompt = this.buildCharacterConsistencyPrompt(character, chapter.content, previousAppearances);
+        const prompt = this.buildCharacterConsistencyPrompt(character, chapter.content, previousAppearances, languageRequirement);
         const aiResult = await this.callAIForConsistencyCheck(prompt);
 
         if (aiResult.hasIssues) {
@@ -136,7 +155,7 @@ class ConsistencyService {
   }
 
   // 设定一致性检查
-  async checkSettingConsistency(chapter, previousChapters) {
+  async checkSettingConsistency(chapter, previousChapters, languageRequirement) {
     const issues = [];
 
     for (const chapterSetting of chapter.settings) {
@@ -144,7 +163,7 @@ class ConsistencyService {
       const previousUsages = this.getSettingPreviousUsages(setting.id, previousChapters);
 
       if (previousUsages.length > 0) {
-        const prompt = this.buildSettingConsistencyPrompt(setting, chapter.content, previousUsages);
+        const prompt = this.buildSettingConsistencyPrompt(setting, chapter.content, previousUsages, languageRequirement);
         const aiResult = await this.callAIForConsistencyCheck(prompt);
 
         if (aiResult.hasIssues) {
@@ -161,11 +180,11 @@ class ConsistencyService {
   }
 
   // 时间线一致性检查
-  async checkTimelineConsistency(chapter, previousChapters) {
+  async checkTimelineConsistency(chapter, previousChapters, languageRequirement) {
     const issues = [];
 
     if (previousChapters.length > 0) {
-      const prompt = this.buildTimelineConsistencyPrompt(chapter, previousChapters);
+      const prompt = this.buildTimelineConsistencyPrompt(chapter, previousChapters, languageRequirement);
       const aiResult = await this.callAIForConsistencyCheck(prompt);
 
       if (aiResult.hasIssues) {
@@ -181,11 +200,11 @@ class ConsistencyService {
   }
 
   // 逻辑一致性检查
-  async checkLogicConsistency(chapter, previousChapters) {
+  async checkLogicConsistency(chapter, previousChapters, languageRequirement) {
     const issues = [];
 
     if (previousChapters.length > 0) {
-      const prompt = this.buildLogicConsistencyPrompt(chapter, previousChapters);
+      const prompt = this.buildLogicConsistencyPrompt(chapter, previousChapters, languageRequirement);
       const aiResult = await this.callAIForConsistencyCheck(prompt);
 
       if (aiResult.hasIssues) {
@@ -271,7 +290,7 @@ class ConsistencyService {
   }
 
   // 构建角色一致性检查提示
-  buildCharacterConsistencyPrompt(character, currentContent, previousAppearances) {
+  buildCharacterConsistencyPrompt(character, currentContent, previousAppearances, languageRequirement) {
     return `请检查以下角色在当前章节中的表现是否与之前章节保持一致：
 
 角色信息：
@@ -287,11 +306,13 @@ ${currentContent}
 之前章节中的相关内容：
 ${previousAppearances.map(app => `第${app.chapterNumber}章：${app.content}`).join('\n\n')}
 
-请分析角色的性格、行为、能力、外貌等是否存在前后矛盾的地方。`;
+请分析角色的性格、行为、能力、外貌等是否存在前后矛盾的地方。
+
+${languageRequirement}`;
   }
 
   // 构建设定一致性检查提示
-  buildSettingConsistencyPrompt(setting, currentContent, previousUsages) {
+  buildSettingConsistencyPrompt(setting, currentContent, previousUsages, languageRequirement) {
     return `请检查以下世界设定在当前章节中的使用是否与之前章节保持一致：
 
 设定信息：
@@ -306,11 +327,13 @@ ${currentContent}
 之前章节中的相关使用：
 ${previousUsages.map(usage => `第${usage.chapterNumber}章：${usage.content}`).join('\n\n')}
 
-请分析世界设定的规则、描述、特征等是否存在前后矛盾的地方。`;
+请分析世界设定的规则、描述、特征等是否存在前后矛盾的地方。
+
+${languageRequirement}`;
   }
 
   // 构建时间线一致性检查提示
-  buildTimelineConsistencyPrompt(chapter, previousChapters) {
+  buildTimelineConsistencyPrompt(chapter, previousChapters, languageRequirement) {
     return `请检查当前章节的时间线是否与之前章节保持一致：
 
 当前章节（第${chapter.chapterNumber}章）：
@@ -324,11 +347,13 @@ ${previousChapters.map(ch => `第${ch.chapterNumber}章《${ch.title}》：${ch.
 1. 事件发生的时间顺序是否合理
 2. 角色年龄变化是否符合时间跨度
 3. 季节、时间等描述是否一致
-4. 事件的因果关系时间线是否合理`;
+4. 事件的因果关系时间线是否合理
+
+${languageRequirement}`;
   }
 
   // 构建逻辑一致性检查提示
-  buildLogicConsistencyPrompt(chapter, previousChapters) {
+  buildLogicConsistencyPrompt(chapter, previousChapters, languageRequirement) {
     return `请检查当前章节的逻辑是否与之前章节保持一致：
 
 当前章节（第${chapter.chapterNumber}章）：
@@ -342,7 +367,9 @@ ${previousChapters.map(ch => `第${ch.chapterNumber}章《${ch.title}》：${ch.
 1. 角色行为动机是否合理
 2. 情节发展是否符合逻辑
 3. 矛盾冲突的解决是否合理
-4. 是否存在逻辑漏洞或前后矛盾`;
+4. 是否存在逻辑漏洞或前后矛盾
+
+${languageRequirement}`;
   }
 
   // 获取角色之前的出现记录

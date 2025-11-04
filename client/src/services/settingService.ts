@@ -1,5 +1,6 @@
 import type { WorldSetting } from '@/types'
 import { api, type ApiResponse } from '@/utils/api'
+import { getCurrentLocale } from '@/i18n'
 
 const API_BASE = '/api/settings'
 
@@ -74,7 +75,8 @@ export const settingService = {
       const response = await api.post(`${API_BASE}/${id}/enhance`, {
         expandAspects: expandAspects || [],
         plotRelevance,
-        expansionType: expansionType || 'comprehensive'
+        expansionType: expansionType || 'comprehensive',
+        locale: getCurrentLocale()
       })
 
       return response.data
@@ -88,7 +90,8 @@ export const settingService = {
     try {
       const response = await api.post(`${API_BASE}/${id}/expand`, {
         focusAreas: focusAreas || [],
-        detailLevel: detailLevel || 'standard'
+        detailLevel: detailLevel || 'standard',
+        locale: getCurrentLocale()
       })
 
       return response.data
@@ -100,7 +103,10 @@ export const settingService = {
 
   async getSuggestions(id: string, suggestionType?: string): Promise<any> {
     try {
-      const response = await api.post(`${API_BASE}/${id}/suggestions`, { suggestionType: suggestionType || 'general' })
+      const response = await api.post(`${API_BASE}/${id}/suggestions`, {
+        suggestionType: suggestionType || 'general',
+        locale: getCurrentLocale()
+      })
 
       return response.data
     } catch (error) {
@@ -111,7 +117,10 @@ export const settingService = {
 
   async checkConsistency(id: string, scope?: string): Promise<any> {
     try {
-      const response = await api.post(`${API_BASE}/${id}/consistency-check`, { scope: scope || 'setting' })
+      const response = await api.post(`${API_BASE}/${id}/consistency-check`, {
+        scope: scope || 'setting',
+        locale: getCurrentLocale()
+      })
 
       return response.data
     } catch (error) {
@@ -147,7 +156,8 @@ export const settingService = {
         settingTypes: options.settingTypes || ['worldview', 'location', 'rule', 'culture'],
         generationMode: options.generationMode || 'comprehensive',
         customPrompts: options.customPrompts || {},
-        count: options.count || { worldview: 1, location: 2, rule: 1, culture: 1 }
+        count: options.count || { worldview: 1, location: 2, rule: 1, culture: 1 },
+        locale: getCurrentLocale()
       })
 
       return response.data

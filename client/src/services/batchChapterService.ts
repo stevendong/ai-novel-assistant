@@ -1,4 +1,5 @@
 import { api } from '@/utils/api'
+import { getCurrentLocale } from '@/i18n'
 
 /**
  * 批量章节生成模式
@@ -161,7 +162,9 @@ class BatchChapterService {
    * 分析小说上下文
    */
   async analyzeNovelContext(novelId: string): Promise<NovelContextAnalysis> {
-    const response = await api.get(`/api/chapters/batch/${novelId}/analyze`)
+    const response = await api.get(`/api/chapters/batch/${novelId}/analyze`, {
+      params: { locale: getCurrentLocale() }
+    })
     return response.data.data
   }
 
@@ -169,7 +172,10 @@ class BatchChapterService {
    * 创建批量生成任务
    */
   async createBatchGeneration(params: BatchGenerationParams): Promise<{ batchId: string }> {
-    const response = await api.post('/api/chapters/batch/generate', params)
+    const response = await api.post('/api/chapters/batch/generate', {
+      ...params,
+      locale: getCurrentLocale()
+    })
     return response.data.data
   }
 

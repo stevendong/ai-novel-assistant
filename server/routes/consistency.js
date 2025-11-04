@@ -105,9 +105,11 @@ router.get('/novels/:novelId/overview', async (req, res) => {
 router.post('/chapters/:chapterId/check', async (req, res) => {
   try {
     const { chapterId } = req.params;
-    const { types = ['character', 'setting', 'timeline', 'logic'] } = req.body;
+    const { types = ['character', 'setting', 'timeline', 'logic'], locale } = req.body;
 
-    const result = await consistencyService.checkChapterConsistency(chapterId, types);
+    const result = locale !== undefined
+      ? await consistencyService.checkChapterConsistency(chapterId, types, locale)
+      : await consistencyService.checkChapterConsistency(chapterId, types);
     
     res.json({
       success: true,
@@ -124,7 +126,7 @@ router.post('/chapters/:chapterId/check', async (req, res) => {
 router.post('/novels/:novelId/batch-check', async (req, res) => {
   try {
     const { novelId } = req.params;
-    const { chapterIds, types = ['character', 'setting', 'timeline', 'logic'] } = req.body;
+    const { chapterIds, types = ['character', 'setting', 'timeline', 'logic'], locale } = req.body;
 
     let targetChapterIds = chapterIds;
     if (!targetChapterIds) {
@@ -138,7 +140,9 @@ router.post('/novels/:novelId/batch-check', async (req, res) => {
 
     const results = await Promise.all(
       targetChapterIds.map(chapterId =>
-        consistencyService.checkChapterConsistency(chapterId, types)
+        locale !== undefined
+          ? consistencyService.checkChapterConsistency(chapterId, types, locale)
+          : consistencyService.checkChapterConsistency(chapterId, types)
       )
     );
 

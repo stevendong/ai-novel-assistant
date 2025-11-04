@@ -201,6 +201,23 @@ class AIService {
     return null
   }
 
+  private getLanguageRequirementBlock(): string {
+    let rawLocale: string | null = null
+    try {
+      rawLocale = getCurrentLocale()
+    } catch {
+      rawLocale = null
+    }
+
+    const locale = (rawLocale || 'zh').toLowerCase()
+
+    if (locale.startsWith('en')) {
+      return '**Language Requirement:** Please deliver the output in English only, ensuring the tone fits English-language web fiction readers.'
+    }
+
+    return '**语言要求：**请使用简体中文回答，保持自然流畅并符合中文网络小说的阅读习惯。'
+  }
+
   private ensureAssistantEnabled(): void {
     if (!this.computeAssistantEnabled()) {
       throw this.createAssistantDisabledError()
@@ -515,6 +532,8 @@ class AIService {
       nextChapterPlan
     } = params
 
+    const languageRequirement = this.getLanguageRequirementBlock()
+
     let prompt = `请为第${chapterNumber}章"${chapterTitle}"生成一个详细的内容大纲。
 
 **章节信息：**
@@ -600,6 +619,8 @@ class AIService {
 2. 每个段落的字数分配合理，总和接近目标字数
 3. 情节紧凑，有足够的冲突和转折
 4. 符合角色设定和世界观背景`
+
+    prompt += `\n\n${languageRequirement}`
 
     return prompt
   }
@@ -766,6 +787,8 @@ class AIService {
       conflict
     } = params
 
+    const languageRequirement = this.getLanguageRequirementBlock()
+
     const chapterCounts = {
       brief: { min: 3, max: 5 },
       standard: { min: 8, max: 12 },
@@ -845,6 +868,8 @@ ${description}
 4. 字数分配要合理，单章一般2000-4000字
 5. 角色出场和发展要符合人物设定
 6. 确保JSON格式正确，可以被解析`
+
+    prompt += `\n${languageRequirement}\n`
 
     return prompt
   }
@@ -1167,15 +1192,17 @@ ${description}
       settings
     } = params
 
+    const languageRequirement = this.getLanguageRequirementBlock()
+
     let prompt = `请为我创作小说正文内容，要求如下：
 
 **创作要求：**
 - 目标长度：约${targetLength}字
 - 写作风格：${this.getStyleText(style)}
 - 文字风格：生动自然，适合网络小说阅读
-- 段落格式：每段开头空两格，适当使用对话和描写
+- 段落格式：每段开头空两格，适当使用对话和描写`
 
-**章节信息：**`
+    prompt += `\n\n${languageRequirement}\n\n**章节信息：**`
 
     if (outline) {
       prompt += `
@@ -1276,6 +1303,8 @@ ${existingContent.slice(0, 500)}...
    * 构建建议生成提示词
    */
   private buildSuggestionPrompt(context: string, maxLength: number, count: number): string {
+    const languageRequirement = this.getLanguageRequirementBlock()
+
     return `你是一个智能写作助手。请基于以下文本内容，生成${count}个可能的续写建议。
 
 **当前文本：**
@@ -1311,7 +1340,9 @@ ${context}
 }
 \`\`\`
 
-请直接返回JSON，不要添加其他说明。`
+请直接返回JSON，不要添加其他说明。
+
+${languageRequirement}`
   }
 
   /**

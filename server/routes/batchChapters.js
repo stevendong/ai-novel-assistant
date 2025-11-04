@@ -22,7 +22,8 @@ router.get('/:novelId/analyze', async (req, res) => {
     const { novelId } = req.params
     const userId = req.user.id
 
-    const analysis = await batchChapterService.analyzeNovelContext(novelId, userId)
+    const locale = Array.isArray(req.query.locale) ? req.query.locale[0] : req.query.locale
+    const analysis = await batchChapterService.analyzeNovelContext(novelId, userId, locale)
 
     res.json({
       success: true,
@@ -51,7 +52,8 @@ router.post('/generate', async (req, res) => {
       mode, // continue, insert, branch, expand
       totalChapters,
       startPosition,
-      parameters
+      parameters,
+      locale
     } = req.body
 
     // 验证必需参数
@@ -77,11 +79,12 @@ router.post('/generate', async (req, res) => {
       mode,
       totalChapters,
       startPosition,
-      parameters: parameters || {}
+      parameters: parameters || {},
+      locale
     })
 
     // 异步执行生成任务
-    batchChapterService.executeBatchGeneration(batchId).catch(error => {
+    batchChapterService.executeBatchGeneration(batchId, locale).catch(error => {
       console.error('批量生成执行失败:', error)
     })
 
