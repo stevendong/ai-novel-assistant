@@ -342,6 +342,9 @@
         "remove": "Remove",
         "removeConfirm": "Remove this setting?"
       },
+      "empty": {
+        "description": "This chapter has no linked settings yet. Click below to add one."
+      },
       "list": {
         "noDescription": "No description yet"
       },
@@ -1756,6 +1759,7 @@
     "createFirst": "Create first setting",
     "selectToView": "Select a setting to view and edit details",
     "locked": "Locked",
+    "lock": "Lock",
     "enhance": "Smart Enhancement",
     "expand": "Detail Expansion",
     "aiSuggestions": "AI Suggestions",
@@ -1793,24 +1797,10 @@
     "expansionAspects": "Expansion Aspects",
     "plotRelevance": "Plot Relevance",
     "plotRelevancePlaceholder": "Describe the role and importance of this setting in the story...",
-    "detailLevel": {
-      "brief": "Brief Supplement",
-      "standard": "Standard Detail",
-      "comprehensive": "Comprehensive In-depth",
-      "immersive": "Immersive Description"
-    },
+    "detailLevel": "Detail Level",
     "focusAreas": "Focus Areas",
-    "suggestionType": {
-      "general": "Comprehensive Analysis",
-      "completeness": "Completeness Check",
-      "creativity": "Creative Development",
-      "consistency": "Consistency Check",
-      "integration": "Plot Integration"
-    },
-    "scope": {
-      "setting": "Current Setting Only",
-      "full": "Comprehensive Check"
-    },
+    "suggestionType": "Suggestion Type",
+    "scope": "Analysis Scope",
     "startAIAnalysis": "Start AI Analysis",
     "enhancedDescription": "Enhanced Description",
     "applyToDescription": "Apply to Description",

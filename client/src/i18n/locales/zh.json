@@ -342,6 +342,9 @@
         "remove": "移除",
         "removeConfirm": "确定要移除这个设定吗？"
       },
+      "empty": {
+        "description": "当前章节还没有关联设定，点击下方按钮添加。"
+      },
       "list": {
         "noDescription": "暂无描述"
       },
@@ -579,6 +582,21 @@
     "validation": {
       "titleRequired": "请输入章节标题"
     }
+  },
+  "chapterTopNav": {
+    "backTooltip": "返回章节列表",
+    "backLabel": "章节列表",
+    "prevTooltip": "上一章：{title}",
+    "noPrev": "暂无上一章",
+    "prevLabel": "上一章",
+    "chapterNumber": "第 {number} 章",
+    "untitled": "未命名章节",
+    "quickJump": "快速跳转",
+    "loadMore": "已加载 {loaded} / {total} 章",
+    "nextTooltip": "下一章：{title}",
+    "noNext": "暂无下一章",
+    "nextLabel": "下一章",
+    "keyboardHints": "{modifier} + ←/→"
   },
   "progress": {
     "title": "进度统计",
@@ -1741,6 +1759,7 @@
     "createFirst": "创建第一个设定",
     "selectToView": "选择一个设定以查看和编辑详情",
     "locked": "锁定",
+    "lock": "锁定",
     "enhance": "智能增强",
     "expand": "细节扩展",
     "aiSuggestions": "AI建议",
@@ -1778,24 +1797,10 @@
     "expansionAspects": "重点扩展方面",
     "plotRelevance": "与情节的关联",
     "plotRelevancePlaceholder": "描述这个设定在故事中的作用和重要性...",
-    "detailLevel": {
-      "brief": "简要补充",
-      "standard": "标准详细",
-      "comprehensive": "全面深入",
-      "immersive": "沉浸式描述"
-    },
+    "detailLevel": "细节层级",
     "focusAreas": "重点关注领域",
-    "suggestionType": {
-      "general": "综合分析",
-      "completeness": "完整性检查",
-      "creativity": "创意发展",
-      "consistency": "一致性检查",
-      "integration": "情节融合"
-    },
-    "scope": {
-      "setting": "仅当前设定",
-      "full": "全面检查"
-    },
+    "suggestionType": "建议类型",
+    "scope": "分析范围",
     "startAIAnalysis": "开始AI分析",
     "enhancedDescription": "增强描述",
     "applyToDescription": "应用到描述",
