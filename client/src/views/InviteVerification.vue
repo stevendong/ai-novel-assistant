@@ -153,6 +153,16 @@
                 <MailOutlined />
                 {{ $t('auth.inviteVerification.applyEmail') }}
               </a>
+              <a-button
+                class="copy-email-button"
+                type="default"
+                @click="handleCopyEmail"
+              >
+                <template #icon>
+                  <CopyOutlined />
+                </template>
+                {{ $t('auth.inviteVerification.copyEmail') }}
+              </a-button>
             </div>
           </template>
         </a-alert>
@@ -170,7 +180,8 @@ import {
   SwapOutlined,
   LogoutOutlined,
   DownOutlined,
-  MailOutlined
+  MailOutlined,
+  CopyOutlined
 } from '@ant-design/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -182,6 +193,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
+const applyEmail = computed(() => t('auth.inviteVerification.applyEmail'))
 
 const formData = reactive({
   inviteCode: ''
@@ -249,6 +261,33 @@ const handleLogout = async () => {
     router.push('/login')
   } catch (error) {
     console.error('Logout failed:', error)
+  }
+}
+
+const handleCopyEmail = async () => {
+  const email = applyEmail.value
+
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(email)
+    } else if (typeof document !== 'undefined') {
+      const textarea = document.createElement('textarea')
+      textarea.value = email
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.focus()
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    } else {
+      throw new Error('Clipboard API not available')
+    }
+
+    message.success(t('auth.inviteVerification.copySuccess'))
+  } catch (error) {
+    console.error('Failed to copy email:', error)
+    message.error(t('auth.inviteVerification.copyError'))
   }
 }
 
@@ -556,6 +595,9 @@ onMounted(async () => {
   display: flex;
   justify-content: flex-start;
   margin-top: 8px;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .email-button {
@@ -582,6 +624,28 @@ onMounted(async () => {
 }
 
 .email-button:active {
+  transform: translateY(0);
+}
+
+.copy-email-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text);
+  background: var(--theme-bg-container);
+  transition: all 0.3s ease;
+}
+
+.copy-email-button:hover,
+.copy-email-button:focus {
+  color: var(--theme-text);
+  border-color: var(--theme-icon-text);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.1);
+}
+
+.copy-email-button:active {
   transform: translateY(0);
 }
 

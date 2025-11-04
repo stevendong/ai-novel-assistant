@@ -2038,7 +2038,10 @@
       "logout": "退出登录",
       "applyTitle": "如何获取邀请码？",
       "applyDescription": "可以使用注册账号的邮箱向 {email} 发送申请邮件，通过审核后会回复邀请码。",
-      "applyEmail": "admin@myaichatbox.com"
+      "applyEmail": "admin@myaichatbox.com",
+      "copyEmail": "复制邮箱",
+      "copySuccess": "邮箱地址已复制",
+      "copyError": "复制邮箱失败"
     }
   },
   "user": {
