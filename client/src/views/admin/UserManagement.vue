@@ -1,8 +1,8 @@
 <template>
   <div class="user-management">
     <a-page-header
-      title="用户管理"
-      sub-title="管理系统用户权限和状态"
+      :title="t('admin.userManagement.title')"
+      :sub-title="t('admin.userManagement.subtitle')"
       class="page-header"
     />
 
@@ -15,7 +15,7 @@
             <a-space size="middle">
               <a-input-search
                 v-model:value="searchQuery"
-                placeholder="搜索用户名、邮箱或昵称"
+                :placeholder="t('admin.userManagement.searchPlaceholder')"
                 @search="handleSearch"
                 allow-clear
                 class="search-input"
@@ -23,25 +23,25 @@
               />
               <a-select
                 v-model:value="roleFilter"
-                placeholder="角色筛选"
+                :placeholder="t('admin.userManagement.filters.role.placeholder')"
                 @change="handleSearch"
                 allow-clear
                 class="role-filter"
               >
-                <a-select-option value="">全部角色</a-select-option>
-                <a-select-option value="admin">管理员</a-select-option>
-                <a-select-option value="user">普通用户</a-select-option>
+                <a-select-option value="">{{ t('admin.userManagement.filters.role.all') }}</a-select-option>
+                <a-select-option value="admin">{{ t('admin.userManagement.filters.role.admin') }}</a-select-option>
+                <a-select-option value="user">{{ t('admin.userManagement.filters.role.user') }}</a-select-option>
               </a-select>
               <a-select
                 v-model:value="statusFilter"
-                placeholder="状态筛选"
+                :placeholder="t('admin.userManagement.filters.status.placeholder')"
                 @change="handleSearch"
                 allow-clear
                 class="status-filter"
               >
-                <a-select-option value="">全部状态</a-select-option>
-                <a-select-option value="true">已启用</a-select-option>
-                <a-select-option value="false">已禁用</a-select-option>
+                <a-select-option value="">{{ t('admin.userManagement.filters.status.all') }}</a-select-option>
+                <a-select-option value="true">{{ t('admin.userManagement.filters.status.enabled') }}</a-select-option>
+                <a-select-option value="false">{{ t('admin.userManagement.filters.status.disabled') }}</a-select-option>
               </a-select>
             </a-space>
           </div>
@@ -59,40 +59,40 @@
                   <a-menu @click="handleBatchMenuClick">
                     <a-menu-item key="activate">
                       <CheckCircleOutlined />
-                      批量启用
+                      {{ t('admin.userManagement.toolbar.batch.activate') }}
                     </a-menu-item>
                     <a-menu-item key="deactivate">
                       <StopOutlined />
-                      批量禁用
+                      {{ t('admin.userManagement.toolbar.batch.deactivate') }}
                     </a-menu-item>
                     <a-menu-divider />
                     <a-menu-item key="delete" class="danger-menu-item">
                       <DeleteOutlined />
-                      批量删除
+                      {{ t('admin.userManagement.toolbar.batch.delete') }}
                     </a-menu-item>
                   </a-menu>
                 </template>
                 <a-button type="primary" ghost>
-                  批量操作 ({{ selectedRowKeys.length }}) <DownOutlined />
+                  {{ batchButtonLabel }} <DownOutlined />
                 </a-button>
               </a-dropdown>
 
               <!-- 刷新按钮 -->
               <a-button @click="handleRefresh" :loading="loading">
                 <ReloadOutlined />
-                刷新
+                {{ t('common.refresh') }}
               </a-button>
 
               <!-- 导出按钮 -->
               <a-button @click="handleExportUsers">
                 <DownloadOutlined />
-                导出
+                {{ t('common.export') }}
               </a-button>
 
               <!-- 创建用户 -->
               <a-button type="primary" @click="handleCreateUser">
                 <PlusOutlined />
-                创建用户
+                {{ t('admin.userManagement.toolbar.create') }}
               </a-button>
             </a-space>
           </div>
@@ -105,8 +105,8 @@
           <div class="table-header">
             <div class="table-title">
               <UserOutlined />
-              <span>用户列表</span>
-              <a-tag class="user-count-tag">共 {{ pagination.total }} 名用户</a-tag>
+              <span>{{ t('admin.userManagement.table.title') }}</span>
+              <a-tag class="user-count-tag">{{ t('admin.userManagement.table.countTag', { count: pagination.total }) }}</a-tag>
             </div>
             <div class="table-extra">
               <a-space>
@@ -114,21 +114,21 @@
                 <a-dropdown>
                   <template #overlay>
                     <a-menu @click="handleTableSizeChange">
-                      <a-menu-item key="small">紧凑</a-menu-item>
-                      <a-menu-item key="middle">默认</a-menu-item>
-                      <a-menu-item key="large">宽松</a-menu-item>
+                      <a-menu-item key="small">{{ t('admin.userManagement.table.density.compact') }}</a-menu-item>
+                      <a-menu-item key="middle">{{ t('admin.userManagement.table.density.default') }}</a-menu-item>
+                      <a-menu-item key="large">{{ t('admin.userManagement.table.density.comfortable') }}</a-menu-item>
                     </a-menu>
                   </template>
                   <a-button size="small">
                     <ColumnHeightOutlined />
-                    密度
+                    {{ t('admin.userManagement.table.density.label') }}
                   </a-button>
                 </a-dropdown>
 
                 <!-- 列设置 -->
-                <a-button size="small" @click="showColumnSettings">
+                  <a-button size="small" @click="showColumnSettings">
                   <SettingOutlined />
-                  列设置
+                  {{ t('admin.userManagement.table.columnSettings') }}
                 </a-button>
               </a-space>
             </div>
@@ -158,8 +158,10 @@
                 </div>
                 <div class="user-details">
                   <div class="user-name">
-                    {{ record.nickname || record.username }}
-                    <a-tag v-if="record.id === currentUserId" color="orange" size="small">当前用户</a-tag>
+                  {{ record.nickname || record.username }}
+                    <a-tag v-if="record.id === currentUserId" color="orange" size="small">
+                      {{ t('admin.userManagement.table.currentUserTag') }}
+                    </a-tag>
                   </div>
                   <div class="user-username">@{{ record.username }}</div>
                   <div class="user-email">{{ record.email }}</div>
@@ -182,7 +184,7 @@
               <div class="status-cell">
                 <a-badge
                   :status="record.isActive ? 'success' : 'error'"
-                  :text="record.isActive ? '正常' : '禁用'"
+                  :text="record.isActive ? t('admin.userManagement.table.status.active') : t('admin.userManagement.table.status.disabled')"
                   class="status-badge"
                 />
               </div>
@@ -193,11 +195,11 @@
               <div class="stats-cell">
                 <a-space direction="vertical" size="small">
                   <div class="stat-item">
-                    <span class="stat-label">小说:</span>
+                    <span class="stat-label">{{ t('admin.userManagement.table.stats.novels') }}</span>
                     <span class="stat-value">{{ record._count?.novels || 0 }}</span>
                   </div>
                   <div class="stat-item">
-                    <span class="stat-label">邀请:</span>
+                    <span class="stat-label">{{ t('admin.userManagement.table.stats.invites') }}</span>
                     <span class="stat-value">{{ record._count?.invitees || 0 }}</span>
                   </div>
                 </a-space>
@@ -211,7 +213,7 @@
                   <div class="time-value">{{ formatDateTime(record.lastLogin, 'date') }}</div>
                   <div class="time-detail">{{ formatDateTime(record.lastLogin, 'time') }}</div>
                 </template>
-                <span v-else class="never-login">从未登录</span>
+                <span v-else class="never-login">{{ t('admin.userManagement.table.neverLogin') }}</span>
               </div>
             </template>
 
@@ -228,7 +230,7 @@
               <div class="actions-cell">
                 <a-space size="small">
                   <!-- 查看 -->
-                  <a-tooltip title="查看详情">
+                  <a-tooltip :title="t('admin.userManagement.actions.view')">
                     <a-button
                       type="text"
                       size="small"
@@ -240,7 +242,7 @@
                   </a-tooltip>
 
                   <!-- 编辑 -->
-                  <a-tooltip title="编辑用户">
+                  <a-tooltip :title="t('admin.userManagement.actions.edit')">
                     <a-button
                       type="text"
                       size="small"
@@ -256,19 +258,19 @@
                     <template #overlay>
                       <a-menu @click="(e) => handleUserAction(record, e.key)">
                         <!-- 角色管理 -->
-                        <a-menu-sub-menu key="role" title="角色管理">
+                        <a-menu-sub-menu key="role" :title="t('admin.userManagement.actions.role.title')">
                           <template #icon><CrownOutlined /></template>
                           <a-menu-item
                             key="set-admin"
                             :disabled="record.role === 'admin' || record.id === currentUserId"
                           >
-                            设为管理员
+                            {{ t('admin.userManagement.actions.role.setAdmin') }}
                           </a-menu-item>
                           <a-menu-item
                             key="set-user"
                             :disabled="record.role === 'user' || record.id === currentUserId"
                           >
-                            设为普通用户
+                            {{ t('admin.userManagement.actions.role.setUser') }}
                           </a-menu-item>
                         </a-menu-sub-menu>
 
@@ -279,7 +281,7 @@
                           :disabled="record.id === currentUserId && record.isActive"
                         >
                           <component :is="record.isActive ? StopOutlined : CheckCircleOutlined" />
-                          {{ record.isActive ? '禁用用户' : '启用用户' }}
+                          {{ record.isActive ? t('admin.userManagement.actions.toggle.disable') : t('admin.userManagement.actions.toggle.enable') }}
                         </a-menu-item>
 
                         <!-- 危险操作 -->
@@ -289,7 +291,7 @@
                           :disabled="record.id === currentUserId"
                         >
                           <KeyOutlined />
-                          重置密码
+                          {{ t('admin.userManagement.actions.resetPassword') }}
                         </a-menu-item>
                         <a-menu-item
                           key="delete"
@@ -297,11 +299,11 @@
                           class="danger-menu-item"
                         >
                           <DeleteOutlined />
-                          删除用户
+                          {{ t('admin.userManagement.actions.delete') }}
                         </a-menu-item>
                       </a-menu>
                     </template>
-                    <a-tooltip title="更多操作">
+                    <a-tooltip :title="t('admin.userManagement.actions.more')">
                       <a-button type="text" size="small" class="action-btn">
                         <MoreOutlined />
                       </a-button>
@@ -318,7 +320,7 @@
     <!-- 列设置模态框 -->
     <a-modal
       v-model:visible="columnSettingsVisible"
-      title="列设置"
+      :title="t('admin.userManagement.modals.columnSettings.title')"
       @ok="handleColumnSettingsOk"
       width="500px"
     >
@@ -335,9 +337,9 @@
               </template>
               <a-list-item-meta>
                 <template #title>
-                  {{ item.title }}
+                  {{ t(item.titleKey) }}
                   <a-tag v-if="item.key === 'user' || item.key === 'actions'" size="small" color="blue">
-                    必需
+                    {{ t('admin.userManagement.table.columnRequired') }}
                   </a-tag>
                 </template>
               </a-list-item-meta>
@@ -367,24 +369,24 @@
     <!-- 重置密码确认模态框 -->
     <a-modal
       v-model:visible="resetPasswordVisible"
-      title="重置用户密码"
+      :title="t('admin.userManagement.modals.resetPassword.title')"
       @ok="confirmResetPassword"
       :confirm-loading="resetPasswordLoading"
-      ok-text="确定重置"
-      cancel-text="取消"
+      :ok-text="t('admin.userManagement.modals.resetPassword.ok')"
+      :cancel-text="t('admin.userManagement.modals.resetPassword.cancel')"
     >
       <a-alert
-        message="重置确认"
-        :description="`确定要重置用户 ${resetPasswordUser?.nickname || resetPasswordUser?.username} 的密码吗？`"
+        :message="t('admin.userManagement.modals.resetPassword.confirmTitle')"
+        :description="t('admin.userManagement.modals.resetPassword.description', { name: resetPasswordUser?.nickname || resetPasswordUser?.username || '' })"
         type="warning"
         show-icon
         class="mb-4"
       />
-      <p>重置后：</p>
+      <p>{{ t('admin.userManagement.modals.resetPassword.afterReset') }}</p>
       <ul>
-        <li>新密码将自动生成</li>
-        <li>用户的所有登录会话将被终止</li>
-        <li>用户需要使用新密码重新登录</li>
+        <li>{{ t('admin.userManagement.modals.resetPassword.effects.line1') }}</li>
+        <li>{{ t('admin.userManagement.modals.resetPassword.effects.line2') }}</li>
+        <li>{{ t('admin.userManagement.modals.resetPassword.effects.line3') }}</li>
       </ul>
     </a-modal>
   </div>
@@ -417,6 +419,7 @@ import { api } from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
 import UserForm from '@/components/admin/UserForm.vue'
 import UserDetail from '@/components/admin/UserDetail.vue'
+import { useI18n } from 'vue-i18n'
 
 interface User {
   id: string
@@ -435,6 +438,8 @@ interface User {
 
 const authStore = useAuthStore()
 const currentUserId = computed(() => authStore.user?.id)
+const { t, locale } = useI18n()
+const displayLocale = computed(() => (locale.value.startsWith('zh') ? 'zh-CN' : 'en-US'))
 
 const loading = ref(false)
 const users = ref<User[]>([])
@@ -467,6 +472,10 @@ const rowSelection = {
   })
 }
 
+const batchButtonLabel = computed(() =>
+  t('admin.userManagement.toolbar.batchButton', { count: selectedRowKeys.value.length })
+)
+
 const pagination = ref({
   current: 1,
   pageSize: 20,
@@ -474,7 +483,11 @@ const pagination = ref({
   showSizeChanger: true,
   showQuickJumper: true,
   showTotal: (total: number, range: [number, number]) =>
-    `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+    t('admin.userManagement.pagination.summary', {
+      start: range[0],
+      end: range[1],
+      total
+    })
 })
 
 // 表格分页配置
@@ -485,7 +498,11 @@ const paginationConfig = computed(() => ({
   showTotal: (total: number, range: [number, number]) => {
     const start = range[0]
     const end = range[1]
-    return `显示 ${start}-${end} / 共 ${total} 条`
+    return t('admin.userManagement.pagination.summary', {
+      start,
+      end,
+      total
+    })
   },
   pageSizeOptions: ['10', '20', '50', '100'],
   size: 'default'
@@ -494,54 +511,54 @@ const paginationConfig = computed(() => ({
 // 所有可用列
 const allColumns = ref([
   {
-    title: '用户信息',
+    titleKey: 'admin.userManagement.table.columns.user',
     key: 'user',
     width: 280,
     fixed: 'left',
     visible: true
   },
   {
-    title: '角色',
+    titleKey: 'admin.userManagement.table.columns.role',
     key: 'role',
     width: 120,
     visible: true,
     filters: [
-      { text: '管理员', value: 'admin' },
-      { text: '普通用户', value: 'user' }
+      { textKey: 'admin.userManagement.tableFilters.roleAdmin', value: 'admin' },
+      { textKey: 'admin.userManagement.tableFilters.roleUser', value: 'user' }
     ]
   },
   {
-    title: '状态',
+    titleKey: 'admin.userManagement.table.columns.status',
     key: 'status',
     width: 100,
     visible: true,
     filters: [
-      { text: '正常', value: true },
-      { text: '禁用', value: false }
+      { textKey: 'admin.userManagement.tableFilters.statusActive', value: true },
+      { textKey: 'admin.userManagement.tableFilters.statusDisabled', value: false }
     ]
   },
   {
-    title: '统计',
+    titleKey: 'admin.userManagement.table.columns.stats',
     key: 'stats',
     width: 120,
     visible: true
   },
   {
-    title: '最后登录',
+    titleKey: 'admin.userManagement.table.columns.lastLogin',
     key: 'lastLogin',
     width: 150,
     visible: true,
     sorter: true
   },
   {
-    title: '注册时间',
+    titleKey: 'admin.userManagement.table.columns.createdAt',
     key: 'createdAt',
     width: 150,
     visible: true,
     sorter: true
   },
   {
-    title: '操作',
+    titleKey: 'admin.userManagement.table.columns.actions',
     key: 'actions',
     width: 120,
     fixed: 'right',
@@ -551,7 +568,18 @@ const allColumns = ref([
 
 // 当前显示的列
 const visibleColumns = computed(() =>
-  allColumns.value.filter(col => col.visible)
+  allColumns.value
+    .filter(col => col.visible)
+    .map(col => ({
+      ...col,
+      title: t(col.titleKey),
+      filters: col.filters
+        ? col.filters.map(filter => ({
+            text: t(filter.textKey),
+            value: filter.value
+          }))
+        : undefined
+    }))
 )
 
 const loadUsers = async () => {
@@ -570,7 +598,7 @@ const loadUsers = async () => {
     pagination.value.total = response.data.pagination.total
   } catch (error) {
     console.error('加载用户列表失败:', error)
-    message.error('加载用户列表失败')
+    message.error(t('admin.userManagement.messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -609,7 +637,7 @@ const showColumnSettings = () => {
 // 列设置确认
 const handleColumnSettingsOk = () => {
   columnSettingsVisible.value = false
-  message.success('列设置已保存')
+  message.success(t('admin.userManagement.modals.columnSettings.saved'))
 }
 
 // 获取角色颜色
@@ -624,27 +652,32 @@ const getRoleIcon = (role: string) => {
 
 // 获取角色文本
 const getRoleText = (role: string) => {
-  return role === 'admin' ? '管理员' : '普通用户'
+  return role === 'admin'
+    ? t('admin.userManagement.tableFilters.roleAdmin')
+    : t('admin.userManagement.tableFilters.roleUser')
 }
 
 // 格式化日期时间
 const formatDateTime = (dateString: string, type: 'date' | 'time' = 'date') => {
   const date = new Date(dateString)
-  if (type === 'date') {
-    return date.toLocaleDateString('zh-CN')
-  } else {
-    return date.toLocaleTimeString('zh-CN', { hour12: false })
+  if (Number.isNaN(date.getTime())) {
+    return ''
   }
+  const localeString = displayLocale.value
+  if (type === 'date') {
+    return date.toLocaleDateString(localeString)
+  }
+  return date.toLocaleTimeString(localeString, { hour12: localeString !== 'zh-CN' })
 }
 
 const handleRoleChange = async (user: User, newRole: string) => {
   try {
     await api.patch(`/api/admin/users/${user.id}/role`, { role: newRole })
-    message.success('角色更新成功')
+    message.success(t('admin.userManagement.messages.roleUpdated'))
     loadUsers()
   } catch (error) {
     console.error('角色更新失败:', error)
-    message.error('角色更新失败')
+    message.error(t('admin.userManagement.messages.roleUpdateFailed'))
   }
 }
 
@@ -652,22 +685,25 @@ const handleStatusChange = async (user: User) => {
   try {
     const newStatus = !user.isActive
     await api.patch(`/api/admin/users/${user.id}/status`, { isActive: newStatus })
-    message.success(`用户${newStatus ? '启用' : '禁用'}成功`)
+    const actionText = newStatus
+      ? t('admin.userManagement.statusAction.enable')
+      : t('admin.userManagement.statusAction.disable')
+    message.success(t('admin.userManagement.messages.statusUpdated', { action: actionText }))
     loadUsers()
   } catch (error) {
     console.error('状态更新失败:', error)
-    message.error('状态更新失败')
+    message.error(t('admin.userManagement.messages.statusUpdateFailed'))
   }
 }
 
 const handleDelete = async (user: User) => {
   try {
     await api.delete(`/api/admin/users/${user.id}`)
-    message.success('用户删除成功')
+    message.success(t('admin.userManagement.messages.deleteSuccess'))
     loadUsers()
   } catch (error) {
     console.error('删除用户失败:', error)
-    message.error('删除用户失败')
+    message.error(t('admin.userManagement.messages.deleteFailed'))
   }
 }
 
@@ -706,17 +742,19 @@ const handleFormSuccess = () => {
 const handleBatchMenuClick = (e: any) => {
   const key = e.key
   const selectedCount = selectedRowKeys.value.length
-  const actionText = {
-    activate: '启用',
-    deactivate: '禁用',
-    delete: '删除'
-  }[key] || '操作'
+  const actionMap: Record<string, 'activate' | 'deactivate' | 'delete'> = {
+    activate: 'activate',
+    deactivate: 'deactivate',
+    delete: 'delete'
+  }
+  const actionKey = actionMap[key] || 'activate'
+  const actionText = t(`admin.userManagement.batchActionText.${actionKey}`)
 
   Modal.confirm({
-    title: `批量${actionText}用户`,
-    content: `确定要${actionText} ${selectedCount} 名用户吗？`,
-    okText: '确定',
-    cancelText: '取消',
+    title: t('admin.userManagement.toolbar.batch.confirmTitle', { action: actionText }),
+    content: t('admin.userManagement.toolbar.batch.confirmContent', { action: actionText, count: selectedCount }),
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
     onOk: () => handleBatchOperation(key)
   })
 }
@@ -724,7 +762,7 @@ const handleBatchMenuClick = (e: any) => {
 // 批量操作
 const handleBatchOperation = async (action: string) => {
   if (selectedRowKeys.value.length === 0) {
-    message.warning('请选择要操作的用户')
+    message.warning(t('admin.userManagement.messages.batchSelectRequired'))
     return
   }
 
@@ -739,7 +777,7 @@ const handleBatchOperation = async (action: string) => {
     loadUsers()
   } catch (error) {
     console.error('批量操作失败:', error)
-    message.error('批量操作失败')
+    message.error(t('admin.userManagement.messages.batchFailed'))
   }
 }
 
@@ -760,11 +798,13 @@ const handleUserAction = async (user: User, action: string) => {
       break
     case 'delete':
       Modal.confirm({
-        title: '删除用户',
-        content: `确定要删除用户 ${user.nickname || user.username} 吗？`,
-        okText: '确定删除',
+        title: t('admin.userManagement.modals.deleteUser.title'),
+        content: t('admin.userManagement.modals.deleteUser.content', {
+          name: user.nickname || user.username
+        }),
+        okText: t('admin.userManagement.modals.deleteUser.ok'),
         okType: 'danger',
-        cancelText: '取消',
+        cancelText: t('admin.userManagement.modals.deleteUser.cancel'),
         onOk: () => handleDelete(user)
       })
       break
@@ -786,12 +826,12 @@ const confirmResetPassword = async () => {
     await api.patch(`/api/admin/users/${resetPasswordUser.value.id}/password`, {
       newPassword: Math.random().toString(36).slice(-8)
     })
-    message.success('密码重置成功，用户会话已终止')
+    message.success(t('admin.userManagement.messages.resetSuccess'))
     resetPasswordVisible.value = false
     loadUsers()
   } catch (error) {
     console.error('密码重置失败:', error)
-    message.error('密码重置失败')
+    message.error(t('admin.userManagement.messages.resetFailed'))
   } finally {
     resetPasswordLoading.value = false
   }
@@ -813,10 +853,10 @@ const handleExportUsers = async () => {
     link.click()
     window.URL.revokeObjectURL(url)
 
-    message.success('用户数据导出成功')
+    message.success(t('admin.userManagement.messages.exportSuccess'))
   } catch (error) {
     console.error('导出失败:', error)
-    message.error('导出失败')
+    message.error(t('admin.userManagement.messages.exportFailed'))
   }
 }
 

@@ -694,7 +694,7 @@
         }
       }
     },
-    "achievements": {
+  "achievements": {
       "title": "Writing Achievements",
       "earned": "Unlocked",
       "locked": "Locked",
@@ -740,10 +740,338 @@
       "goalsSaved": "Writing goals saved",
       "goalsSaveFailed": "Failed to save goals. Please try again."
     },
-    "common": {
-      "tenThousandUnit": "w",
-      "thousandUnit": "k",
-      "millionUnit": "M"
+      "common": {
+        "tenThousandUnit": "w",
+        "thousandUnit": "k",
+        "millionUnit": "M"
+      }
+    },
+  "admin": {
+    "dashboard": {
+      "title": "Admin Panel",
+      "subtitle": "System overview and statistics",
+      "users": {
+        "total": "Total Users",
+        "active": "Active Users",
+        "admins": "Administrators",
+        "recent": "New Users This Week"
+      },
+      "content": {
+        "title": "Content Statistics",
+        "novels": "Total Novels",
+        "chapters": "Total Chapters"
+      },
+      "actions": {
+        "title": "Quick Actions",
+        "manageUsers": "User Management",
+        "manageInvites": "Invite Codes"
+      },
+      "messages": {
+        "loadFailed": "Failed to load statistics"
+      }
+    },
+    "userManagement": {
+      "title": "User Management",
+      "subtitle": "Manage user permissions and status",
+      "searchPlaceholder": "Search by username, email, or nickname",
+      "filters": {
+        "role": {
+          "placeholder": "Role filter",
+          "all": "All roles",
+          "admin": "Administrator",
+          "user": "Regular user"
+        },
+        "status": {
+          "placeholder": "Status filter",
+          "all": "All statuses",
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        }
+      },
+      "toolbar": {
+        "batchButton": "Batch actions ({count})",
+        "batch": {
+          "activate": "Enable selected",
+          "deactivate": "Disable selected",
+          "delete": "Delete selected",
+          "confirmTitle": "Batch {action} users",
+          "confirmContent": "Are you sure you want to {action} {count} user(s)?"
+        },
+        "create": "Create User"
+      },
+      "table": {
+        "title": "User List",
+        "countTag": "Total {count} users",
+        "density": {
+          "label": "Density",
+          "compact": "Compact",
+          "default": "Default",
+          "comfortable": "Comfortable"
+        },
+        "columnSettings": "Column Settings",
+        "columns": {
+          "user": "User Info",
+          "role": "Role",
+          "status": "Status",
+          "stats": "Statistics",
+          "lastLogin": "Last Login",
+          "createdAt": "Registered",
+          "actions": "Actions"
+        },
+        "columnRequired": "Required",
+        "stats": {
+          "novels": "Novels:",
+          "invites": "Invites:"
+        },
+        "status": {
+          "active": "Active",
+          "disabled": "Disabled"
+        },
+        "neverLogin": "Never logged in",
+        "currentUserTag": "Current"
+      },
+      "actions": {
+        "view": "View details",
+        "edit": "Edit user",
+        "more": "More actions",
+        "role": {
+          "title": "Role Management",
+          "setAdmin": "Set as administrator",
+          "setUser": "Set as regular user"
+        },
+        "toggle": {
+          "enable": "Enable user",
+          "disable": "Disable user"
+        },
+        "resetPassword": "Reset password",
+        "delete": "Delete user"
+      },
+      "modals": {
+        "columnSettings": {
+          "title": "Column Settings",
+          "saved": "Column settings saved"
+        },
+        "resetPassword": {
+          "title": "Reset User Password",
+          "confirmTitle": "Reset confirmation",
+          "description": "Reset the password for user {name}?",
+          "afterReset": "After reset:",
+          "effects": {
+            "line1": "A new password will be generated automatically",
+            "line2": "All active sessions for this user will be terminated",
+            "line3": "The user will need to sign in with the new password"
+          },
+          "ok": "Reset",
+          "cancel": "Cancel"
+        },
+        "deleteUser": {
+          "title": "Delete User",
+          "content": "Delete user {name}?",
+          "ok": "Delete",
+          "cancel": "Cancel"
+        }
+      },
+      "form": {
+        "title": {
+          "create": "Create User",
+          "edit": "Edit User"
+        },
+        "labels": {
+          "username": "Username",
+          "email": "Email",
+          "nickname": "Nickname",
+          "password": "Password",
+          "confirmPassword": "Confirm Password",
+          "role": "Role",
+          "status": "Status"
+        },
+        "placeholders": {
+          "username": "Enter username",
+          "email": "Enter email address",
+          "nickname": "Enter nickname",
+          "password": "Enter password",
+          "passwordEdit": "Leave empty to keep current password",
+          "confirmPassword": "Re-enter password",
+          "role": "Select a role"
+        },
+        "options": {
+          "role": {
+            "user": "Regular user",
+            "admin": "Administrator"
+          }
+        },
+        "switch": {
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        },
+        "buttons": {
+          "cancel": "Cancel",
+          "create": "Create",
+          "update": "Update"
+        },
+        "validation": {
+          "usernameRequired": "Please enter a username",
+          "usernameLength": "Username must be 3-20 characters",
+          "usernamePattern": "Username may contain letters, numbers, underscores, and hyphens",
+          "usernameExists": "Username already exists",
+          "emailRequired": "Please enter an email address",
+          "emailInvalid": "Please enter a valid email address",
+          "emailExists": "Email already exists",
+          "nicknameMax": "Nickname cannot exceed 50 characters",
+          "nicknameInvalid": "Nickname cannot contain special characters",
+          "passwordRequired": "Please enter a password",
+          "passwordMin": "Password must be at least 6 characters",
+          "passwordMax": "Password cannot exceed 128 characters",
+          "passwordStrength": "Password is too weak. Consider using upper/lowercase letters, numbers, and symbols",
+          "confirmPasswordMismatch": "Passwords do not match",
+          "roleRequired": "Please select a user role"
+        },
+        "messages": {
+          "createSuccess": "User created successfully",
+          "updateSuccess": "User updated successfully",
+          "operationFailed": "Operation failed",
+          "submissionFailed": "User submission failed"
+        }
+      },
+      "messages": {
+        "loadFailed": "Failed to load users",
+        "batchSelectRequired": "Please select users first",
+        "batchFailed": "Batch operation failed",
+        "roleUpdated": "Role updated",
+        "roleUpdateFailed": "Failed to update role",
+        "statusUpdated": "User {action} successfully",
+        "statusUpdateFailed": "Failed to update user status",
+        "deleteSuccess": "User deleted",
+        "deleteFailed": "Failed to delete user",
+        "resetSuccess": "Password reset successfully and user sessions cleared",
+        "resetFailed": "Failed to reset password",
+        "exportSuccess": "User data exported",
+        "exportFailed": "Failed to export user data"
+      },
+      "statusAction": {
+        "enable": "enabled",
+        "disable": "disabled"
+      },
+      "batchActionText": {
+        "activate": "enable",
+        "deactivate": "disable",
+        "delete": "delete"
+      },
+      "pagination": {
+        "summary": "Showing {start}-{end} of {total} users"
+      },
+      "tableFilters": {
+        "roleAdmin": "Administrator",
+        "roleUser": "Regular User",
+        "statusActive": "Active",
+        "statusDisabled": "Disabled"
+      },
+      "systemTag": "System"
+    },
+    "inviteManagement": {
+      "title": "Invite Code Management",
+      "toolbar": {
+        "generate": "Generate invite",
+        "batch": "Batch generate",
+        "refresh": "Refresh"
+      },
+      "stats": {
+        "total": "Total Codes",
+        "used": "Used",
+        "active": "Active",
+        "usageRate": "Usage Rate"
+      },
+      "filters": {
+        "searchPlaceholder": "Search invite code or description",
+        "type": {
+          "label": "Type",
+          "all": "All types",
+          "system": "System",
+          "admin": "Administrator",
+          "user": "User"
+        },
+        "status": {
+          "label": "Status",
+          "all": "All statuses",
+          "active": "Active",
+          "inactive": "Disabled"
+        }
+      },
+      "table": {
+        "columns": {
+          "code": "Invite Code",
+          "type": "Type",
+          "status": "Status",
+          "usage": "Usage",
+          "creator": "Creator",
+          "description": "Description",
+          "expiresAt": "Expires At",
+          "createdAt": "Created",
+          "actions": "Actions"
+        },
+        "usageProgress": "{used} / {max}"
+      },
+      "usageModal": {
+        "title": "Invite Usage Records",
+        "columns": {
+          "user": "User",
+          "usedAt": "Used At",
+          "ip": "IP Address"
+        }
+      },
+      "forms": {
+        "create": {
+          "title": "Generate Invite",
+          "type": "Invite type",
+          "maxUses": "Max uses",
+          "expiresIn": "Validity (hours)",
+          "expiresPlaceholder": "Leave empty for no expiry",
+          "description": "Description",
+          "descriptionPlaceholder": "Usage description"
+        },
+        "batch": {
+          "title": "Batch Generate Invites",
+          "count": "Generate count",
+          "type": "Invite type",
+          "maxUses": "Max uses",
+          "expiresIn": "Validity (hours)",
+          "expiresPlaceholder": "Leave empty for no expiry",
+          "description": "Description",
+          "descriptionPlaceholder": "Purpose for batch generation"
+        }
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Disabled",
+        "neverExpires": "Never expires",
+        "system": "System"
+      },
+      "actions": {
+        "viewUsage": "View usage",
+        "deactivate": "Disable",
+        "activate": "Enable",
+        "delete": "Delete"
+      },
+      "messages": {
+        "loadFailed": "Failed to load invite codes",
+        "statsFailed": "Failed to load statistics",
+        "createSuccess": "Invite generated",
+        "createFailed": "Failed to generate invite",
+        "batchSuccess": "Generated {count} invite codes",
+        "batchFailed": "Batch generation failed",
+        "deactivateSuccess": "Invite disabled",
+        "deactivateFailed": "Failed to disable invite",
+        "activateSuccess": "Invite activated",
+        "activateFailed": "Failed to activate invite",
+        "deleteSuccess": "Invite deleted",
+        "deleteFailed": "Failed to delete invite"
+      },
+      "pagination": {
+        "summary": "Total {total} records, showing {start}-{end}"
+      },
+      "popconfirm": {
+        "deleteTitle": "Delete this invite code?"
+      }
     }
   },
   "app": {

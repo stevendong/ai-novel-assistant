@@ -1,19 +1,19 @@
 <template>
   <div class="invite-management">
     <div class="invite-header">
-      <h2>邀请码管理</h2>
+      <h2>{{ t('admin.inviteManagement.title') }}</h2>
       <div class="invite-actions">
         <a-button type="primary" @click="showCreateModal = true">
           <PlusOutlined />
-          生成邀请码
+          {{ t('admin.inviteManagement.toolbar.generate') }}
         </a-button>
         <a-button @click="showBatchModal = true">
           <TeamOutlined />
-          批量生成
+          {{ t('admin.inviteManagement.toolbar.batch') }}
         </a-button>
         <a-button @click="refreshData">
           <ReloadOutlined />
-          刷新
+          {{ t('admin.inviteManagement.toolbar.refresh') }}
         </a-button>
       </div>
     </div>
@@ -23,22 +23,22 @@
       <a-row :gutter="16">
         <a-col :span="6">
           <a-card>
-            <a-statistic title="总邀请码" :value="stats.total" />
+            <a-statistic :title="t('admin.inviteManagement.stats.total')" :value="stats.total" />
           </a-card>
         </a-col>
         <a-col :span="6">
           <a-card>
-            <a-statistic title="已使用" :value="stats.used" />
+            <a-statistic :title="t('admin.inviteManagement.stats.used')" :value="stats.used" />
           </a-card>
         </a-col>
         <a-col :span="6">
           <a-card>
-            <a-statistic title="活跃状态" :value="stats.active" />
+            <a-statistic :title="t('admin.inviteManagement.stats.active')" :value="stats.active" />
           </a-card>
         </a-col>
         <a-col :span="6">
           <a-card>
-            <a-statistic title="使用率" :value="stats.usageRate" suffix="%" />
+            <a-statistic :title="t('admin.inviteManagement.stats.usageRate')" :value="stats.usageRate" suffix="%" />
           </a-card>
         </a-col>
       </a-row>
@@ -50,7 +50,7 @@
         <a-col :span="8">
           <a-input
             v-model:value="searchText"
-            placeholder="搜索邀请码或描述"
+            :placeholder="t('admin.inviteManagement.filters.searchPlaceholder')"
             @input="handleSearch"
           >
             <template #prefix>
@@ -61,26 +61,26 @@
         <a-col :span="4">
           <a-select
             v-model:value="filterType"
-            placeholder="类型"
+            :placeholder="t('admin.inviteManagement.filters.type.label')"
             @change="handleFilter"
             style="width: 100%"
           >
-            <a-select-option value="">全部类型</a-select-option>
-            <a-select-option value="system">系统</a-select-option>
-            <a-select-option value="admin">管理员</a-select-option>
-            <a-select-option value="user">用户</a-select-option>
+            <a-select-option value="">{{ t('admin.inviteManagement.filters.type.all') }}</a-select-option>
+            <a-select-option value="system">{{ t('admin.inviteManagement.filters.type.system') }}</a-select-option>
+            <a-select-option value="admin">{{ t('admin.inviteManagement.filters.type.admin') }}</a-select-option>
+            <a-select-option value="user">{{ t('admin.inviteManagement.filters.type.user') }}</a-select-option>
           </a-select>
         </a-col>
         <a-col :span="4">
           <a-select
             v-model:value="filterStatus"
-            placeholder="状态"
+            :placeholder="t('admin.inviteManagement.filters.status.label')"
             @change="handleFilter"
             style="width: 100%"
           >
-            <a-select-option value="">全部状态</a-select-option>
-            <a-select-option value="true">激活</a-select-option>
-            <a-select-option value="false">禁用</a-select-option>
+            <a-select-option value="">{{ t('admin.inviteManagement.filters.status.all') }}</a-select-option>
+            <a-select-option value="true">{{ t('admin.inviteManagement.filters.status.active') }}</a-select-option>
+            <a-select-option value="false">{{ t('admin.inviteManagement.filters.status.inactive') }}</a-select-option>
           </a-select>
         </a-col>
       </a-row>
@@ -90,7 +90,7 @@
     <div class="invite-table">
       <a-table
         :dataSource="inviteCodes"
-        :columns="columns"
+        :columns="tableColumns"
         :loading="loading"
         :pagination="pagination"
         @change="handleTableChange"
@@ -114,12 +114,12 @@
 
           <template v-else-if="column.dataIndex === 'isActive'">
             <a-tag :color="record.isActive ? 'success' : 'error'">
-              {{ record.isActive ? '激活' : '禁用' }}
+              {{ record.isActive ? t('admin.inviteManagement.status.active') : t('admin.inviteManagement.status.inactive') }}
             </a-tag>
           </template>
 
           <template v-else-if="column.dataIndex === 'usage'">
-            <span>{{ record.usedCount }} / {{ record.maxUses }}</span>
+            <span>{{ t('admin.inviteManagement.table.usageProgress', { used: record.usedCount, max: record.maxUses }) }}</span>
             <a-progress
               :percent="(record.usedCount / record.maxUses) * 100"
               :show-info="false"
@@ -132,14 +132,14 @@
             <span v-if="record.creator">
               {{ record.creator.nickname || record.creator.username }}
             </span>
-            <a-tag v-else color="blue">系统</a-tag>
+            <a-tag v-else color="blue">{{ t('admin.inviteManagement.status.system') }}</a-tag>
           </template>
 
           <template v-else-if="column.dataIndex === 'expiresAt'">
             <span v-if="record.expiresAt">
               {{ formatDate(record.expiresAt) }}
             </span>
-            <a-tag v-else color="green">永不过期</a-tag>
+            <a-tag v-else color="green">{{ t('admin.inviteManagement.status.neverExpires') }}</a-tag>
           </template>
 
           <template v-else-if="column.dataIndex === 'actions'">
@@ -148,7 +148,7 @@
                 size="small"
                 @click="viewUsages(record)"
               >
-                查看使用
+                {{ t('admin.inviteManagement.actions.viewUsage') }}
               </a-button>
               <a-button
                 v-if="record.isActive"
@@ -156,7 +156,7 @@
                 danger
                 @click="deactivateCode(record)"
               >
-                禁用
+                {{ t('admin.inviteManagement.actions.deactivate') }}
               </a-button>
               <a-button
                 v-if="!record.isActive"
@@ -164,10 +164,10 @@
                 type="primary"
                 @click="activateCode(record)"
               >
-                启用
+                {{ t('admin.inviteManagement.actions.activate') }}
               </a-button>
               <a-popconfirm
-                title="确定要删除这个邀请码吗？"
+                :title="t('admin.inviteManagement.popconfirm.deleteTitle')"
                 @confirm="deleteCode(record)"
               >
                 <a-button
@@ -175,7 +175,7 @@
                   danger
                   :disabled="record.usages && record.usages.length > 0"
                 >
-                  删除
+                  {{ t('admin.inviteManagement.actions.delete') }}
                 </a-button>
               </a-popconfirm>
             </a-space>
@@ -187,19 +187,19 @@
     <!-- 创建邀请码弹窗 -->
     <a-modal
       v-model:open="showCreateModal"
-      title="生成邀请码"
+      :title="t('admin.inviteManagement.forms.create.title')"
       @ok="createInviteCode"
       :confirm-loading="createLoading"
     >
       <a-form :model="createForm" layout="vertical">
-        <a-form-item label="邀请码类型" required>
+        <a-form-item :label="t('admin.inviteManagement.forms.create.type')" required>
           <a-select v-model:value="createForm.codeType">
-            <a-select-option value="user">普通用户</a-select-option>
-            <a-select-option value="admin">管理员</a-select-option>
+            <a-select-option value="user">{{ t('admin.inviteManagement.filters.type.user') }}</a-select-option>
+            <a-select-option value="admin">{{ t('admin.inviteManagement.filters.type.admin') }}</a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item label="最大使用次数" required>
+        <a-form-item :label="t('admin.inviteManagement.forms.create.maxUses')" required>
           <a-input-number
             v-model:value="createForm.maxUses"
             :min="1"
@@ -208,19 +208,19 @@
           />
         </a-form-item>
 
-        <a-form-item label="有效期（小时）">
+        <a-form-item :label="t('admin.inviteManagement.forms.create.expiresIn')">
           <a-input-number
             v-model:value="createForm.expiresIn"
             :min="1"
-            placeholder="留空表示永不过期"
+            :placeholder="t('admin.inviteManagement.forms.create.expiresPlaceholder')"
             style="width: 100%"
           />
         </a-form-item>
 
-        <a-form-item label="描述">
+        <a-form-item :label="t('admin.inviteManagement.forms.create.description')">
           <a-textarea
             v-model:value="createForm.description"
-            placeholder="邀请码用途描述"
+            :placeholder="t('admin.inviteManagement.forms.create.descriptionPlaceholder')"
             :rows="3"
           />
         </a-form-item>
@@ -230,12 +230,12 @@
     <!-- 批量生成弹窗 -->
     <a-modal
       v-model:open="showBatchModal"
-      title="批量生成邀请码"
+      :title="t('admin.inviteManagement.forms.batch.title')"
       @ok="batchCreateInviteCodes"
       :confirm-loading="batchLoading"
     >
       <a-form :model="batchForm" layout="vertical">
-        <a-form-item label="生成数量" required>
+        <a-form-item :label="t('admin.inviteManagement.forms.batch.count')" required>
           <a-input-number
             v-model:value="batchForm.count"
             :min="1"
@@ -244,14 +244,14 @@
           />
         </a-form-item>
 
-        <a-form-item label="邀请码类型" required>
+        <a-form-item :label="t('admin.inviteManagement.forms.batch.type')" required>
           <a-select v-model:value="batchForm.codeType">
-            <a-select-option value="user">普通用户</a-select-option>
-            <a-select-option value="admin">管理员</a-select-option>
+            <a-select-option value="user">{{ t('admin.inviteManagement.filters.type.user') }}</a-select-option>
+            <a-select-option value="admin">{{ t('admin.inviteManagement.filters.type.admin') }}</a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item label="最大使用次数" required>
+        <a-form-item :label="t('admin.inviteManagement.forms.batch.maxUses')" required>
           <a-input-number
             v-model:value="batchForm.maxUses"
             :min="1"
@@ -260,19 +260,19 @@
           />
         </a-form-item>
 
-        <a-form-item label="有效期（小时）">
+        <a-form-item :label="t('admin.inviteManagement.forms.batch.expiresIn')">
           <a-input-number
             v-model:value="batchForm.expiresIn"
             :min="1"
-            placeholder="留空表示永不过期"
+            :placeholder="t('admin.inviteManagement.forms.batch.expiresPlaceholder')"
             style="width: 100%"
           />
         </a-form-item>
 
-        <a-form-item label="描述">
+        <a-form-item :label="t('admin.inviteManagement.forms.batch.description')">
           <a-textarea
             v-model:value="batchForm.description"
-            placeholder="批量生成邀请码的用途描述"
+            :placeholder="t('admin.inviteManagement.forms.batch.descriptionPlaceholder')"
             :rows="3"
           />
         </a-form-item>
@@ -282,13 +282,13 @@
     <!-- 使用记录弹窗 -->
     <a-modal
       v-model:open="showUsageModal"
-      title="邀请码使用记录"
+      :title="t('admin.inviteManagement.usageModal.title')"
       :footer="null"
       width="800px"
     >
       <a-table
         :dataSource="currentUsages"
-        :columns="usageColumns"
+        :columns="usageTableColumns"
         :pagination="false"
         size="small"
       >
@@ -315,6 +315,7 @@ import {
   SearchOutlined
 } from '@ant-design/icons-vue'
 import { api } from '@/utils/api'
+import { useI18n } from 'vue-i18n'
 
 // 响应式数据
 const loading = ref(false)
@@ -328,6 +329,8 @@ const stats = ref({
   expired: 0,
   usageRate: 0
 })
+const { t, locale } = useI18n()
+const displayLocale = computed(() => (locale.value.startsWith('zh') ? 'zh-CN' : 'en-US'))
 
 // 搜索和筛选
 const searchText = ref('')
@@ -364,79 +367,83 @@ const pagination = reactive({
   showSizeChanger: true,
   showQuickJumper: true,
   showTotal: (total: number, range: number[]) =>
-    `共 ${total} 条记录，显示 ${range[0]}-${range[1]} 条`
+    t('admin.inviteManagement.pagination.summary', {
+      total,
+      start: range[0],
+      end: range[1]
+    })
 })
 
 // 表格列定义
-const columns = [
+const tableColumns = computed(() => [
   {
-    title: '邀请码',
+    title: t('admin.inviteManagement.table.columns.code'),
     dataIndex: 'code',
     width: 150,
     ellipsis: true
   },
   {
-    title: '类型',
+    title: t('admin.inviteManagement.table.columns.type'),
     dataIndex: 'codeType',
     width: 80
   },
   {
-    title: '状态',
+    title: t('admin.inviteManagement.table.columns.status'),
     dataIndex: 'isActive',
     width: 80
   },
   {
-    title: '使用情况',
+    title: t('admin.inviteManagement.table.columns.usage'),
     dataIndex: 'usage',
     width: 120
   },
   {
-    title: '创建者',
+    title: t('admin.inviteManagement.table.columns.creator'),
     dataIndex: 'creator',
     width: 100
   },
   {
-    title: '描述',
+    title: t('admin.inviteManagement.table.columns.description'),
     dataIndex: 'description',
     width: 150,
     ellipsis: true
   },
   {
-    title: '过期时间',
+    title: t('admin.inviteManagement.table.columns.expiresAt'),
     dataIndex: 'expiresAt',
     width: 120
   },
   {
-    title: '创建时间',
+    title: t('admin.inviteManagement.table.columns.createdAt'),
     dataIndex: 'createdAt',
     width: 120,
     customRender: ({ text }: any) => formatDate(text)
   },
   {
-    title: '操作',
+    title: t('admin.inviteManagement.table.columns.actions'),
     dataIndex: 'actions',
     width: 200,
     fixed: 'right'
   }
-]
+])
 
-const usageColumns = [
+const usageTableColumns = computed(() => [
   {
-    title: '用户',
+    title: t('admin.inviteManagement.usageModal.columns.user'),
     dataIndex: 'user',
     width: 150
   },
   {
-    title: '使用时间',
+    title: t('admin.inviteManagement.usageModal.columns.usedAt'),
     dataIndex: 'usedAt',
     width: 150
   },
   {
-    title: 'IP地址',
+    title: t('admin.inviteManagement.usageModal.columns.ip'),
     dataIndex: 'ipAddress',
     width: 120
   }
-]
+])
 
 // 工具函数
 const getTypeColor = (type: string) => {
@@ -449,20 +456,28 @@ const getTypeColor = (type: string) => {
 }
 
 const getTypeText = (type: string) => {
-  const texts = {
-    system: '系统',
-    admin: '管理员',
-    user: '普通'
+  const texts: Record<string, string> = {
+    system: t('admin.inviteManagement.filters.type.system'),
+    admin: t('admin.inviteManagement.filters.type.admin'),
+    user: t('admin.inviteManagement.filters.type.user')
   }
   return texts[type] || type
 }
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('zh-CN')
+  const dt = new Date(date)
+  if (Number.isNaN(dt.getTime())) {
+    return ''
+  }
+  return dt.toLocaleDateString(displayLocale.value)
 }
 
 const formatDateTime = (date: string) => {
-  return new Date(date).toLocaleString('zh-CN')
+  const dt = new Date(date)
+  if (Number.isNaN(dt.getTime())) {
+    return ''
+  }
+  return dt.toLocaleString(displayLocale.value)
 }
 
 // 数据加载
@@ -483,7 +498,7 @@ const loadInviteCodes = async () => {
     pagination.total = response.data.pagination.total
   } catch (error) {
     console.error('加载邀请码失败:', error)
-    message.error('加载邀请码失败')
+    message.error(t('admin.inviteManagement.messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -495,6 +510,7 @@ const loadStats = async () => {
     stats.value = response.data
   } catch (error) {
     console.error('加载统计数据失败:', error)
+    message.error(t('admin.inviteManagement.messages.statsFailed'))
   }
 }
 
@@ -525,7 +541,7 @@ const createInviteCode = async () => {
   createLoading.value = true
   try {
     await api.post('/api/invites/create', createForm)
-    message.success('邀请码生成成功')
+    message.success(t('admin.inviteManagement.messages.createSuccess'))
     showCreateModal.value = false
     Object.assign(createForm, {
       codeType: 'user',
@@ -536,7 +552,7 @@ const createInviteCode = async () => {
     refreshData()
   } catch (error) {
     console.error('生成邀请码失败:', error)
-    message.error('生成邀请码失败')
+    message.error(t('admin.inviteManagement.messages.createFailed'))
   } finally {
     createLoading.value = false
   }
@@ -546,7 +562,7 @@ const batchCreateInviteCodes = async () => {
   batchLoading.value = true
   try {
     const response = await api.post('/api/invites/batch-create', batchForm)
-    message.success(`批量生成 ${response.data.count} 个邀请码成功`)
+    message.success(t('admin.inviteManagement.messages.batchSuccess', { count: response.data.count }))
     showBatchModal.value = false
     Object.assign(batchForm, {
       count: 10,
@@ -558,7 +574,7 @@ const batchCreateInviteCodes = async () => {
     refreshData()
   } catch (error) {
     console.error('批量生成邀请码失败:', error)
-    message.error('批量生成邀请码失败')
+    message.error(t('admin.inviteManagement.messages.batchFailed'))
   } finally {
     batchLoading.value = false
   }
@@ -567,11 +583,11 @@ const batchCreateInviteCodes = async () => {
 const deactivateCode = async (record: any) => {
   try {
     await api.post(`/api/invites/${record.id}/deactivate`)
-    message.success('邀请码已禁用')
+    message.success(t('admin.inviteManagement.messages.deactivateSuccess'))
     refreshData()
   } catch (error) {
     console.error('禁用邀请码失败:', error)
-    message.error('禁用邀请码失败')
+    message.error(t('admin.inviteManagement.messages.deactivateFailed'))
   }
 }
 
@@ -579,22 +595,22 @@ const activateCode = async (record: any) => {
   try {
     // 这里需要后端提供激活接口
     await api.post(`/api/invites/${record.id}/activate`)
-    message.success('邀请码已激活')
+    message.success(t('admin.inviteManagement.messages.activateSuccess'))
     refreshData()
   } catch (error) {
     console.error('激活邀请码失败:', error)
-    message.error('激活邀请码失败')
+    message.error(t('admin.inviteManagement.messages.activateFailed'))
   }
 }
 
 const deleteCode = async (record: any) => {
   try {
     await api.delete(`/api/invites/${record.id}`)
-    message.success('邀请码已删除')
+    message.success(t('admin.inviteManagement.messages.deleteSuccess'))
     refreshData()
   } catch (error) {
     console.error('删除邀请码失败:', error)
-    message.error('删除邀请码失败')
+    message.error(t('admin.inviteManagement.messages.deleteFailed'))
   }
 }
 

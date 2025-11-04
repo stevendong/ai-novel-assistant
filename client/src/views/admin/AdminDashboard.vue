@@ -1,8 +1,8 @@
 <template>
   <div class="admin-dashboard">
     <a-page-header
-      title="管理面板"
-      sub-title="系统概览与统计信息"
+      :title="t('admin.dashboard.title')"
+      :sub-title="t('admin.dashboard.subtitle')"
     />
 
     <div class="dashboard-content p-6">
@@ -11,7 +11,7 @@
         <a-col :span="6">
           <a-card>
             <a-statistic
-              title="总用户数"
+              :title="t('admin.dashboard.users.total')"
               :value="stats.users.total"
               :loading="loading"
             >
@@ -24,7 +24,7 @@
         <a-col :span="6">
           <a-card>
             <a-statistic
-              title="活跃用户"
+              :title="t('admin.dashboard.users.active')"
               :value="stats.users.active"
               :loading="loading"
             >
@@ -37,7 +37,7 @@
         <a-col :span="6">
           <a-card>
             <a-statistic
-              title="管理员数量"
+              :title="t('admin.dashboard.users.admins')"
               :value="stats.users.admins"
               :loading="loading"
             >
@@ -50,7 +50,7 @@
         <a-col :span="6">
           <a-card>
             <a-statistic
-              title="本周新用户"
+              :title="t('admin.dashboard.users.recent')"
               :value="stats.users.recent"
               :loading="loading"
             >
@@ -65,30 +65,30 @@
       <!-- 内容统计 -->
       <a-row :gutter="16" class="mb-6">
         <a-col :span="12">
-          <a-card title="内容统计">
+          <a-card :title="t('admin.dashboard.content.title')">
             <a-statistic
-              title="小说总数"
+              :title="t('admin.dashboard.content.novels')"
               :value="stats.content.novels"
               :loading="loading"
             />
             <a-divider />
             <a-statistic
-              title="章节总数"
+              :title="t('admin.dashboard.content.chapters')"
               :value="stats.content.chapters"
               :loading="loading"
             />
           </a-card>
         </a-col>
         <a-col :span="12">
-          <a-card title="快速操作">
+          <a-card :title="t('admin.dashboard.actions.title')">
             <a-space direction="vertical" style="width: 100%">
               <a-button type="primary" block @click="navigateToUserManagement">
                 <UserOutlined />
-                用户管理
+                {{ t('admin.dashboard.actions.manageUsers') }}
               </a-button>
               <a-button block @click="navigateToInviteManagement">
                 <GiftOutlined />
-                邀请码管理
+                {{ t('admin.dashboard.actions.manageInvites') }}
               </a-button>
             </a-space>
           </a-card>
@@ -110,6 +110,7 @@ import {
   GiftOutlined
 } from '@ant-design/icons-vue'
 import { api } from '@/utils/api'
+import { useI18n } from 'vue-i18n'
 
 interface Stats {
   users: {
@@ -125,6 +126,7 @@ interface Stats {
 }
 
 const router = useRouter()
+const { t } = useI18n()
 const loading = ref(false)
 const stats = ref<Stats>({
   users: {
@@ -146,7 +148,7 @@ const loadStats = async () => {
     stats.value = response.data
   } catch (error) {
     console.error('加载统计信息失败:', error)
-    message.error('加载统计信息失败')
+    message.error(t('admin.dashboard.messages.loadFailed'))
   } finally {
     loading.value = false
   }

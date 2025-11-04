@@ -1,7 +1,7 @@
 <template>
   <a-modal
     :visible="visible"
-    :title="isEdit ? '编辑用户' : '创建用户'"
+    :title="t(isEdit ? 'admin.userManagement.form.title.edit' : 'admin.userManagement.form.title.create')"
     :width="600"
     :confirmLoading="loading"
     @ok="handleSubmit"
@@ -15,76 +15,76 @@
       :label-col="{ span: 6 }"
       :wrapper-col="{ span: 18 }"
     >
-      <a-form-item label="用户名" name="username">
+      <a-form-item :label="t('admin.userManagement.form.labels.username')" name="username">
         <a-input
           v-model:value="formData.username"
-          placeholder="请输入用户名"
+          :placeholder="t('admin.userManagement.form.placeholders.username')"
           :disabled="loading"
         />
       </a-form-item>
 
-      <a-form-item label="邮箱" name="email">
+      <a-form-item :label="t('admin.userManagement.form.labels.email')" name="email">
         <a-input
           v-model:value="formData.email"
           type="email"
-          placeholder="请输入邮箱地址"
+          :placeholder="t('admin.userManagement.form.placeholders.email')"
           :disabled="loading"
         />
       </a-form-item>
 
-      <a-form-item label="昵称" name="nickname">
+      <a-form-item :label="t('admin.userManagement.form.labels.nickname')" name="nickname">
         <a-input
           v-model:value="formData.nickname"
-          placeholder="请输入昵称"
+          :placeholder="t('admin.userManagement.form.placeholders.nickname')"
           :disabled="loading"
         />
       </a-form-item>
 
-      <a-form-item label="密码" name="password">
+      <a-form-item :label="t('admin.userManagement.form.labels.password')" name="password">
         <a-input-password
           v-model:value="formData.password"
-          :placeholder="isEdit ? '留空表示不修改密码' : '请输入密码'"
+          :placeholder="isEdit ? t('admin.userManagement.form.placeholders.passwordEdit') : t('admin.userManagement.form.placeholders.password')"
           :disabled="loading"
           autocomplete="new-password"
         />
       </a-form-item>
 
-      <a-form-item label="确认密码" name="confirmPassword" v-if="formData.password">
+      <a-form-item :label="t('admin.userManagement.form.labels.confirmPassword')" name="confirmPassword" v-if="formData.password">
         <a-input-password
           v-model:value="formData.confirmPassword"
-          placeholder="请再次输入密码"
+          :placeholder="t('admin.userManagement.form.placeholders.confirmPassword')"
           :disabled="loading"
           autocomplete="new-password"
         />
       </a-form-item>
 
-      <a-form-item label="角色" name="role">
+      <a-form-item :label="t('admin.userManagement.form.labels.role')" name="role">
         <a-select
           v-model:value="formData.role"
-          placeholder="请选择用户角色"
+          :placeholder="t('admin.userManagement.form.placeholders.role')"
           :disabled="loading"
         >
-          <a-select-option value="user">普通用户</a-select-option>
-          <a-select-option value="admin">管理员</a-select-option>
+          <a-select-option value="user">{{ t('admin.userManagement.form.options.role.user') }}</a-select-option>
+          <a-select-option value="admin">{{ t('admin.userManagement.form.options.role.admin') }}</a-select-option>
         </a-select>
       </a-form-item>
 
-      <a-form-item label="状态" name="isActive" v-if="isEdit">
+      <a-form-item :label="t('admin.userManagement.form.labels.status')" name="isActive" v-if="isEdit">
         <a-switch
           v-model:checked="formData.isActive"
           :disabled="loading"
-          checked-children="启用"
-          un-checked-children="禁用"
+          :checked-children="t('admin.userManagement.form.switch.enabled')"
+          :un-checked-children="t('admin.userManagement.form.switch.disabled')"
         />
       </a-form-item>
     </a-form>
 
     <template #footer>
       <a-button @click="handleCancel" :disabled="loading">
-        取消
+        {{ t('admin.userManagement.form.buttons.cancel') }}
       </a-button>
       <a-button type="primary" :loading="loading" @click="handleSubmit">
-        {{ isEdit ? '更新' : '创建' }}
+        {{ isEdit ? t('admin.userManagement.form.buttons.update') : t('admin.userManagement.form.buttons.create') }}
       </a-button>
     </template>
   </a-modal>
@@ -95,6 +95,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import type { FormInstance, Rule } from 'ant-design-vue/es/form'
 import { api } from '@/utils/api'
+import { useI18n } from 'vue-i18n'
 
 interface User {
   id?: string
@@ -120,6 +121,7 @@ const emit = defineEmits<Emits>()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const { t } = useI18n()
 
 const isEdit = computed(() => !!(props.user && props.user.id))
 
@@ -134,11 +136,11 @@ const formData = reactive({
 })
 
 // 表单验证规则
-const rules: Record<string, Rule[]> = {
+const rules = computed<Record<string, Rule[]>>(() => ({
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_-]+$/, message: '用户名只能包含字母、数字、下划线和短横线', trigger: 'blur' },
+    { required: true, message: t('admin.userManagement.form.validation.usernameRequired'), trigger: 'blur' },
+    { min: 3, max: 20, message: t('admin.userManagement.form.validation.usernameLength'), trigger: 'blur' },
+    { pattern: /^[a-zA-Z0-9_-]+$/, message: t('admin.userManagement.form.validation.usernamePattern'), trigger: 'blur' },
     {
       validator: async (_rule: any, value: string) => {
         if (!value || value.length < 3) return Promise.resolve()
@@ -153,7 +155,7 @@ const rules: Record<string, Rule[]> = {
               u.username.toLowerCase() === value.toLowerCase()
             )
             if (existingUser) {
-              return Promise.reject(new Error('用户名已存在'))
+              return Promise.reject(new Error(t('admin.userManagement.form.validation.usernameExists')))
             }
           } catch (error) {
             // 网络错误时不阻塞验证
@@ -165,8 +167,8 @@ const rules: Record<string, Rule[]> = {
     }
   ],
   email: [
-    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
+    { required: true, message: t('admin.userManagement.form.validation.emailRequired'), trigger: 'blur' },
+    { type: 'email', message: t('admin.userManagement.form.validation.emailInvalid'), trigger: 'blur' },
     {
       validator: async (_rule: any, value: string) => {
         if (!value) return Promise.resolve()
@@ -181,7 +183,7 @@ const rules: Record<string, Rule[]> = {
               u.email.toLowerCase() === value.toLowerCase()
             )
             if (existingUser) {
-              return Promise.reject(new Error('邮箱已存在'))
+              return Promise.reject(new Error(t('admin.userManagement.form.validation.emailExists')))
             }
           } catch (error) {
             // 网络错误时不阻塞验证
@@ -193,13 +195,13 @@ const rules: Record<string, Rule[]> = {
     }
   ],
   nickname: [
-    { max: 50, message: '昵称不能超过50个字符', trigger: 'blur' },
-    { pattern: /^[^<>'"&]*$/, message: '昵称不能包含特殊字符', trigger: 'blur' }
+    { max: 50, message: t('admin.userManagement.form.validation.nicknameMax'), trigger: 'blur' },
+    { pattern: /^[^<>'"&]*$/, message: t('admin.userManagement.form.validation.nicknameInvalid'), trigger: 'blur' }
   ],
   password: [
-    ...(isEdit.value ? [] : [{ required: true, message: '请输入密码', trigger: 'blur' }]),
-    { min: 6, message: '密码至少6个字符', trigger: 'blur' },
-    { max: 128, message: '密码不能超过128个字符', trigger: 'blur' },
+    ...(isEdit.value ? [] : [{ required: true, message: t('admin.userManagement.form.validation.passwordRequired'), trigger: 'blur' }]),
+    { min: 6, message: t('admin.userManagement.form.validation.passwordMin'), trigger: 'blur' },
+    { max: 128, message: t('admin.userManagement.form.validation.passwordMax'), trigger: 'blur' },
     {
       validator: async (_rule: any, value: string) => {
         if (!value) return Promise.resolve()
@@ -219,7 +221,7 @@ const rules: Record<string, Rule[]> = {
         } else if (value.length >= 6) {
           return Promise.resolve() // 弱密码但可接受
         } else {
-          return Promise.reject(new Error('密码强度不足，建议包含大小写字母、数字和特殊字符'))
+          return Promise.reject(new Error(t('admin.userManagement.form.validation.passwordStrength')))
         }
       },
       trigger: 'blur'
@@ -229,7 +231,7 @@ const rules: Record<string, Rule[]> = {
     {
       validator: async (_rule: any, value: string) => {
         if (formData.password && value !== formData.password) {
-          return Promise.reject(new Error('两次输入的密码不一致'))
+          return Promise.reject(new Error(t('admin.userManagement.form.validation.confirmPasswordMismatch')))
         }
         return Promise.resolve()
       },
@@ -237,9 +239,9 @@ const rules: Record<string, Rule[]> = {
     }
   ],
   role: [
-    { required: true, message: '请选择用户角色', trigger: 'change' }
+    { required: true, message: t('admin.userManagement.form.validation.roleRequired'), trigger: 'change' }
   ]
-}
+}))
 
 // 重置表单
 const resetForm = () => {
@@ -267,6 +269,7 @@ watch(() => props.user, (user) => {
       role: user.role || 'user',
       isActive: user.isActive ?? true
     })
+    formRef.value?.clearValidate()
   } else {
     resetForm()
   }
@@ -309,23 +312,28 @@ const handleSubmit = async () => {
         })
       }
 
-      message.success('用户信息更新成功')
+      message.success(t('admin.userManagement.form.messages.updateSuccess'))
     } else {
       // 创建用户
       await api.post('/api/admin/users', submitData)
-      message.success('用户创建成功')
+      message.success(t('admin.userManagement.form.messages.createSuccess'))
     }
 
     emit('success')
     emit('update:visible', false)
   } catch (error: any) {
-    console.error('用户操作失败:', error)
-    const errorMessage = error.response?.data?.message || '操作失败'
-    message.error(errorMessage)
+    console.error(t('admin.userManagement.form.messages.submissionFailed'), error)
+    const errorMessage = error?.response?.data?.message
+    message.error(errorMessage || t('admin.userManagement.form.messages.operationFailed'))
   } finally {
     loading.value = false
   }
 }
+
+watch(isEdit, () => {
+  // 编辑状态切换时刷新校验规则以确保必填项更新
+  formRef.value?.clearValidate(['password'])
+})
 </script>
 
 <style scoped>
@@ -333,4 +341,3 @@ const handleSubmit = async () => {
   margin-bottom: 16px;
 }
 </style>
-

@@ -731,6 +731,334 @@
       "millionUnit": "百万"
     }
   },
+  "admin": {
+    "dashboard": {
+      "title": "管理面板",
+      "subtitle": "系统概览与统计信息",
+      "users": {
+        "total": "总用户数",
+        "active": "活跃用户",
+        "admins": "管理员数量",
+        "recent": "本周新用户"
+      },
+      "content": {
+        "title": "内容统计",
+        "novels": "小说总数",
+        "chapters": "章节总数"
+      },
+      "actions": {
+        "title": "快速操作",
+        "manageUsers": "用户管理",
+        "manageInvites": "邀请码管理"
+      },
+      "messages": {
+        "loadFailed": "加载统计信息失败"
+      }
+    },
+    "userManagement": {
+      "title": "用户管理",
+      "subtitle": "管理系统用户权限和状态",
+      "searchPlaceholder": "搜索用户名、邮箱或昵称",
+      "filters": {
+        "role": {
+          "placeholder": "角色筛选",
+          "all": "全部角色",
+          "admin": "管理员",
+          "user": "普通用户"
+        },
+        "status": {
+          "placeholder": "状态筛选",
+          "all": "全部状态",
+          "enabled": "已启用",
+          "disabled": "已禁用"
+        }
+      },
+      "toolbar": {
+        "batchButton": "批量操作 ({count})",
+        "batch": {
+          "activate": "批量启用",
+          "deactivate": "批量禁用",
+          "delete": "批量删除",
+          "confirmTitle": "批量{action}用户",
+          "confirmContent": "确定要{action}{count}名用户吗？"
+        },
+        "create": "创建用户"
+      },
+      "table": {
+        "title": "用户列表",
+        "countTag": "共 {count} 名用户",
+        "density": {
+          "label": "密度",
+          "compact": "紧凑",
+          "default": "默认",
+          "comfortable": "宽松"
+        },
+        "columnSettings": "列设置",
+        "columns": {
+          "user": "用户信息",
+          "role": "角色",
+          "status": "状态",
+          "stats": "统计",
+          "lastLogin": "最后登录",
+          "createdAt": "注册时间",
+          "actions": "操作"
+        },
+        "columnRequired": "必需",
+        "stats": {
+          "novels": "小说:",
+          "invites": "邀请:"
+        },
+        "status": {
+          "active": "正常",
+          "disabled": "禁用"
+        },
+        "neverLogin": "从未登录",
+        "currentUserTag": "当前用户"
+      },
+      "actions": {
+        "view": "查看详情",
+        "edit": "编辑用户",
+        "more": "更多操作",
+        "role": {
+          "title": "角色管理",
+          "setAdmin": "设为管理员",
+          "setUser": "设为普通用户"
+        },
+        "toggle": {
+          "enable": "启用用户",
+          "disable": "禁用用户"
+        },
+        "resetPassword": "重置密码",
+        "delete": "删除用户"
+      },
+      "modals": {
+        "columnSettings": {
+          "title": "列设置",
+          "saved": "列设置已保存"
+        },
+        "resetPassword": {
+          "title": "重置用户密码",
+          "confirmTitle": "重置确认",
+          "description": "确定要重置用户 {name} 的密码吗？",
+          "afterReset": "重置后：",
+          "effects": {
+            "line1": "新密码将自动生成",
+            "line2": "该用户的所有会话将被终止",
+            "line3": "用户需要使用新密码重新登录"
+          },
+          "ok": "确定重置",
+          "cancel": "取消"
+        },
+        "deleteUser": {
+          "title": "删除用户",
+          "content": "确定要删除用户 {name} 吗？",
+          "ok": "确定删除",
+          "cancel": "取消"
+        }
+      },
+      "form": {
+        "title": {
+          "create": "创建用户",
+          "edit": "编辑用户"
+        },
+        "labels": {
+          "username": "用户名",
+          "email": "邮箱",
+          "nickname": "昵称",
+          "password": "密码",
+          "confirmPassword": "确认密码",
+          "role": "角色",
+          "status": "状态"
+        },
+        "placeholders": {
+          "username": "请输入用户名",
+          "email": "请输入邮箱地址",
+          "nickname": "请输入昵称",
+          "password": "请输入密码",
+          "passwordEdit": "留空表示不修改密码",
+          "confirmPassword": "请再次输入密码",
+          "role": "请选择用户角色"
+        },
+        "options": {
+          "role": {
+            "user": "普通用户",
+            "admin": "管理员"
+          }
+        },
+        "switch": {
+          "enabled": "启用",
+          "disabled": "禁用"
+        },
+        "buttons": {
+          "cancel": "取消",
+          "create": "创建",
+          "update": "更新"
+        },
+        "validation": {
+          "usernameRequired": "请输入用户名",
+          "usernameLength": "用户名长度为3-20个字符",
+          "usernamePattern": "用户名只能包含字母、数字、下划线和短横线",
+          "usernameExists": "用户名已存在",
+          "emailRequired": "请输入邮箱地址",
+          "emailInvalid": "请输入有效的邮箱地址",
+          "emailExists": "邮箱已存在",
+          "nicknameMax": "昵称不能超过50个字符",
+          "nicknameInvalid": "昵称不能包含特殊字符",
+          "passwordRequired": "请输入密码",
+          "passwordMin": "密码至少6个字符",
+          "passwordMax": "密码不能超过128个字符",
+          "passwordStrength": "密码强度不足，建议包含大小写字母、数字和特殊字符",
+          "confirmPasswordMismatch": "两次输入的密码不一致",
+          "roleRequired": "请选择用户角色"
+        },
+        "messages": {
+          "createSuccess": "用户创建成功",
+          "updateSuccess": "用户信息更新成功",
+          "operationFailed": "操作失败",
+          "submissionFailed": "用户提交失败"
+        }
+      },
+      "messages": {
+        "loadFailed": "加载用户列表失败",
+        "batchSelectRequired": "请选择要操作的用户",
+        "batchFailed": "批量操作失败",
+        "roleUpdated": "角色更新成功",
+        "roleUpdateFailed": "角色更新失败",
+        "statusUpdated": "用户{action}成功",
+        "statusUpdateFailed": "状态更新失败",
+        "deleteSuccess": "用户删除成功",
+        "deleteFailed": "删除用户失败",
+        "resetSuccess": "密码重置成功，用户会话已终止",
+        "resetFailed": "密码重置失败",
+        "exportSuccess": "用户数据导出成功",
+        "exportFailed": "导出失败"
+      },
+      "statusAction": {
+        "enable": "启用",
+        "disable": "禁用"
+      },
+      "batchActionText": {
+        "activate": "启用",
+        "deactivate": "禁用",
+        "delete": "删除"
+      },
+      "pagination": {
+        "summary": "显示 {start}-{end} / 共 {total} 条"
+      },
+      "tableFilters": {
+        "roleAdmin": "管理员",
+        "roleUser": "普通用户",
+        "statusActive": "正常",
+        "statusDisabled": "禁用"
+      },
+      "systemTag": "系统"
+    },
+    "inviteManagement": {
+      "title": "邀请码管理",
+      "toolbar": {
+        "generate": "生成邀请码",
+        "batch": "批量生成",
+        "refresh": "刷新"
+      },
+      "stats": {
+        "total": "总邀请码",
+        "used": "已使用",
+        "active": "活跃状态",
+        "usageRate": "使用率"
+      },
+      "filters": {
+        "searchPlaceholder": "搜索邀请码或描述",
+        "type": {
+          "label": "类型",
+          "all": "全部类型",
+          "system": "系统",
+          "admin": "管理员",
+          "user": "用户"
+        },
+        "status": {
+          "label": "状态",
+          "all": "全部状态",
+          "active": "激活",
+          "inactive": "禁用"
+        }
+      },
+      "table": {
+        "columns": {
+          "code": "邀请码",
+          "type": "类型",
+          "status": "状态",
+          "usage": "使用情况",
+          "creator": "创建者",
+          "description": "描述",
+          "expiresAt": "过期时间",
+          "createdAt": "创建时间",
+          "actions": "操作"
+        },
+        "usageProgress": "{used} / {max}"
+      },
+      "usageModal": {
+        "title": "邀请码使用记录",
+        "columns": {
+          "user": "用户",
+          "usedAt": "使用时间",
+          "ip": "IP地址"
+        }
+      },
+      "forms": {
+        "create": {
+          "title": "生成邀请码",
+          "type": "邀请码类型",
+          "maxUses": "最大使用次数",
+          "expiresIn": "有效期（小时）",
+          "expiresPlaceholder": "留空表示永不过期",
+          "description": "描述",
+          "descriptionPlaceholder": "邀请码用途描述"
+        },
+        "batch": {
+          "title": "批量生成邀请码",
+          "count": "生成数量",
+          "type": "邀请码类型",
+          "maxUses": "最大使用次数",
+          "expiresIn": "有效期（小时）",
+          "expiresPlaceholder": "留空表示永不过期",
+          "description": "描述",
+          "descriptionPlaceholder": "批量生成邀请码的用途描述"
+        }
+      },
+      "status": {
+        "active": "激活",
+        "inactive": "禁用",
+        "neverExpires": "永不过期",
+        "system": "系统"
+      },
+      "actions": {
+        "viewUsage": "查看使用",
+        "deactivate": "禁用",
+        "activate": "启用",
+        "delete": "删除"
+      },
+      "messages": {
+        "loadFailed": "加载邀请码失败",
+        "statsFailed": "加载统计信息失败",
+        "createSuccess": "邀请码生成成功",
+        "createFailed": "生成邀请码失败",
+        "batchSuccess": "批量生成 {count} 个邀请码成功",
+        "batchFailed": "批量生成邀请码失败",
+        "deactivateSuccess": "邀请码已禁用",
+        "deactivateFailed": "禁用邀请码失败",
+        "activateSuccess": "邀请码已启用",
+        "activateFailed": "启用邀请码失败",
+        "deleteSuccess": "邀请码已删除",
+        "deleteFailed": "删除邀请码失败"
+      },
+      "pagination": {
+        "summary": "共 {total} 条记录，显示 {start}-{end} 条"
+      },
+      "popconfirm": {
+        "deleteTitle": "确定要删除这个邀请码吗？"
+      }
+    }
+  },
   "app": {
     "title": "个人智能创作管理系统",
     "subtitle": "智能协作，创意无限"

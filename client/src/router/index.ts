@@ -20,7 +20,8 @@ const router = createRouter({
       name: 'login',
       component: Login,
       meta: {
-        requiresGuest: true
+        requiresGuest: true,
+        titleKey: 'auth.loginTitle'
       }
     },
     {
@@ -29,7 +30,8 @@ const router = createRouter({
       component: InviteVerification,
       meta: {
         requiresAuth: true,
-        requiresUnverified: true
+        requiresUnverified: true,
+        titleKey: 'auth.inviteVerification.title'
       }
     },
     {
@@ -49,7 +51,8 @@ const router = createRouter({
           component: ProjectManagement,
           meta: {
             title: '作品信息',
-            icon: 'BookOutlined'
+            icon: 'BookOutlined',
+            titleKey: 'nav.project'
           }
         },
         {
@@ -58,7 +61,8 @@ const router = createRouter({
           component: CharacterManagement,
           meta: {
             title: '角色库',
-            icon: 'TeamOutlined'
+            icon: 'TeamOutlined',
+            titleKey: 'nav.characters'
           }
         },
         {
@@ -67,7 +71,8 @@ const router = createRouter({
           component: WorldSettingManagement,
           meta: {
             title: '世界设定',
-            icon: 'GlobalOutlined'
+            icon: 'GlobalOutlined',
+            titleKey: 'nav.worldSettings'
           }
         },
         {
@@ -76,7 +81,8 @@ const router = createRouter({
           component: ChapterList,
           meta: {
             title: '章节列表',
-            icon: 'FileTextOutlined'
+            icon: 'FileTextOutlined',
+            titleKey: 'nav.chapters'
           }
         },
         {
@@ -86,7 +92,8 @@ const router = createRouter({
           meta: {
             title: '章节编辑',
             icon: 'FileTextOutlined',
-            hidden: true // Don't show in navigation menu
+            hidden: true, // Don't show in navigation menu
+            titleKey: 'nav.chapters'
           }
         },
         {
@@ -95,7 +102,8 @@ const router = createRouter({
           component: ProgressStats,
           meta: {
             title: '进度统计',
-            icon: 'BarChartOutlined'
+            icon: 'BarChartOutlined',
+            titleKey: 'nav.progress'
           }
         },
         {
@@ -104,7 +112,8 @@ const router = createRouter({
           component: FileManagement,
           meta: {
             title: '文件管理',
-            icon: 'FolderOutlined'
+            icon: 'FolderOutlined',
+            titleKey: 'nav.files'
           }
         },
         {
@@ -114,7 +123,8 @@ const router = createRouter({
           meta: {
             title: '个人资料',
             icon: 'UserOutlined',
-            hidden: true
+            hidden: true,
+            titleKey: 'profile.header.title'
           }
         },
         {
@@ -124,7 +134,8 @@ const router = createRouter({
           meta: {
             title: '管理面板',
             icon: 'SettingOutlined',
-            requiresAdmin: true
+            requiresAdmin: true,
+            titleKey: 'nav.adminDashboard'
           }
         },
         {
@@ -134,7 +145,8 @@ const router = createRouter({
           meta: {
             title: '邀请码管理',
             icon: 'GiftOutlined',
-            requiresAdmin: true
+            requiresAdmin: true,
+            titleKey: 'nav.inviteManagement'
           }
         },
         {
@@ -144,7 +156,8 @@ const router = createRouter({
           meta: {
             title: '用户管理',
             icon: 'UserOutlined',
-            requiresAdmin: true
+            requiresAdmin: true,
+            titleKey: 'nav.userManagement'
           }
         }
       ]
