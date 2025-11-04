@@ -141,17 +141,17 @@
           <template #description>
             <div class="apply-description">
               {{ $t('auth.inviteVerification.applyDescription', {
-                email: $t('auth.inviteVerification.applyEmail')
+                email: applyEmail
               }) }}
             </div>
             <div class="email-link">
               <a
-                :href="`mailto:${$t('auth.inviteVerification.applyEmail')}`"
+                :href="`mailto:${applyEmail}`"
                 target="_blank"
                 class="email-button"
               >
                 <MailOutlined />
-                {{ $t('auth.inviteVerification.applyEmail') }}
+                {{ applyEmail }}
               </a>
               <a-button
                 class="copy-email-button"
@@ -193,7 +193,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
-const applyEmail = computed(() => t('auth.inviteVerification.applyEmail'))
+const applyEmail = 'admin@myaichatbox.com'
 
 const formData = reactive({
   inviteCode: ''
@@ -265,7 +265,7 @@ const handleLogout = async () => {
 }
 
 const handleCopyEmail = async () => {
-  const email = applyEmail.value
+  const email = applyEmail
 
   try {
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
