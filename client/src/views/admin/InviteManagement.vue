@@ -146,6 +146,12 @@
             <a-space>
               <a-button
                 size="small"
+                @click="copyInviteLink(record)"
+              >
+                {{ t('admin.inviteManagement.actions.copyLink') }}
+              </a-button>
+              <a-button
+                size="small"
                 @click="viewUsages(record)"
               >
                 {{ t('admin.inviteManagement.actions.viewUsage') }}
@@ -307,6 +313,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
   PlusOutlined,
@@ -331,6 +338,7 @@ const stats = ref({
 })
 const { t, locale } = useI18n()
 const displayLocale = computed(() => (locale.value.startsWith('zh') ? 'zh-CN' : 'en-US'))
+const router = useRouter()
 
 // 搜索和筛选
 const searchText = ref('')
@@ -422,7 +430,7 @@ const tableColumns = computed(() => [
   {
     title: t('admin.inviteManagement.table.columns.actions'),
     dataIndex: 'actions',
-    width: 200,
+    width: 260,
     fixed: 'right'
   }
 ])
@@ -617,6 +625,52 @@ const deleteCode = async (record: any) => {
 const viewUsages = (record: any) => {
   currentUsages.value = record.usages || []
   showUsageModal.value = true
+}
+
+const copyInviteLink = async (record: any) => {
+  if (!record?.code) {
+    return
+  }
+
+  const resolved = router.resolve({
+    path: '/login',
+    query: { invite: record.code }
+  })
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  const link = `${origin}${resolved.href}`
+
+  const writeToClipboard = async (text: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+    if (typeof document === 'undefined') {
+      return false
+    }
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    const success = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return success
+  }
+
+  try {
+    const success = await writeToClipboard(link)
+    if (success) {
+      message.success(t('admin.inviteManagement.messages.copyLinkSuccess'))
+    } else {
+      throw new Error('Copy command returned false')
+    }
+  } catch (error) {
+    console.error('复制邀请链接失败:', error)
+    message.error(t('admin.inviteManagement.messages.copyLinkFailed'))
+  }
 }
 
 // 初始化

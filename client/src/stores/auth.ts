@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { message } from 'ant-design-vue'
 import { apiClient, type ApiResponse } from '@/utils/api'
+import i18n from '@/i18n'
 
 // 用户信息接口
 export interface User {
@@ -14,6 +15,8 @@ export interface User {
   createdAt: string
   updatedAt: string
   inviteVerified?: boolean
+  inviteCodeUsed?: string | null
+  invitedBy?: string | null
 }
 
 // 会话信息接口
@@ -36,6 +39,7 @@ export interface RegisterData {
   email: string
   password: string
   nickname?: string
+  inviteCode?: string
 }
 
 // 登录凭据接口
@@ -55,6 +59,20 @@ export interface ProfileUpdateData {
 
 // API响应类型
 type AuthApiResponse<T = any> = ApiResponse<T>
+
+const inviteErrorMap: Record<string, string> = {
+  INVITE_REQUIRED: 'auth.inviteVerification.errors.inviteRequired',
+  ALREADY_VERIFIED: 'auth.inviteVerification.errors.alreadyVerified',
+  INVALID_FORMAT: 'auth.inviteVerification.errors.invalidFormat',
+  INVALID_CHECKSUM: 'auth.inviteVerification.errors.invalidChecksum',
+  NOT_FOUND: 'auth.inviteVerification.errors.notFound',
+  INACTIVE: 'auth.inviteVerification.errors.inactive',
+  EXPIRED: 'auth.inviteVerification.errors.expired',
+  MAX_USES_REACHED: 'auth.inviteVerification.errors.maxUsesReached',
+  ALREADY_USED: 'auth.inviteVerification.errors.alreadyUsed',
+  IP_LIMIT_EXCEEDED: 'auth.inviteVerification.errors.ipLimit',
+  SERVER_ERROR: 'auth.inviteVerification.errors.serverError'
+}
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
@@ -136,12 +154,26 @@ export const useAuthStore = defineStore('auth', () => {
   const register = async (userData: RegisterData): Promise<{ success: boolean; data?: AuthResponse; error?: string }> => {
     isLoading.value = true
     try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/register', userData, { skipErrorHandler: true })
+      const payload = {
+        ...userData,
+        inviteCode: userData.inviteCode?.trim()
+          ? userData.inviteCode.trim().toUpperCase()
+          : undefined
+      }
+
+      const response = await apiClient.post<AuthResponse>('/api/auth/register', payload, { skipErrorHandler: true })
       setAuthData(response.data)
       message.success(response.data.message || 'Account created successfully!')
       return { success: true, data: response.data }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Registration failed'
+      const apiError = error.response?.data
+      const errorCode = apiError?.code || apiError?.error
+      let errorMessage = apiError?.message || apiError?.error || 'Registration failed'
+
+      if (errorCode && inviteErrorMap[errorCode]) {
+        errorMessage = i18n.global.t(inviteErrorMap[errorCode]) as string
+      }
+
       message.error(errorMessage)
       return { success: false, error: errorMessage }
     } finally {

@@ -1050,7 +1050,8 @@
         "viewUsage": "View usage",
         "deactivate": "Disable",
         "activate": "Enable",
-        "delete": "Delete"
+        "delete": "Delete",
+        "copyLink": "Copy invite link"
       },
       "messages": {
         "loadFailed": "Failed to load invite codes",
@@ -1064,7 +1065,9 @@
         "activateSuccess": "Invite activated",
         "activateFailed": "Failed to activate invite",
         "deleteSuccess": "Invite deleted",
-        "deleteFailed": "Failed to delete invite"
+        "deleteFailed": "Failed to delete invite",
+        "copyLinkSuccess": "Invite link copied",
+        "copyLinkFailed": "Failed to copy invite link"
       },
       "pagination": {
         "summary": "Total {total} records, showing {start}-{end}"
@@ -2019,12 +2022,14 @@
     "password": "Password",
     "confirmPassword": "Confirm Password",
     "nickname": "Nickname (Optional)",
+    "inviteCodeField": "Invite Code",
     "enterUsername": "Please enter username",
     "enterEmail": "Please enter email address",
     "enterEmailOrUsername": "Please enter email or username",
     "enterPassword": "Please enter password",
     "enterConfirmPassword": "Please confirm password",
     "enterNickname": "Please enter nickname",
+    "enterInviteCodeOptional": "Enter invite code (optional)",
     "usernameRules": "Username must be 3-20 characters long",
     "usernamePattern": "Username can only contain letters, numbers and underscores",
     "emailRule": "Please enter a valid email address",
@@ -2037,6 +2042,8 @@
     "switchToLogin": "Already have an account? Sign in now",
     "fillRequired": "Please fill in required fields",
     "fillLoginRequired": "Please enter email/username and password",
+    "invitePrefillTitle": "Invite link detected",
+    "invitePrefillDescription": "You are registering with invite code {code}. Your account will be verified automatically.",
     "inviteVerification": {
       "title": "Verify Invite Code",
       "subtitle": "Please enter invite code to continue using the system",

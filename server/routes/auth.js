@@ -42,7 +42,7 @@ const validateUsername = (username) => {
 
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, nickname } = req.body;
+    const { username, email, password, nickname, inviteCode } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({
@@ -89,29 +89,81 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    const hashedPassword = await AuthUtils.hashPassword(password);
+    const normalizedInviteCode = typeof inviteCode === 'string'
+      ? inviteCode.trim().toUpperCase()
+      : '';
+
     const userAgent = req.get('User-Agent');
     const ipAddress = getCleanClientIp(req);
 
-    // 创建用户（无需邀请码验证）
-    const user = await prisma.user.create({
-      data: {
-        username: username.toLowerCase(),
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        nickname: nickname || username,
-        inviteVerified: false, // 标记为未验证邀请码
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        nickname: true,
-        avatar: true,
-        role: true,
-        createdAt: true,
-        inviteVerified: true,
-      },
+    let inviteValidation = null;
+
+    if (normalizedInviteCode) {
+      inviteValidation = await inviteService.validateInviteCode(normalizedInviteCode, {
+        ipAddress
+      });
+
+      if (!inviteValidation.valid) {
+        return res.status(400).json({
+          error: 'Invite Code Error',
+          message: inviteValidation.message,
+          code: inviteValidation.error
+        });
+      }
+    }
+
+    const hashedPassword = await AuthUtils.hashPassword(password);
+
+    const user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          username: username.toLowerCase(),
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          nickname: nickname || username,
+          inviteVerified: !!inviteValidation,
+          inviteCodeUsed: inviteValidation ? normalizedInviteCode : null,
+          invitedBy: inviteValidation?.inviteCode.creator?.id || null,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          nickname: true,
+          avatar: true,
+          role: true,
+          createdAt: true,
+          inviteVerified: true,
+          inviteCodeUsed: true,
+        },
+      });
+
+      if (inviteValidation) {
+        await tx.InviteUsage.create({
+          data: {
+            codeId: inviteValidation.inviteCode.id,
+            userId: createdUser.id,
+            ipAddress,
+            userAgent,
+          },
+        });
+
+        const updateResult = await tx.InviteCode.updateMany({
+          where: {
+            id: inviteValidation.inviteCode.id,
+            usedCount: { lt: inviteValidation.inviteCode.maxUses },
+          },
+          data: {
+            usedCount: { increment: 1 },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new Error('INVITE_MAX_USES_REACHED');
+        }
+      }
+
+      return createdUser;
     });
 
     const session = await AuthUtils.createUserSession(user.id, userAgent, ipAddress);
@@ -120,6 +172,7 @@ router.post('/register', async (req, res) => {
       userId: user.id,
       username: user.username,
       email: user.email,
+      inviteCodeUsed: user.inviteCodeUsed,
     });
 
     res.status(201).json({
@@ -133,6 +186,14 @@ router.post('/register', async (req, res) => {
     });
 
   } catch (error) {
+    if (error.message === 'INVITE_MAX_USES_REACHED') {
+      return res.status(400).json({
+        error: 'Invite Code Error',
+        message: '邀请码使用次数已达上限',
+        code: 'MAX_USES_REACHED'
+      });
+    }
+
     logger.error('Registration error:', {
       error: error.message,
       stack: error.stack,
@@ -626,12 +687,19 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
       });
 
       // 更新邀请码使用计数
-      await tx.InviteCode.update({
-        where: { id: inviteValidation.inviteCode.id },
+      const updated = await tx.InviteCode.updateMany({
+        where: {
+          id: inviteValidation.inviteCode.id,
+          usedCount: { lt: inviteValidation.inviteCode.maxUses }
+        },
         data: {
           usedCount: { increment: 1 }
         }
       });
+
+      if (updated.count === 0) {
+        throw new Error('INVITE_MAX_USES_REACHED');
+      }
 
       return { user: updatedUser, usage };
     });
@@ -648,6 +716,14 @@ router.post('/verify-invite', requireAuth, async (req, res) => {
     });
 
   } catch (error) {
+    if (error.message === 'INVITE_MAX_USES_REACHED') {
+      return res.status(400).json({
+        error: 'Invite Code Error',
+        message: '邀请码使用次数已达上限',
+        code: 'MAX_USES_REACHED'
+      });
+    }
+
     logger.error('Invite verification error:', {
       error: error.message,
       stack: error.stack,

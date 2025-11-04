@@ -45,7 +45,8 @@ router.post('/validate', async (req, res) => {
 router.post('/use', requireAuth, async (req, res) => {
   try {
     const { code } = req.body
-    const userId = req.user.userId
+    const currentUser = req.user
+    const userId = currentUser.id || currentUser.userId
     const ipAddress = req.ip || req.connection.remoteAddress
     const userAgent = req.get('User-Agent')
 
@@ -93,7 +94,8 @@ router.post('/create', requireAuth, async (req, res) => {
       codeType = 'user'
     } = req.body
 
-    const userId = req.user.userId
+    const currentUser = req.user
+    const userId = currentUser.id || currentUser.userId
 
     // 计算过期时间
     let expiresAt = null
@@ -129,7 +131,8 @@ router.post('/create', requireAuth, async (req, res) => {
 router.post('/batch-create', requireAuth, async (req, res) => {
   try {
     const { count = 1, ...options } = req.body
-    const userId = req.user.userId
+    const currentUser = req.user
+    const userId = currentUser.id || currentUser.userId
 
     // 这里应该检查管理员权限
     // if (!req.user.isAdmin) {
@@ -174,7 +177,8 @@ router.get('/list', requireAuth, async (req, res) => {
       myCodesOnly = false
     } = req.query
 
-    const userId = req.user.userId
+    const currentUser = req.user
+    const userId = currentUser.id || currentUser.userId
     const options = {
       page: parseInt(page),
       limit: Math.min(parseInt(limit), 100),
@@ -204,7 +208,8 @@ router.get('/list', requireAuth, async (req, res) => {
 router.get('/stats', requireAuth, async (req, res) => {
   try {
     const { days = 30, myStatsOnly = false } = req.query
-    const userId = req.user.userId
+    const currentUser = req.user
+    const userId = currentUser.id || currentUser.userId
 
     const options = {
       days: parseInt(days)
@@ -231,9 +236,12 @@ router.get('/stats', requireAuth, async (req, res) => {
 router.post('/:codeId/deactivate', requireAuth, async (req, res) => {
   try {
     const { codeId } = req.params
-    const userId = req.user.userId
+    const currentUser = req.user
 
-    const result = await inviteService.deactivateInviteCode(codeId, userId)
+    const result = await inviteService.deactivateInviteCode(codeId, {
+      id: currentUser.id || currentUser.userId,
+      role: currentUser.role || 'user'
+    })
 
     res.json({
       success: true,
@@ -265,9 +273,12 @@ router.post('/:codeId/deactivate', requireAuth, async (req, res) => {
 router.post('/:codeId/activate', requireAuth, async (req, res) => {
   try {
     const { codeId } = req.params
-    const userId = req.user.userId
+    const currentUser = req.user
 
-    const result = await inviteService.activateInviteCode(codeId, userId)
+    const result = await inviteService.activateInviteCode(codeId, {
+      id: currentUser.id || currentUser.userId,
+      role: currentUser.role || 'user'
+    })
 
     res.json({
       success: true,
@@ -299,9 +310,12 @@ router.post('/:codeId/activate', requireAuth, async (req, res) => {
 router.delete('/:codeId', requireAuth, async (req, res) => {
   try {
     const { codeId } = req.params
-    const userId = req.user.userId
+    const currentUser = req.user
 
-    await inviteService.deleteInviteCode(codeId, userId)
+    await inviteService.deleteInviteCode(codeId, {
+      id: currentUser.id || currentUser.userId,
+      role: currentUser.role || 'user'
+    })
 
     res.json({
       success: true,
@@ -336,7 +350,8 @@ router.delete('/:codeId', requireAuth, async (req, res) => {
 // 获取我的邀请关系
 router.get('/my-invites', requireAuth, async (req, res) => {
   try {
-    const userId = req.user.userId
+    const currentUser = req.user
+    const userId = currentUser.id || currentUser.userId
 
     // 获取我邀请的用户
     const invitees = await prisma.User.findMany({

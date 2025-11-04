@@ -1035,7 +1035,8 @@
         "viewUsage": "查看使用",
         "deactivate": "禁用",
         "activate": "启用",
-        "delete": "删除"
+        "delete": "删除",
+        "copyLink": "复制邀请链接"
       },
       "messages": {
         "loadFailed": "加载邀请码失败",
@@ -1049,7 +1050,9 @@
         "activateSuccess": "邀请码已启用",
         "activateFailed": "启用邀请码失败",
         "deleteSuccess": "邀请码已删除",
-        "deleteFailed": "删除邀请码失败"
+        "deleteFailed": "删除邀请码失败",
+        "copyLinkSuccess": "邀请注册链接已复制",
+        "copyLinkFailed": "复制邀请注册链接失败"
       },
       "pagination": {
         "summary": "共 {total} 条记录，显示 {start}-{end} 条"
@@ -2004,12 +2007,14 @@
     "password": "密码",
     "confirmPassword": "确认密码",
     "nickname": "昵称（可选）",
+    "inviteCodeField": "邀请码",
     "enterUsername": "请输入用户名",
     "enterEmail": "请输入邮箱地址",
     "enterEmailOrUsername": "请输入邮箱或用户名",
     "enterPassword": "请输入密码",
     "enterConfirmPassword": "请再次输入密码",
     "enterNickname": "请输入昵称",
+    "enterInviteCodeOptional": "请输入邀请码（可选）",
     "usernameRules": "用户名长度为3-20个字符",
     "usernamePattern": "用户名只能包含字母、数字和下划线",
     "emailRule": "请输入有效的邮箱地址",
@@ -2022,6 +2027,8 @@
     "switchToLogin": "已有账户？立即登录",
     "fillRequired": "请填写必填项",
     "fillLoginRequired": "请输入邮箱/用户名和密码",
+    "invitePrefillTitle": "检测到邀请链接",
+    "invitePrefillDescription": "您正在使用邀请码 {code} 注册，账号将自动完成验证。",
     "inviteVerification": {
       "title": "验证邀请码",
       "subtitle": "请输入邀请码以继续使用系统",

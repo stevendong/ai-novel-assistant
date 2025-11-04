@@ -15,6 +15,18 @@
           <p>{{ isLogin ? $t('auth.loginSubtitle') : $t('auth.registerSubtitle') }}</p>
         </div>
 
+        <a-alert
+          v-if="!isLogin && invitePrefilled"
+          type="success"
+          show-icon
+          class="invite-alert"
+          :message="t('auth.invitePrefillTitle')"
+        >
+          <template #description>
+            {{ t('auth.invitePrefillDescription', { code: formData.inviteCode }) }}
+          </template>
+        </a-alert>
+
         <a-form
           @submit="handleSubmit"
           layout="vertical"
@@ -112,6 +124,22 @@
             </a-input>
           </a-form-item>
 
+          <a-form-item
+            v-if="!isLogin"
+            :label="t('auth.inviteCodeField')"
+          >
+            <a-input
+              v-model:value="formData.inviteCode"
+              :placeholder="t('auth.enterInviteCodeOptional')"
+              size="large"
+              :disabled="authStore.isLoading"
+            >
+              <template #prefix>
+                <KeyOutlined />
+              </template>
+            </a-input>
+          </a-form-item>
+
           <!-- Remember me checkbox for login -->
           <a-form-item v-if="isLogin">
             <a-checkbox v-model:checked="formData.rememberMe">
@@ -146,18 +174,19 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+<script setup lang="ts">
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Form, message } from 'ant-design-vue'
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
+import { UserOutlined, LockOutlined, MailOutlined, KeyOutlined } from '@ant-design/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import LanguageToggle from '@/components/layout/LanguageToggle.vue'
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
@@ -170,8 +199,62 @@ const formData = reactive({
   password: '',
   confirmPassword: '',
   nickname: '',
+  inviteCode: '',
   rememberMe: false
 })
+
+const invitePrefilled = ref(false)
+
+const applyInviteFromQuery = (inviteValue: unknown) => {
+  if (!inviteValue) {
+    return
+  }
+
+  const inviteString = Array.isArray(inviteValue) ? inviteValue[0] : inviteValue
+
+  if (typeof inviteString !== 'string') {
+    return
+  }
+
+  const normalized = inviteString.trim().toUpperCase()
+
+  if (!normalized) {
+    return
+  }
+
+  isLogin.value = false
+  invitePrefilled.value = true
+  formData.inviteCode = normalized
+}
+
+watch(
+  () => route.query.invite,
+  (invite) => {
+    if (invite) {
+      applyInviteFromQuery(invite)
+    } else {
+      if (invitePrefilled.value) {
+        invitePrefilled.value = false
+        formData.inviteCode = ''
+      }
+    }
+  }
+)
+
+watch(
+  () => formData.inviteCode,
+  (value) => {
+    if (!value) {
+      return
+    }
+
+    const upper = value.toUpperCase()
+
+    if (upper !== value) {
+      formData.inviteCode = upper
+    }
+  }
+)
 
 const validatePasswordConfirm = (rule, value) => {
   if (value && value !== formData.password) {
@@ -199,6 +282,9 @@ const toggleMode = () => {
       formData.identifier = rememberedIdentifier
       formData.rememberMe = true
     }
+    invitePrefilled.value = false
+  } else {
+    applyInviteFromQuery(route.query.invite)
   }
 }
 
@@ -245,7 +331,8 @@ const handleSubmit = async (e) => {
         username: formData.username,
         email: formData.identifier,
         password: formData.password,
-        nickname: formData.nickname || formData.username
+        nickname: formData.nickname || formData.username,
+        inviteCode: formData.inviteCode
       })
 
       if (result.success) {
@@ -270,6 +357,8 @@ onMounted(() => {
     formData.identifier = rememberedIdentifier
     formData.rememberMe = true
   }
+
+  applyInviteFromQuery(route.query.invite)
 
   if (authStore.isAuthenticated) {
     const redirect = router.currentRoute.value.query.redirect || '/'
@@ -414,6 +503,10 @@ onMounted(() => {
 
 .login-form {
   width: 100%;
+}
+
+.invite-alert {
+  margin-bottom: 16px;
 }
 
 .login-footer {

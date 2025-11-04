@@ -211,7 +211,10 @@ class InviteService {
         codeType: inviteCode.codeType,
         description: inviteCode.description,
         creator: inviteCode.creator,
-        remainingUses: inviteCode.maxUses - inviteCode.usedCount
+        remainingUses: inviteCode.maxUses - inviteCode.usedCount,
+        maxUses: inviteCode.maxUses,
+        usedCount: inviteCode.usedCount,
+        expiresAt: inviteCode.expiresAt
       }
     }
   }
@@ -388,7 +391,7 @@ class InviteService {
   }
 
   // 禁用邀请码
-  async deactivateInviteCode(codeId, userId) {
+  async deactivateInviteCode(codeId, currentUser) {
     const inviteCode = await prisma.InviteCode.findUnique({
       where: { id: codeId }
     })
@@ -397,10 +400,18 @@ class InviteService {
       throw new Error('邀请码不存在')
     }
 
+    const userId = currentUser?.id || currentUser?.userId
+    const isAdmin = currentUser?.role === 'admin'
+    const isCreator = inviteCode.createdBy && inviteCode.createdBy === userId
+    const isSystemInvite = inviteCode.createdBy === null
+
     // 检查权限（创建者或管理员可以禁用）
-    if (inviteCode.createdBy !== userId) {
-      // 这里可以添加管理员权限检查
-      throw new Error('没有权限禁用此邀请码')
+    if (!isCreator && !isAdmin) {
+      if (isSystemInvite && isAdmin) {
+        // 管理员可以管理系统邀请码
+      } else {
+        throw new Error('没有权限禁用此邀请码')
+      }
     }
 
     return await prisma.InviteCode.update({
@@ -410,7 +421,7 @@ class InviteService {
   }
 
   // 激活邀请码
-  async activateInviteCode(codeId, userId) {
+  async activateInviteCode(codeId, currentUser) {
     const inviteCode = await prisma.InviteCode.findUnique({
       where: { id: codeId }
     })
@@ -419,10 +430,18 @@ class InviteService {
       throw new Error('邀请码不存在')
     }
 
+    const userId = currentUser?.id || currentUser?.userId
+    const isAdmin = currentUser?.role === 'admin'
+    const isCreator = inviteCode.createdBy && inviteCode.createdBy === userId
+    const isSystemInvite = inviteCode.createdBy === null
+
     // 检查权限（创建者或管理员可以激活）
-    if (inviteCode.createdBy !== userId) {
-      // 这里可以添加管理员权限检查
-      throw new Error('没有权限激活此邀请码')
+    if (!isCreator && !isAdmin) {
+      if (isSystemInvite && isAdmin) {
+        // allow
+      } else {
+        throw new Error('没有权限激活此邀请码')
+      }
     }
 
     return await prisma.InviteCode.update({
@@ -432,7 +451,7 @@ class InviteService {
   }
 
   // 删除邀请码
-  async deleteInviteCode(codeId, userId) {
+  async deleteInviteCode(codeId, currentUser) {
     const inviteCode = await prisma.InviteCode.findUnique({
       where: { id: codeId },
       include: { usages: true }
@@ -442,9 +461,18 @@ class InviteService {
       throw new Error('邀请码不存在')
     }
 
+    const userId = currentUser?.id || currentUser?.userId
+    const isAdmin = currentUser?.role === 'admin'
+    const isCreator = inviteCode.createdBy && inviteCode.createdBy === userId
+    const isSystemInvite = inviteCode.createdBy === null
+
     // 检查权限
-    if (inviteCode.createdBy !== userId) {
-      throw new Error('没有权限删除此邀请码')
+    if (!isCreator && !isAdmin) {
+      if (isSystemInvite && isAdmin) {
+        // allow
+      } else {
+        throw new Error('没有权限删除此邀请码')
+      }
     }
 
     // 如果已被使用，不允许删除，只能禁用
