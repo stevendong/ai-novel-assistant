@@ -62,7 +62,9 @@
       "Bash(docker rm:*)",
       "Bash(docker exec:*)",
       "Bash(sudo apt-get update:*)",
-      "Bash(sudo apt-get install:*)"
+      "Bash(sudo apt-get install:*)",
+      "Bash(prisma/migrations/20250105000000_init/migration.sql)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

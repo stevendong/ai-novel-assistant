@@ -21,6 +21,8 @@
     "db:push": "npm run db:push --workspace=server",
     "db:studio": "npm run db:studio --workspace=server",
     "db:migrate": "npm run db:migrate --workspace=server",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace=server",
+    "db:generate": "npm run db:generate --workspace=server",
     "install:all": "npm install",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
     "lint": "npm run lint --workspaces --if-present",
