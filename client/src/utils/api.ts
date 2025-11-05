@@ -83,6 +83,7 @@ class ApiClient {
               if (response.data.session?.sessionToken) {
                 localStorage.setItem('sessionToken', response.data.session.sessionToken)
                 localStorage.setItem('refreshToken', response.data.session.refreshToken)
+                localStorage.setItem('user', JSON.stringify(response.data.user))
 
                 // 重新发送原始请求
                 originalRequest.headers = originalRequest.headers || {}
@@ -92,10 +93,13 @@ class ApiClient {
             }
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError)
+            // 刷新失败，清除认证信息并触发登出
+            this.handleAuthFailure()
+            return Promise.reject(error)
           }
 
-          // 如果刷新失败，清除认证并抛出错误（不重定向）
-          this.clearAuth()
+          // 如果没有refresh token或刷新失败，清除认证并触发登出
+          this.handleAuthFailure()
           return Promise.reject(error)
         }
 
@@ -121,10 +125,39 @@ class ApiClient {
     localStorage.removeItem('refreshToken')
   }
 
+  // 处理认证失败（token过期或无效）
+  private handleAuthFailure(): void {
+    console.log('[API] Authentication failed, clearing auth and redirecting to login')
+
+    // 清除所有认证信息
+    this.clearAuth()
+    this.clearAuthToken()
+
+    // 发送自定义事件，通知应用层认证失败
+    window.dispatchEvent(new CustomEvent('auth:unauthorized', {
+      detail: { message: '登录已过期，请重新登录' }
+    }))
+
+    // 保存当前路径用于登录后重定向
+    const currentPath = window.location.pathname + window.location.search
+    const redirectPath = currentPath !== '/login' ? currentPath : '/'
+
+    // 延迟跳转，确保事件已被处理
+    setTimeout(() => {
+      // 跳转到登录页，携带重定向参数
+      window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
+    }, 100)
+  }
+
   // 统一错误处理
   private handleError(error: AxiosError<ApiErrorResponse>): void {
     // 跳过用户主动取消的请求
     if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+      return
+    }
+
+    // 跳过401错误（已由handleAuthFailure处理）
+    if (error.response?.status === 401) {
       return
     }
 
@@ -136,9 +169,6 @@ class ApiClient {
       switch (status) {
         case 400:
           errorMessage = data?.message || '请求参数错误'
-          break
-        case 401:
-          errorMessage = '未授权，请重新登录'
           break
         case 403:
           errorMessage = '没有权限访问该资源'
