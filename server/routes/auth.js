@@ -1120,10 +1120,24 @@ router.get('/registration-config', async (req, res) => {
       }
     }
 
+    const googleEnabled =
+      !!process.env.GOOGLE_CLIENT_ID &&
+      !!process.env.GOOGLE_CLIENT_SECRET &&
+      !!process.env.GOOGLE_REDIRECT_URI;
+
+    const githubEnabled =
+      !!process.env.GITHUB_CLIENT_ID &&
+      !!process.env.GITHUB_CLIENT_SECRET &&
+      !!process.env.GITHUB_CALLBACK_URL;
+
     res.json({
       inviteCodeRequired: isInviteRequired,
       exemptionActive,
-      exemptionEnd
+      exemptionEnd,
+      socialProviders: {
+        google: googleEnabled,
+        github: githubEnabled,
+      },
     });
 
   } catch (error) {

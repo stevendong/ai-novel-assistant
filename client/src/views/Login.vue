@@ -124,20 +124,8 @@
             </a-input>
           </a-form-item>
 
-          <a-alert
-            v-if="!isLogin && exemptionActive"
-            type="info"
-            show-icon
-            class="exemption-alert"
-            :message="t('auth.inviteExemptionTitle')"
-          >
-            <template #description>
-              {{ t('auth.inviteExemptionDescription') }}
-            </template>
-          </a-alert>
-
           <a-form-item
-            v-if="!isLogin"
+            v-if="!isLogin && inviteCodeRequired && !exemptionActive"
             :label="inviteCodeRequired ? t('auth.inviteCodeField') : t('auth.inviteCodeFieldOptional')"
             :rules="inviteCodeRequired ? [{ required: true, message: t('auth.enterInviteCode') }] : []"
           >
@@ -173,14 +161,14 @@
           </a-form-item>
 
           <!-- Social Login Section (only for login mode) -->
-          <template v-if="isLogin">
+          <template v-if="isLogin && socialEnabled">
             <div class="divider">
               <span>{{ t('auth.orContinueWith') }}</span>
             </div>
 
             <div class="social-login-buttons">
-              <GoogleSignInButton />
-              <GitHubSignInButton />
+              <GoogleSignInButton v-if="googleEnabled" />
+              <GitHubSignInButton v-if="githubEnabled" />
             </div>
           </template>
 
@@ -200,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { message } from 'ant-design-vue'
@@ -223,6 +211,14 @@ const isLogin = ref(true)
 const inviteCodeRequired = ref(true)
 const exemptionActive = ref(false)
 const exemptionEnd = ref<string | null>(null)
+const socialProviders = reactive({
+  google: false,
+  github: false
+})
+
+const googleEnabled = computed(() => socialProviders.google && !!import.meta.env.VITE_GOOGLE_CLIENT_ID)
+const githubEnabled = computed(() => socialProviders.github)
+const socialEnabled = computed(() => googleEnabled.value || githubEnabled.value)
 
 const formData = reactive({
   username: '',
@@ -324,6 +320,13 @@ const fetchRegistrationConfig = async () => {
     inviteCodeRequired.value = response.data.inviteCodeRequired
     exemptionActive.value = response.data.exemptionActive
     exemptionEnd.value = response.data.exemptionEnd
+    socialProviders.google = !!response.data.socialProviders?.google
+    socialProviders.github = !!response.data.socialProviders?.github
+
+    if (!inviteCodeRequired.value || exemptionActive.value) {
+      formData.inviteCode = ''
+      invitePrefilled.value = false
+    }
   } catch (error) {
     console.error('Failed to fetch registration config:', error)
   }
