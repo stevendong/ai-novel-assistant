@@ -44,6 +44,74 @@
       </a-row>
     </div>
 
+    <div class="invite-config">
+      <a-card :title="t('admin.inviteManagement.config.title')">
+        <a-form layout="vertical">
+          <a-row :gutter="16">
+            <a-col :span="8">
+              <a-form-item :label="t('admin.inviteManagement.config.requireInviteCode')">
+                <a-switch
+                  v-model:checked="inviteConfig.inviteCodeRequired"
+                  @change="handleConfigChange"
+                />
+                <span class="config-description">
+                  {{ t('admin.inviteManagement.config.requireInviteCodeDesc') }}
+                </span>
+              </a-form-item>
+            </a-col>
+            <a-col :span="8">
+              <a-form-item :label="t('admin.inviteManagement.config.exemptStart')">
+                <a-date-picker
+                  v-model:value="inviteConfig.exemptStart"
+                  :disabled="!inviteConfig.inviteCodeRequired"
+                  show-time
+                  format="YYYY-MM-DD HH:mm:ss"
+                  style="width: 100%"
+                  @change="handleConfigChange"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :span="8">
+              <a-form-item :label="t('admin.inviteManagement.config.exemptEnd')">
+                <a-date-picker
+                  v-model:value="inviteConfig.exemptEnd"
+                  :disabled="!inviteConfig.inviteCodeRequired"
+                  show-time
+                  format="YYYY-MM-DD HH:mm:ss"
+                  style="width: 100%"
+                  @change="handleConfigChange"
+                />
+              </a-form-item>
+            </a-col>
+          </a-row>
+          <a-row>
+            <a-col :span="24">
+              <a-alert
+                v-if="exemptionStatus.active"
+                type="success"
+                :message="t('admin.inviteManagement.config.exemptionActive')"
+                show-icon
+              >
+                <template #description>
+                  {{ t('admin.inviteManagement.config.exemptionActiveDesc', {
+                    end: formatConfigDate(inviteConfig.exemptEnd)
+                  }) }}
+                </template>
+              </a-alert>
+              <a-button
+                type="primary"
+                :loading="configSaving"
+                @click="saveInviteConfig"
+                style="margin-top: 16px"
+              >
+                {{ t('common.save') }}
+              </a-button>
+            </a-col>
+          </a-row>
+        </a-form>
+      </a-card>
+    </div>
+
     <!-- 搜索和筛选 -->
     <div class="invite-filters">
       <a-row :gutter="16">
@@ -323,8 +391,8 @@ import {
 } from '@ant-design/icons-vue'
 import { api } from '@/utils/api'
 import { useI18n } from 'vue-i18n'
+import dayjs, { Dayjs } from 'dayjs'
 
-// 响应式数据
 const loading = ref(false)
 const createLoading = ref(false)
 const batchLoading = ref(false)
@@ -339,6 +407,30 @@ const stats = ref({
 const { t, locale } = useI18n()
 const displayLocale = computed(() => (locale.value.startsWith('zh') ? 'zh-CN' : 'en-US'))
 const router = useRouter()
+
+const configSaving = ref(false)
+const inviteConfig = reactive<{
+  inviteCodeRequired: boolean
+  exemptStart: Dayjs | null
+  exemptEnd: Dayjs | null
+}>({
+  inviteCodeRequired: true,
+  exemptStart: null,
+  exemptEnd: null
+})
+
+const exemptionStatus = computed(() => {
+  if (!inviteConfig.inviteCodeRequired) return { active: false }
+  if (!inviteConfig.exemptStart || !inviteConfig.exemptEnd) return { active: false }
+
+  const now = dayjs()
+  const start = inviteConfig.exemptStart
+  const end = inviteConfig.exemptEnd
+
+  return {
+    active: now.isAfter(start) && now.isBefore(end)
+  }
+})
 
 // 搜索和筛选
 const searchText = ref('')
@@ -539,9 +631,45 @@ const handleTableChange = (pag: any) => {
   loadInviteCodes()
 }
 
+const loadInviteConfig = async () => {
+  try {
+    const response = await api.get('/api/system-config/invite-settings')
+    const settings = response.data.settings
+    inviteConfig.inviteCodeRequired = settings.inviteCodeRequired
+    inviteConfig.exemptStart = settings.exemptStart ? dayjs(settings.exemptStart) : null
+    inviteConfig.exemptEnd = settings.exemptEnd ? dayjs(settings.exemptEnd) : null
+  } catch (error) {
+    console.error('Failed to load invite config:', error)
+  }
+}
+
+const saveInviteConfig = async () => {
+  configSaving.value = true
+  try {
+    await api.put('/api/system-config/invite-settings', {
+      inviteCodeRequired: inviteConfig.inviteCodeRequired,
+      exemptStart: inviteConfig.exemptStart?.toISOString() || null,
+      exemptEnd: inviteConfig.exemptEnd?.toISOString() || null
+    })
+    message.success(t('admin.inviteManagement.config.saveSuccess'))
+  } catch (error: any) {
+    message.error(error.response?.data?.message || t('admin.inviteManagement.config.saveFailed'))
+  } finally {
+    configSaving.value = false
+  }
+}
+
+const handleConfigChange = () => {
+}
+
+const formatConfigDate = (date: Dayjs | null) => {
+  return date ? date.format('YYYY-MM-DD HH:mm:ss') : ''
+}
+
 const refreshData = () => {
   loadInviteCodes()
   loadStats()
+  loadInviteConfig()
 }
 
 // 邀请码操作
@@ -704,6 +832,17 @@ onMounted(() => {
 
 .invite-stats {
   margin-bottom: 24px;
+}
+
+.invite-config {
+  margin-bottom: 24px;
+}
+
+.config-description {
+  display: block;
+  margin-top: 8px;
+  color: var(--theme-text-secondary);
+  font-size: 12px;
 }
 
 .invite-filters {

@@ -1072,6 +1072,17 @@
         "copyLinkSuccess": "Invite link copied",
         "copyLinkFailed": "Failed to copy invite link"
       },
+      "config": {
+        "title": "Registration Settings",
+        "requireInviteCode": "Require Invite Code",
+        "requireInviteCodeDesc": "When disabled, anyone can register freely",
+        "exemptStart": "Exemption Start Time",
+        "exemptEnd": "Exemption End Time",
+        "exemptionActive": "Open Registration Period",
+        "exemptionActiveDesc": "Currently in open registration period. No invite code required. End time: {end}",
+        "saveSuccess": "Settings saved successfully",
+        "saveFailed": "Failed to save settings"
+      },
       "pagination": {
         "summary": "Total {total} records, showing {start}-{end}"
       },
@@ -2013,13 +2024,17 @@
     "confirmPassword": "Confirm Password",
     "nickname": "Nickname (Optional)",
     "inviteCodeField": "Invite Code",
+    "inviteCodeFieldOptional": "Invite Code (Optional)",
     "enterUsername": "Please enter username",
     "enterEmail": "Please enter email address",
     "enterEmailOrUsername": "Please enter email or username",
     "enterPassword": "Please enter password",
     "enterConfirmPassword": "Please confirm password",
     "enterNickname": "Please enter nickname",
+    "enterInviteCode": "Please enter invite code",
     "enterInviteCodeOptional": "Enter invite code (optional)",
+    "inviteExemptionTitle": "Open Registration Period",
+    "inviteExemptionDescription": "Currently in open registration period. No invite code required to register",
     "usernameRules": "Username must be 3-20 characters long",
     "usernamePattern": "Username can only contain letters, numbers and underscores",
     "emailRule": "Please enter a valid email address",

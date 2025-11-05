@@ -97,6 +97,41 @@ router.post('/register', async (req, res) => {
     const ipAddress = getCleanClientIp(req);
 
     let inviteValidation = null;
+    let isInviteRequired = true;
+
+    const configs = await prisma.systemConfig.findMany({
+      where: {
+        key: {
+          in: ['invite_code_required', 'invite_code_exempt_start', 'invite_code_exempt_end']
+        }
+      }
+    });
+
+    const configMap = {};
+    configs.forEach(config => {
+      configMap[config.key] = config.value;
+    });
+
+    const inviteCodeRequired = configMap.invite_code_required !== 'false';
+    const exemptStart = configMap.invite_code_exempt_start;
+    const exemptEnd = configMap.invite_code_exempt_end;
+
+    if (inviteCodeRequired && exemptStart && exemptEnd) {
+      const now = new Date();
+      const startDate = new Date(exemptStart);
+      const endDate = new Date(exemptEnd);
+
+      if (now >= startDate && now <= endDate) {
+        isInviteRequired = false;
+        logger.info('Invite code exemption active', {
+          currentTime: now,
+          exemptStart: startDate,
+          exemptEnd: endDate
+        });
+      }
+    } else if (!inviteCodeRequired) {
+      isInviteRequired = false;
+    }
 
     if (normalizedInviteCode) {
       inviteValidation = await inviteService.validateInviteCode(normalizedInviteCode, {
@@ -110,6 +145,12 @@ router.post('/register', async (req, res) => {
           code: inviteValidation.error
         });
       }
+    } else if (isInviteRequired) {
+      return res.status(400).json({
+        error: 'Invite Code Error',
+        message: 'Invite code is required for registration',
+        code: 'INVITE_REQUIRED'
+      });
     }
 
     const hashedPassword = await AuthUtils.hashPassword(password);
@@ -1025,6 +1066,59 @@ router.post('/check-availability', async (req, res) => {
     res.status(500).json({
       error: 'Availability Check Failed',
       message: 'Failed to check availability',
+    });
+  }
+});
+
+router.get('/registration-config', async (req, res) => {
+  try {
+    const configs = await prisma.systemConfig.findMany({
+      where: {
+        key: {
+          in: ['invite_code_required', 'invite_code_exempt_start', 'invite_code_exempt_end']
+        }
+      }
+    });
+
+    const configMap = {};
+    configs.forEach(config => {
+      configMap[config.key] = config.value;
+    });
+
+    const inviteCodeRequired = configMap.invite_code_required !== 'false';
+    const exemptStart = configMap.invite_code_exempt_start;
+    const exemptEnd = configMap.invite_code_exempt_end;
+
+    let isInviteRequired = inviteCodeRequired;
+    let exemptionActive = false;
+    let exemptionEnd = null;
+
+    if (inviteCodeRequired && exemptStart && exemptEnd) {
+      const now = new Date();
+      const startDate = new Date(exemptStart);
+      const endDate = new Date(exemptEnd);
+
+      if (now >= startDate && now <= endDate) {
+        isInviteRequired = false;
+        exemptionActive = true;
+        exemptionEnd = endDate.toISOString();
+      }
+    }
+
+    res.json({
+      inviteCodeRequired: isInviteRequired,
+      exemptionActive,
+      exemptionEnd
+    });
+
+  } catch (error) {
+    logger.error('Get registration config error:', {
+      error: error.message,
+    });
+
+    res.status(500).json({
+      error: 'Config Error',
+      message: 'Failed to get registration configuration',
     });
   }
 });

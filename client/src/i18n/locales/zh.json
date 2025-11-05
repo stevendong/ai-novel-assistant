@@ -1072,6 +1072,17 @@
         "copyLinkSuccess": "邀请注册链接已复制",
         "copyLinkFailed": "复制邀请注册链接失败"
       },
+      "config": {
+        "title": "注册配置",
+        "requireInviteCode": "需要邀请码注册",
+        "requireInviteCodeDesc": "关闭后允许所有用户自由注册",
+        "exemptStart": "豁免开始时间",
+        "exemptEnd": "豁免结束时间",
+        "exemptionActive": "开放注册期间",
+        "exemptionActiveDesc": "当前处于开放注册期间，无需邀请码即可注册，结束时间：{end}",
+        "saveSuccess": "配置保存成功",
+        "saveFailed": "配置保存失败"
+      },
       "pagination": {
         "summary": "共 {total} 条记录，显示 {start}-{end} 条"
       },
@@ -2013,13 +2024,17 @@
     "confirmPassword": "确认密码",
     "nickname": "昵称（可选）",
     "inviteCodeField": "邀请码",
+    "inviteCodeFieldOptional": "邀请码（可选）",
     "enterUsername": "请输入用户名",
     "enterEmail": "请输入邮箱地址",
     "enterEmailOrUsername": "请输入邮箱或用户名",
     "enterPassword": "请输入密码",
     "enterConfirmPassword": "请再次输入密码",
     "enterNickname": "请输入昵称",
+    "enterInviteCode": "请输入邀请码",
     "enterInviteCodeOptional": "请输入邀请码（可选）",
+    "inviteExemptionTitle": "开放注册期间",
+    "inviteExemptionDescription": "当前处于开放注册期间，无需邀请码即可注册账号",
     "usernameRules": "用户名长度为3-20个字符",
     "usernamePattern": "用户名只能包含字母、数字和下划线",
     "emailRule": "请输入有效的邮箱地址",

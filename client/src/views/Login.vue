@@ -124,13 +124,26 @@
             </a-input>
           </a-form-item>
 
+          <a-alert
+            v-if="!isLogin && exemptionActive"
+            type="info"
+            show-icon
+            class="exemption-alert"
+            :message="t('auth.inviteExemptionTitle')"
+          >
+            <template #description>
+              {{ t('auth.inviteExemptionDescription') }}
+            </template>
+          </a-alert>
+
           <a-form-item
             v-if="!isLogin"
-            :label="t('auth.inviteCodeField')"
+            :label="inviteCodeRequired ? t('auth.inviteCodeField') : t('auth.inviteCodeFieldOptional')"
+            :rules="inviteCodeRequired ? [{ required: true, message: t('auth.enterInviteCode') }] : []"
           >
             <a-input
               v-model:value="formData.inviteCode"
-              :placeholder="t('auth.enterInviteCodeOptional')"
+              :placeholder="inviteCodeRequired ? t('auth.enterInviteCode') : t('auth.enterInviteCodeOptional')"
               size="large"
               :disabled="authStore.isLoading"
             >
@@ -184,6 +197,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import LanguageToggle from '@/components/layout/LanguageToggle.vue'
+import { apiClient } from '@/utils/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -192,6 +206,9 @@ const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
 const isLogin = ref(true)
+const inviteCodeRequired = ref(true)
+const exemptionActive = ref(false)
+const exemptionEnd = ref<string | null>(null)
 
 const formData = reactive({
   username: '',
@@ -263,10 +280,9 @@ const validatePasswordConfirm = (rule, value) => {
   return Promise.resolve()
 }
 
-const toggleMode = () => {
+const toggleMode = async () => {
   isLogin.value = !isLogin.value
 
-  // 清空表单数据
   Object.keys(formData).forEach(key => {
     if (key === 'rememberMe') {
       formData[key] = false
@@ -275,7 +291,6 @@ const toggleMode = () => {
     }
   })
 
-  // 如果切换到登录模式，恢复记住的用户信息
   if (isLogin.value) {
     const rememberedIdentifier = localStorage.getItem('rememberedIdentifier')
     if (rememberedIdentifier) {
@@ -284,7 +299,19 @@ const toggleMode = () => {
     }
     invitePrefilled.value = false
   } else {
+    await fetchRegistrationConfig()
     applyInviteFromQuery(route.query.invite)
+  }
+}
+
+const fetchRegistrationConfig = async () => {
+  try {
+    const response = await apiClient.get('/api/auth/registration-config', { skipAuth: true })
+    inviteCodeRequired.value = response.data.inviteCodeRequired
+    exemptionActive.value = response.data.exemptionActive
+    exemptionEnd.value = response.data.exemptionEnd
+  } catch (error) {
+    console.error('Failed to fetch registration config:', error)
   }
 }
 
@@ -292,7 +319,6 @@ const handleSubmit = async (e) => {
   e.preventDefault()
 
   try {
-    // Basic validation
     if (!formData.identifier || !formData.password) {
       message.error(isLogin.value ? t('auth.fillLoginRequired') : t('auth.fillRequired'))
       return
@@ -344,19 +370,18 @@ const handleSubmit = async (e) => {
   }
 }
 
-onMounted(() => {
-  // 初始化认证状态
+onMounted(async () => {
   authStore.init()
 
-  // 初始化主题
   themeStore.initTheme()
 
-  // 恢复记住的用户信息
   const rememberedIdentifier = localStorage.getItem('rememberedIdentifier')
   if (rememberedIdentifier) {
     formData.identifier = rememberedIdentifier
     formData.rememberMe = true
   }
+
+  await fetchRegistrationConfig()
 
   applyInviteFromQuery(route.query.invite)
 
@@ -506,6 +531,10 @@ onMounted(() => {
 }
 
 .invite-alert {
+  margin-bottom: 16px;
+}
+
+.exemption-alert {
   margin-bottom: 16px;
 }
 

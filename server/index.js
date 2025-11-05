@@ -42,6 +42,7 @@ const conversationRoutes = require('./routes/conversations');
 const statsRoutes = require('./routes/stats');
 const inviteRoutes = require('./routes/invites');
 const adminRoutes = require('./routes/admin');
+const systemConfigRoutes = require('./routes/systemConfig');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -131,6 +132,7 @@ app.use('/api/conversations', apiLimiter, conversationRoutes);
 app.use('/api', apiLimiter, statsRoutes);
 app.use('/api/invites', apiLimiter, inviteRoutes);
 app.use('/api/admin', apiLimiter, adminRoutes);
+app.use('/api/system-config', apiLimiter, systemConfigRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {
