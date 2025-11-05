@@ -468,6 +468,169 @@ export const useAuthStore = defineStore('auth', () => {
     return { success: result.success, error: result.error }
   }
 
+  // Google 登录
+  const loginWithGoogle = async (
+    idToken: string,
+    inviteCode?: string
+  ): Promise<{ success: boolean; data?: AuthResponse; error?: string; code?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.post<AuthResponse>(
+        '/api/auth/social/google/login',
+        {
+          idToken,
+          inviteCode,
+        },
+        { skipErrorHandler: true }
+      )
+
+      setAuthData(response.data)
+      message.success(response.data.message || 'Login successful!')
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Google login failed'
+      const errorCode = error.response?.data?.code
+
+      if (errorCode === 'INVITE_REQUIRED') {
+        return { success: false, error: errorMessage, code: errorCode }
+      }
+
+      message.error(errorMessage)
+      return { success: false, error: errorMessage, code: errorCode }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 绑定 Google 账号
+  const linkGoogleAccount = async (
+    idToken: string
+  ): Promise<{ success: boolean; data?: any; error?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.post('/api/auth/social/google/link', {
+        idToken,
+      })
+
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      message.success('Google account linked successfully!')
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to link Google account'
+      message.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 解绑 Google 账号
+  const unlinkGoogleAccount = async (): Promise<{ success: boolean; error?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.post('/api/auth/social/google/unlink')
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      message.success('Google account unlinked successfully!')
+      return { success: true }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to unlink Google account'
+      message.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 获取已绑定的社交账号
+  const getLinkedSocialAccounts = async (): Promise<{ success: boolean; data?: any[]; error?: string }> => {
+    try {
+      const response = await apiClient.get('/api/auth/social/linked')
+      return { success: true, data: response.data.socialAccounts }
+    } catch (error: any) {
+      console.error('Get linked accounts error:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  // GitHub 登录
+  const loginWithGitHub = async (
+    code: string,
+    inviteCode?: string,
+    state?: string
+  ): Promise<{ success: boolean; data?: AuthResponse; error?: string; code?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.post<AuthResponse>(
+        '/api/auth/social/github/login',
+        {
+          code,
+          inviteCode,
+          state,
+        },
+        { skipErrorHandler: true }
+      )
+
+      setAuthData(response.data)
+      message.success(response.data.message || 'Login successful!')
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'GitHub login failed'
+      const errorCode = error.response?.data?.code
+
+      if (errorCode === 'INVITE_REQUIRED') {
+        return { success: false, error: errorMessage, code: errorCode }
+      }
+
+      message.error(errorMessage)
+      return { success: false, error: errorMessage, code: errorCode }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 绑定 GitHub 账号
+  const linkGitHubAccount = async (
+    code: string
+  ): Promise<{ success: boolean; data?: any; error?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.post('/api/auth/social/github/link', {
+        code,
+      })
+
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      message.success('GitHub account linked successfully!')
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to link GitHub account'
+      message.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // 解绑 GitHub 账号
+  const unlinkGitHubAccount = async (): Promise<{ success: boolean; error?: string }> => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.post('/api/auth/social/github/unlink')
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      message.success('GitHub account unlinked successfully!')
+      return { success: true }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to unlink GitHub account'
+      message.error(errorMessage)
+      return { success: false, error: errorMessage }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // 状态
     user: readonly(user),
@@ -503,6 +666,15 @@ export const useAuthStore = defineStore('auth', () => {
     deleteSession,
     getUserActivity,
     clearAuth,
+
+    // 社交登录方法
+    loginWithGoogle,
+    linkGoogleAccount,
+    unlinkGoogleAccount,
+    loginWithGitHub,
+    linkGitHubAccount,
+    unlinkGitHubAccount,
+    getLinkedSocialAccounts,
 
     // 向后兼容 - 提供apiClient访问
     apiClient

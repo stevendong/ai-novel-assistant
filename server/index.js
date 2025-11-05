@@ -24,6 +24,7 @@ const {
 
 // 导入路由
 const authRoutes = require('./routes/auth');
+const socialAuthRoutes = require('./routes/socialAuth');
 const novelRoutes = require('./routes/novels');
 const characterRoutes = require('./routes/characters');
 const settingRoutes = require('./routes/settings');
@@ -106,6 +107,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth/login', authLimiter); // 登录接口特殊限制
 app.use('/api/auth/register', registerLimiter); // 注册接口特殊限制
 app.use('/api/auth', authRoutes);
+
+// 社交登录路由 - 使用认证限制
+app.use('/api/auth/social', authLimiter, socialAuthRoutes);
 
 // AI 相关路由 - 较严格的速率限制
 app.use('/api/ai', aiLimiter, aiRoutes);

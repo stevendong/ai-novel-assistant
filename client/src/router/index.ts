@@ -11,6 +11,7 @@ import ChapterEditorView from '@/views/ChapterEditorView.vue'
 import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
 import FileManagement from '@/components/file/FileManagement.vue'
+import GitHubCallback from '@/views/auth/GitHubCallback.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,6 +23,14 @@ const router = createRouter({
       meta: {
         requiresGuest: true,
         titleKey: 'auth.loginTitle'
+      }
+    },
+    {
+      path: '/auth/github/callback',
+      name: 'GitHubCallback',
+      component: GitHubCallback,
+      meta: {
+        requiresAuth: false
       }
     },
     {

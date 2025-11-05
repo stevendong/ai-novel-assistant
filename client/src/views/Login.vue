@@ -172,6 +172,18 @@
             </a-button>
           </a-form-item>
 
+          <!-- Social Login Section (only for login mode) -->
+          <template v-if="isLogin">
+            <div class="divider">
+              <span>{{ t('auth.orContinueWith') }}</span>
+            </div>
+
+            <div class="social-login-buttons">
+              <GoogleSignInButton />
+              <GitHubSignInButton />
+            </div>
+          </template>
+
           <div class="login-footer">
             <a-button
               type="link"
@@ -197,6 +209,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import LanguageToggle from '@/components/layout/LanguageToggle.vue'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
+import GitHubSignInButton from '@/components/auth/GitHubSignInButton.vue'
 import { apiClient } from '@/utils/api'
 
 const router = useRouter()
@@ -629,6 +643,61 @@ onMounted(async () => {
 
 .dark :deep(.ant-btn-primary:hover) {
   background: linear-gradient(135deg, #73c7ff 0%, #40a9ff 100%);
+}
+
+.social-login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.social-login-buttons > * {
+  width: 100%;
+}
+
+/* 分隔线样式 */
+.divider {
+  text-align: center;
+  margin: 24px 0;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 45%;
+  height: 1px;
+  background: #d1d5db;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+.divider span {
+  padding: 0 16px;
+  color: #718096;
+  background: white;
+  position: relative;
+  font-size: 14px;
+}
+
+.dark .divider span {
+  background: var(--theme-bg-container);
+  color: var(--theme-text-secondary);
+}
+
+.dark .divider::before,
+.dark .divider::after {
+  background: var(--theme-border);
 }
 
 /* 链接按钮 */

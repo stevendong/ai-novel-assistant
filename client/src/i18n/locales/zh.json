@@ -2045,6 +2045,31 @@
     "registerButton": "注册",
     "switchToRegister": "还没有账户？立即注册",
     "switchToLogin": "已有账户？立即登录",
+    "orContinueWith": "或继续使用",
+    "social": {
+      "google": "使用 Google 登录",
+      "github": "使用 GitHub 登录",
+      "errors": {
+        "googleInit": "加载 Google 登录失败",
+        "githubInit": "无法启动 GitHub 登录，请稍后重试",
+        "githubAuthorize": "GitHub 授权失败：{error}",
+        "githubMissingCode": "未收到授权码，登录失败",
+        "stateMismatch": "安全验证失败，请重试",
+        "githubProcess": "GitHub 登录处理失败，请重试"
+      },
+      "messages": {
+        "googleSuccess": "Google 登录成功！",
+        "inviteRequired": "需要邀请码才能完成注册",
+        "googleFailure": "Google 登录失败",
+        "githubSuccess": "GitHub 登录成功！",
+        "githubFailure": "GitHub 登录失败",
+        "githubCancelled": "您已取消 GitHub 授权"
+      },
+      "status": {
+        "githubProcessing": "正在处理 GitHub 登录...",
+        "githubFetching": "正在获取 GitHub 用户信息..."
+      }
+    },
     "fillRequired": "请填写必填项",
     "fillLoginRequired": "请输入邮箱/用户名和密码",
     "invitePrefillTitle": "检测到邀请链接",

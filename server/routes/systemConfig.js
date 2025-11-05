@@ -1,7 +1,7 @@
 const express = require('express');
 const { requireAdmin } = require('../middleware/auth');
 const logger = require('../utils/logger');
-const prisma = require('../utils/prismaClient');
+const { fetchSystemConfigs, upsertSystemConfig } = require('../utils/systemConfig');
 
 const router = express.Router();
 
@@ -13,13 +13,7 @@ const CONFIG_KEYS = {
 
 router.get('/invite-settings', requireAdmin, async (req, res) => {
   try {
-    const configs = await prisma.systemConfig.findMany({
-      where: {
-        key: {
-          in: Object.values(CONFIG_KEYS)
-        }
-      }
-    });
+    const configs = await fetchSystemConfigs(Object.values(CONFIG_KEYS));
 
     const settings = {
       inviteCodeRequired: true,
@@ -75,13 +69,7 @@ router.put('/invite-settings', requireAdmin, async (req, res) => {
       }
     ];
 
-    await Promise.all(updates.map(({ key, value }) =>
-      prisma.systemConfig.upsert({
-        where: { key },
-        create: { key, value },
-        update: { value }
-      })
-    ));
+    await Promise.all(updates.map(({ key, value }) => upsertSystemConfig(key, value)));
 
     logger.info('Invite settings updated:', {
       userId: req.user.id,

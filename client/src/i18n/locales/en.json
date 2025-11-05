@@ -2045,6 +2045,31 @@
     "registerButton": "Sign Up",
     "switchToRegister": "Don't have an account? Sign up now",
     "switchToLogin": "Already have an account? Sign in now",
+    "orContinueWith": "Or continue with",
+    "social": {
+      "google": "Continue with Google",
+      "github": "Continue with GitHub",
+      "errors": {
+        "googleInit": "Failed to load Google Sign-In",
+        "githubInit": "Unable to start GitHub login. Please try again later",
+        "githubAuthorize": "GitHub authorization failed: {error}",
+        "githubMissingCode": "Authorization code not received. Login failed.",
+        "stateMismatch": "Security verification failed. Please try again.",
+        "githubProcess": "GitHub login processing failed. Please retry."
+      },
+      "messages": {
+        "googleSuccess": "Google login successful!",
+        "inviteRequired": "Please enter an invite code to complete registration",
+        "googleFailure": "Google login failed",
+        "githubSuccess": "GitHub login successful!",
+        "githubFailure": "GitHub login failed",
+        "githubCancelled": "You cancelled GitHub authorization"
+      },
+      "status": {
+        "githubProcessing": "Processing GitHub login...",
+        "githubFetching": "Fetching GitHub profile..."
+      }
+    },
     "fillRequired": "Please fill in required fields",
     "fillLoginRequired": "Please enter email/username and password",
     "invitePrefillTitle": "Invite link detected",

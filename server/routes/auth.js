@@ -7,6 +7,7 @@ const inviteService = require('../services/inviteService');
 const uploadService = require('../services/uploadService');
 const { getCleanClientIp } = require('../utils/ipHelper');
 const prisma = require('../utils/prismaClient');
+const { fetchSystemConfigs } = require('../utils/systemConfig');
 
 const router = express.Router();
 
@@ -38,6 +39,24 @@ const validatePassword = (password) => {
 const validateUsername = (username) => {
   const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
   return usernameRegex.test(username);
+};
+
+const parseConfigDate = (value) => {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+  const options = [normalized, normalized.endsWith('Z') ? normalized : `${normalized}Z`];
+
+  for (const candidate of options) {
+    const date = new Date(candidate);
+    if (!Number.isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return null;
 };
 
 router.post('/register', async (req, res) => {
@@ -99,13 +118,11 @@ router.post('/register', async (req, res) => {
     let inviteValidation = null;
     let isInviteRequired = true;
 
-    const configs = await prisma.systemConfig.findMany({
-      where: {
-        key: {
-          in: ['invite_code_required', 'invite_code_exempt_start', 'invite_code_exempt_end']
-        }
-      }
-    });
+    const configs = await fetchSystemConfigs([
+      'invite_code_required',
+      'invite_code_exempt_start',
+      'invite_code_exempt_end',
+    ]);
 
     const configMap = {};
     configs.forEach(config => {
@@ -118,10 +135,10 @@ router.post('/register', async (req, res) => {
 
     if (inviteCodeRequired && exemptStart && exemptEnd) {
       const now = new Date();
-      const startDate = new Date(exemptStart);
-      const endDate = new Date(exemptEnd);
+      const startDate = parseConfigDate(exemptStart);
+      const endDate = parseConfigDate(exemptEnd);
 
-      if (now >= startDate && now <= endDate) {
+      if (startDate && endDate && now >= startDate && now <= endDate) {
         isInviteRequired = false;
         logger.info('Invite code exemption active', {
           currentTime: now,
@@ -1072,13 +1089,11 @@ router.post('/check-availability', async (req, res) => {
 
 router.get('/registration-config', async (req, res) => {
   try {
-    const configs = await prisma.systemConfig.findMany({
-      where: {
-        key: {
-          in: ['invite_code_required', 'invite_code_exempt_start', 'invite_code_exempt_end']
-        }
-      }
-    });
+    const configs = await fetchSystemConfigs([
+      'invite_code_required',
+      'invite_code_exempt_start',
+      'invite_code_exempt_end',
+    ]);
 
     const configMap = {};
     configs.forEach(config => {
