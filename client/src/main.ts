@@ -58,4 +58,40 @@ watch(
 
 updateDocumentTitle()
 
+// 过滤 Cloudflare Turnstile 内部请求的错误日志
+window.addEventListener('unhandledrejection', (event) => {
+  const error = event.reason
+  const errorMessage = error?.message || ''
+  const errorStack = error?.stack || ''
+
+  // 检查是否是 Cloudflare Turnstile 相关的错误
+  if (
+    errorMessage.includes('challenges.cloudflare.com') ||
+    errorMessage.includes('cdn-cgi/challenge-platform') ||
+    errorStack.includes('challenges.cloudflare.com') ||
+    errorStack.includes('turnstile')
+  ) {
+    // 阻止错误显示在控制台
+    event.preventDefault()
+    return
+  }
+})
+
+// 过滤控制台中的网络错误
+const originalConsoleError = console.error
+console.error = function(...args) {
+  const message = args.join(' ')
+
+  // 过滤 Cloudflare Turnstile 相关的错误
+  if (
+    message.includes('challenges.cloudflare.com') ||
+    message.includes('cdn-cgi/challenge-platform') ||
+    message.includes('401') && message.includes('turnstile')
+  ) {
+    return
+  }
+
+  originalConsoleError.apply(console, args)
+}
+
 app.mount('#app')

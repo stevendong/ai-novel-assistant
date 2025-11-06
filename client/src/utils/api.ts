@@ -161,6 +161,12 @@ class ApiClient {
       return
     }
 
+    // 跳过 Cloudflare Turnstile 内部请求错误
+    const requestUrl = error.config?.url || ''
+    if (requestUrl.includes('challenges.cloudflare.com') || requestUrl.includes('cdn-cgi/challenge-platform')) {
+      return
+    }
+
     let errorMessage = '请求失败'
 
     if (error.response) {

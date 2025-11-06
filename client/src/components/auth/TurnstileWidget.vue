@@ -97,10 +97,6 @@ const renderWidget = () => {
       'expired-callback': () => {
         emit('update:modelValue', '')
         emit('expired')
-      },
-      'timeout-callback': () => {
-        error.value = 'Verification timeout. Please try again.'
-        emit('error', error.value)
       }
     })
   } catch (err) {
