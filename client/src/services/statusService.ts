@@ -59,6 +59,7 @@ export interface SystemHealth {
 export interface AIStatus {
   connected: boolean
   model?: string
+  provider?: string
   usage?: {
     requests: number
     tokens: number

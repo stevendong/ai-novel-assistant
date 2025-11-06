@@ -62,7 +62,7 @@
             :status="aiConnection.status === 'connected' ? 'success' : 'error'"
             :text="t(aiConnection.statusTextKey)"
           />
-          <span v-if="aiConnection.model" class="status-detail">{{ aiConnection.model }}</span>
+          <span v-if="aiConnection.provider" class="status-detail">{{ aiConnection.provider }}</span>
         </div>
 
         <!-- 系统状态 -->
@@ -137,7 +137,7 @@ interface SaveStatus {
 interface AIConnection {
   status: 'connected' | 'disconnected' | 'connecting'
   statusTextKey: string
-  model?: string
+  provider?: string
   usage?: {
     requests: number
     tokens: number
@@ -259,18 +259,45 @@ const applyTodayStats = (todayStats: TodayStats | null) => {
   }
 }
 
+const PROVIDER_LABELS: Record<string, string> = {
+  openai: 'OpenAI',
+  claude: 'Anthropic',
+  gemini: 'Google Gemini',
+  'azure-openai': 'Azure OpenAI',
+  moonshot: 'Moonshot AI',
+  wenxin: 'Baidu Wenxin',
+  qwen: 'Alibaba Qwen'
+}
+
+const formatProviderName = (provider?: string) => {
+  if (!provider) return undefined
+  const normalized = provider.toLowerCase()
+  if (PROVIDER_LABELS[normalized]) {
+    return PROVIDER_LABELS[normalized]
+  }
+
+  return provider
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 const applyAIStatus = (status: AIStatus | null) => {
   if (status) {
+    const providerKey = status.provider || chatStore.settings.provider
     aiConnection.value = {
       status: status.connected ? 'connected' : 'disconnected',
       statusTextKey: status.connected ? 'footer.aiStatus.connected' : 'footer.aiStatus.disconnected',
-      model: status.model || undefined,
+      provider: formatProviderName(providerKey),
       usage: status.usage
     }
   } else {
+    const fallbackProvider = formatProviderName(chatStore.settings.provider)
     aiConnection.value = {
       status: 'disconnected',
-      statusTextKey: 'footer.aiStatus.failed'
+      statusTextKey: 'footer.aiStatus.failed',
+      provider: fallbackProvider
     }
   }
 }
