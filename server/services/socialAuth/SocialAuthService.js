@@ -244,22 +244,14 @@ class SocialAuthService {
   async validateInviteCode(inviteCode, ipAddress) {
     const config = await this.getInviteCodeConfig();
 
-    if (!config.required) {
+    if (!config.required || !inviteCode) {
       return {
         success: true,
         validated: false,
-        exemptionActive: true,
-        code: null,
+        exemptionActive: !config.required,
+        code: inviteCode || null,
         inviteCodeId: null,
         inviterId: null,
-      };
-    }
-
-    if (!inviteCode) {
-      return {
-        success: false,
-        error: 'Invite code required',
-        code: 'INVITE_REQUIRED',
       };
     }
 
@@ -295,7 +287,7 @@ class SocialAuthService {
     const configMap = {};
     configs.forEach((c) => (configMap[c.key] = c.value));
 
-    const required = configMap.invite_code_required !== 'false';
+    const required = configMap.invite_code_required === 'true';
     const exemptStart = configMap.invite_code_exempt_start;
     const exemptEnd = configMap.invite_code_exempt_end;
 

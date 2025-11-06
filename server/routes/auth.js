@@ -117,39 +117,6 @@ router.post('/register', validateTurnstile, async (req, res) => {
     const ipAddress = getCleanClientIp(req);
 
     let inviteValidation = null;
-    let isInviteRequired = true;
-
-    const configs = await fetchSystemConfigs([
-      'invite_code_required',
-      'invite_code_exempt_start',
-      'invite_code_exempt_end',
-    ]);
-
-    const configMap = {};
-    configs.forEach(config => {
-      configMap[config.key] = config.value;
-    });
-
-    const inviteCodeRequired = configMap.invite_code_required !== 'false';
-    const exemptStart = configMap.invite_code_exempt_start;
-    const exemptEnd = configMap.invite_code_exempt_end;
-
-    if (inviteCodeRequired && exemptStart && exemptEnd) {
-      const now = new Date();
-      const startDate = parseConfigDate(exemptStart);
-      const endDate = parseConfigDate(exemptEnd);
-
-      if (startDate && endDate && now >= startDate && now <= endDate) {
-        isInviteRequired = false;
-        logger.info('Invite code exemption active', {
-          currentTime: now,
-          exemptStart: startDate,
-          exemptEnd: endDate
-        });
-      }
-    } else if (!inviteCodeRequired) {
-      isInviteRequired = false;
-    }
 
     if (normalizedInviteCode) {
       inviteValidation = await inviteService.validateInviteCode(normalizedInviteCode, {
@@ -163,12 +130,6 @@ router.post('/register', validateTurnstile, async (req, res) => {
           code: inviteValidation.error
         });
       }
-    } else if (isInviteRequired) {
-      return res.status(400).json({
-        error: 'Invite Code Error',
-        message: 'Invite code is required for registration',
-        code: 'INVITE_REQUIRED'
-      });
     }
 
     const hashedPassword = await AuthUtils.hashPassword(password);
@@ -1101,7 +1062,7 @@ router.get('/registration-config', async (req, res) => {
       configMap[config.key] = config.value;
     });
 
-    const inviteCodeRequired = configMap.invite_code_required !== 'false';
+    const inviteCodeRequired = configMap.invite_code_required === 'true';
     const exemptStart = configMap.invite_code_exempt_start;
     const exemptEnd = configMap.invite_code_exempt_end;
 

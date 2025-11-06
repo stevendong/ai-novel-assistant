@@ -125,13 +125,13 @@
           </a-form-item>
 
           <a-form-item
-            v-if="!isLogin && inviteCodeRequired && !exemptionActive"
-            :label="inviteCodeRequired ? t('auth.inviteCodeField') : t('auth.inviteCodeFieldOptional')"
-            :rules="inviteCodeRequired ? [{ required: true, message: t('auth.enterInviteCode') }] : []"
+            v-if="!isLogin && !exemptionActive"
+            :label="t('auth.inviteCodeFieldOptional')"
+            :rules="[]"
           >
             <a-input
               v-model:value="formData.inviteCode"
-              :placeholder="inviteCodeRequired ? t('auth.enterInviteCode') : t('auth.enterInviteCodeOptional')"
+              :placeholder="t('auth.enterInviteCodeOptional')"
               size="large"
               :disabled="authStore.isLoading"
             >

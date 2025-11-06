@@ -63,8 +63,7 @@ onMounted(async () => {
       if (result.code === 'INVITE_REQUIRED') {
         antMessage.warning(t('auth.social.messages.inviteRequired'))
         router.push({
-          path: '/login',
-          query: { needInvite: 'true', provider: 'github', code },
+          path: '/invite-verification'
         })
       } else {
         antMessage.error(result.error || t('auth.social.messages.githubFailure'))
