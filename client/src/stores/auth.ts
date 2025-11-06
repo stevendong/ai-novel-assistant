@@ -86,6 +86,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 计算属性
   const isAuthenticated = computed(() => !!user.value && !!sessionToken.value)
+  const isAdmin = computed(() => user.value?.role === 'admin')
 
   // 初始化认证状态
   const init = async (): Promise<void> => {
@@ -643,6 +644,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // 计算属性
     isAuthenticated,
+    isAdmin,
 
     // 方法
     init,

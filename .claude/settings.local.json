@@ -64,7 +64,8 @@
       "Bash(sudo apt-get update:*)",
       "Bash(sudo apt-get install:*)",
       "Bash(prisma/migrations/20250105000000_init/migration.sql)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

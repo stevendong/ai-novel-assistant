@@ -44,6 +44,7 @@ const statsRoutes = require('./routes/stats');
 const inviteRoutes = require('./routes/invites');
 const adminRoutes = require('./routes/admin');
 const systemConfigRoutes = require('./routes/systemConfig');
+const importRoutes = require('./routes/import');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -118,6 +119,9 @@ app.use('/api/ai', aiLimiter, aiConfigRoutes);
 
 // 文件上传路由 - 上传限制
 app.use('/api/upload', uploadLimiter, uploadRoutes);
+
+// 导入路由 - 上传限制
+app.use('/api/import', uploadLimiter, importRoutes);
 
 // 导出路由 - 导出限制
 app.use('/api/export', exportLimiter, exportRoutes);

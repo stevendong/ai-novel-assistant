@@ -10,7 +10,7 @@
             </template>
             {{ $t('project.createNew') }}
           </a-button>
-          <a-button @click="importProject">
+          <a-button v-if="authStore.isAdmin" @click="importProject">
             <template #icon>
               <ImportOutlined />
             </template>
@@ -243,6 +243,13 @@
       </a-form>
     </a-modal>
 
+    <!-- Import Modal -->
+    <ImportModal
+      v-model:open="showImportModal"
+      :available-novels="projectStore.projects"
+      @success="handleImportSuccess"
+    />
+
     <!-- Edit Project Modal -->
     <a-modal
       v-model:open="showEditProjectModal"
@@ -326,12 +333,15 @@ import { useI18n } from 'vue-i18n'
 import type { Novel, ProjectOverviewStats } from '@/types'
 import { novelService } from '@/services/novelService'
 import { useProjectStore } from '@/stores/project'
+import { useAuthStore } from '@/stores/auth'
 import { getNovelStatusText, getNovelStatusColor } from '@/constants/status'
+import ImportModal from '@/components/ImportModal.vue'
 
 const { t } = useI18n()
 
 // 全局作品状态
 const projectStore = useProjectStore()
+const authStore = useAuthStore()
 
 // 响应式数据
 const recentProjects = ref<Novel[]>([])
@@ -339,6 +349,7 @@ const projectStats = ref<ProjectOverviewStats | null>(null)
 const loading = ref(false)
 const showNewProjectModal = ref(false)
 const showEditProjectModal = ref(false)
+const showImportModal = ref(false)
 const showAllRecent = ref(false)
 const newFormRef = ref<FormInstance>()
 const editFormRef = ref<FormInstance>()
@@ -478,8 +489,19 @@ const duplicateProject = async (project: Novel) => {
 }
 
 const importProject = () => {
-  // TODO: 实现作品导入功能
-  message.info(t('project.importDevelopment'))
+  showImportModal.value = true
+}
+
+const handleImportSuccess = async (data: any) => {
+  try {
+    if (data.id) {
+      projectStore.addProject(data)
+      message.success(t('project.importSuccess') || 'Import successful!')
+    }
+    await loadData()
+  } catch (error) {
+    console.error('Failed to handle import success:', error)
+  }
 }
 
 const toggleShowAllRecent = () => {
