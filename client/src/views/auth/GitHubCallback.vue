@@ -56,7 +56,9 @@ onMounted(async () => {
 
     if (result.success) {
       antMessage.success(t('auth.social.messages.githubSuccess'))
-      router.push('/')
+      const redirectTarget = (route.query.redirect as string) || '/'
+      const inviteVerified = result.data?.user?.inviteVerified ?? authStore.user.value?.inviteVerified
+      router.push(inviteVerified ? redirectTarget : '/invite-verification')
     } else {
       if (result.code === 'INVITE_REQUIRED') {
         antMessage.warning(t('auth.social.messages.inviteRequired'))
