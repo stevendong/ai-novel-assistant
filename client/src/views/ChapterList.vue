@@ -589,7 +589,8 @@ const getWordCount = (content?: string) => {
   if (!content) return 0
   return countValidWords(content, {
     removeMarkdown: true,
-    removeHtml: true
+    removeHtml: true,
+    locale: locale.value
   })
 }
 

@@ -1,9 +1,20 @@
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { chapterService } from '@/services/chapterService'
 import { countValidWords } from '@/utils/textUtils'
 import type { Chapter, PlotPoint, Illustration } from '@/types'
+import i18n from '@/i18n'
 
 export function useChapter(chapterId?: string) {
+  let localeRef = ref(i18n.global.locale.value || 'zh')
+  try {
+    const i18nScope = useI18n()
+    localeRef = i18nScope.locale
+  } catch {
+    // 在组合式函数脱离组件上下文时，使用全局语言设置
+    localeRef.value = i18n.global.locale.value || 'zh'
+  }
+
   const chapter = ref<Chapter | null>(null)
   const loading = ref(false)
   const saving = ref(false)
@@ -14,7 +25,8 @@ export function useChapter(chapterId?: string) {
     if (!chapter.value?.content) return 0
     return countValidWords(chapter.value.content, {
       removeMarkdown: true,
-      removeHtml: true
+      removeHtml: true,
+      locale: localeRef.value
     })
   })
 

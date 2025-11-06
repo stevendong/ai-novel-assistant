@@ -672,10 +672,22 @@ watch(() => chapter.value, (newChapter) => {
   if (newChapter && newChapter.content) {
     wordCount.value = countValidWords(newChapter.content, {
       removeMarkdown: true,
-      removeHtml: true
+      removeHtml: true,
+      locale: locale.value
     })
   }
 }, { immediate: true })
+
+watch(locale, () => {
+  const content = formData.value.content || chapter.value?.content || ''
+  wordCount.value = content
+    ? countValidWords(content, {
+        removeMarkdown: true,
+        removeHtml: true,
+        locale: locale.value
+      })
+    : 0
+})
 
 // AI生成大纲完成回调
 const handleOutlineGenerated = (data: ChapterOutlineData) => {
@@ -689,7 +701,8 @@ const handleContentGenerated = (content: string) => {
   // 更新字数统计
   wordCount.value = countValidWords(content, {
     removeMarkdown: true,
-    removeHtml: true
+    removeHtml: true,
+    locale: locale.value
   })
   // 可以在这里执行额外的处理，比如自动保存草稿等
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="tiptap-editor">
+  <div :class="['tiptap-editor', { 'english-mode': isEnglishLocale }]">
     <!-- Toolbar -->
     <div class="editor-toolbar" v-if="editor">
       <div class="toolbar-content">
@@ -231,7 +231,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits(['update:modelValue', 'update:wordCount'])
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const isEnglishLocale = computed(() => locale.value.startsWith('en'))
 
 // 初始化编辑器
 console.log('📝 开始初始化 TiptapEditor')
@@ -305,8 +306,13 @@ const wordCount = computed(() => {
   const text = editor.value.getText()
   return countValidWords(text, {
     removeMarkdown: false,
-    removeHtml: false
+    removeHtml: false,
+    locale: locale.value
   })
+})
+
+watch(locale, () => {
+  emit('update:wordCount', wordCount.value)
 })
 
 const characterCount = computed(() => {
@@ -440,6 +446,16 @@ onBeforeUnmount(() => {
 .editor-content :deep(.ProseMirror p) {
   margin-bottom: 1em;
   text-indent: 2em;
+}
+
+.tiptap-editor.english-mode .editor-content :deep(.ProseMirror) {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  line-height: 1.6;
+}
+
+.tiptap-editor.english-mode .editor-content :deep(.ProseMirror p) {
+  text-indent: 0;
+  margin-bottom: 1.2em;
 }
 
 .editor-content :deep(.ProseMirror ul),

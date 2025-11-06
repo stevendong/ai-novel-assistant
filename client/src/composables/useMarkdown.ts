@@ -1,7 +1,9 @@
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { countValidWords } from '@/utils/textUtils'
+import i18n from '@/i18n'
 
 // 配置marked选项
 const markedOptions = {
@@ -52,6 +54,13 @@ const templates = {
 
 export function useMarkdown(initialText: string = '') {
   const markdownText = ref(initialText)
+  let localeRef = ref(i18n.global.locale.value || 'zh')
+  try {
+    const i18nScope = useI18n()
+    localeRef = i18nScope.locale
+  } catch {
+    localeRef.value = i18n.global.locale.value || 'zh'
+  }
 
   // 渲染HTML
   const renderedHtml = computed(() => {
@@ -80,7 +89,8 @@ export function useMarkdown(initialText: string = '') {
   const wordCount = computed(() => {
     return countValidWords(markdownText.value, {
       removeMarkdown: true,
-      removeHtml: true
+      removeHtml: true,
+      locale: localeRef.value
     })
   })
 
