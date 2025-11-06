@@ -7,13 +7,13 @@
           <RobotOutlined />
         </div>
         <div class="no-session-text">
-          <h3>开始新对话</h3>
-          <p>创建一个新的AI对话来获取创作帮助</p>
+          <h3>{{ t('aiChat.welcome.noSession.title') }}</h3>
+          <p>{{ t('aiChat.welcome.noSession.subtitle') }}</p>
         </div>
         <div class="no-session-actions">
           <a-button type="primary" size="large" @click="handleCreateSession" class="start-chat-btn">
             <PlusOutlined />
-            开始对话
+            {{ t('aiChat.welcome.noSession.action') }}
           </a-button>
         </div>
       </div>
@@ -25,7 +25,7 @@
         <RobotOutlined />
       </div>
       <div class="welcome-content">
-        <h3>AI创作助手</h3>
+        <h3>{{ t('aiChat.panel.title') }}</h3>
         <p>{{ modeDescription }}</p>
       </div>
     </div>
@@ -35,6 +35,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RobotOutlined, PlusOutlined } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   hasActiveSession: boolean
@@ -55,6 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+const { t } = useI18n()
 
 // 计算显示状态
 const showNoSession = computed(() => !props.hasActiveSession)

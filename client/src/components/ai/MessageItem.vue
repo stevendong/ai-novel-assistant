@@ -14,7 +14,7 @@
           <span class="message-time">{{ formatTime(message.timestamp) }}</span>
           <div class="message-operations user-operations">
             <!-- 删除按钮 -->
-            <a-tooltip title="删除消息">
+            <a-tooltip :title="t('aiChat.messageItem.tooltips.delete')">
               <a-button
                 type="text"
                 size="small"
@@ -44,20 +44,20 @@
         </a-avatar>
       </div>
       <div class="message-content">
-        <div class="message-text">
-          <!-- 流式传输指示器 -->
-          <div v-if="message.metadata?.streaming" class="streaming-indicator">
-            <div class="streaming-dots">
-              <span></span>
-              <span></span>
-              <span></span>
+          <div class="message-text">
+            <!-- 流式传输指示器 -->
+            <div v-if="message.metadata?.streaming" class="streaming-indicator">
+              <div class="streaming-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span class="streaming-text">{{ t('aiChat.messageItem.streaming') }}</span>
             </div>
-            <span class="streaming-text">正在接收...</span>
-          </div>
 
-          <!-- 流式消息使用SyncTypewriter -->
-          <SyncTypewriter
-            v-if="message.metadata?.streaming"
+            <!-- 流式消息使用SyncTypewriter -->
+            <SyncTypewriter
+              v-if="message.metadata?.streaming"
             :content="message.content"
             :is-streaming="message.metadata?.streaming"
             :enable-highlight="true"
@@ -90,7 +90,7 @@
             <span class="message-time">{{ formatTime(message.timestamp) }}</span>
             <div class="message-operations">
               <!-- 复制按钮 -->
-              <a-tooltip title="复制消息">
+              <a-tooltip :title="t('aiChat.messageItem.tooltips.copy')">
                 <a-button
                     type="text"
                     size="small"
@@ -102,7 +102,7 @@
               </a-tooltip>
 
               <!-- 重新生成按钮（仅AI消息） -->
-              <a-tooltip title="重新生成">
+              <a-tooltip :title="t('aiChat.messageItem.tooltips.regenerate')">
                 <a-button
                     type="text"
                     size="small"
@@ -114,7 +114,7 @@
               </a-tooltip>
 
               <!-- 删除按钮 -->
-              <a-tooltip title="删除消息">
+              <a-tooltip :title="t('aiChat.messageItem.tooltips.delete')">
                 <a-button
                     type="text"
                     size="small"
@@ -145,7 +145,7 @@
 
           <!-- 建议区域 -->
           <div class="message-suggestions" v-if="message.metadata?.suggestions?.length">
-            <div class="suggestion-label">💡 建议</div>
+            <div class="suggestion-label">💡 {{ t('aiChat.messageItem.suggestions.label') }}</div>
             <div class="suggestion-list">
               <a-tag
                   v-for="(suggestion, index) in message.metadata.suggestions.slice(0, 3)"
@@ -161,7 +161,7 @@
 
           <!-- 跟进问题区域 -->
           <div class="message-followups" v-if="message.metadata?.followUps?.length">
-            <div class="followup-label">🤔 相关问题</div>
+            <div class="followup-label">🤔 {{ t('aiChat.messageItem.followUps.label') }}</div>
             <div class="followup-list">
               <a-button
                   v-for="(followUp, index) in message.metadata.followUps.slice(0, 2)"
@@ -192,6 +192,7 @@ import {
 import type { ChatMessage } from '@/stores/aiChat'
 import SyncTypewriter from "@/components/common/SyncTypewriter.vue"
 import MarkdownRenderer from "@/components/common/MarkdownRenderer.vue"
+import { useI18n } from 'vue-i18n'
 
 // Props
 const props = defineProps<{
@@ -212,12 +213,15 @@ const emit = defineEmits<{
   'typing-speed-change': [speed: number]
 }>()
 
+const { t, locale } = useI18n()
+
 // 格式化时间
 const formatTime = (timestamp: Date) => {
-  return timestamp.toLocaleTimeString('zh-CN', {
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
+  return new Intl.DateTimeFormat(locale.value, {
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }).format(date)
 }
 
 // 处理删除
@@ -236,7 +240,7 @@ const handleCopy = async () => {
     await navigator.clipboard.writeText(props.message.content)
     emit('copy', props.message.content)
   } catch (error) {
-    console.error('复制失败:', error)
+    console.error('Failed to copy message:', error)
   }
 }
 

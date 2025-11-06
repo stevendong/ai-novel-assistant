@@ -5,7 +5,7 @@
         <a-textarea
             ref="inputRef"
             v-model:value="inputText"
-            :placeholder="placeholder"
+            :placeholder="inputPlaceholder"
             :disabled="disabled"
             :auto-size="{ minRows: 1, maxRows: 4 }"
             class="message-input"
@@ -13,12 +13,12 @@
             @input="handleInputChange"
         />
         <div class="input-actions">
-          <a-tooltip v-if="showImageButton" title="发送图片">
+          <a-tooltip v-if="showImageButton" :title="t('aiChat.messageInput.actions.image')">
             <a-button type="text" size="small" class="input-action-btn" @click="handleImageUpload">
               <PictureOutlined />
             </a-button>
           </a-tooltip>
-          <a-tooltip v-if="showVoiceButton" title="语音输入">
+          <a-tooltip v-if="showVoiceButton" :title="t('aiChat.messageInput.actions.voice')">
             <a-button type="text" size="small" class="input-action-btn" @click="handleVoiceInput">
               <AudioOutlined />
             </a-button>
@@ -46,6 +46,7 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue'
 import { SendOutlined, PictureOutlined, AudioOutlined } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   placeholder?: string
@@ -66,7 +67,7 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '输入消息...',
+  placeholder: '',
   disabled: false,
   isLoading: false,
   maxLength: 2000,
@@ -76,6 +77,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+const { t } = useI18n()
 
 // Refs
 const inputRef = ref()
@@ -93,6 +95,8 @@ watch(inputText, (newValue) => {
 })
 
 // 计算属性
+const inputPlaceholder = computed(() => props.placeholder || t('aiChat.messageInput.placeholder'))
+
 const canSend = computed(() => {
   return !props.disabled &&
          inputText.value.trim().length > 0 &&
@@ -101,9 +105,9 @@ const canSend = computed(() => {
 
 const hintText = computed(() => {
   if (inputText.value.length > props.maxLength * 0.9) {
-    return '字数即将达到上限'
+    return t('aiChat.messageInput.hint.nearLimit')
   }
-  return 'Ctrl+Enter 发送，Shift+Enter 换行'
+  return t('aiChat.messageInput.hint.shortcuts')
 })
 
 // 方法

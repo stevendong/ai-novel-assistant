@@ -103,13 +103,149 @@
     "welcome": {
       "chat": "Hi! I'm your AI writing partner. I can help refine characters, expand worldbuilding, draft chapter outlines, and run consistency checks. What would you like to work on?",
       "enhance": "Welcome to enhancement mode! I specialize in enriching characters, deepening settings, and improving plot details. Let me know what you'd like to polish.",
-      "check": "Welcome to quality check mode! I focus on spotting consistency, logic, and continuity issues. Tell me what to review."
+      "check": "Welcome to quality check mode! I focus on spotting consistency, logic, and continuity issues. Tell me what to review.",
+      "noSession": {
+        "title": "Start a new conversation",
+        "subtitle": "Create a new AI chat to get help with your writing.",
+        "action": "Start chatting"
+      }
     },
     "responseActions": {
       "characterAnalyze": "Deep Analysis",
       "characterTraits": "Suggest Traits",
       "settingExpand": "Expand Details",
       "settingLogic": "Logic Check"
+    },
+    "panel": {
+      "title": "AI Writing Assistant",
+      "indicators": {
+        "minimized": "Minimized",
+        "floating": "Floating mode"
+      },
+      "tooltips": {
+        "floatWindow": "Switch to floating window",
+        "pinToDock": "Switch to docked panel",
+        "close": "Close assistant",
+        "minimize": "Minimize",
+        "maximize": "Maximize",
+        "restore": "Restore size"
+      }
+    },
+    "modes": {
+      "chat": {
+        "description": "Chat freely with the assistant for inspiration and advice",
+        "placeholder": "Ask the AI assistant for help...",
+        "actions": {
+          "help": "Help",
+          "examples": "Examples",
+          "brainstorm": "Brainstorm",
+          "inspiration": "Creative inspiration"
+        }
+      },
+      "enhance": {
+        "description": "Improve your characters, settings, and plot details",
+        "placeholder": "Describe what you would like to refine...",
+        "actions": {
+          "character": "Improve character",
+          "setting": "Expand setting",
+          "outline": "Generate outline",
+          "plot": "Plot suggestions"
+        }
+      },
+      "check": {
+        "description": "Check for consistency and logic issues",
+        "placeholder": "Paste the content you want me to review...",
+        "actions": {
+          "consistency": "Consistency check",
+          "character": "Character check",
+          "timeline": "Timeline check",
+          "logic": "Logic review"
+        }
+      }
+    },
+    "messageInput": {
+      "placeholder": "Type a message...",
+      "actions": {
+        "image": "Send image",
+        "voice": "Voice input"
+      },
+      "hint": {
+        "nearLimit": "You are close to the character limit",
+        "shortcuts": "Ctrl+Enter to send, Shift+Enter for a new line"
+      }
+    },
+    "messageItem": {
+      "tooltips": {
+        "delete": "Delete message",
+        "copy": "Copy message",
+        "regenerate": "Regenerate"
+      },
+      "streaming": "Receiving...",
+      "suggestions": {
+        "label": "Suggestions"
+      },
+      "followUps": {
+        "label": "Follow-up questions"
+      }
+    },
+    "toolbar": {
+      "history": "History",
+      "clearing": "Clearing...",
+      "clearAction": "Clear current conversation",
+      "confirmClear": {
+        "title": "Clear conversation?",
+        "content": "This will remove every message in this conversation, including user prompts, AI replies, and the welcome message. A new welcome message will appear after clearing. Continue?",
+        "ok": "Clear conversation"
+      },
+      "clearSuccess": {
+        "title": "Conversation cleared",
+        "content": "Conversation history removed successfully.",
+        "ok": "Got it"
+      },
+      "clearFailure": {
+        "title": "Failed to clear",
+        "content": "Something went wrong while clearing the conversation. Please try again later.",
+        "ok": "Got it"
+      }
+    },
+    "sessions": {
+      "title": "Conversation history",
+      "subtitle": "{count} sessions",
+      "create": "New session",
+      "empty": {
+        "title": "No previous sessions",
+        "hint": "Create a new session to start chatting"
+      },
+      "newSession": "New conversation",
+      "time": {
+        "yesterday": "Yesterday",
+        "daysAgo": "{days} days ago"
+      },
+      "modes": {
+        "chat": "Chat",
+        "enhance": "Enhance",
+        "check": "Check",
+        "outline": "Outline"
+      },
+      "confirmDelete": {
+        "title": "Delete this session?",
+        "content": "Are you sure you want to delete this session? This cannot be undone.",
+        "ok": "Delete session"
+      },
+      "deleteSuccess": "Session deleted successfully"
+    },
+    "actions": {
+      "viewAllIssues": "Show all consistency issues in detail",
+      "fixPriority": "Help me fix the most critical consistency issues first",
+      "detailedAnalysis": "Provide a more detailed analysis of my story",
+      "analyzeCharacter": "Deeply analyze the character I mentioned",
+      "suggestTraits": "Suggest more personality traits for this character",
+      "expandSetting": "Expand on the world-building details I mentioned",
+      "checkLogic": "Check the logical consistency of this setting",
+      "expandSuggestion": "Please expand on this suggestion: {suggestion}"
+    },
+    "outline": {
+      "applySuccess": "**Outline applied successfully!**\n\nCreated {chapters} chapters with an estimated {words} words.\n\nYou can review and edit them in the chapter list."
     }
   },
   "footer": {
@@ -623,8 +759,29 @@
       "legendMin": "Less",
       "legendMax": "More",
       "currentMonth": "This Month",
-      "monthNames": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-      "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      "monthNames": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ],
+      "weekdays": [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+      ],
       "contribution": "Wrote {words} words",
       "date": {
         "today": "Today",
@@ -697,7 +854,7 @@
         }
       }
     },
-  "achievements": {
+    "achievements": {
       "title": "Writing Achievements",
       "earned": "Unlocked",
       "locked": "Locked",
@@ -743,12 +900,12 @@
       "goalsSaved": "Writing goals saved",
       "goalsSaveFailed": "Failed to save goals. Please try again."
     },
-      "common": {
-        "tenThousandUnit": "w",
-        "thousandUnit": "k",
-        "millionUnit": "M"
-      }
-    },
+    "common": {
+      "tenThousandUnit": "w",
+      "thousandUnit": "k",
+      "millionUnit": "M"
+    }
+  },
   "admin": {
     "dashboard": {
       "title": "Admin Panel",
@@ -2371,20 +2528,20 @@
         "updateSuccess": "Profile updated successfully",
         "updateFailed": "Profile update failed",
         "passwordSuccess": "Password changed successfully. Other sessions have been signed out.",
-      "passwordFailed": "Failed to change password",
-      "avatarUploadSuccess": "Avatar uploaded successfully",
-      "avatarDeleteSuccess": "Avatar removed successfully",
-      "avatarUploadFailed": "Failed to upload avatar",
-      "avatarDeleteFailed": "Failed to delete avatar",
-      "imageProcessFailed": "Image processing failed",
-      "fileTypeInvalid": "Please select an image file",
-      "fileSizeExceeded": "Image size cannot exceed 5MB",
-      "statsLoadFailed": "Failed to load statistics",
-      "sessionsLoadFailed": "Failed to load sessions",
-      "sessionLogoutSuccess": "Session signed out successfully",
-      "sessionLogoutFailed": "Failed to sign out session",
-      "logoutAllSuccess": "All other sessions signed out",
-      "logoutAllFailed": "Failed to sign out other sessions"
+        "passwordFailed": "Failed to change password",
+        "avatarUploadSuccess": "Avatar uploaded successfully",
+        "avatarDeleteSuccess": "Avatar removed successfully",
+        "avatarUploadFailed": "Failed to upload avatar",
+        "avatarDeleteFailed": "Failed to delete avatar",
+        "imageProcessFailed": "Image processing failed",
+        "fileTypeInvalid": "Please select an image file",
+        "fileSizeExceeded": "Image size cannot exceed 5MB",
+        "statsLoadFailed": "Failed to load statistics",
+        "sessionsLoadFailed": "Failed to load sessions",
+        "sessionLogoutSuccess": "Session signed out successfully",
+        "sessionLogoutFailed": "Failed to sign out session",
+        "logoutAllSuccess": "All other sessions signed out",
+        "logoutAllFailed": "Failed to sign out other sessions"
       },
       "avatarUpload": {
         "upload": "Upload Avatar",

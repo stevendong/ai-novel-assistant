@@ -112,9 +112,11 @@ import MessageInput from "@/components/ai/MessageInput.vue"
 import FloatingContainer from "@/components/ai/FloatingContainer.vue"
 import MessageList from "@/components/ai/MessageList.vue"
 import ChatToolbar from "@/components/ai/ChatToolbar.vue"
+import { useI18n } from 'vue-i18n'
 // Stores
 const projectStore = useProjectStore()
 const chatStore = useAIChatStore()
+const { t } = useI18n()
 
 // Define emits
 const emit = defineEmits<{
@@ -184,38 +186,43 @@ const isTyping = computed(() => chatStore.isTyping)
 const messages = computed(() => chatStore.currentMessages)
 
 // Mode configurations
-const modeConfigs = {
+type ModeKey = 'chat' | 'enhance' | 'check'
+const modeConfigs = computed<Record<ModeKey, {
+  description: string
+  placeholder: string
+  actions: Array<{ key: string; label: string; icon: any }>
+}>>(() => ({
   chat: {
-    description: '与AI自由对话，获取创作灵感和建议',
-    placeholder: '向AI助手提问或请求帮助...',
+    description: t('aiChat.modes.chat.description'),
+    placeholder: t('aiChat.modes.chat.placeholder'),
     actions: [
-      {key: 'help', label: '帮助', icon: BulbOutlined},
-      {key: 'examples', label: '示例', icon: FileTextOutlined},
-      {key: 'brainstorm', label: '头脑风暴', icon: BulbOutlined},
-      {key: 'inspiration', label: '创作灵感', icon: EditOutlined}
+      {key: 'help', label: t('aiChat.modes.chat.actions.help'), icon: BulbOutlined},
+      {key: 'examples', label: t('aiChat.modes.chat.actions.examples'), icon: FileTextOutlined},
+      {key: 'brainstorm', label: t('aiChat.modes.chat.actions.brainstorm'), icon: BulbOutlined},
+      {key: 'inspiration', label: t('aiChat.modes.chat.actions.inspiration'), icon: EditOutlined}
     ]
   },
   enhance: {
-    description: '完善你的角色、设定和情节内容',
-    placeholder: '描述你想要完善的内容...',
+    description: t('aiChat.modes.enhance.description'),
+    placeholder: t('aiChat.modes.enhance.placeholder'),
     actions: [
-      {key: 'enhance-character', label: '完善角色', icon: TeamOutlined},
-      {key: 'enhance-setting', label: '扩展设定', icon: GlobalOutlined},
-      {key: 'generate-outline', label: '生成大纲', icon: FileTextOutlined},
-      {key: 'suggest-plot', label: '情节建议', icon: BulbOutlined}
+      {key: 'enhance-character', label: t('aiChat.modes.enhance.actions.character'), icon: TeamOutlined},
+      {key: 'enhance-setting', label: t('aiChat.modes.enhance.actions.setting'), icon: GlobalOutlined},
+      {key: 'generate-outline', label: t('aiChat.modes.enhance.actions.outline'), icon: FileTextOutlined},
+      {key: 'suggest-plot', label: t('aiChat.modes.enhance.actions.plot'), icon: BulbOutlined}
     ]
   },
   check: {
-    description: '检查内容的一致性和逻辑性',
-    placeholder: '输入需要检查的内容...',
+    description: t('aiChat.modes.check.description'),
+    placeholder: t('aiChat.modes.check.placeholder'),
     actions: [
-      {key: 'check-consistency', label: '一致性检查', icon: CheckCircleOutlined},
-      {key: 'check-character', label: '角色检查', icon: TeamOutlined},
-      {key: 'check-timeline', label: '时间线检查', icon: ExclamationCircleOutlined},
-      {key: 'check-logic', label: '逻辑检查', icon: BulbOutlined}
+      {key: 'check-consistency', label: t('aiChat.modes.check.actions.consistency'), icon: CheckCircleOutlined},
+      {key: 'check-character', label: t('aiChat.modes.check.actions.character'), icon: TeamOutlined},
+      {key: 'check-timeline', label: t('aiChat.modes.check.actions.timeline'), icon: ExclamationCircleOutlined},
+      {key: 'check-logic', label: t('aiChat.modes.check.actions.logic'), icon: BulbOutlined}
     ]
   }
-}
+}))
 
 // Current project from store
 const currentProject = computed(() => projectStore.currentProject)
@@ -268,11 +275,11 @@ watch(currentProject, async (newProject) => {
 
 // Methods
 const getModeDescription = (mode: string) => {
-  return modeConfigs[mode as keyof typeof modeConfigs]?.description || ''
+  return modeConfigs.value[mode as ModeKey]?.description || ''
 }
 
 const getInputPlaceholder = (mode: string) => {
-  return modeConfigs[mode as keyof typeof modeConfigs]?.placeholder || '输入消息...'
+  return modeConfigs.value[mode as ModeKey]?.placeholder || t('aiChat.messageInput.placeholder')
 }
 
 
@@ -355,7 +362,7 @@ const clearConversation = async () => {
       scrollToBottom()
     })
   } catch (error) {
-    console.error('清空对话失败:', error)
+    console.error('Failed to clear conversation:', error)
   }
 }
 
@@ -365,7 +372,7 @@ const copyMessage = async (content: string) => {
     await navigator.clipboard.writeText(content)
     // 可以添加成功提示
   } catch (error) {
-    console.error('复制失败:', error)
+    console.error('Failed to copy message:', error)
   }
 }
 
@@ -387,7 +394,7 @@ const regenerateMessage = async (message: ChatMessage) => {
 
 // 应用建议
 const applySuggestion = (suggestion: string) => {
-  inputMessage.value = `请详细展开这个建议：${suggestion}`
+  inputMessage.value = t('aiChat.actions.expandSuggestion', { suggestion })
   sendMessage()
 }
 
@@ -397,18 +404,18 @@ const askFollowUp = (question: string) => {
   sendMessage()
 }
 
-const performMessageAction = (actionKey: string, message: ChatMessage) => {
-  const actionMessages = {
-    'view-all-issues': '请显示所有的一致性问题详情',
-    'fix-priority': '请为我优先修复最严重的一致性问题',
-    'detailed-analysis': '请对我的小说进行更详细的分析',
-    'analyze-character': '请深度分析我提到的角色',
-    'suggest-traits': '请为这个角色提供更多性格特征建议',
-    'expand-setting': '请详细扩展我提到的世界设定',
-    'check-logic': '请检查这个设定的逻辑合理性'
-  }
+const actionMessages = computed<Record<string, string>>(() => ({
+  'view-all-issues': t('aiChat.actions.viewAllIssues'),
+  'fix-priority': t('aiChat.actions.fixPriority'),
+  'detailed-analysis': t('aiChat.actions.detailedAnalysis'),
+  'analyze-character': t('aiChat.actions.analyzeCharacter'),
+  'suggest-traits': t('aiChat.actions.suggestTraits'),
+  'expand-setting': t('aiChat.actions.expandSetting'),
+  'check-logic': t('aiChat.actions.checkLogic')
+}))
 
-  const messageText = actionMessages[actionKey as keyof typeof actionMessages]
+const performMessageAction = (actionKey: string, message: ChatMessage) => {
+  const messageText = actionMessages.value[actionKey]
   if (messageText) {
     inputMessage.value = messageText
     sendMessage()
@@ -452,7 +459,7 @@ const deleteSession = async (sessionId: string) => {
   try {
     await chatStore.deleteSession(sessionId)
   } catch (error) {
-    console.error('删除会话失败:', error)
+    console.error('Failed to delete session:', error)
   }
 }
 
@@ -508,7 +515,7 @@ const toggleFloatingMode = () => {
   }
 
   emit('floating-mode-change', isFloating.value)
-  console.log('浮动模式切换:', isFloating.value ? '启用' : '禁用')
+  console.log('Floating mode toggled:', isFloating.value ? 'enabled' : 'disabled')
 }
 
 // 最大化/还原窗口
@@ -535,7 +542,7 @@ const toggleMaximize = () => {
   } catch (error) {
     console.warn('Failed to save maximized state:', error)
   }
-  console.log('窗口最大化:', isMaximized.value)
+    console.log('Floating window maximized:', isMaximized.value)
 }
 
 // 最小化窗口
@@ -548,7 +555,7 @@ const minimizeWindow = () => {
     console.warn('Failed to save minimized state:', error)
   }
 
-  console.log('窗口最小化:', isMinimized.value)
+  console.log('Floating window minimized:', isMinimized.value)
 }
 
 // 关闭AI助手模块
@@ -566,7 +573,7 @@ const closeFloatingMode = () => {
   }
 
   emit('close-panel')
-  console.log('关闭AI助手模块')
+  console.log('AI assistant panel closed')
 }
 
 // 处理拖拽或恢复窗口
@@ -614,7 +621,10 @@ const loadFloatingState = () => {
 // Handle outline application
 const handleOutlineApplied = async (result: any) => {
   console.log('Outline applied successfully:', result)
-  await addMessage('assistant', `**大纲应用成功！**\n\n已成功创建 ${result.createdChapters} 个章节，预计总字数 ${result.estimatedWords} 字。\n\n你可以在章节列表中查看和编辑这些章节。`)
+  await addMessage('assistant', t('aiChat.outline.applySuccess', {
+    chapters: result.createdChapters,
+    words: result.estimatedWords
+  }))
 
   // Switch back to chat mode after successful application
   setTimeout(() => {

@@ -6,9 +6,9 @@
   >
     <div class="status-info">
       <a-badge :status="aiStatus === 'online' ? 'success' : 'error'"/>
-      <span class="status-text">AI创作助手</span>
+      <span class="status-text">{{ t('aiChat.panel.title') }}</span>
       <span v-if="isFloating" class="floating-indicator">
-        {{ isMinimized ? '已最小化' : '浮动模式' }}
+        {{ isMinimized ? t('aiChat.panel.indicators.minimized') : t('aiChat.panel.indicators.floating') }}
       </span>
     </div>
     <div class="status-actions">
@@ -17,7 +17,7 @@
         <!-- 浮动模式切换按钮 -->
         <div class="float-mode-toggle">
           <a-tooltip
-              :title="isFloating ? '切换到固定模式' : '切换到浮动模式'"
+              :title="isFloating ? t('aiChat.panel.tooltips.pinToDock') : t('aiChat.panel.tooltips.floatWindow')"
               placement="bottom"
           >
             <div
@@ -43,7 +43,7 @@
 
         <!-- 通用关闭按钮 -->
         <div v-if="!isFloating" class="general-controls">
-          <a-tooltip title="关闭AI助手">
+          <a-tooltip :title="t('aiChat.panel.tooltips.close')">
             <div class="control-btn close-btn" @click="handleClose">
               <component :is="CloseOutlined"/>
             </div>
@@ -52,13 +52,13 @@
 
         <!-- 浮动模式窗口控制按钮 -->
         <div v-if="isFloating" class="floating-controls">
-          <a-tooltip title="最小化">
+          <a-tooltip :title="t('aiChat.panel.tooltips.minimize')">
             <div class="control-btn minimize-btn" @click="handleMinimize">
               <div class="minimize-icon"></div>
             </div>
           </a-tooltip>
 
-          <a-tooltip title="最大化/还原">
+          <a-tooltip :title="maximizeTooltip">
             <div
                 class="control-btn maximize-btn"
                 @click="handleToggleMaximize"
@@ -67,7 +67,7 @@
             </div>
           </a-tooltip>
 
-          <a-tooltip title="关闭AI助手">
+          <a-tooltip :title="t('aiChat.panel.tooltips.close')">
             <div class="control-btn close-btn" @click="handleClose">
               <component :is="CloseOutlined"/>
             </div>
@@ -86,6 +86,8 @@ import {
   CompressOutlined,
   CloseOutlined
 } from '@ant-design/icons-vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 interface Props {
   aiStatus: 'online' | 'offline'
@@ -110,6 +112,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+const { t } = useI18n()
 
 const handleToggleFloating = () => {
   emit('toggle-floating')
@@ -130,6 +133,12 @@ const handleClose = () => {
 const startDragOrRestore = (event: MouseEvent) => {
   emit('start-drag', event)
 }
+
+const maximizeTooltip = computed(() =>
+  props.isMaximized
+    ? t('aiChat.panel.tooltips.restore')
+    : t('aiChat.panel.tooltips.maximize')
+)
 </script>
 
 <style scoped>

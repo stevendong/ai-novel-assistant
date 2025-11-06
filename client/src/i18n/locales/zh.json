@@ -103,13 +103,149 @@
     "welcome": {
       "chat": "你好！我是你的AI创作助手。我可以帮你完善角色设定、扩展世界观、生成章节大纲，还能进行一致性检查。有什么我可以帮助你的吗？",
       "enhance": "欢迎来到内容完善模式！我专注于帮你完善角色设定、扩展世界观设定，以及优化情节内容。请告诉我你想要完善什么内容。",
-      "check": "欢迎来到质量检查模式！我专注于检查内容的一致性、逻辑性和连贯性。请提供需要检查的内容或告诉我要检查什么。"
+      "check": "欢迎来到质量检查模式！我专注于检查内容的一致性、逻辑性和连贯性。请提供需要检查的内容或告诉我要检查什么。",
+      "noSession": {
+        "title": "开始新对话",
+        "subtitle": "创建一个新的AI对话来获取创作帮助",
+        "action": "开始对话"
+      }
     },
     "responseActions": {
       "characterAnalyze": "深度分析",
       "characterTraits": "性格建议",
       "settingExpand": "详细扩展",
       "settingLogic": "逻辑检查"
+    },
+    "panel": {
+      "title": "AI创作助手",
+      "indicators": {
+        "minimized": "已最小化",
+        "floating": "浮动模式"
+      },
+      "tooltips": {
+        "floatWindow": "切换到浮动模式",
+        "pinToDock": "切换到固定模式",
+        "close": "关闭AI助手",
+        "minimize": "最小化",
+        "maximize": "最大化",
+        "restore": "还原大小"
+      }
+    },
+    "modes": {
+      "chat": {
+        "description": "与AI自由对话，获取创作灵感和建议",
+        "placeholder": "向AI助手提问或请求帮助...",
+        "actions": {
+          "help": "帮助",
+          "examples": "示例",
+          "brainstorm": "头脑风暴",
+          "inspiration": "创作灵感"
+        }
+      },
+      "enhance": {
+        "description": "完善你的角色、设定和情节内容",
+        "placeholder": "描述你想要完善的内容...",
+        "actions": {
+          "character": "完善角色",
+          "setting": "扩展设定",
+          "outline": "生成大纲",
+          "plot": "情节建议"
+        }
+      },
+      "check": {
+        "description": "检查内容的一致性和逻辑性",
+        "placeholder": "输入需要检查的内容...",
+        "actions": {
+          "consistency": "一致性检查",
+          "character": "角色检查",
+          "timeline": "时间线检查",
+          "logic": "逻辑检查"
+        }
+      }
+    },
+    "messageInput": {
+      "placeholder": "输入消息...",
+      "actions": {
+        "image": "发送图片",
+        "voice": "语音输入"
+      },
+      "hint": {
+        "nearLimit": "字数即将达到上限",
+        "shortcuts": "Ctrl+Enter 发送，Shift+Enter 换行"
+      }
+    },
+    "messageItem": {
+      "tooltips": {
+        "delete": "删除消息",
+        "copy": "复制消息",
+        "regenerate": "重新生成"
+      },
+      "streaming": "正在接收...",
+      "suggestions": {
+        "label": "建议"
+      },
+      "followUps": {
+        "label": "相关问题"
+      }
+    },
+    "toolbar": {
+      "history": "历史消息",
+      "clearing": "清空中...",
+      "clearAction": "清空当前对话",
+      "confirmClear": {
+        "title": "确认清空对话",
+        "content": "此操作将删除当前对话中的所有消息记录（包括用户消息、AI回复和欢迎消息），且无法恢复。清空后将重新创建一个新的欢迎消息。是否继续？",
+        "ok": "确认清空"
+      },
+      "clearSuccess": {
+        "title": "清空成功",
+        "content": "对话历史已清空",
+        "ok": "知道了"
+      },
+      "clearFailure": {
+        "title": "清空失败",
+        "content": "清空对话时发生错误，请稍后重试",
+        "ok": "知道了"
+      }
+    },
+    "sessions": {
+      "title": "会话历史",
+      "subtitle": "{count} 个会话",
+      "create": "新建会话",
+      "empty": {
+        "title": "暂无历史会话",
+        "hint": "创建一个新会话开始对话"
+      },
+      "newSession": "新对话",
+      "time": {
+        "yesterday": "昨天",
+        "daysAgo": "{days}天前"
+      },
+      "modes": {
+        "chat": "对话",
+        "enhance": "完善",
+        "check": "检查",
+        "outline": "大纲"
+      },
+      "confirmDelete": {
+        "title": "确认删除会话",
+        "content": "确定要删除这个会话吗？此操作不可撤销。",
+        "ok": "确认删除"
+      },
+      "deleteSuccess": "会话删除成功"
+    },
+    "actions": {
+      "viewAllIssues": "请显示所有的一致性问题详情",
+      "fixPriority": "请为我优先修复最严重的一致性问题",
+      "detailedAnalysis": "请对我的小说进行更详细的分析",
+      "analyzeCharacter": "请深度分析我提到的角色",
+      "suggestTraits": "请为这个角色提供更多性格特征建议",
+      "expandSetting": "请详细扩展我提到的世界设定",
+      "checkLogic": "请检查这个设定的逻辑合理性",
+      "expandSuggestion": "请详细展开这个建议：{suggestion}"
+    },
+    "outline": {
+      "applySuccess": "**大纲应用成功！**\n\n已成功创建 {chapters} 个章节，预计总字数 {words} 字。\n\n你可以在章节列表中查看和编辑这些章节。"
     }
   },
   "footer": {
@@ -623,8 +759,29 @@
       "legendMin": "少",
       "legendMax": "多",
       "currentMonth": "本月",
-      "monthNames": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
-      "weekdays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+      "monthNames": [
+        "1月",
+        "2月",
+        "3月",
+        "4月",
+        "5月",
+        "6月",
+        "7月",
+        "8月",
+        "9月",
+        "10月",
+        "11月",
+        "12月"
+      ],
+      "weekdays": [
+        "周日",
+        "周一",
+        "周二",
+        "周三",
+        "周四",
+        "周五",
+        "周六"
+      ],
       "contribution": "写作 {words} 字",
       "date": {
         "today": "今天",
@@ -2371,20 +2528,20 @@
         "updateSuccess": "个人信息更新成功",
         "updateFailed": "更新失败",
         "passwordSuccess": "密码修改成功，其他会话已注销",
-      "passwordFailed": "修改密码失败",
-      "avatarUploadSuccess": "头像上传成功",
-      "avatarDeleteSuccess": "头像删除成功",
-      "avatarUploadFailed": "头像上传失败",
-      "avatarDeleteFailed": "头像删除失败",
-      "imageProcessFailed": "图片处理失败",
-      "fileTypeInvalid": "请选择图片文件",
-      "fileSizeExceeded": "图片大小不能超过 5MB",
-      "statsLoadFailed": "加载统计信息失败",
-      "sessionsLoadFailed": "加载会话列表失败",
-      "sessionLogoutSuccess": "会话注销成功",
-      "sessionLogoutFailed": "注销会话失败",
-      "logoutAllSuccess": "所有其他会话已注销",
-      "logoutAllFailed": "注销失败"
+        "passwordFailed": "修改密码失败",
+        "avatarUploadSuccess": "头像上传成功",
+        "avatarDeleteSuccess": "头像删除成功",
+        "avatarUploadFailed": "头像上传失败",
+        "avatarDeleteFailed": "头像删除失败",
+        "imageProcessFailed": "图片处理失败",
+        "fileTypeInvalid": "请选择图片文件",
+        "fileSizeExceeded": "图片大小不能超过 5MB",
+        "statsLoadFailed": "加载统计信息失败",
+        "sessionsLoadFailed": "加载会话列表失败",
+        "sessionLogoutSuccess": "会话注销成功",
+        "sessionLogoutFailed": "注销会话失败",
+        "logoutAllSuccess": "所有其他会话已注销",
+        "logoutAllFailed": "注销失败"
       },
       "avatarUpload": {
         "upload": "上传头像",

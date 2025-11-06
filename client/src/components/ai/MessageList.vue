@@ -11,7 +11,7 @@
           <RobotOutlined />
         </div>
         <div class="welcome-content">
-          <h3>AI创作助手</h3>
+          <h3>{{ t('aiChat.panel.title') }}</h3>
           <p>{{ modeDescription }}</p>
         </div>
       </div>
@@ -41,6 +41,7 @@ import { RobotOutlined } from '@ant-design/icons-vue'
 import type { ChatMessage } from '@/stores/aiChat'
 import MessageItem from './MessageItem.vue'
 import { useMessageScroll } from '@/composables/useMessageScroll'
+import { useI18n } from 'vue-i18n'
 
 // Props
 const props = defineProps<{
@@ -72,6 +73,8 @@ const {
   onNewMessage,
   checkScrollPosition
 } = useMessageScroll()
+
+const { t } = useI18n()
 
 // 处理滚动事件
 const handleScroll = (event: Event) => {

@@ -5,8 +5,8 @@
       <div class="header-left">
         <span class="header-icon">💬</span>
         <div class="header-info">
-          <h3 class="header-title">会话历史</h3>
-          <p class="header-subtitle">{{ sessions.length }} 个会话</p>
+          <h3 class="header-title">{{ t('aiChat.sessions.title') }}</h3>
+          <p class="header-subtitle">{{ t('aiChat.sessions.subtitle', { count: sessions.length }) }}</p>
         </div>
       </div>
       <a-button
@@ -16,7 +16,7 @@
         class="new-session-btn"
       >
         <PlusOutlined />
-        新建会话
+        {{ t('aiChat.sessions.create') }}
       </a-button>
     </div>
 
@@ -25,8 +25,8 @@
       <!-- 空状态 -->
       <div v-if="sessions.length === 0" class="empty-state">
         <div class="empty-icon">📝</div>
-        <p class="empty-text">暂无历史会话</p>
-        <p class="empty-hint">创建一个新会话开始对话</p>
+        <p class="empty-text">{{ t('aiChat.sessions.empty.title') }}</p>
+        <p class="empty-hint">{{ t('aiChat.sessions.empty.hint') }}</p>
       </div>
 
       <!-- 会话列表 -->
@@ -47,7 +47,7 @@
             <div class="session-main">
               <!-- 头部：标题和操作 -->
               <div class="session-header">
-                <h4 class="session-title">{{ session.title || '新对话' }}</h4>
+                <h4 class="session-title">{{ session.title || t('aiChat.sessions.newSession') }}</h4>
                 <a-button
                   type="text"
                   size="small"
@@ -98,6 +98,8 @@ import {
   CheckCircleFilled
 } from '@ant-design/icons-vue'
 import type { ConversationSession } from '@/stores/aiChat'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 // Props
 defineProps<{
@@ -112,6 +114,8 @@ const emit = defineEmits<{
   'delete-session': [sessionId: string]
 }>()
 
+const { t, locale } = useI18n()
+
 // 格式化时间
 const formatTime = (timestamp: Date) => {
   // 确保 timestamp 是 Date 对象
@@ -123,33 +127,35 @@ const formatTime = (timestamp: Date) => {
 
   if (days === 0) {
     // 今天，显示时间
-    return date.toLocaleTimeString('zh-CN', {
+    return new Intl.DateTimeFormat(locale.value, {
       hour: '2-digit',
       minute: '2-digit'
-    })
+    }).format(date)
   } else if (days === 1) {
     // 昨天
-    return '昨天'
+    return t('aiChat.sessions.time.yesterday')
   } else if (days < 7) {
     // 一周内，显示几天前
-    return `${days}天前`
+    return t('aiChat.sessions.time.daysAgo', { days })
   } else {
     // 超过一周，显示日期
-    return date.toLocaleDateString('zh-CN', {
+    return new Intl.DateTimeFormat(locale.value, {
       month: '2-digit',
       day: '2-digit'
-    })
+    }).format(date)
   }
 }
 
+const modeLabelMap = computed(() => ({
+  chat: t('aiChat.sessions.modes.chat'),
+  enhance: t('aiChat.sessions.modes.enhance'),
+  check: t('aiChat.sessions.modes.check'),
+  outline: t('aiChat.sessions.modes.outline')
+}))
+
 // 获取模式标签
 const getModeLabel = (mode: string) => {
-  const labels: Record<string, string> = {
-    chat: '对话',
-    enhance: '完善',
-    check: '检查',
-    outline: '大纲'
-  }
+  const labels = modeLabelMap.value
   return labels[mode] || mode
 }
 
@@ -188,14 +194,14 @@ const handleCreateSession = () => {
 // 处理删除会话
 const handleDeleteSession = (sessionId: string) => {
   Modal.confirm({
-    title: '确认删除会话',
-    content: '确定要删除这个会话吗？此操作不可撤销。',
-    okText: '确认删除',
-    cancelText: '取消',
+    title: t('aiChat.sessions.confirmDelete.title'),
+    content: t('aiChat.sessions.confirmDelete.content'),
+    okText: t('aiChat.sessions.confirmDelete.ok'),
+    cancelText: t('common.cancel'),
     okType: 'danger',
     onOk: () => {
       emit('delete-session', sessionId)
-      message.success('会话删除成功')
+      message.success(t('aiChat.sessions.deleteSuccess'))
     }
   })
 }

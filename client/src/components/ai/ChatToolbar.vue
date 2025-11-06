@@ -6,7 +6,7 @@
         <a-dropdown :trigger="['click']" placement="topLeft">
           <div class="button-wrapper">
             <HistoryOutlined class="button-icon" />
-            <span class="button-label">历史消息</span>
+            <span class="button-label">{{ t('aiChat.toolbar.history') }}</span>
             <span class="session-count">{{ sessions.length }}</span>
           </div>
           <template #overlay>
@@ -39,7 +39,7 @@
         <a-dropdown :trigger="['click']" placement="topRight">
           <div class="button-wrapper">
             <SettingOutlined class="button-icon" />
-            <span class="button-label">设置</span>
+            <span class="button-label">{{ t('common.settings') }}</span>
           </div>
           <template #overlay>
             <a-menu class="settings-dropdown">
@@ -50,7 +50,7 @@
                 class="settings-menu-item danger-menu-item"
               >
                 <DeleteOutlined />
-                <span>{{ isClearingConversation ? '清空中...' : '清空当前对话' }}</span>
+                <span>{{ isClearingConversation ? t('aiChat.toolbar.clearing') : t('aiChat.toolbar.clearAction') }}</span>
               </a-menu-item>
             </a-menu>
           </template>
@@ -71,6 +71,7 @@ import {
 } from '@ant-design/icons-vue'
 import SessionDropdown from './SessionDropdown.vue'
 import type { ConversationSession } from '@/stores/aiChat'
+import { useI18n } from 'vue-i18n'
 
 // Props
 const props = defineProps<{
@@ -90,6 +91,7 @@ const emit = defineEmits<{
 
 // State
 const isClearingConversation = ref(false)
+const { t } = useI18n()
 
 // 处理切换会话
 const handleSwitchSession = (sessionId: string) => {
@@ -114,11 +116,11 @@ const handleScrollToBottom = () => {
 // 处理清空对话
 const handleClearConversation = () => {
   Modal.confirm({
-    title: '确认清空对话',
-    content: '此操作将删除当前对话中的所有消息记录（包括用户消息、AI回复和欢迎消息），且无法恢复。清空后将重新创建一个新的欢迎消息。是否继续？',
-    okText: '确认清空',
+    title: t('aiChat.toolbar.confirmClear.title'),
+    content: t('aiChat.toolbar.confirmClear.content'),
+    okText: t('aiChat.toolbar.confirmClear.ok'),
     okType: 'danger',
-    cancelText: '取消',
+    cancelText: t('common.cancel'),
     onOk: async () => {
       try {
         isClearingConversation.value = true
@@ -126,16 +128,16 @@ const handleClearConversation = () => {
 
         // 显示成功提示
         Modal.success({
-          title: '清空成功',
-          content: '对话历史已清空',
-          okText: '知道了'
+          title: t('aiChat.toolbar.clearSuccess.title'),
+          content: t('aiChat.toolbar.clearSuccess.content'),
+          okText: t('aiChat.toolbar.clearSuccess.ok')
         })
       } catch (error) {
-        console.error('清空对话失败:', error)
+        console.error('Failed to clear conversation:', error)
         Modal.error({
-          title: '清空失败',
-          content: '清空对话时发生错误，请稍后重试',
-          okText: '知道了'
+          title: t('aiChat.toolbar.clearFailure.title'),
+          content: t('aiChat.toolbar.clearFailure.content'),
+          okText: t('aiChat.toolbar.clearFailure.ok')
         })
       } finally {
         isClearingConversation.value = false
