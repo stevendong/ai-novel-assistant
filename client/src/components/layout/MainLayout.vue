@@ -20,7 +20,7 @@
           <!-- Logo and Title -->
           <div class="logo-section">
             <div class="logo">
-              <span class="logo-text">AI</span>
+              <img class="logo-image" :src="logoSvg" alt="AI Novel Assistant logo" />
             </div>
             <div class="title-section">
               <h1 class="app-title">{{ $t('app.title') }}</h1>
@@ -224,6 +224,7 @@ import { useThemeStore } from '@/stores/theme'
 import StatusBar from './StatusBar.vue'
 // 移除不再需要的文本工具导入
 import { useChapterList } from '@/composables/useChapterList'
+import logoSvg from '@/assets/logo.svg'
 
 const { t } = useI18n()
 
@@ -579,19 +580,19 @@ const formatDate = (dateString: string) => {
 .logo {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #1890ff, #722ed1);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+  background: var(--theme-bg-container);
 }
 
-.logo-text {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .title-section {
