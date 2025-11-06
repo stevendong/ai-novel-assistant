@@ -33,15 +33,13 @@
         <div class="header-right">
           <a-space size="middle">
             <!-- Project Selector -->
-            <div class="project-selector">
+            <div v-if="projectStore.projects.length > 0" class="project-selector">
               <a-select
                 v-model:value="currentProjectId"
                 @change="handleProjectChange"
                 :placeholder="$t('project.selectProject')"
                 :loading="projectStore.loading"
                 class="project-select"
-                :disabled="projectStore.projects.length === 0"
-                :not-found-content="projectStore.projects.length === 0 ? $t('project.noProject') : $t('common.search')"
                 show-search
                 :filter-option="filterProject"
                 style="width: 300px"
