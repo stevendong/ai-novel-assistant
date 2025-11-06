@@ -148,6 +148,18 @@
             </a-checkbox>
           </a-form-item>
 
+          <!-- Turnstile Widget -->
+          <a-form-item v-if="turnstileEnabled">
+            <TurnstileWidget
+              ref="turnstileRef"
+              v-model="turnstileToken"
+              :theme="themeStore.isDark ? 'dark' : 'light'"
+              @verified="handleTurnstileVerified"
+              @error="handleTurnstileError"
+              @expired="handleTurnstileExpired"
+            />
+          </a-form-item>
+
           <a-form-item>
             <a-button
               type="primary"
@@ -155,6 +167,7 @@
               size="large"
               block
               :loading="authStore.isLoading"
+              :disabled="turnstileEnabled && !turnstileToken"
             >
               {{ isLogin ? t('auth.loginButton') : t('auth.registerButton') }}
             </a-button>
@@ -199,6 +212,7 @@ import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import LanguageToggle from '@/components/layout/LanguageToggle.vue'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton.vue'
 import GitHubSignInButton from '@/components/auth/GitHubSignInButton.vue'
+import TurnstileWidget from '@/components/auth/TurnstileWidget.vue'
 import { apiClient } from '@/utils/api'
 
 const router = useRouter()
@@ -215,6 +229,10 @@ const socialProviders = reactive({
   google: false,
   github: false
 })
+
+const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
+const turnstileToken = ref<string>('')
+const turnstileEnabled = computed(() => !!import.meta.env.VITE_TURNSTILE_SITE_KEY)
 
 const googleEnabled = computed(() => socialProviders.google && !!import.meta.env.VITE_GOOGLE_CLIENT_ID)
 const githubEnabled = computed(() => socialProviders.github)
@@ -290,6 +308,20 @@ const validatePasswordConfirm = (rule, value) => {
   return Promise.resolve()
 }
 
+const handleTurnstileVerified = (token: string) => {
+  turnstileToken.value = token
+}
+
+const handleTurnstileError = (error: string) => {
+  console.error('Turnstile error:', error)
+  message.error(t('auth.turnstileError') || 'Verification failed. Please try again.')
+}
+
+const handleTurnstileExpired = () => {
+  turnstileToken.value = ''
+  message.warning(t('auth.turnstileExpired') || 'Verification expired. Please verify again.')
+}
+
 const toggleMode = async () => {
   isLogin.value = !isLogin.value
 
@@ -300,6 +332,11 @@ const toggleMode = async () => {
       formData[key] = ''
     }
   })
+
+  turnstileToken.value = ''
+  if (turnstileRef.value) {
+    turnstileRef.value.reset()
+  }
 
   if (isLogin.value) {
     const rememberedIdentifier = localStorage.getItem('rememberedIdentifier')
@@ -341,20 +378,30 @@ const handleSubmit = async (e) => {
       return
     }
 
-    if (!isLogin.value && !formData.username) {
+    if (!formData.username && !isLogin.value) {
       message.error(t('auth.enterUsername'))
       return
     }
 
+    if (turnstileEnabled.value && !turnstileToken.value) {
+      message.error(t('auth.turnstileRequired') || 'Please complete the verification')
+      return
+    }
+
     if (isLogin.value) {
-      const result = await authStore.login({
+      const loginData = {
         identifier: formData.identifier,
         password: formData.password,
         rememberMe: formData.rememberMe
-      })
+      }
+
+      if (turnstileEnabled.value && turnstileToken.value) {
+        loginData.turnstileToken = turnstileToken.value
+      }
+
+      const result = await authStore.login(loginData)
 
       if (result.success) {
-        // 处理记住我功能
         if (formData.rememberMe) {
           localStorage.setItem('rememberedIdentifier', formData.identifier)
         } else {
@@ -363,6 +410,11 @@ const handleSubmit = async (e) => {
 
         const redirect = router.currentRoute.value.query.redirect || '/'
         router.push(redirect)
+      } else {
+        turnstileToken.value = ''
+        if (turnstileRef.value) {
+          turnstileRef.value.reset()
+        }
       }
     } else {
       if (formData.password !== formData.confirmPassword) {
@@ -370,20 +422,35 @@ const handleSubmit = async (e) => {
         return
       }
 
-      const result = await authStore.register({
+      const registerData = {
         username: formData.username,
         email: formData.identifier,
         password: formData.password,
         nickname: formData.nickname || formData.username,
         inviteCode: formData.inviteCode
-      })
+      }
+
+      if (turnstileEnabled.value && turnstileToken.value) {
+        registerData.turnstileToken = turnstileToken.value
+      }
+
+      const result = await authStore.register(registerData)
 
       if (result.success) {
         router.push('/')
+      } else {
+        turnstileToken.value = ''
+        if (turnstileRef.value) {
+          turnstileRef.value.reset()
+        }
       }
     }
   } catch (error) {
     console.error('Form submission failed:', error)
+    turnstileToken.value = ''
+    if (turnstileRef.value) {
+      turnstileRef.value.reset()
+    }
   }
 }
 

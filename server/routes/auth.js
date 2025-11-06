@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const AuthUtils = require('../utils/auth');
 const { requireAuth } = require('../middleware/auth');
+const { validateTurnstile } = require('../middleware/turnstile');
 const logger = require('../utils/logger');
 const inviteService = require('../services/inviteService');
 const uploadService = require('../services/uploadService');
@@ -59,7 +60,7 @@ const parseConfigDate = (value) => {
   return null;
 };
 
-router.post('/register', async (req, res) => {
+router.post('/register', validateTurnstile, async (req, res) => {
   try {
     const { username, email, password, nickname, inviteCode } = req.body;
 
@@ -264,7 +265,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', validateTurnstile, async (req, res) => {
   try {
     const { identifier, password } = req.body;
 

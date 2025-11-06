@@ -40,6 +40,7 @@ export interface RegisterData {
   password: string
   nickname?: string
   inviteCode?: string
+  turnstileToken?: string
 }
 
 // 登录凭据接口
@@ -47,6 +48,7 @@ export interface LoginCredentials {
   identifier: string  // 可以是email或username
   password: string
   rememberMe?: boolean
+  turnstileToken?: string
 }
 
 // 个人资料更新数据接口
