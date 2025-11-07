@@ -1,3 +1,68 @@
+/**
+ * 解析提供商特定headers配置
+ * 从环境变量中读取JSON格式的headers配置
+ *
+ * 环境变量格式示例:
+ * AI_PROVIDER_HEADERS='[
+ *   {"urlPattern": "aihubmix.com", "headers": {"APP-Code": "AVSS2212"}},
+ *   {"urlPattern": "example.com", "headers": {"X-Custom-Key": "value"}}
+ * ]'
+ *
+ * 或使用单个配置:
+ * AI_PROVIDER_HEADER_PATTERN_1=aihubmix.com
+ * AI_PROVIDER_HEADER_NAME_1=APP-Code
+ * AI_PROVIDER_HEADER_VALUE_1=AVSS2212
+ */
+function parseProviderHeaders() {
+  const headers = []
+
+  // 方式1: 从JSON环境变量读取
+  if (process.env.AI_PROVIDER_HEADERS) {
+    try {
+      const parsed = JSON.parse(process.env.AI_PROVIDER_HEADERS)
+      if (Array.isArray(parsed)) {
+        headers.push(...parsed.map(config => ({
+          urlPattern: config.urlPattern || '',
+          headers: config.headers || {},
+          matchType: config.matchType || 'includes' // includes, startsWith, endsWith, exact, regex
+        })))
+      }
+    } catch (error) {
+      console.warn('Failed to parse AI_PROVIDER_HEADERS:', error.message)
+    }
+  }
+
+  // 方式2: 从编号的环境变量读取 (AI_PROVIDER_HEADER_PATTERN_N)
+  let index = 1
+  while (process.env[`AI_PROVIDER_HEADER_PATTERN_${index}`]) {
+    const pattern = process.env[`AI_PROVIDER_HEADER_PATTERN_${index}`]
+    const headerName = process.env[`AI_PROVIDER_HEADER_NAME_${index}`]
+    const headerValue = process.env[`AI_PROVIDER_HEADER_VALUE_${index}`]
+    const matchType = process.env[`AI_PROVIDER_HEADER_MATCH_${index}`] || 'includes'
+
+    if (pattern && headerName && headerValue) {
+      headers.push({
+        urlPattern: pattern,
+        headers: { [headerName]: headerValue },
+        matchType
+      })
+    }
+
+    index++
+  }
+
+  // 方式3: 兼容旧配置 (向后兼容)
+  if (headers.length === 0 && process.env.LEGACY_AIHUBMIX_SUPPORT !== 'false') {
+    headers.push({
+      urlPattern: 'aihubmix.com',
+      headers: { 'APP-Code': 'AVSS2212' },
+      matchType: 'includes'
+    })
+  }
+
+  return headers
+}
+
 // AI服务配置
 const aiConfig = {
   // OpenAI配置
@@ -121,7 +186,11 @@ const aiConfig = {
     cacheTTL: parseInt(process.env.AI_CACHE_TTL) || 3600,
     // 是否启用使用统计
     enableUsageStats: process.env.AI_ENABLE_USAGE_STATS !== 'false'
-  }
+  },
+
+  // 提供商特定headers配置
+  // 支持基于URL模式匹配的自定义headers
+  providerHeaders: parseProviderHeaders()
 }
 
 // 验证必要的配置
@@ -184,9 +253,74 @@ function getRetryConfig(provider) {
   }
 }
 
+/**
+ * 检查URL是否匹配特定模式
+ * @param {string} url - 要检查的URL
+ * @param {string} pattern - 匹配模式
+ * @param {string} matchType - 匹配类型: includes, startsWith, endsWith, exact, regex
+ * @returns {boolean}
+ */
+function urlMatchesPattern(url, pattern, matchType = 'includes') {
+  if (!url || !pattern) return false
+
+  const urlStr = typeof url === 'string' ? url : String(url)
+
+  switch (matchType) {
+    case 'includes':
+      return urlStr.includes(pattern)
+    case 'startsWith':
+      return urlStr.startsWith(pattern)
+    case 'endsWith':
+      return urlStr.endsWith(pattern)
+    case 'exact':
+      return urlStr === pattern
+    case 'regex':
+      try {
+        const regex = new RegExp(pattern)
+        return regex.test(urlStr)
+      } catch (error) {
+        console.warn(`Invalid regex pattern: ${pattern}`, error.message)
+        return false
+      }
+    default:
+      return urlStr.includes(pattern)
+  }
+}
+
+/**
+ * 获取URL对应的自定义headers
+ * @param {string} baseURL - API的baseURL
+ * @returns {Object} headers对象
+ */
+function getCustomHeaders(baseURL) {
+  const customHeaders = {}
+
+  if (!baseURL) return customHeaders
+
+  for (const config of aiConfig.providerHeaders) {
+    if (urlMatchesPattern(baseURL, config.urlPattern, config.matchType)) {
+      Object.assign(customHeaders, config.headers)
+    }
+  }
+
+  return customHeaders
+}
+
+/**
+ * 检查URL是否需要自定义headers
+ * @param {string} baseURL - API的baseURL
+ * @returns {boolean}
+ */
+function needsCustomHeaders(baseURL) {
+  return Object.keys(getCustomHeaders(baseURL)).length > 0
+}
+
 module.exports = {
   aiConfig,
   validateConfig,
   getTaskParams,
-  getRetryConfig
+  getRetryConfig,
+  getCustomHeaders,
+  needsCustomHeaders,
+  urlMatchesPattern
 }

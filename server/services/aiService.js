@@ -1,5 +1,10 @@
 const OpenAI = require('openai');
-const { aiConfig, validateConfig } = require('../config/aiConfig');
+const {
+  aiConfig,
+  validateConfig,
+  getCustomHeaders,
+  needsCustomHeaders
+} = require('../config/aiConfig');
 const {
   withRetry,
   buildRequestParams,
@@ -91,38 +96,65 @@ class AIService {
     }
   }
 
-  shouldApplyAppCodeHeader(baseURL) {
-    return typeof baseURL === 'string' && baseURL.includes('aihubmix.com');
-  }
+  /**
+   * 应用自定义headers到请求
+   * @param {string} baseURL - API的baseURL
+   * @param {*} headers - 现有的headers (可以是Headers对象、数组或普通对象)
+   * @returns {*} 应用自定义headers后的headers
+   */
+  applyCustomHeaders(baseURL, headers) {
+    const customHeaders = getCustomHeaders(baseURL);
 
-  applyAppCodeHeader(baseURL, headers) {
-    if (!this.shouldApplyAppCodeHeader(baseURL)) {
+    if (Object.keys(customHeaders).length === 0) {
       return headers;
     }
 
+    // 处理Headers对象
     if (typeof Headers !== 'undefined' && headers instanceof Headers) {
-      headers.set('APP-Code', 'AVSS2212');
+      Object.entries(customHeaders).forEach(([key, value]) => {
+        headers.set(key, value);
+      });
       return headers;
     }
 
+    // 处理数组格式 [[key, value], ...]
     if (Array.isArray(headers)) {
-      const normalizedIndex = headers.findIndex(([key]) => String(key).toLowerCase() === 'app-code');
-      if (normalizedIndex !== -1) {
-        headers[normalizedIndex][1] = 'AVSS2212';
-        return headers;
-      }
-      return [...headers, ['APP-Code', 'AVSS2212']];
+      const result = [...headers];
+      Object.entries(customHeaders).forEach(([key, value]) => {
+        const normalizedKey = key.toLowerCase();
+        const existingIndex = result.findIndex(
+          ([existingKey]) => String(existingKey).toLowerCase() === normalizedKey
+        );
+
+        if (existingIndex !== -1) {
+          result[existingIndex][1] = value;
+        } else {
+          result.push([key, value]);
+        }
+      });
+      return result;
     }
 
+    // 处理普通对象
     return {
       ...(headers || {}),
-      'APP-Code': 'AVSS2212'
+      ...customHeaders
     };
   }
 
-  createFetchWithAppCodeHeader(baseURL, baseFetch = fetch) {
+  /**
+   * 创建带自定义headers的fetch函数
+   * @param {string} baseURL - API的baseURL
+   * @param {Function} baseFetch - 基础fetch函数
+   * @returns {Function} 包装后的fetch函数
+   */
+  createFetchWithCustomHeaders(baseURL, baseFetch = fetch) {
+    if (!needsCustomHeaders(baseURL)) {
+      return baseFetch;
+    }
+
     return (input, init = {}) => {
-      const headers = this.applyAppCodeHeader(baseURL, init?.headers);
+      const headers = this.applyCustomHeaders(baseURL, init?.headers);
       return baseFetch(input, { ...init, headers });
     };
   }
@@ -137,12 +169,14 @@ class AIService {
       clientOptions.timeout = config.timeout;
     }
 
-    if (this.shouldApplyAppCodeHeader(config.baseURL)) {
+    // 应用自定义headers (如果需要)
+    const customHeaders = getCustomHeaders(config.baseURL);
+    if (Object.keys(customHeaders).length > 0) {
       clientOptions.defaultHeaders = {
         ...(config.defaultHeaders || {}),
-        'APP-Code': 'AVSS2212'
+        ...customHeaders
       };
-      clientOptions.fetch = this.createFetchWithAppCodeHeader(config.baseURL);
+      clientOptions.fetch = this.createFetchWithCustomHeaders(config.baseURL);
     }
 
     return new OpenAI(clientOptions);
@@ -322,7 +356,7 @@ class AIService {
 
       const response = await fetch(`${provider.config.baseURL}/v1/messages`, {
         method: 'POST',
-        headers: this.applyAppCodeHeader(provider.config.baseURL, {
+        headers: this.applyCustomHeaders(provider.config.baseURL, {
           'Content-Type': 'application/json',
           'x-api-key': provider.config.apiKey,
           'anthropic-version': '2023-06-01'
@@ -399,7 +433,7 @@ class AIService {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: this.applyAppCodeHeader(provider.config.baseURL, {
+        headers: this.applyCustomHeaders(provider.config.baseURL, {
           'Content-Type': 'application/json'
         }),
         body: JSON.stringify(requestData),
@@ -496,7 +530,7 @@ class AIService {
 
       const response = await fetch(`${provider.config.baseURL}/v1/messages`, {
         method: 'POST',
-        headers: this.applyAppCodeHeader(provider.config.baseURL, {
+        headers: this.applyCustomHeaders(provider.config.baseURL, {
           'Content-Type': 'application/json',
           'x-api-key': provider.config.apiKey,
           'anthropic-version': '2023-06-01'
@@ -558,7 +592,7 @@ class AIService {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: this.applyAppCodeHeader(provider.config.baseURL, {
+        headers: this.applyCustomHeaders(provider.config.baseURL, {
           'Content-Type': 'application/json'
         }),
         body: JSON.stringify(requestData),
