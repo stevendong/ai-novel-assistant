@@ -3,8 +3,74 @@ const fs = require('fs-extra');
 const path = require('path');
 const EPub = require('epub-gen');
 const { v4: uuidv4 } = require('uuid');
+const TurndownService = require('turndown');
 const prisma = require('../utils/prismaClient');
 const router = express.Router();
+
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  hr: '---',
+  bulletListMarker: '-',
+  codeBlockStyle: 'fenced',
+  emDelimiter: '_'
+});
+
+turndownService.addRule('paragraph', {
+  filter: 'p',
+  replacement: (content) => {
+    return '\n\n' + content.trim() + '\n\n';
+  }
+});
+
+turndownService.addRule('lineBreak', {
+  filter: 'br',
+  replacement: () => '  \n'
+});
+
+const convertHtmlToMarkdown = (html) => {
+  if (!html) return '';
+
+  let content = html;
+
+  content = content.replace(/<p>/gi, '\n\n');
+  content = content.replace(/<\/p>/gi, '\n\n');
+  content = content.replace(/<br\s*\/?>/gi, '  \n');
+  content = content.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+  content = content.replace(/<b>(.*?)<\/b>/gi, '**$1**');
+  content = content.replace(/<em>(.*?)<\/em>/gi, '*$1*');
+  content = content.replace(/<i>(.*?)<\/i>/gi, '*$1*');
+  content = content.replace(/<h1>(.*?)<\/h1>/gi, '# $1\n\n');
+  content = content.replace(/<h2>(.*?)<\/h2>/gi, '## $1\n\n');
+  content = content.replace(/<h3>(.*?)<\/h3>/gi, '### $1\n\n');
+  content = content.replace(/<h4>(.*?)<\/h4>/gi, '#### $1\n\n');
+  content = content.replace(/<h5>(.*?)<\/h5>/gi, '##### $1\n\n');
+  content = content.replace(/<h6>(.*?)<\/h6>/gi, '###### $1\n\n');
+  content = content.replace(/<ul>/gi, '\n');
+  content = content.replace(/<\/ul>/gi, '\n');
+  content = content.replace(/<ol>/gi, '\n');
+  content = content.replace(/<\/ol>/gi, '\n');
+  content = content.replace(/<li>(.*?)<\/li>/gi, '- $1\n');
+  content = content.replace(/<blockquote>(.*?)<\/blockquote>/gi, '> $1\n\n');
+  content = content.replace(/<code>(.*?)<\/code>/gi, '`$1`');
+  content = content.replace(/<pre>(.*?)<\/pre>/gi, '```\n$1\n```\n\n');
+  content = content.replace(/<a\s+href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+  content = content.replace(/<img\s+src=["']([^"']*)["']\s+alt=["']([^"']*)["'][^>]*>/gi, '![$2]($1)');
+  content = content.replace(/<img\s+src=["']([^"']*)["'][^>]*>/gi, '![]($1)');
+
+  content = content.replace(/<[^>]+>/g, '');
+
+  content = content.replace(/&nbsp;/g, ' ');
+  content = content.replace(/&lt;/g, '<');
+  content = content.replace(/&gt;/g, '>');
+  content = content.replace(/&amp;/g, '&');
+  content = content.replace(/&quot;/g, '"');
+  content = content.replace(/&#39;/g, "'");
+
+  content = content.replace(/\n{3,}/g, '\n\n');
+  content = content.trim();
+
+  return content;
+};
 
 // 确保导出目录存在
 const EXPORT_DIR = path.join(__dirname, '../exports');
@@ -345,12 +411,13 @@ router.post('/mdx/:novelId', async (req, res) => {
     const { novelId } = req.params;
     const {
       chapterIds,
-      author = 'AI Novel Assistant',
-      category = 'novel',
+      author = 'Author Name',
+      category = '小说',
       tags = [],
       series,
       seoDescription,
-      coverImage
+      coverImage,
+      featured = true
     } = req.body;
 
     const novel = await prisma.novel.findUnique({
@@ -367,167 +434,186 @@ router.post('/mdx/:novelId', async (req, res) => {
       return res.status(404).json({ error: 'Novel not found' });
     }
 
-    const exportedFiles = [];
+    if (novel.chapters.length === 1) {
+      const chapter = novel.chapters[0];
+      const filename = `chapter-${chapter.chapterNumber}.mdx`;
 
-    for (const chapter of novel.chapters) {
-      const slug = `${novel.title}-chapter-${chapter.chapterNumber}`
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-');
+      const chapterDate = chapter.updatedAt.toISOString().split('T')[0];
 
-      const wordCount = chapter.wordCount || 0;
-      const readingTime = Math.ceil(wordCount / 200);
-
-      const frontmatter = {
-        title: `${novel.title} - 第${chapter.chapterNumber}章: ${chapter.title}`,
-        author,
-        publishedAt: chapter.updatedAt.toISOString(),
-        category,
-        tags: [...tags, novel.genre || 'fiction', 'novel'],
-        series: series || novel.title,
-        chapterNumber: chapter.chapterNumber,
-        description: seoDescription || chapter.outline || `${novel.title}的第${chapter.chapterNumber}章`,
-        wordCount,
-        readingTime: `${readingTime} min read`,
-        draft: chapter.status !== 'published',
-        slug
-      };
-
-      if (coverImage) {
-        frontmatter.coverImage = coverImage;
-      }
-
-      if (novel.description) {
-        frontmatter.novelDescription = novel.description;
-      }
+      const escapedDescription = (seoDescription || chapter.outline?.substring(0, 200) || `${novel.title}的第${chapter.chapterNumber}章`)
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, ' ');
 
       let mdxContent = '---\n';
-      for (const [key, value] of Object.entries(frontmatter)) {
-        if (Array.isArray(value)) {
-          mdxContent += `${key}:\n${value.map(v => `  - ${v}`).join('\n')}\n`;
-        } else if (typeof value === 'string' && value.includes('\n')) {
-          mdxContent += `${key}: |\n${value.split('\n').map(line => `  ${line}`).join('\n')}\n`;
-        } else {
-          mdxContent += `${key}: ${JSON.stringify(value)}\n`;
-        }
+      mdxContent += `title: "${chapter.title}"\n`;
+      mdxContent += `date: "${chapterDate}"\n`;
+      mdxContent += `description: "${escapedDescription}"\n`;
+      mdxContent += `author: "${author}"\n`;
+      mdxContent += `category: "${category}"\n`;
+
+      const chapterTags = [...tags];
+      if (novel.genre && !chapterTags.includes(novel.genre)) {
+        chapterTags.push(novel.genre);
       }
+      if (chapterTags.length > 0) {
+        mdxContent += `tags: [${chapterTags.map(t => `"${t}"`).join(', ')}]\n`;
+      } else {
+        mdxContent += `tags: []\n`;
+      }
+
+      mdxContent += `featured: ${featured}\n`;
+      mdxContent += `draft: ${chapter.status !== 'published'}\n`;
       mdxContent += '---\n\n';
 
-      if (chapter.outline) {
-        mdxContent += `## 章节概要\n\n${chapter.outline}\n\n`;
-      }
-
-      mdxContent += `## 正文\n\n`;
-
       if (chapter.content) {
-        const contentParagraphs = chapter.content
-          .split('\n\n')
-          .map(para => para.trim())
-          .filter(para => para.length > 0)
-          .join('\n\n');
-
-        mdxContent += contentParagraphs + '\n\n';
+        const markdownContent = convertHtmlToMarkdown(chapter.content);
+        mdxContent += markdownContent + '\n';
       } else {
-        mdxContent += '*内容待完善*\n\n';
+        mdxContent += '*内容待完善*\n';
       }
 
-      if (chapter.plotPoints) {
-        mdxContent += `---\n\n## 章节要点\n\n${chapter.plotPoints}\n\n`;
-      }
+      res.setHeader('Content-Type', 'text/markdown');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+      res.send(mdxContent);
+    } else {
+      const archiver = require('archiver');
+      const zipFilename = `${novel.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_')}_mdx.zip`;
 
-      mdxContent += `---\n\n`;
-      mdxContent += `*本章节由 AI Novel Assistant 生成*\n`;
-      mdxContent += `*更新时间: ${chapter.updatedAt.toLocaleDateString('zh-CN')}*\n`;
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"; filename*=UTF-8''${encodeURIComponent(zipFilename)}`);
 
-      const filename = `${slug}.mdx`;
-      const filePath = path.join(EXPORT_DIR, filename);
+      const archive = archiver('zip', { zlib: { level: 9 } });
 
-      await fs.writeFile(filePath, mdxContent, 'utf8');
-
-      exportedFiles.push({
-        filename,
-        chapterNumber: chapter.chapterNumber,
-        title: chapter.title,
-        downloadUrl: `/api/export/download/${filename}`,
-        fileSize: mdxContent.length,
-        slug
+      archive.on('error', (err) => {
+        console.error('Archive error:', err);
+        res.status(500).json({ error: 'Failed to create archive' });
       });
-    }
 
-    res.json({
-      success: true,
-      novelTitle: novel.title,
-      exportedChapters: exportedFiles.length,
-      files: exportedFiles
-    });
+      archive.pipe(res);
+
+      for (const chapter of novel.chapters) {
+        const filename = `chapter-${chapter.chapterNumber}.mdx`;
+        const chapterDate = chapter.updatedAt.toISOString().split('T')[0];
+
+        const escapedDescription = (seoDescription || chapter.outline?.substring(0, 200) || `${novel.title}的第${chapter.chapterNumber}章`)
+          .replace(/"/g, '\\"')
+          .replace(/\n/g, ' ');
+
+        let mdxContent = '---\n';
+        mdxContent += `title: "${chapter.title}"\n`;
+        mdxContent += `date: "${chapterDate}"\n`;
+        mdxContent += `description: "${escapedDescription}"\n`;
+        mdxContent += `author: "${author}"\n`;
+        mdxContent += `category: "${category}"\n`;
+
+        const chapterTags = [...tags];
+        if (novel.genre && !chapterTags.includes(novel.genre)) {
+          chapterTags.push(novel.genre);
+        }
+        if (chapterTags.length > 0) {
+          mdxContent += `tags: [${chapterTags.map(t => `"${t}"`).join(', ')}]\n`;
+        } else {
+          mdxContent += `tags: []\n`;
+        }
+
+        mdxContent += `featured: ${featured}\n`;
+        mdxContent += `draft: ${chapter.status !== 'published'}\n`;
+        mdxContent += '---\n\n';
+
+        if (chapter.content) {
+          const markdownContent = convertHtmlToMarkdown(chapter.content);
+          mdxContent += markdownContent + '\n';
+        } else {
+          mdxContent += '*内容待完善*\n';
+        }
+
+        archive.append(mdxContent, { name: filename });
+      }
+
+      await archive.finalize();
+    }
 
   } catch (error) {
     console.error('Error exporting MDX:', error);
-    res.status(500).json({ error: 'Failed to export MDX' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export MDX' });
+    }
   }
 });
 
-// 批量下载MDX文件为ZIP
-router.post('/mdx/:novelId/batch', async (req, res) => {
+// 导出单章节为MDX格式
+router.post('/chapter/mdx/:chapterId', async (req, res) => {
   try {
-    const { novelId } = req.params;
-    const archiver = require('archiver');
+    const { chapterId } = req.params;
+    const {
+      author = 'Author Name',
+      category = '小说',
+      tags = [],
+      seoDescription,
+      coverImage,
+      featured = true
+    } = req.body;
 
-    const novel = await prisma.novel.findUnique({
-      where: { id: novelId },
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
       include: {
-        chapters: {
-          orderBy: { chapterNumber: 'asc' }
-        }
+        novel: true
       }
     });
 
-    if (!novel) {
-      return res.status(404).json({ error: 'Novel not found' });
+    if (!chapter) {
+      return res.status(404).json({ error: 'Chapter not found' });
     }
 
-    const zipFilename = `${novel.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_')}_mdx_${Date.now()}.zip`;
-    const zipPath = path.join(EXPORT_DIR, zipFilename);
+    const novel = chapter.novel;
+    const filename = `chapter-${chapter.chapterNumber}.mdx`;
 
-    const output = fs.createWriteStream(zipPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const chapterDate = chapter.updatedAt.toISOString().split('T')[0];
 
-    output.on('close', () => {
-      res.json({
-        success: true,
-        filename: zipFilename,
-        downloadUrl: `/api/export/download/${zipFilename}`,
-        fileSize: archive.pointer()
-      });
-    });
+    const escapedDescription = (seoDescription || chapter.outline?.substring(0, 200) || `${novel.title}的第${chapter.chapterNumber}章`)
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, ' ');
 
-    archive.on('error', (err) => {
-      throw err;
-    });
+    let mdxContent = '---\n';
+    mdxContent += `title: "${chapter.title}"\n`;
+    mdxContent += `date: "${chapterDate}"\n`;
+    mdxContent += `description: "${escapedDescription}"\n`;
+    mdxContent += `author: "${author}"\n`;
+    mdxContent += `category: "${category}"\n`;
 
-    archive.pipe(output);
-
-    for (const chapter of novel.chapters) {
-      const slug = `${novel.title}-chapter-${chapter.chapterNumber}`
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-');
-
-      const filename = `${slug}.mdx`;
-      const filePath = path.join(EXPORT_DIR, filename);
-
-      if (await fs.pathExists(filePath)) {
-        archive.file(filePath, { name: filename });
-      }
+    const chapterTags = [...tags];
+    if (novel.genre && !chapterTags.includes(novel.genre)) {
+      chapterTags.push(novel.genre);
+    }
+    if (chapterTags.length > 0) {
+      mdxContent += `tags: [${chapterTags.map(t => `"${t}"`).join(', ')}]\n`;
+    } else {
+      mdxContent += `tags: []\n`;
     }
 
-    await archive.finalize();
+    mdxContent += `featured: ${featured}\n`;
+    mdxContent += `draft: ${chapter.status !== 'published'}\n`;
+    mdxContent += '---\n\n';
+
+    if (chapter.content) {
+      const markdownContent = convertHtmlToMarkdown(chapter.content);
+      mdxContent += markdownContent + '\n';
+    } else {
+      mdxContent += '*内容待完善*\n';
+    }
+
+    res.setHeader('Content-Type', 'text/markdown');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.send(mdxContent);
 
   } catch (error) {
-    console.error('Error creating MDX batch:', error);
-    res.status(500).json({ error: 'Failed to create batch export' });
+    console.error('Error exporting chapter as MDX:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to export chapter as MDX' });
+    }
   }
 });
+
 
 // 清理旧的导出文件
 router.delete('/cleanup', async (req, res) => {

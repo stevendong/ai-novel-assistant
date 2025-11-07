@@ -262,6 +262,7 @@
       :novel-id="projectStore.currentProject?.id || ''"
       :chapters="currentProjectChapters"
       :novel="projectStore.currentProject || undefined"
+      hide-mdx
       @success="handleExportSuccess"
     />
 

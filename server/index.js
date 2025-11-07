@@ -84,7 +84,8 @@ app.use(helmetConfig);
 // 2. CORS - 跨域配置
 app.use(cors({
   origin: process.env.NODE_ENV === 'development' ? true : process.env.ALLOWED_ORIGINS?.split(','),
-  credentials: true
+  credentials: true,
+  exposedHeaders: ['Content-Disposition', 'Content-Type', 'Content-Length']
 }));
 
 // 3. 全局速率限制 - 防止 DDOS

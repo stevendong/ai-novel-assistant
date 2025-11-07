@@ -11,7 +11,7 @@
         <a-radio-group v-model:value="formState.format" size="large">
           <a-radio-button value="txt">TXT</a-radio-button>
           <a-radio-button value="epub">EPUB</a-radio-button>
-          <a-radio-button value="mdx">MDX (Blog)</a-radio-button>
+          <a-radio-button v-if="!hideMdx" value="mdx">MDX (Blog)</a-radio-button>
         </a-radio-group>
       </a-form-item>
 
@@ -112,9 +112,11 @@ const props = withDefaults(defineProps<{
   chapters: Array<{ id: string; chapterNumber: number; title: string }>
   defaultChapterId?: string
   novel?: NovelData
+  hideMdx?: boolean
 }>(), {
   defaultChapterId: undefined,
-  novel: undefined
+  novel: undefined,
+  hideMdx: false
 })
 
 const emit = defineEmits(['update:visible', 'success'])
@@ -167,68 +169,105 @@ watch(() => props.visible, (newVal) => {
 const handleExport = async () => {
   loading.value = true
   try {
-    let response
     const isSingleChapter = props.defaultChapterId && formState.selectedChapters.length === 1
 
     if (formState.format === 'txt') {
+      let endpoint = ''
+      let requestData = {}
+
       if (isSingleChapter) {
-        response = await apiClient.post(`/api/export/chapter/txt/${formState.selectedChapters[0]}`, {
+        endpoint = `/api/export/chapter/txt/${formState.selectedChapters[0]}`
+        requestData = {
           includeOutline: formState.includeOutlines,
           includeMeta: formState.includeMeta
-        })
-      } else {
-        response = await apiClient.post(`/api/export/txt/${props.novelId}`, {
-          includeOutlines: formState.includeOutlines,
-          includeMeta: formState.includeMeta
-        })
-      }
-    } else if (formState.format === 'epub') {
-      response = await apiClient.post(`/api/export/epub/${props.novelId}`, {
-        includeOutlines: formState.includeOutlines
-      })
-    } else if (formState.format === 'mdx') {
-      response = await apiClient.post(`/api/export/mdx/${props.novelId}`, {
-        chapterIds: formState.selectedChapters.length > 0 ? formState.selectedChapters : undefined,
-        author: formState.author || undefined,
-        category: formState.category || 'novel',
-        tags: formState.tags.length > 0 ? formState.tags : [],
-        series: formState.series || undefined,
-        seoDescription: formState.seoDescription || undefined,
-        coverImage: formState.coverImage || undefined
-      })
-    }
-
-    if (response?.data?.success) {
-      if (formState.format === 'mdx' && response.data.files?.length > 1) {
-        message.success(t('export.mdxSuccess', { count: response.data.files.length }))
-
-        for (const file of response.data.files) {
-          const link = document.createElement('a')
-          link.href = apiClient.getAxiosInstance().defaults.baseURL + file.downloadUrl
-          link.download = file.filename
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          await new Promise(resolve => setTimeout(resolve, 500))
         }
       } else {
-        const downloadUrl = formState.format === 'mdx' && response.data.files?.length === 1
-          ? response.data.files[0].downloadUrl
-          : response.data.downloadUrl
+        endpoint = `/api/export/txt/${props.novelId}`
+        requestData = {
+          includeOutlines: formState.includeOutlines,
+          includeMeta: formState.includeMeta
+        }
+      }
 
+      const response = await apiClient.post(endpoint, requestData)
+
+      if (response?.data?.success) {
         const link = document.createElement('a')
-        link.href = apiClient.getAxiosInstance().defaults.baseURL + downloadUrl
-        link.download = response.data.filename || response.data.files?.[0]?.filename
+        link.href = apiClient.getAxiosInstance().defaults.baseURL + response.data.downloadUrl
+        link.download = response.data.filename
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-
         message.success(t('export.success'))
       }
+    } else if (formState.format === 'epub') {
+      const response = await apiClient.post(`/api/export/epub/${props.novelId}`, {
+        includeOutlines: formState.includeOutlines
+      })
 
-      emit('success')
-      handleCancel()
+      if (response?.data?.success) {
+        const link = document.createElement('a')
+        link.href = apiClient.getAxiosInstance().defaults.baseURL + response.data.downloadUrl
+        link.download = response.data.filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        message.success(t('export.success'))
+      }
+    } else if (formState.format === 'mdx') {
+      let endpoint = ''
+      let requestData = {
+        author: formState.author || undefined,
+        category: formState.category || '小说',
+        tags: formState.tags.length > 0 ? formState.tags : [],
+        seoDescription: formState.seoDescription || undefined,
+        coverImage: formState.coverImage || undefined
+      }
+
+      if (isSingleChapter) {
+        endpoint = `/api/export/chapter/mdx/${formState.selectedChapters[0]}`
+      } else {
+        endpoint = `/api/export/mdx/${props.novelId}`
+        requestData = {
+          ...requestData,
+          chapterIds: formState.selectedChapters.length > 0 ? formState.selectedChapters : undefined,
+          series: formState.series || undefined
+        }
+      }
+
+      const response = await apiClient.post(endpoint, requestData, {
+        responseType: 'blob'
+      })
+
+      const contentDisposition = response.headers['content-disposition']
+      let filename = 'export.mdx'
+
+      if (contentDisposition) {
+        const utf8FilenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;,\s]+)/)
+        if (utf8FilenameMatch && utf8FilenameMatch[1]) {
+          filename = decodeURIComponent(utf8FilenameMatch[1])
+        } else {
+          const filenameMatch = contentDisposition.match(/filename=["']?([^"';\s]+)["']?/)
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1]
+          }
+        }
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      message.success(t('export.success'))
     }
+
+    emit('success')
+    handleCancel()
   } catch (error: any) {
     console.error('Export failed:', error)
     message.error(error.response?.data?.error || t('export.failed'))

@@ -335,7 +335,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -433,21 +433,24 @@ const columns = computed(() => [
   }
 ])
 
+// 监听当前项目变化，自动加载章节
+watch(
+  () => projectStore.currentProject,
+  async (newProject, oldProject) => {
+    if (newProject && newProject.id !== oldProject?.id) {
+      console.log('Current project changed, loading chapters for:', newProject.id)
+      await loadChapters(newProject.id)
+    }
+  },
+  { immediate: true }
+)
+
 // 组件挂载时加载数据
 onMounted(async () => {
   console.log('ChapterList mounted, currentProject:', projectStore.currentProject)
   if (projectStore.currentProject) {
     console.log('Loading chapters for project:', projectStore.currentProject.id)
     await loadChapters(projectStore.currentProject.id)
-  } else {
-    console.log('No current project, waiting for project store to load...')
-    // 如果没有当前项目，等待项目加载
-    setTimeout(async () => {
-      if (projectStore.currentProject) {
-        console.log('Project loaded, now loading chapters:', projectStore.currentProject.id)
-        await loadChapters(projectStore.currentProject.id)
-      }
-    }, 1000)
   }
 })
 
