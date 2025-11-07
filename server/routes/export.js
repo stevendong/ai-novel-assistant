@@ -100,6 +100,78 @@ router.post('/txt/:novelId', async (req, res) => {
   }
 });
 
+// 导出单章节为TXT格式
+router.post('/chapter/txt/:chapterId', async (req, res) => {
+  try {
+    const { chapterId } = req.params;
+    const { includeOutline, includeMeta } = req.body;
+
+    const chapter = await prisma.chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        novel: true,
+        characters: {
+          include: { character: true }
+        },
+        settings: {
+          include: { setting: true }
+        }
+      }
+    });
+
+    if (!chapter) {
+      return res.status(404).json({ error: 'Chapter not found' });
+    }
+
+    let content = '';
+
+    if (includeMeta) {
+      content += `小说：${chapter.novel.title}\n`;
+      content += `章节：第${chapter.chapterNumber}章　${chapter.title}\n`;
+      content += `创建时间：${chapter.createdAt.toLocaleDateString()}\n`;
+      content += `最后更新：${chapter.updatedAt.toLocaleDateString()}\n`;
+      content += '\n' + '='.repeat(50) + '\n\n';
+    }
+
+    content += `第${chapter.chapterNumber}章　${chapter.title}\n\n`;
+
+    if (includeOutline && chapter.outline) {
+      content += `[大纲]\n${chapter.outline}\n\n`;
+    }
+
+    if (chapter.content) {
+      content += chapter.content + '\n\n';
+    }
+
+    if (chapter.illustrations) {
+      const illustrations = Array.isArray(chapter.illustrations) ? chapter.illustrations : [];
+      illustrations.forEach(ill => {
+        content = content.replace(
+          new RegExp(`!\\[${ill.description}\\]\\(pos:${ill.position}\\)`, 'g'),
+          `[插图：${ill.description}]`
+        );
+      });
+    }
+
+    const safeTitle = chapter.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+    const filename = `${chapter.novel.title}_第${chapter.chapterNumber}章_${safeTitle}_${Date.now()}.txt`;
+    const filePath = path.join(EXPORT_DIR, filename);
+
+    await fs.writeFile(filePath, content, 'utf8');
+
+    res.json({
+      success: true,
+      filename,
+      downloadUrl: `/api/export/download/${filename}`,
+      fileSize: content.length
+    });
+
+  } catch (error) {
+    console.error('Error exporting chapter as TXT:', error);
+    res.status(500).json({ error: 'Failed to export chapter' });
+  }
+});
+
 // 导出为EPUB格式
 router.post('/epub/:novelId', async (req, res) => {
   try {
@@ -193,22 +265,21 @@ router.get('/download/:filename', async (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(EXPORT_DIR, filename);
 
-    // 检查文件是否存在
     if (!await fs.pathExists(filePath)) {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // 设置响应头
     const ext = path.extname(filename).toLowerCase();
     const mimeTypes = {
       '.txt': 'text/plain',
-      '.epub': 'application/epub+zip'
+      '.epub': 'application/epub+zip',
+      '.mdx': 'text/markdown',
+      '.zip': 'application/zip'
     };
 
     res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
 
-    // 发送文件
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
 
@@ -268,10 +339,200 @@ router.get('/history/:novelId', async (req, res) => {
   }
 });
 
+// 导出为MDX格式（用于博客发布）
+router.post('/mdx/:novelId', async (req, res) => {
+  try {
+    const { novelId } = req.params;
+    const {
+      chapterIds,
+      author = 'AI Novel Assistant',
+      category = 'novel',
+      tags = [],
+      series,
+      seoDescription,
+      coverImage
+    } = req.body;
+
+    const novel = await prisma.novel.findUnique({
+      where: { id: novelId },
+      include: {
+        chapters: {
+          where: chapterIds ? { id: { in: chapterIds } } : undefined,
+          orderBy: { chapterNumber: 'asc' }
+        }
+      }
+    });
+
+    if (!novel) {
+      return res.status(404).json({ error: 'Novel not found' });
+    }
+
+    const exportedFiles = [];
+
+    for (const chapter of novel.chapters) {
+      const slug = `${novel.title}-chapter-${chapter.chapterNumber}`
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-');
+
+      const wordCount = chapter.wordCount || 0;
+      const readingTime = Math.ceil(wordCount / 200);
+
+      const frontmatter = {
+        title: `${novel.title} - 第${chapter.chapterNumber}章: ${chapter.title}`,
+        author,
+        publishedAt: chapter.updatedAt.toISOString(),
+        category,
+        tags: [...tags, novel.genre || 'fiction', 'novel'],
+        series: series || novel.title,
+        chapterNumber: chapter.chapterNumber,
+        description: seoDescription || chapter.outline || `${novel.title}的第${chapter.chapterNumber}章`,
+        wordCount,
+        readingTime: `${readingTime} min read`,
+        draft: chapter.status !== 'published',
+        slug
+      };
+
+      if (coverImage) {
+        frontmatter.coverImage = coverImage;
+      }
+
+      if (novel.description) {
+        frontmatter.novelDescription = novel.description;
+      }
+
+      let mdxContent = '---\n';
+      for (const [key, value] of Object.entries(frontmatter)) {
+        if (Array.isArray(value)) {
+          mdxContent += `${key}:\n${value.map(v => `  - ${v}`).join('\n')}\n`;
+        } else if (typeof value === 'string' && value.includes('\n')) {
+          mdxContent += `${key}: |\n${value.split('\n').map(line => `  ${line}`).join('\n')}\n`;
+        } else {
+          mdxContent += `${key}: ${JSON.stringify(value)}\n`;
+        }
+      }
+      mdxContent += '---\n\n';
+
+      if (chapter.outline) {
+        mdxContent += `## 章节概要\n\n${chapter.outline}\n\n`;
+      }
+
+      mdxContent += `## 正文\n\n`;
+
+      if (chapter.content) {
+        const contentParagraphs = chapter.content
+          .split('\n\n')
+          .map(para => para.trim())
+          .filter(para => para.length > 0)
+          .join('\n\n');
+
+        mdxContent += contentParagraphs + '\n\n';
+      } else {
+        mdxContent += '*内容待完善*\n\n';
+      }
+
+      if (chapter.plotPoints) {
+        mdxContent += `---\n\n## 章节要点\n\n${chapter.plotPoints}\n\n`;
+      }
+
+      mdxContent += `---\n\n`;
+      mdxContent += `*本章节由 AI Novel Assistant 生成*\n`;
+      mdxContent += `*更新时间: ${chapter.updatedAt.toLocaleDateString('zh-CN')}*\n`;
+
+      const filename = `${slug}.mdx`;
+      const filePath = path.join(EXPORT_DIR, filename);
+
+      await fs.writeFile(filePath, mdxContent, 'utf8');
+
+      exportedFiles.push({
+        filename,
+        chapterNumber: chapter.chapterNumber,
+        title: chapter.title,
+        downloadUrl: `/api/export/download/${filename}`,
+        fileSize: mdxContent.length,
+        slug
+      });
+    }
+
+    res.json({
+      success: true,
+      novelTitle: novel.title,
+      exportedChapters: exportedFiles.length,
+      files: exportedFiles
+    });
+
+  } catch (error) {
+    console.error('Error exporting MDX:', error);
+    res.status(500).json({ error: 'Failed to export MDX' });
+  }
+});
+
+// 批量下载MDX文件为ZIP
+router.post('/mdx/:novelId/batch', async (req, res) => {
+  try {
+    const { novelId } = req.params;
+    const archiver = require('archiver');
+
+    const novel = await prisma.novel.findUnique({
+      where: { id: novelId },
+      include: {
+        chapters: {
+          orderBy: { chapterNumber: 'asc' }
+        }
+      }
+    });
+
+    if (!novel) {
+      return res.status(404).json({ error: 'Novel not found' });
+    }
+
+    const zipFilename = `${novel.title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_')}_mdx_${Date.now()}.zip`;
+    const zipPath = path.join(EXPORT_DIR, zipFilename);
+
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => {
+      res.json({
+        success: true,
+        filename: zipFilename,
+        downloadUrl: `/api/export/download/${zipFilename}`,
+        fileSize: archive.pointer()
+      });
+    });
+
+    archive.on('error', (err) => {
+      throw err;
+    });
+
+    archive.pipe(output);
+
+    for (const chapter of novel.chapters) {
+      const slug = `${novel.title}-chapter-${chapter.chapterNumber}`
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-');
+
+      const filename = `${slug}.mdx`;
+      const filePath = path.join(EXPORT_DIR, filename);
+
+      if (await fs.pathExists(filePath)) {
+        archive.file(filePath, { name: filename });
+      }
+    }
+
+    await archive.finalize();
+
+  } catch (error) {
+    console.error('Error creating MDX batch:', error);
+    res.status(500).json({ error: 'Failed to create batch export' });
+  }
+});
+
 // 清理旧的导出文件
 router.delete('/cleanup', async (req, res) => {
   try {
-    const { olderThan } = req.query; // 天数，默认30天
+    const { olderThan } = req.query;
     const days = parseInt(olderThan) || 30;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
@@ -282,7 +543,7 @@ router.delete('/cleanup', async (req, res) => {
     for (const file of files) {
       const filePath = path.join(EXPORT_DIR, file);
       const stats = await fs.stat(filePath);
-      
+
       if (stats.birthtime < cutoffDate) {
         await fs.remove(filePath);
         deletedCount++;

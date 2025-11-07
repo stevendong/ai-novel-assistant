@@ -23,6 +23,12 @@
       <a-card v-if="projectStore.currentProject" class="mb-6" :title="$t('project.currentProject')">
         <template #extra>
           <a-space>
+            <a-button size="small" @click="showExportModal = true">
+              <template #icon>
+                <ExportOutlined />
+              </template>
+              {{ $t('common.export') }}
+            </a-button>
             <a-button size="small" @click="openEditProject">
               <template #icon>
                 <EditOutlined />
@@ -250,6 +256,15 @@
       @success="handleImportSuccess"
     />
 
+    <!-- Export Modal -->
+    <ExportModal
+      v-model:visible="showExportModal"
+      :novel-id="projectStore.currentProject?.id || ''"
+      :chapters="currentProjectChapters"
+      :novel="projectStore.currentProject || undefined"
+      @success="handleExportSuccess"
+    />
+
     <!-- Edit Project Modal -->
     <a-modal
       v-model:open="showEditProjectModal"
@@ -323,6 +338,7 @@ import type { FormInstance } from 'ant-design-vue'
 import {
   PlusOutlined,
   ImportOutlined,
+  ExportOutlined,
   EditOutlined,
   DeleteOutlined,
   BookOutlined,
@@ -336,6 +352,7 @@ import { useProjectStore } from '@/stores/project'
 import { useAuthStore } from '@/stores/auth'
 import { getNovelStatusText, getNovelStatusColor } from '@/constants/status'
 import ImportModal from '@/components/ImportModal.vue'
+import ExportModal from '@/components/novel/ExportModal.vue'
 
 const { t } = useI18n()
 
@@ -350,6 +367,7 @@ const loading = ref(false)
 const showNewProjectModal = ref(false)
 const showEditProjectModal = ref(false)
 const showImportModal = ref(false)
+const showExportModal = ref(false)
 const showAllRecent = ref(false)
 const newFormRef = ref<FormInstance>()
 const editFormRef = ref<FormInstance>()
@@ -371,6 +389,7 @@ const editProject = ref({
 // 计算属性
 const chaptersCount = computed(() => projectStore.currentProject?._count?.chapters || 0)
 const charactersCount = computed(() => projectStore.currentProject?._count?.characters || 0)
+const currentProjectChapters = computed(() => projectStore.currentProject?.chapters || [])
 const totalProjects = computed(() => projectStats.value?.projects.total || 0)
 const inProgressProjects = computed(() => projectStats.value?.projects.writing || 0)
 const completedProjects = computed(() => projectStats.value?.projects.completed || 0)
@@ -500,7 +519,15 @@ const handleImportSuccess = async (data: any) => {
     }
     await loadData()
   } catch (error) {
-    console.error('Failed to handle import success:', error)
+    console.error('Failed to handle import:', error)
+  }
+}
+
+const handleExportSuccess = async () => {
+  try {
+    message.success(t('export.success'))
+  } catch (error) {
+    console.error('Failed to handle export success:', error)
   }
 }
 

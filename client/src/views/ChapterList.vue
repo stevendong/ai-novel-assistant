@@ -126,16 +126,6 @@
                 <a-button
                   type="text"
                   size="small"
-                  @click="editChapterInfo(record)"
-                >
-                  <template #icon>
-                    <EditOutlined />
-                  </template>
-                  {{ t('chapter.list.actions.editInfo') }}
-                </a-button>
-                <a-button
-                  type="text"
-                  size="small"
                   @click="duplicateChapter(record)"
                 >
                   <template #icon>
@@ -143,23 +133,30 @@
                   </template>
                   {{ t('common.duplicate') }}
                 </a-button>
-                <a-popconfirm
-                  :title="t('chapter.deleteConfirm')"
-                  :ok-text="t('common.confirm')"
-                  :cancel-text="t('common.cancel')"
-                  @confirm="deleteChapterConfirm(record.id)"
-                >
-                  <a-button
-                    type="text"
-                    size="small"
-                    danger
-                  >
+                <a-dropdown>
+                  <a-button type="text" size="small">
                     <template #icon>
-                      <DeleteOutlined />
+                      <MoreOutlined />
                     </template>
-                    {{ t('common.delete') }}
                   </a-button>
-                </a-popconfirm>
+                  <template #overlay>
+                    <a-menu>
+                      <a-menu-item @click="editChapterInfo(record)">
+                        <EditOutlined />
+                        <span style="margin-left: 8px;">{{ t('chapter.list.actions.editInfo') }}</span>
+                      </a-menu-item>
+                      <a-menu-item @click="openExportModal(record)">
+                        <DownloadOutlined />
+                        <span style="margin-left: 8px;">{{ t('export.export') }}</span>
+                      </a-menu-item>
+                      <a-menu-divider />
+                      <a-menu-item @click="showDeleteConfirm(record.id)" danger>
+                        <DeleteOutlined />
+                        <span style="margin-left: 8px;">{{ t('common.delete') }}</span>
+                      </a-menu-item>
+                    </a-menu>
+                  </template>
+                </a-dropdown>
               </a-space>
             </template>
           </template>
@@ -323,13 +320,24 @@
         @success="handleBatchCreatorSuccess"
       />
     </a-modal>
+
+    <!-- Export Modal -->
+    <ExportModal
+      v-if="projectStore.currentProject"
+      v-model:visible="exportModalVisible"
+      :novel-id="projectStore.currentProject.id"
+      :chapters="chapters"
+      :novel="projectStore.currentProject"
+      :default-chapter-id="exportChapterId"
+      @success="handleExportSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import {
   FileTextOutlined,
   PlusOutlined,
@@ -337,7 +345,9 @@ import {
   DeleteOutlined,
   CopyOutlined,
   DownOutlined,
-  BulbOutlined
+  BulbOutlined,
+  DownloadOutlined,
+  MoreOutlined
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 import { useChapterList } from '@/composables/useChapterList'
@@ -345,6 +355,7 @@ import { useProjectStore } from '@/stores/project'
 import { countValidWords } from '@/utils/textUtils'
 import BatchChapterCreator from '@/components/chapter/BatchChapterCreator.vue'
 import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
+import ExportModal from '@/components/novel/ExportModal.vue'
 import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
@@ -369,6 +380,8 @@ const {
 const addChapterVisible = ref(false)
 const editChapterVisible = ref(false)
 const batchChapterVisible = ref(false)
+const exportModalVisible = ref(false)
+const exportChapterId = ref<string | undefined>(undefined)
 const addChapterForm = ref({
   title: '',
   outline: '',
@@ -566,6 +579,30 @@ const deleteChapterConfirm = async (chapterId: string) => {
   if (success) {
     message.success(t('message.deleteSuccess'))
   }
+}
+
+const showDeleteConfirm = (chapterId: string) => {
+  Modal.confirm({
+    title: t('chapter.deleteConfirm'),
+    icon: null,
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
+    okType: 'danger',
+    onOk: async () => {
+      await deleteChapterConfirm(chapterId)
+    }
+  })
+}
+
+// 打开导出对话框
+const openExportModal = (chapter: Chapter) => {
+  exportChapterId.value = chapter.id
+  exportModalVisible.value = true
+}
+
+// 导出成功回调
+const handleExportSuccess = () => {
+  exportChapterId.value = undefined
 }
 
 // 工具方法

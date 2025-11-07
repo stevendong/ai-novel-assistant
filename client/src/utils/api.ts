@@ -76,31 +76,41 @@ class ApiClient {
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true
 
-          try {
-            const refreshToken = localStorage.getItem('refreshToken')
-            if (refreshToken) {
-              const response = await this.refreshToken(refreshToken)
-              if (response.data.session?.sessionToken) {
-                localStorage.setItem('sessionToken', response.data.session.sessionToken)
-                localStorage.setItem('refreshToken', response.data.session.refreshToken)
-                localStorage.setItem('user', JSON.stringify(response.data.user))
+          const refreshToken = localStorage.getItem('refreshToken')
 
-                // 重新发送原始请求
-                originalRequest.headers = originalRequest.headers || {}
-                originalRequest.headers.Authorization = `Bearer ${response.data.session.sessionToken}`
-                return this.axiosInstance(originalRequest)
-              }
-            }
-          } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError)
-            // 刷新失败，清除认证信息并触发登出
+          if (!refreshToken) {
+            console.log('[API] No refresh token available, clearing auth')
             this.handleAuthFailure()
             return Promise.reject(error)
           }
 
-          // 如果没有refresh token或刷新失败，清除认证并触发登出
-          this.handleAuthFailure()
-          return Promise.reject(error)
+          try {
+            const response = await this.refreshToken(refreshToken)
+
+            if (response.data.session?.sessionToken) {
+              console.log('[API] Token refresh successful')
+              localStorage.setItem('sessionToken', response.data.session.sessionToken)
+              localStorage.setItem('refreshToken', response.data.session.refreshToken)
+              localStorage.setItem('user', JSON.stringify(response.data.user))
+
+              originalRequest.headers = originalRequest.headers || {}
+              originalRequest.headers.Authorization = `Bearer ${response.data.session.sessionToken}`
+              return this.axiosInstance(originalRequest)
+            } else {
+              console.error('[API] Token refresh response invalid')
+              this.handleAuthFailure()
+              return Promise.reject(error)
+            }
+          } catch (refreshError: any) {
+            console.error('[API] Token refresh failed:', refreshError?.response?.data || refreshError.message)
+
+            if (refreshError.response?.status === 401) {
+              console.log('[API] Refresh token is invalid or expired')
+            }
+
+            this.handleAuthFailure()
+            return Promise.reject(error)
+          }
         }
 
         // 统一错误处理（跳过 AbortError）
@@ -115,7 +125,10 @@ class ApiClient {
 
   // 刷新token
   private async refreshToken(refreshToken: string) {
-    return this.axiosInstance.post('/api/auth/refresh', { refreshToken }, { skipAuth: true } as RequestConfig)
+    return this.axiosInstance.post('/api/auth/refresh', { refreshToken }, {
+      skipAuth: true,
+      skipErrorHandler: true
+    } as RequestConfig)
   }
 
   // 清除认证信息
@@ -135,16 +148,22 @@ class ApiClient {
 
     // 发送自定义事件，通知应用层认证失败
     window.dispatchEvent(new CustomEvent('auth:unauthorized', {
-      detail: { message: '登录已过期，请重新登录' }
+      detail: { message: '登录会话已过期，请重新登录' }
     }))
 
     // 保存当前路径用于登录后重定向
     const currentPath = window.location.pathname + window.location.search
     const redirectPath = currentPath !== '/login' ? currentPath : '/'
 
+    // 检查是否已经在登录页，避免重复跳转
+    if (window.location.pathname === '/login') {
+      console.log('[API] Already on login page, skipping redirect')
+      return
+    }
+
     // 延迟跳转，确保事件已被处理
     setTimeout(() => {
-      // 跳转到登录页，携带重定向参数
+      console.log('[API] Redirecting to login page')
       window.location.href = `/login?redirect=${encodeURIComponent(redirectPath)}`
     }, 100)
   }

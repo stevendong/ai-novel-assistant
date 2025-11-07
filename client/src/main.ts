@@ -10,7 +10,14 @@ import 'ant-design-vue/dist/reset.css'
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
+import { TokenValidator } from './utils/tokenValidator'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
+
+TokenValidator.clearInvalidTokens()
+
+if (import.meta.env.DEV) {
+  TokenValidator.logTokenStatus()
+}
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -57,6 +64,10 @@ watch(
 )
 
 updateDocumentTitle()
+
+window.addEventListener('auth:unauthorized', ((event: CustomEvent) => {
+  console.log('[Auth] Unauthorized event received:', event.detail.message)
+}) as EventListener)
 
 // 过滤 Cloudflare Turnstile 内部请求的错误日志
 window.addEventListener('unhandledrejection', (event) => {
