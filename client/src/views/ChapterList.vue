@@ -91,11 +91,6 @@
                 <a-tag :color="getStatusColor(record.status)">
                   {{ getStatusText(record.status) }}
                 </a-tag>
-                <consistency-indicator
-                  :chapter-id="record.id"
-                  size="small"
-                  class="ml-2"
-                />
               </div>
             </template>
 
@@ -354,7 +349,6 @@ import { useChapterList } from '@/composables/useChapterList'
 import { useProjectStore } from '@/stores/project'
 import { countValidWords } from '@/utils/textUtils'
 import BatchChapterCreator from '@/components/chapter/BatchChapterCreator.vue'
-import ConsistencyIndicator from '@/components/consistency/ConsistencyIndicator.vue'
 import ExportModal from '@/components/novel/ExportModal.vue'
 import { useI18n } from 'vue-i18n'
 
