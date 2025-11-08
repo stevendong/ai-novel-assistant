@@ -2,41 +2,45 @@
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-builder
 
-WORKDIR /app/client
+WORKDIR /app
+
+# Copy workspace configuration and lock file
+COPY package*.json ./
 
 # Copy client package files
-COPY client/package*.json ./
+COPY client/package*.json ./client/
 
-# Install ALL dependencies (including devDependencies for build)
+# Install ALL workspace dependencies (including devDependencies for build)
 RUN npm ci
 
 # Copy client source
-COPY client/ ./
+COPY client/ ./client/
 
 # Build frontend
+WORKDIR /app/client
 RUN npm run build-only
 
 # Stage 2: Setup backend
 FROM node:20-alpine AS backend-builder
 
-WORKDIR /app/server
+WORKDIR /app
+
+# Copy workspace configuration and lock file
+COPY package*.json ./
 
 # Copy server package files
-COPY server/package*.json ./
+COPY server/package*.json ./server/
 
-# Install dependencies including prisma
+# Install workspace dependencies including prisma
 # Note: We need all deps initially to generate Prisma client
-# Using npm install instead of npm ci due to mem0ai's optional peer dependencies
-RUN npm install --legacy-peer-deps
+RUN npm ci
 
 # Copy server source and prisma schema
-COPY server/ ./
+COPY server/ ./server/
 
 # Generate Prisma Client
+WORKDIR /app/server
 RUN npx prisma generate
-
-# Clean up dev dependencies for smaller image
-RUN npm prune --production
 
 # Stage 3: Production image
 FROM node:20-alpine
