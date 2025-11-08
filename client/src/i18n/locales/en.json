@@ -1263,7 +1263,8 @@
     "export": "Export & Publish",
     "inviteManagement": "Invite Code Management",
     "adminDashboard": "Admin Dashboard",
-    "userManagement": "User Management"
+    "userManagement": "User Management",
+    "aiLogs": "AI Call Logs"
   },
   "settings": {
     "title": "Settings",
@@ -2595,5 +2596,106 @@
     "updateFailed": "Update failed",
     "networkError": "Network error, please check connection",
     "serverError": "Server error, please try again later"
+  },
+  "aiLogs": {
+    "title": "AI Call Logs",
+    "tabs": {
+      "logs": "Call Logs",
+      "stats": "Statistics",
+      "analytics": "Performance Analytics"
+    },
+    "table": {
+      "provider": "Provider",
+      "model": "Model",
+      "endpoint": "Endpoint",
+      "apiUrl": "API URL",
+      "taskType": "Task Type",
+      "tokens": "Tokens",
+      "promptTokens": "Prompt Tokens",
+      "completionTokens": "Completion Tokens",
+      "totalTokens": "Total Tokens",
+      "latency": "Latency",
+      "cost": "Cost",
+      "status": "Status",
+      "createdAt": "Created At",
+      "novel": "Novel",
+      "actions": "Actions",
+      "viewDetail": "View Detail"
+    },
+    "filter": {
+      "title": "Filters",
+      "provider": "Provider",
+      "model": "Model",
+      "taskType": "Task Type",
+      "status": "Status",
+      "apiUrl": "API URL",
+      "novel": "Novel",
+      "dateRange": "Date Range",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "all": "All"
+    },
+    "stats": {
+      "summary": "Summary",
+      "totalCalls": "Total Calls",
+      "successfulCalls": "Successful Calls",
+      "failedCalls": "Failed Calls",
+      "successRate": "Success Rate",
+      "totalTokens": "Total Tokens",
+      "totalCost": "Total Cost",
+      "avgLatency": "Avg Latency",
+      "costPerCall": "Cost Per Call",
+      "costPer1kTokens": "Cost Per 1K Tokens",
+      "mostUsedModel": "Most Used Model",
+      "byProvider": "By Provider",
+      "byEndpoint": "By Endpoint",
+      "byTask": "By Task",
+      "costTrend": "Cost Trend",
+      "performance": "Performance Metrics"
+    },
+    "performance": {
+      "title": "Performance Metrics",
+      "errorRate": "Error Rate",
+      "errorCount": "Error Count",
+      "p50Latency": "P50 Latency",
+      "p95Latency": "P95 Latency",
+      "p99Latency": "P99 Latency"
+    },
+    "detail": {
+      "title": "Call Detail",
+      "basicInfo": "Basic Info",
+      "request": "Request Info",
+      "response": "Response Info",
+      "metadata": "Metadata",
+      "requestMessages": "Request Messages",
+      "requestParams": "Request Parameters",
+      "responseContent": "Response Content",
+      "responseMetadata": "Response Metadata",
+      "errorMessage": "Error Message",
+      "errorCode": "Error Code",
+      "retryCount": "Retry Count",
+      "sessionId": "Session ID",
+      "conversationId": "Conversation ID",
+      "userAgent": "User Agent",
+      "ipAddress": "IP Address"
+    },
+    "status": {
+      "success": "Success",
+      "error": "Error",
+      "pending": "Pending"
+    },
+    "messages": {
+      "loadFailed": "Failed to load logs",
+      "loadStatsFailed": "Failed to load statistics",
+      "noData": "No data available",
+      "refreshSuccess": "Refreshed successfully"
+    }
+  },
+  "taskTypes": {
+    "creative": "Creative Content",
+    "outline": "Outline Generation",
+    "consistency": "Consistency Check",
+    "enhancement": "Content Enhancement",
+    "chat": "Chat Consultation"
   }
 }

@@ -12,6 +12,7 @@ import ChapterList from '@/views/ChapterList.vue'
 import ProgressStats from '@/components/novel/ProgressStats.vue'
 import FileManagement from '@/components/file/FileManagement.vue'
 import GitHubCallback from '@/views/auth/GitHubCallback.vue'
+import AILogsViewer from '@/components/ai-logs/AILogsViewer.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -123,6 +124,17 @@ const router = createRouter({
             title: '文件管理',
             icon: 'FolderOutlined',
             titleKey: 'nav.files'
+          }
+        },
+        {
+          path: '/ai-logs',
+          name: 'aiLogs',
+          component: AILogsViewer,
+          meta: {
+            title: 'AI调用日志',
+            icon: 'HistoryOutlined',
+            titleKey: 'nav.aiLogs',
+            requiresAdmin: true
           }
         },
         {

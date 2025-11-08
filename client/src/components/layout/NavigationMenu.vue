@@ -28,6 +28,7 @@ import {
   FileTextOutlined,
   BarChartOutlined,
   FolderOutlined,
+  HistoryOutlined,
   GiftOutlined,
   SettingOutlined,
   UserOutlined
@@ -50,6 +51,7 @@ const iconMap = {
   FileTextOutlined,
   BarChartOutlined,
   FolderOutlined,
+  HistoryOutlined,
   GiftOutlined,
   SettingOutlined,
   UserOutlined
@@ -103,6 +105,13 @@ const baseRoutes = [
 
 // 管理员专用路由
 const adminRoutes = [
+  {
+    name: 'aiLogs',
+    meta: {
+      title: 'AI调用日志',
+      icon: 'HistoryOutlined'
+    }
+  },
   {
     name: 'adminDashboard',
     meta: {

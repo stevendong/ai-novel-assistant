@@ -36,6 +36,8 @@ model User {
   aiPreferences    UserAIPreferences?
   sessions         UserSession[]
   socialAccounts   SocialAccount[]
+  aiCallLogs       AICallLog[]
+  aiUsageStats     AIUsageStats[]
 }
 
 model Novel {
@@ -61,6 +63,8 @@ model Novel {
   workflows        WorkflowConfig[]
   settings         WorldSetting[]
   goals            WritingGoal[]
+  aiCallLogs       AICallLog[]
+  aiUsageStats     AIUsageStats[]
 
   @@index([userId])
 }
@@ -473,4 +477,81 @@ model SocialAccount {
   @@unique([provider, providerId])
   @@index([userId])
   @@index([provider, providerEmail])
+}
+
+model AICallLog {
+  id               String   @id @default(cuid())
+  userId           String
+  novelId          String?
+
+  provider         String
+  model            String
+  endpoint         String
+  apiUrl           String?
+  taskType         String?
+  requestMessages  String   @db.Text
+  requestParams    String?
+
+  responseContent  String?  @db.Text
+  responseMetadata String?
+
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  latencyMs        Int?
+
+  estimatedCost    Float?   @default(0)
+  currency         String   @default("USD")
+
+  status           String   @default("success")
+  errorMessage     String?
+  errorCode        String?
+  retryCount       Int      @default(0)
+
+  userAgent        String?
+  ipAddress        String?
+  sessionId        String?
+  conversationId   String?
+
+  createdAt        DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  novel            Novel?   @relation(fields: [novelId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([novelId])
+  @@index([provider])
+  @@index([taskType])
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([apiUrl])
+}
+
+model AIUsageStats {
+  id               String   @id @default(cuid())
+  userId           String
+  novelId          String?
+  provider         String
+  model            String
+  date             DateTime
+
+  totalCalls       Int      @default(0)
+  successfulCalls  Int      @default(0)
+  failedCalls      Int      @default(0)
+  totalTokens      Int      @default(0)
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalCost        Float    @default(0)
+  avgLatencyMs     Float?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  novel            Novel?   @relation(fields: [novelId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, provider, model, date, novelId])
+  @@index([userId])
+  @@index([novelId])
+  @@index([date])
+  @@index([provider])
 }

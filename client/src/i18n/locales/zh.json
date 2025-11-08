@@ -1263,7 +1263,8 @@
     "export": "导出发布",
     "inviteManagement": "邀请码管理",
     "adminDashboard": "管理面板",
-    "userManagement": "用户管理"
+    "userManagement": "用户管理",
+    "aiLogs": "AI调用日志"
   },
   "settings": {
     "title": "设置",
@@ -2595,5 +2596,106 @@
     "updateFailed": "更新失败",
     "networkError": "网络错误，请检查连接",
     "serverError": "服务器错误，请稍后重试"
+  },
+  "aiLogs": {
+    "title": "AI调用日志",
+    "tabs": {
+      "logs": "调用日志",
+      "stats": "统计数据",
+      "analytics": "性能分析"
+    },
+    "table": {
+      "provider": "提供商",
+      "model": "模型",
+      "endpoint": "端点",
+      "apiUrl": "API地址",
+      "taskType": "任务类型",
+      "tokens": "Token数",
+      "promptTokens": "输入Token",
+      "completionTokens": "输出Token",
+      "totalTokens": "总Token数",
+      "latency": "延迟",
+      "cost": "成本",
+      "status": "状态",
+      "createdAt": "创建时间",
+      "novel": "作品",
+      "actions": "操作",
+      "viewDetail": "查看详情"
+    },
+    "filter": {
+      "title": "筛选条件",
+      "provider": "提供商",
+      "model": "模型",
+      "taskType": "任务类型",
+      "status": "状态",
+      "apiUrl": "API地址",
+      "novel": "作品",
+      "dateRange": "日期范围",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "all": "全部"
+    },
+    "stats": {
+      "summary": "统计摘要",
+      "totalCalls": "总调用次数",
+      "successfulCalls": "成功次数",
+      "failedCalls": "失败次数",
+      "successRate": "成功率",
+      "totalTokens": "总Token数",
+      "totalCost": "总成本",
+      "avgLatency": "平均延迟",
+      "costPerCall": "每次调用成本",
+      "costPer1kTokens": "每千Token成本",
+      "mostUsedModel": "最常用模型",
+      "byProvider": "按提供商统计",
+      "byEndpoint": "按端点统计",
+      "byTask": "按任务统计",
+      "costTrend": "成本趋势",
+      "performance": "性能指标"
+    },
+    "performance": {
+      "title": "性能指标",
+      "errorRate": "错误率",
+      "errorCount": "错误次数",
+      "p50Latency": "P50延迟",
+      "p95Latency": "P95延迟",
+      "p99Latency": "P99延迟"
+    },
+    "detail": {
+      "title": "调用详情",
+      "basicInfo": "基本信息",
+      "request": "请求信息",
+      "response": "响应信息",
+      "metadata": "元数据",
+      "requestMessages": "请求消息",
+      "requestParams": "请求参数",
+      "responseContent": "响应内容",
+      "responseMetadata": "响应元数据",
+      "errorMessage": "错误信息",
+      "errorCode": "错误代码",
+      "retryCount": "重试次数",
+      "sessionId": "会话ID",
+      "conversationId": "对话ID",
+      "userAgent": "用户代理",
+      "ipAddress": "IP地址"
+    },
+    "status": {
+      "success": "成功",
+      "error": "失败",
+      "pending": "处理中"
+    },
+    "messages": {
+      "loadFailed": "加载日志失败",
+      "loadStatsFailed": "加载统计数据失败",
+      "noData": "暂无数据",
+      "refreshSuccess": "刷新成功"
+    }
+  },
+  "taskTypes": {
+    "creative": "创作内容",
+    "outline": "大纲生成",
+    "consistency": "一致性检查",
+    "enhancement": "内容增强",
+    "chat": "对话咨询"
   }
 }

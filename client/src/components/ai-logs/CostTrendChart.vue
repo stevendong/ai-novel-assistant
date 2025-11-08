@@ -1,0 +1,144 @@
+<template>
+  <a-card title="成本趋势" :loading="loading" :bordered="false">
+    <template #extra>
+      <a-radio-group v-model:value="period" button-style="solid" size="small" @change="handlePeriodChange">
+        <a-radio-button value="day">日</a-radio-button>
+        <a-radio-button value="week">周</a-radio-button>
+        <a-radio-button value="month">月</a-radio-button>
+      </a-radio-group>
+    </template>
+    <div ref="chartRef" class="chart-container"></div>
+    <div v-if="!data || !data.trends || data.trends.length === 0" class="empty-state">
+      <a-empty description="暂无数据" />
+    </div>
+  </a-card>
+</template>
+
+<script setup>
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+import * as echarts from 'echarts';
+
+const props = defineProps({
+  data: {
+    type: Object,
+    required: true
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['period-change']);
+
+const chartRef = ref(null);
+const period = ref('month');
+let chartInstance = null;
+
+onMounted(() => {
+  initChart();
+  window.addEventListener('resize', handleResize);
+});
+
+onUnmounted(() => {
+  if (chartInstance) {
+    chartInstance.dispose();
+  }
+  window.removeEventListener('resize', handleResize);
+});
+
+watch(() => props.data, () => {
+  updateChart();
+}, { deep: true });
+
+function initChart() {
+  if (!chartRef.value) return;
+  chartInstance = echarts.init(chartRef.value);
+  updateChart();
+}
+
+function updateChart() {
+  if (!chartInstance || !props.data || !props.data.trends || props.data.trends.length === 0) return;
+
+  const dates = props.data.trends.map(item => item.date);
+  const costs = props.data.trends.map(item => item.cost);
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params) => {
+        const param = params[0];
+        return `${param.name}<br/>成本: $${param.value.toFixed(4)}`;
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: dates,
+      boundaryGap: false,
+      axisLabel: {
+        rotate: 30,
+        fontSize: 11
+      }
+    },
+    yAxis: {
+      type: 'value',
+      name: '成本 ($)',
+      axisLabel: {
+        formatter: '${value}'
+      }
+    },
+    series: [
+      {
+        name: '成本',
+        type: 'line',
+        data: costs,
+        smooth: true,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(255, 77, 79, 0.3)' },
+            { offset: 1, color: 'rgba(255, 77, 79, 0.05)' }
+          ])
+        },
+        itemStyle: {
+          color: '#ff4d4f'
+        },
+        lineStyle: {
+          width: 3
+        }
+      }
+    ]
+  };
+
+  chartInstance.setOption(option);
+}
+
+function handleResize() {
+  if (chartInstance) {
+    chartInstance.resize();
+  }
+}
+
+function handlePeriodChange() {
+  emit('period-change', period.value);
+}
+</script>
+
+<style scoped>
+.chart-container {
+  width: 100%;
+  height: 400px;
+}
+
+.empty-state {
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
