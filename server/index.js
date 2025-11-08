@@ -33,6 +33,7 @@ const batchChapterRoutes = require('./routes/batchChapters');
 const aiRoutes = require('./routes/ai');
 const aiProviderRoutes = require('./routes/ai-providers');
 const aiConfigRoutes = require('./routes/ai-config');
+const aiLogsRoutes = require('./routes/ai-logs');
 const exportRoutes = require('./routes/export');
 const statisticsRoutes = require('./routes/statistics');
 const goalsRoutes = require('./routes/goals');
@@ -101,6 +102,10 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // ========== 日志中间件 ==========
 app.use(logger.createRequestLogger());
 
+// AI请求URL记录中间件
+const { attachRequestUrl } = require('./middleware/aiLogging');
+app.use(attachRequestUrl);
+
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -117,6 +122,7 @@ app.use('/api/auth/social', authLimiter, socialAuthRoutes);
 app.use('/api/ai', aiLimiter, aiRoutes);
 app.use('/api/ai', aiLimiter, aiProviderRoutes);
 app.use('/api/ai', aiLimiter, aiConfigRoutes);
+app.use('/api/ai-logs', apiLimiter, aiLogsRoutes);
 
 // 文件上传路由 - 上传限制
 app.use('/api/upload', uploadLimiter, uploadRoutes);

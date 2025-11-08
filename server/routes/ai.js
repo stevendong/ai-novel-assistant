@@ -45,7 +45,8 @@ router.post('/chat', requireAuth, async (req, res) => {
       temperature: undefined,
       userId: userId, // 传递用户ID用于记忆功能
       messageType: context?.messageType || 'general',
-      locale
+      locale,
+      requestUrl: req.aiRequestUrl || req.originalUrl // 传递请求URL用于日志
     });
 
     res.json(response);
@@ -105,7 +106,8 @@ router.post('/chat/stream', requireAuth, async (req, res) => {
         temperature: undefined,
         userId: req.user?.id,
         messageType: context?.messageType || type,
-        locale
+        locale,
+        requestUrl: req.aiRequestUrl || req.originalUrl // 传递请求URL用于日志
       });
 
       // 处理流式响应

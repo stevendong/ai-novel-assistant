@@ -13,6 +13,7 @@ const {
 } = require('../utils/aiHelpers');
 const logger = require('../utils/logger');
 const memoryService = require('./memoryService');
+const aiLoggingService = require('./aiLoggingService');
 
 const DEFAULT_LOCALE = 'zh';
 
@@ -653,7 +654,29 @@ class AIService {
         model: options.model
       });
 
-      // 4. 解析响应
+      // 4. 记录AI调用日志
+      if (options.userId) {
+        aiLoggingService.logAICall({
+          userId: options.userId,
+          novelId: novelContext?.id || null,
+          provider: options.provider || 'openai',
+          model: options.model || response.model,
+          endpoint: 'chat',
+          apiUrl: options.requestUrl || null,
+          taskType: type,
+          requestMessages: JSON.stringify(messages),
+          requestParams: JSON.stringify({ temperature: options.temperature, type }),
+          responseContent: response.content,
+          responseMetadata: JSON.stringify({ finishReason: response.finishReason }),
+          promptTokens: response.usage?.prompt_tokens || 0,
+          completionTokens: response.usage?.completion_tokens || 0,
+          totalTokens: response.usage?.total_tokens || 0,
+          latencyMs: Date.now() - startTime,
+          status: 'success'
+        }).catch(err => logger.error('Failed to log AI call:', err));
+      }
+
+      // 5. 解析响应
       const parsedResponse = this.parseResponse(response.content, type, novelContext, locale);
       const metadata = {
         ...parsedResponse.metadata,
