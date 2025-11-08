@@ -1,6 +1,11 @@
 const express = require('express');
 const aiService = require('../services/aiService');
-const { aiConfig } = require('../config/aiConfig');
+const {
+  aiConfig,
+  getAvailableModels,
+  getDefaultModelList,
+  isModelAvailable
+} = require('../config/aiConfig');
 const { requireAuth } = require('../middleware/auth');
 const prisma = require('../utils/prismaClient');
 const router = express.Router();
@@ -220,13 +225,19 @@ router.post('/models/list', requireAuth, async (req, res) => {
     if (aiService.providers.has(provider)) {
       const providerInfo = aiService.providers.get(provider);
 
-      if (providerInfo.type === 'openai') {
+      // 首先检查是否配置了可用模型列表
+      const configuredModels = getAvailableModels(provider);
+
+      if (configuredModels && configuredModels.length > 0) {
+        // 使用配置的模型列表
+        models = configuredModels;
+      } else if (providerInfo.type === 'openai') {
         // 对于 OpenAI 兼容的提供商，尝试从 API 获取模型列表
         try {
           const client = providerInfo.client;
           if (client && client.models) {
             const modelList = await client.models.list();
-            models = modelList.data
+            const apiModels = modelList.data
               .filter(m => m.id.includes('gpt') || m.id.includes('turbo') || m.id.includes('instruct'))
               .map(m => ({
                 id: m.id,
@@ -234,15 +245,24 @@ router.post('/models/list', requireAuth, async (req, res) => {
                 description: `Created: ${new Date(m.created * 1000).toLocaleDateString()}`,
                 owned_by: m.owned_by
               }));
+
+            // 如果配置了可用模型列表,过滤API返回的模型
+            const configuredModels = getAvailableModels(provider);
+            if (configuredModels && configuredModels.length > 0) {
+              const configuredIds = new Set(configuredModels.map(m => m.id));
+              models = apiModels.filter(m => configuredIds.has(m.id));
+            } else {
+              models = apiModels;
+            }
           }
         } catch (error) {
           console.warn('Failed to fetch models from API:', error.message);
-          // 如果 API 调用失败，返回预定义的模型列表
-          models = getDefaultModels(providerInfo.type);
+          // 如果 API 调用失败，使用配置的模型列表
+          models = getAvailableModels(provider);
         }
       } else {
-        // 对于非 OpenAI 的提供商，返回预定义的模型列表
-        models = getDefaultModels(providerInfo.type);
+        // 对于非 OpenAI 的提供商，使用配置的模型列表
+        models = configuredModels;
       }
     }
     // 如果是用户自定义提供商
@@ -329,31 +349,6 @@ router.post('/models/list', requireAuth, async (req, res) => {
   }
 });
 
-// 获取预定义的模型列表
-function getDefaultModels(type) {
-  const modelMaps = {
-    'openai': [
-      { id: 'gpt-4', name: 'GPT-4', description: 'Most capable model, best for complex tasks' },
-      { id: 'gpt-4-turbo-preview', name: 'GPT-4 Turbo', description: 'Latest GPT-4 model with improved performance' },
-      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Fast and efficient for most tasks' },
-      { id: 'gpt-3.5-turbo-16k', name: 'GPT-3.5 Turbo 16K', description: 'Extended context window' }
-    ],
-    'claude': [
-      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: 'Most capable Claude model' },
-      { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', description: 'Balanced performance and speed' },
-      { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', description: 'Fastest Claude model' },
-      { id: 'claude-2.1', name: 'Claude 2.1', description: 'Previous generation model' }
-    ],
-    'gemini': [
-      { id: 'gemini-pro', name: 'Gemini Pro', description: 'Best for text tasks' },
-      { id: 'gemini-pro-vision', name: 'Gemini Pro Vision', description: 'Supports images' },
-      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Latest model with extended context' },
-      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Faster responses' }
-    ]
-  };
-
-  return modelMaps[type] || [];
-}
 
 // 获取推荐的模型（基于任务类型）
 router.post('/recommend-model', (req, res) => {

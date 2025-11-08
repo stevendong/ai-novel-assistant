@@ -1,4 +1,59 @@
 /**
+ * 解析模型列表配置
+ * 支持逗号分隔或JSON数组格式
+ *
+ * 格式1: 简单列表 (逗号分隔)
+ * OPENAI_AVAILABLE_MODELS=gpt-4,gpt-3.5-turbo,gpt-4-turbo
+ *
+ * 格式2: JSON数组 (支持更多元数据)
+ * OPENAI_AVAILABLE_MODELS='[
+ *   {"id": "gpt-4", "name": "GPT-4", "description": "Most capable"},
+ *   {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo"}
+ * ]'
+ *
+ * @param {string} envValue - 环境变量值
+ * @returns {Array|null} 模型ID数组或模型对象数组,null表示使用默认列表
+ */
+function parseModelList(envValue) {
+  if (!envValue || envValue.trim() === '') {
+    return null; // null 表示使用默认列表
+  }
+
+  const trimmed = envValue.trim();
+
+  // 尝试解析JSON格式
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        // 验证格式并标准化
+        return parsed.map(item => {
+          if (typeof item === 'string') {
+            return { id: item };
+          } else if (item && typeof item === 'object' && item.id) {
+            return {
+              id: item.id,
+              name: item.name || item.id,
+              description: item.description || ''
+            };
+          }
+          return null;
+        }).filter(Boolean);
+      }
+    } catch (error) {
+      console.warn(`Failed to parse model list JSON: ${error.message}`);
+      return null;
+    }
+  }
+
+  // 解析逗号分隔格式
+  return trimmed.split(',')
+    .map(id => id.trim())
+    .filter(id => id.length > 0)
+    .map(id => ({ id }));
+}
+
+/**
  * 解析提供商特定headers配置
  * 从环境变量中读取JSON格式的headers配置
  *
@@ -71,6 +126,8 @@ const aiConfig = {
     baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
     embeddingModel: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-ada-002',
+    // 可用模型列表配置 (逗号分隔)
+    availableModels: parseModelList(process.env.OPENAI_AVAILABLE_MODELS),
     // 请求参数配置
     defaultParams: {
       temperature: parseFloat(process.env.OPENAI_TEMPERATURE) || 0.7,
@@ -113,6 +170,8 @@ const aiConfig = {
     apiKey: process.env.CLAUDE_API_KEY,
     baseURL: process.env.CLAUDE_BASE_URL || 'https://api.anthropic.com',
     model: process.env.CLAUDE_MODEL || 'claude-3-sonnet-20240229',
+    // 可用模型列表配置
+    availableModels: parseModelList(process.env.CLAUDE_AVAILABLE_MODELS),
     defaultParams: {
       maxTokens: parseInt(process.env.CLAUDE_MAX_TOKENS) || 2000,
       temperature: parseFloat(process.env.CLAUDE_TEMPERATURE) || 0.7
@@ -130,6 +189,8 @@ const aiConfig = {
     apiKey: process.env.GEMINI_API_KEY,
     baseURL: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta',
     model: process.env.GEMINI_MODEL || 'gemini-pro',
+    // 可用模型列表配置
+    availableModels: parseModelList(process.env.GEMINI_AVAILABLE_MODELS),
     defaultParams: {
       temperature: parseFloat(process.env.GEMINI_TEMPERATURE) || 0.7,
       maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS) || 2048,
@@ -315,6 +376,74 @@ function needsCustomHeaders(baseURL) {
   return Object.keys(getCustomHeaders(baseURL)).length > 0
 }
 
+/**
+ * 获取提供商的可用模型列表
+ * @param {string} provider - 提供商名称 (openai, claude, gemini)
+ * @returns {Array} 模型列表
+ */
+function getAvailableModels(provider) {
+  const providerConfig = aiConfig[provider];
+  if (!providerConfig) {
+    return [];
+  }
+
+  // 如果配置了自定义模型列表,返回配置的列表
+  if (providerConfig.availableModels && Array.isArray(providerConfig.availableModels)) {
+    return providerConfig.availableModels;
+  }
+
+  // 否则返回默认的完整模型列表
+  return getDefaultModelList(provider);
+}
+
+/**
+ * 获取默认的完整模型列表
+ * @param {string} provider - 提供商名称
+ * @returns {Array} 默认模型列表
+ */
+function getDefaultModelList(provider) {
+  const defaultModels = {
+    openai: [
+      { id: 'gpt-4', name: 'GPT-4', description: 'Most capable model, best for complex tasks' },
+      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: 'Latest GPT-4 Turbo model' },
+      { id: 'gpt-4-turbo-preview', name: 'GPT-4 Turbo Preview', description: 'Preview of GPT-4 Turbo' },
+      { id: 'gpt-4-0125-preview', name: 'GPT-4 0125 Preview', description: 'GPT-4 Turbo snapshot' },
+      { id: 'gpt-4-1106-preview', name: 'GPT-4 1106 Preview', description: 'GPT-4 Turbo preview' },
+      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: 'Fast and efficient for most tasks' },
+      { id: 'gpt-3.5-turbo-16k', name: 'GPT-3.5 Turbo 16K', description: 'Extended context window' },
+      { id: 'gpt-3.5-turbo-1106', name: 'GPT-3.5 Turbo 1106', description: 'Latest GPT-3.5 Turbo' }
+    ],
+    claude: [
+      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: 'Most capable Claude model' },
+      { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', description: 'Balanced performance and speed' },
+      { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', description: 'Fastest Claude model' },
+      { id: 'claude-2.1', name: 'Claude 2.1', description: 'Previous generation model' },
+      { id: 'claude-2.0', name: 'Claude 2.0', description: 'Legacy model' }
+    ],
+    gemini: [
+      { id: 'gemini-pro', name: 'Gemini Pro', description: 'Best for text tasks' },
+      { id: 'gemini-pro-vision', name: 'Gemini Pro Vision', description: 'Supports images' },
+      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Latest model with extended context' },
+      { id: 'gemini-1.5-pro-latest', name: 'Gemini 1.5 Pro Latest', description: 'Latest 1.5 Pro version' },
+      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Faster responses' },
+      { id: 'gemini-1.5-flash-latest', name: 'Gemini 1.5 Flash Latest', description: 'Latest Flash version' }
+    ]
+  };
+
+  return defaultModels[provider] || [];
+}
+
+/**
+ * 检查模型是否在可用列表中
+ * @param {string} provider - 提供商名称
+ * @param {string} modelId - 模型ID
+ * @returns {boolean}
+ */
+function isModelAvailable(provider, modelId) {
+  const availableModels = getAvailableModels(provider);
+  return availableModels.some(model => model.id === modelId);
+}
+
 module.exports = {
   aiConfig,
   validateConfig,
@@ -322,5 +451,8 @@ module.exports = {
   getRetryConfig,
   getCustomHeaders,
   needsCustomHeaders,
-  urlMatchesPattern
+  urlMatchesPattern,
+  getAvailableModels,
+  getDefaultModelList,
+  isModelAvailable
 }

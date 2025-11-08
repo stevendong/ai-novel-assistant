@@ -12,7 +12,7 @@ module.exports = {
 
   // 云服务配置
   cloud: {
-    apiKey: process.env.MEM0_API_KEY || 'm0-Mgu8F2creRXInwie1FrdW5JMZ7HUFhY0VxxO9l1l',
+    apiKey: process.env.MEM0_API_KEY || '',
     baseUrl: process.env.MEM0_BASE_URL || 'https://api.mem0.ai',
     timeout: parseInt(process.env.MEM0_TIMEOUT) || 5000,
     retries: parseInt(process.env.MEM0_RETRIES) || 3
