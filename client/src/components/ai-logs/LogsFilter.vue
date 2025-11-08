@@ -1,11 +1,11 @@
 <template>
   <div class="logs-filter">
-    <a-card title="筛选条件" :bordered="false" size="small">
+    <a-card :title="t('aiLogs.filter.title')" :bordered="false" size="small">
       <a-form layout="vertical" :model="localFilters">
-        <a-form-item label="提供商">
+        <a-form-item :label="t('aiLogs.filter.provider')">
           <a-select
             v-model:value="localFilters.provider"
-            placeholder="全部提供商"
+            :placeholder="t('aiLogs.filter.all')"
             allow-clear
             @change="handleChange"
           >
@@ -15,55 +15,55 @@
           </a-select>
         </a-form-item>
 
-        <a-form-item label="模型">
+        <a-form-item :label="t('aiLogs.filter.model')">
           <a-input
             v-model:value="localFilters.model"
-            placeholder="输入模型名称"
+            :placeholder="t('aiLogs.filter.model')"
             allow-clear
             @change="handleChange"
           />
         </a-form-item>
 
-        <a-form-item label="任务类型">
+        <a-form-item :label="t('aiLogs.filter.taskType')">
           <a-select
             v-model:value="localFilters.taskType"
-            placeholder="全部任务"
+            :placeholder="t('aiLogs.filter.all')"
             allow-clear
             @change="handleChange"
           >
-            <a-select-option value="creative">创作内容</a-select-option>
-            <a-select-option value="outline">大纲生成</a-select-option>
-            <a-select-option value="consistency">一致性检查</a-select-option>
-            <a-select-option value="enhancement">内容增强</a-select-option>
-            <a-select-option value="chat">对话咨询</a-select-option>
+            <a-select-option value="creative">{{ t('taskTypes.creative') }}</a-select-option>
+            <a-select-option value="outline">{{ t('taskTypes.outline') }}</a-select-option>
+            <a-select-option value="consistency">{{ t('taskTypes.consistency') }}</a-select-option>
+            <a-select-option value="enhancement">{{ t('taskTypes.enhancement') }}</a-select-option>
+            <a-select-option value="chat">{{ t('taskTypes.chat') }}</a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item label="状态">
+        <a-form-item :label="t('aiLogs.filter.status')">
           <a-select
             v-model:value="localFilters.status"
-            placeholder="全部状态"
+            :placeholder="t('aiLogs.filter.all')"
             allow-clear
             @change="handleChange"
           >
-            <a-select-option value="success">成功</a-select-option>
-            <a-select-option value="error">失败</a-select-option>
+            <a-select-option value="success">{{ t('aiLogs.status.success') }}</a-select-option>
+            <a-select-option value="error">{{ t('aiLogs.status.error') }}</a-select-option>
           </a-select>
         </a-form-item>
 
-        <a-form-item label="接口路径">
+        <a-form-item :label="t('aiLogs.filter.apiUrl')">
           <a-input
             v-model:value="localFilters.apiUrl"
-            placeholder="如: /api/ai/chat"
+            placeholder="/api/ai/chat"
             allow-clear
             @change="handleChange"
           />
         </a-form-item>
 
-        <a-form-item label="小说">
+        <a-form-item :label="t('aiLogs.filter.novel')">
           <a-select
             v-model:value="localFilters.novelId"
-            placeholder="全部小说"
+            :placeholder="t('aiLogs.filter.all')"
             allow-clear
             show-search
             :filter-option="filterNovelOption"
@@ -81,8 +81,8 @@
 
         <a-form-item>
           <a-space>
-            <a-button type="primary" @click="handleApply">应用</a-button>
-            <a-button @click="handleReset">重置</a-button>
+            <a-button type="primary" @click="handleApply">{{ t('common.apply') }}</a-button>
+            <a-button @click="handleReset">{{ t('common.reset') }}</a-button>
           </a-space>
         </a-form-item>
       </a-form>
@@ -92,7 +92,10 @@
 
 <script setup>
 import { ref, reactive, watch, onMounted } from 'vue';
-import axios from 'axios';
+import { useI18n } from 'vue-i18n';
+import { api } from '@/utils/api';
+
+const { t } = useI18n();
 
 const props = defineProps({
   filters: {
@@ -106,11 +109,9 @@ const emit = defineEmits(['update:filters', 'change']);
 const localFilters = reactive({ ...props.filters });
 const novels = ref([]);
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-
 onMounted(async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/novels`);
+    const response = await api.get('/api/novels');
     novels.value = response.data;
   } catch (error) {
     console.error('Failed to load novels:', error);
@@ -149,6 +150,16 @@ function filterNovelOption(input, option) {
   flex-shrink: 0;
 }
 
+.logs-filter :deep(.ant-card) {
+  background: var(--theme-bg-container, #fff);
+  transition: background-color 0.3s ease;
+}
+
+.logs-filter :deep(.ant-card-head-title) {
+  color: var(--theme-text, rgba(0, 0, 0, 0.85));
+  transition: color 0.3s ease;
+}
+
 .logs-filter :deep(.ant-card-body) {
   padding: 16px;
 }
@@ -159,5 +170,10 @@ function filterNovelOption(input, option) {
 
 .logs-filter :deep(.ant-form-item:last-child) {
   margin-bottom: 0;
+}
+
+.logs-filter :deep(.ant-form-item-label > label) {
+  color: var(--theme-text, rgba(0, 0, 0, 0.85));
+  transition: color 0.3s ease;
 }
 </style>

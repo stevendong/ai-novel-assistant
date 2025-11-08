@@ -35,15 +35,15 @@
         <template v-if="column.key === 'tokens'">
           <div class="tokens-cell">
             <div class="token-row">
-              <span class="token-label">提示:</span>
+              <span class="token-label">{{ t('aiLogs.table.promptTokens').slice(0, 2) }}:</span>
               <span class="token-value">{{ formatNumber(record.promptTokens) }}</span>
             </div>
             <div class="token-row">
-              <span class="token-label">完成:</span>
+              <span class="token-label">{{ t('aiLogs.table.completionTokens').slice(0, 2) }}:</span>
               <span class="token-value">{{ formatNumber(record.completionTokens) }}</span>
             </div>
             <div class="token-row total">
-              <span class="token-label">总计:</span>
+              <span class="token-label">{{ t('aiLogs.table.totalTokens').slice(0, 2) }}:</span>
               <span class="token-value">{{ formatNumber(record.totalTokens) }}</span>
             </div>
           </div>
@@ -63,7 +63,7 @@
 
         <template v-if="column.key === 'status'">
           <a-tag :color="record.status === 'success' ? 'success' : 'error'">
-            {{ record.status === 'success' ? '成功' : '失败' }}
+            {{ t(`aiLogs.status.${record.status}`) }}
           </a-tag>
         </template>
 
@@ -78,7 +78,7 @@
 
         <template v-if="column.key === 'action'">
           <a-button type="link" size="small" @click="handleDetail(record)">
-            详情
+            {{ t('aiLogs.table.viewDetail') }}
           </a-button>
         </template>
       </template>
@@ -88,6 +88,9 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
   data: {
@@ -106,67 +109,67 @@ const props = defineProps({
 
 const emit = defineEmits(['detail', 'page-change']);
 
-const columns = [
+const columns = computed(() => [
   {
-    title: '时间',
+    title: t('aiLogs.table.createdAt'),
     key: 'createdAt',
     width: 160,
     fixed: 'left'
   },
   {
-    title: '提供商',
+    title: t('aiLogs.table.provider'),
     key: 'provider',
     width: 100
   },
   {
-    title: '模型',
+    title: t('aiLogs.table.model'),
     key: 'model',
     width: 180
   },
   {
-    title: '接口路径',
+    title: t('aiLogs.table.apiUrl'),
     key: 'apiUrl',
     width: 200,
     ellipsis: true
   },
   {
-    title: '任务类型',
+    title: t('aiLogs.table.taskType'),
     key: 'taskType',
     width: 120
   },
   {
-    title: 'Token使用',
+    title: t('aiLogs.table.tokens'),
     key: 'tokens',
     width: 140
   },
   {
-    title: '延迟',
+    title: t('aiLogs.table.latency'),
     key: 'latency',
     width: 100
   },
   {
-    title: '成本',
+    title: t('aiLogs.table.cost'),
     key: 'cost',
     width: 100
   },
   {
-    title: '状态',
+    title: t('aiLogs.table.status'),
     key: 'status',
     width: 80
   },
   {
-    title: '小说',
+    title: t('aiLogs.table.novel'),
     key: 'novel',
     width: 150,
     ellipsis: true
   },
   {
-    title: '操作',
+    title: t('aiLogs.table.actions'),
     key: 'action',
     width: 80,
     fixed: 'right'
   }
-];
+]);
 
 const paginationConfig = computed(() => ({
   current: props.pagination.current,
@@ -174,7 +177,10 @@ const paginationConfig = computed(() => ({
   total: props.pagination.total,
   showSizeChanger: true,
   showQuickJumper: true,
-  showTotal: (total) => `共 ${total} 条记录`,
+  showTotal: (total) => {
+    const locale = t('locale');
+    return locale === 'zh' ? `共 ${total} 条记录` : `Total ${total} records`;
+  },
   pageSizeOptions: ['10', '20', '50', '100']
 }));
 
@@ -249,15 +255,18 @@ function handleDetail(record) {
 .model-name {
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   font-size: 12px;
+  color: var(--theme-text, #262626);
+  transition: color 0.3s ease;
 }
 
 .api-url {
   font-size: 12px;
   padding: 2px 6px;
-  background: #f5f5f5;
+  background: var(--theme-bg-elevated, #f5f5f5);
   border-radius: 3px;
   color: #1890ff;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .tokens-cell {
@@ -273,17 +282,20 @@ function handleDetail(record) {
 
 .token-row.total {
   font-weight: 600;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--theme-border, #f0f0f0);
   padding-top: 2px;
   margin-top: 2px;
+  transition: border-color 0.3s ease;
 }
 
 .token-label {
-  color: #8c8c8c;
+  color: var(--theme-text-secondary, #8c8c8c);
+  transition: color 0.3s ease;
 }
 
 .token-value {
-  color: #262626;
+  color: var(--theme-text, #262626);
+  transition: color 0.3s ease;
 }
 
 .latency-fast {
@@ -301,10 +313,13 @@ function handleDetail(record) {
 .cost-value {
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
   font-weight: 500;
+  color: var(--theme-text, #262626);
+  transition: color 0.3s ease;
 }
 
 .text-gray {
-  color: #8c8c8c;
+  color: var(--theme-text-secondary, #8c8c8c);
+  transition: color 0.3s ease;
 }
 
 :deep(.ant-table-cell) {

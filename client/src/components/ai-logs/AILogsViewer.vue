@@ -1,22 +1,22 @@
 <template>
   <div class="ai-logs-viewer">
     <div class="header">
-      <h1 class="title">AI调用日志</h1>
+      <h1 class="title">{{ t('aiLogs.title') }}</h1>
       <a-space>
         <a-range-picker
           v-model:value="dateRange"
-          :placeholder="['开始日期', '结束日期']"
+          :placeholder="[t('aiLogs.filter.startDate'), t('aiLogs.filter.endDate')]"
           @change="handleDateRangeChange"
         />
         <a-button type="primary" @click="refreshData">
           <template #icon><ReloadOutlined /></template>
-          刷新
+          {{ t('common.refresh') }}
         </a-button>
       </a-space>
     </div>
 
     <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
-      <a-tab-pane key="logs" tab="调用日志">
+      <a-tab-pane key="logs" :tab="t('aiLogs.tabs.logs')">
         <div class="logs-section">
           <LogsFilter v-model:filters="filters" @change="loadLogs" />
           <LogsTable
@@ -29,7 +29,7 @@
         </div>
       </a-tab-pane>
 
-      <a-tab-pane key="stats" tab="统计数据">
+      <a-tab-pane key="stats" :tab="t('aiLogs.tabs.stats')">
         <StatsOverview :stats="summaryStats" :loading="statsLoading" />
         <a-row :gutter="16" class="charts-row">
           <a-col :span="12">
@@ -46,7 +46,7 @@
         </a-row>
       </a-tab-pane>
 
-      <a-tab-pane key="analytics" tab="性能分析">
+      <a-tab-pane key="analytics" :tab="t('aiLogs.tabs.analytics')">
         <PerformanceMetrics :data="performanceData" :loading="statsLoading" />
       </a-tab-pane>
     </a-tabs>
@@ -59,7 +59,8 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { message } from 'ant-design-vue';
 import { ReloadOutlined } from '@ant-design/icons-vue';
-import axios from 'axios';
+import { useI18n } from 'vue-i18n';
+import { api } from '@/utils/api';
 import LogsFilter from './LogsFilter.vue';
 import LogsTable from './LogsTable.vue';
 import LogDetail from './LogDetail.vue';
@@ -68,6 +69,8 @@ import ProviderChart from './ProviderChart.vue';
 import EndpointChart from './EndpointChart.vue';
 import CostTrendChart from './CostTrendChart.vue';
 import PerformanceMetrics from './PerformanceMetrics.vue';
+
+const { t } = useI18n();
 
 const activeTab = ref('logs');
 const loading = ref(false);
@@ -103,8 +106,6 @@ onMounted(() => {
   loadLogs();
 });
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-
 async function loadLogs() {
   loading.value = true;
   try {
@@ -119,12 +120,12 @@ async function loadLogs() {
       params.endDate = dateRange.value[1].toISOString();
     }
 
-    const response = await axios.get(`${API_BASE_URL}/api/ai-logs`, { params });
+    const response = await api.get('/api/ai-logs', { params });
 
     logs.value = response.data.data;
     pagination.total = response.data.pagination.total;
   } catch (error) {
-    message.error('加载日志失败: ' + (error.response?.data?.error || error.message));
+    message.error(t('aiLogs.messages.loadFailed') + ': ' + (error.response?.data?.error || error.message));
   } finally {
     loading.value = false;
   }
@@ -140,11 +141,11 @@ async function loadStats() {
     }
 
     const [summary, providers, endpoints, costs, performance] = await Promise.all([
-      axios.get(`${API_BASE_URL}/api/ai-logs/stats/summary`, { params }),
-      axios.get(`${API_BASE_URL}/api/ai-logs/stats/by-provider`, { params }),
-      axios.get(`${API_BASE_URL}/api/ai-logs/stats/by-endpoint`, { params }),
-      axios.get(`${API_BASE_URL}/api/ai-logs/stats/costs`, { params: { period: 'month' } }),
-      axios.get(`${API_BASE_URL}/api/ai-logs/stats/performance`, { params })
+      api.get('/api/ai-logs/stats/summary', { params }),
+      api.get('/api/ai-logs/stats/by-provider', { params }),
+      api.get('/api/ai-logs/stats/by-endpoint', { params }),
+      api.get('/api/ai-logs/stats/costs', { params: { period: 'month' } }),
+      api.get('/api/ai-logs/stats/performance', { params })
     ]);
 
     summaryStats.value = summary.data;
@@ -153,7 +154,7 @@ async function loadStats() {
     costTrends.value = costs.data;
     performanceData.value = performance.data;
   } catch (error) {
-    message.error('加载统计数据失败: ' + (error.response?.data?.error || error.message));
+    message.error(t('aiLogs.messages.loadStatsFailed') + ': ' + (error.response?.data?.error || error.message));
   } finally {
     statsLoading.value = false;
   }
@@ -196,8 +197,9 @@ function refreshData() {
 <style scoped>
 .ai-logs-viewer {
   padding: 24px;
-  background: #fff;
+  background: var(--theme-bg-container, #fff);
   min-height: calc(100vh - 64px);
+  transition: background-color 0.3s ease;
 }
 
 .header {
@@ -211,6 +213,8 @@ function refreshData() {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
+  color: var(--theme-text, rgba(0, 0, 0, 0.85));
+  transition: color 0.3s ease;
 }
 
 .logs-section {
