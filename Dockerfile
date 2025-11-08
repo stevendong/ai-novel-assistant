@@ -56,6 +56,7 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Copy backend from builder
 COPY --from=backend-builder --chown=nodejs:nodejs /app/server ./server
+COPY --from=backend-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Copy built frontend from builder
 COPY --from=frontend-builder --chown=nodejs:nodejs /app/client/dist ./server/public
