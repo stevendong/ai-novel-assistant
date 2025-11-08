@@ -5,7 +5,7 @@
       :data-source="data"
       :loading="loading"
       :pagination="paginationConfig"
-      :scroll="{ x: 1400 }"
+      :scroll="{ x: 'max-content' }"
       @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
@@ -113,61 +113,47 @@ const columns = computed(() => [
   {
     title: t('aiLogs.table.createdAt'),
     key: 'createdAt',
-    width: 160,
-    fixed: 'left'
+    width: 150
   },
   {
     title: t('aiLogs.table.provider'),
     key: 'provider',
-    width: 100
+    width: 90
   },
   {
     title: t('aiLogs.table.model'),
     key: 'model',
-    width: 180
-  },
-  {
-    title: t('aiLogs.table.apiUrl'),
-    key: 'apiUrl',
-    width: 200,
     ellipsis: true
   },
   {
     title: t('aiLogs.table.taskType'),
     key: 'taskType',
-    width: 120
+    width: 100
   },
   {
     title: t('aiLogs.table.tokens'),
     key: 'tokens',
-    width: 140
+    width: 130
   },
   {
     title: t('aiLogs.table.latency'),
     key: 'latency',
-    width: 100
+    width: 90
   },
   {
     title: t('aiLogs.table.cost'),
     key: 'cost',
-    width: 100
+    width: 95
   },
   {
     title: t('aiLogs.table.status'),
     key: 'status',
-    width: 80
-  },
-  {
-    title: t('aiLogs.table.novel'),
-    key: 'novel',
-    width: 150,
-    ellipsis: true
+    width: 70
   },
   {
     title: t('aiLogs.table.actions'),
     key: 'action',
-    width: 80,
-    fixed: 'right'
+    width: 80
   }
 ]);
 
@@ -250,6 +236,15 @@ function handleDetail(record) {
 <style scoped>
 .logs-table {
   flex: 1;
+  overflow: hidden;
+}
+
+.logs-table :deep(.ant-table-wrapper) {
+  overflow-x: auto;
+}
+
+.logs-table :deep(.ant-table) {
+  min-width: 100%;
 }
 
 .model-name {
@@ -257,6 +252,10 @@ function handleDetail(record) {
   font-size: 12px;
   color: var(--theme-text, #262626);
   transition: color 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
 .api-url {
@@ -270,14 +269,16 @@ function handleDetail(record) {
 }
 
 .tokens-cell {
-  font-size: 12px;
+  font-size: 11px;
+  min-width: 110px;
 }
 
 .token-row {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  line-height: 1.4;
+  gap: 6px;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .token-row.total {

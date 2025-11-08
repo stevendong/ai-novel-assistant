@@ -220,6 +220,16 @@ function refreshData() {
 .logs-section {
   display: flex;
   gap: 16px;
+  overflow: hidden;
+}
+
+.logs-section > * {
+  flex-shrink: 0;
+}
+
+.logs-section :deep(.logs-table) {
+  flex: 1;
+  min-width: 0;
 }
 
 .charts-row {

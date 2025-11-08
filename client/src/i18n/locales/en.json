@@ -1263,7 +1263,8 @@
     "export": "Export & Publish",
     "inviteManagement": "Invite Code Management",
     "adminDashboard": "Admin Dashboard",
-    "userManagement": "User Management"
+    "userManagement": "User Management",
+    "aiLogs": "AI Call Logs"
   },
   "settings": {
     "title": "Settings",

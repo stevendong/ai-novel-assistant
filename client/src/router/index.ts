@@ -133,7 +133,8 @@ const router = createRouter({
           meta: {
             title: 'AI调用日志',
             icon: 'HistoryOutlined',
-            titleKey: 'nav.aiLogs'
+            titleKey: 'nav.aiLogs',
+            requiresAdmin: true
           }
         },
         {

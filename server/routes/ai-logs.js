@@ -5,7 +5,7 @@ const aiLoggingService = require('../services/aiLoggingService');
 
 const router = express.Router();
 
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const {
       novelId,
@@ -17,14 +17,15 @@ router.get('/', requireAuth, async (req, res) => {
       startDate,
       endDate,
       page = 1,
-      limit = 20
+      limit = 20,
+      userId
     } = req.query;
 
-    const userId = req.user.id;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    const where = { userId };
+    const where = {};
 
+    if (userId) where.userId = userId;
     if (novelId) where.novelId = novelId;
     if (provider) where.provider = provider;
     if (model) where.model = model;
@@ -84,15 +85,13 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/:id', requireAuth, async (req, res) => {
+router.get('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
 
     const log = await prisma.aICallLog.findFirst({
       where: {
-        id,
-        userId
+        id
       },
       include: {
         novel: {
@@ -114,12 +113,12 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/stats/summary', requireAuth, async (req, res) => {
+router.get('/stats/summary', requireAdmin, async (req, res) => {
   try {
-    const { novelId, period = 'all' } = req.query;
-    const userId = req.user.id;
+    const { novelId, period = 'all', userId } = req.query;
 
-    const where = { userId };
+    const where = {};
+    if (userId) where.userId = userId;
     if (novelId) where.novelId = novelId;
 
     if (period !== 'all') {
@@ -190,12 +189,12 @@ router.get('/stats/summary', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/stats/by-provider', requireAuth, async (req, res) => {
+router.get('/stats/by-provider', requireAdmin, async (req, res) => {
   try {
-    const { novelId, startDate, endDate } = req.query;
-    const userId = req.user.id;
+    const { novelId, startDate, endDate, userId } = req.query;
 
-    const where = { userId };
+    const where = {};
+    if (userId) where.userId = userId;
     if (novelId) where.novelId = novelId;
 
     if (startDate || endDate) {
@@ -236,12 +235,12 @@ router.get('/stats/by-provider', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/stats/by-task', requireAuth, async (req, res) => {
+router.get('/stats/by-task', requireAdmin, async (req, res) => {
   try {
-    const { novelId, startDate, endDate } = req.query;
-    const userId = req.user.id;
+    const { novelId, startDate, endDate, userId } = req.query;
 
-    const where = { userId };
+    const where = {};
+    if (userId) where.userId = userId;
     if (novelId) where.novelId = novelId;
 
     if (startDate || endDate) {
@@ -277,12 +276,12 @@ router.get('/stats/by-task', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/stats/by-endpoint', requireAuth, async (req, res) => {
+router.get('/stats/by-endpoint', requireAdmin, async (req, res) => {
   try {
-    const { novelId, startDate, endDate } = req.query;
-    const userId = req.user.id;
+    const { novelId, startDate, endDate, userId } = req.query;
 
-    const where = { userId };
+    const where = {};
+    if (userId) where.userId = userId;
     if (novelId) where.novelId = novelId;
 
     if (startDate || endDate) {
@@ -322,12 +321,12 @@ router.get('/stats/by-endpoint', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/stats/costs', requireAuth, async (req, res) => {
+router.get('/stats/costs', requireAdmin, async (req, res) => {
   try {
-    const { novelId, period = 'month' } = req.query;
-    const userId = req.user.id;
+    const { novelId, period = 'month', userId } = req.query;
 
-    const where = { userId };
+    const where = {};
+    if (userId) where.userId = userId;
     if (novelId) where.novelId = novelId;
 
     const now = new Date();
@@ -395,12 +394,12 @@ router.get('/stats/costs', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/stats/performance', requireAuth, async (req, res) => {
+router.get('/stats/performance', requireAdmin, async (req, res) => {
   try {
-    const { provider, model } = req.query;
-    const userId = req.user.id;
+    const { provider, model, userId } = req.query;
 
-    const where = { userId };
+    const where = {};
+    if (userId) where.userId = userId;
     if (provider) where.provider = provider;
     if (model) where.model = model;
 
