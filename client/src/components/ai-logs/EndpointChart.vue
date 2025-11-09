@@ -1,15 +1,18 @@
 <template>
-  <a-card title="按接口路径统计" :loading="loading" :bordered="false">
+  <a-card :title="t('aiLogs.stats.byEndpoint')" :loading="loading" :bordered="false">
     <div ref="chartRef" class="chart-container"></div>
     <div v-if="!data || data.length === 0" class="empty-state">
-      <a-empty description="暂无数据" />
+      <a-empty :description="t('aiLogs.stats.noData')" />
     </div>
   </a-card>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
+
+const { t } = useI18n();
 
 const props = defineProps({
   data: {
@@ -50,7 +53,7 @@ function initChart() {
 function updateChart() {
   if (!chartInstance || !props.data || props.data.length === 0) return;
 
-  const endpoints = props.data.map(item => item.apiUrl || '未知');
+  const endpoints = props.data.map(item => item.apiUrl || t('aiLogs.stats.unknown'));
   const calls = props.data.map(item => item.calls);
   const costs = props.data.map(item => item.totalCost);
 
@@ -64,16 +67,16 @@ function updateChart() {
         const index = params[0].dataIndex;
         const item = props.data[index];
         return `
-          <strong>${item.apiUrl || '未知'}</strong><br/>
-          调用次数: ${item.calls.toLocaleString()}<br/>
-          总Token: ${item.totalTokens.toLocaleString()}<br/>
-          总成本: $${item.totalCost.toFixed(4)}<br/>
-          平均延迟: ${Math.round(item.avgLatency)}ms
+          <strong>${item.apiUrl || t('aiLogs.stats.unknown')}</strong><br/>
+          ${t('aiLogs.stats.calls')}: ${item.calls.toLocaleString()}<br/>
+          ${t('aiLogs.stats.tokens')}: ${item.totalTokens.toLocaleString()}<br/>
+          ${t('aiLogs.stats.cost')}: $${item.totalCost.toFixed(4)}<br/>
+          ${t('aiLogs.stats.latency')}: ${Math.round(item.avgLatency)}ms
         `;
       }
     },
     legend: {
-      data: ['调用次数', '成本 ($)']
+      data: [t('aiLogs.stats.calls'), `${t('aiLogs.stats.cost')} ($)`]
     },
     grid: {
       left: '3%',
@@ -99,18 +102,18 @@ function updateChart() {
     yAxis: [
       {
         type: 'value',
-        name: '调用次数',
+        name: t('aiLogs.stats.calls'),
         position: 'left'
       },
       {
         type: 'value',
-        name: '成本 ($)',
+        name: `${t('aiLogs.stats.cost')} ($)`,
         position: 'right'
       }
     ],
     series: [
       {
-        name: '调用次数',
+        name: t('aiLogs.stats.calls'),
         type: 'bar',
         yAxisIndex: 0,
         data: calls,
@@ -119,7 +122,7 @@ function updateChart() {
         }
       },
       {
-        name: '成本 ($)',
+        name: `${t('aiLogs.stats.cost')} ($)`,
         type: 'line',
         yAxisIndex: 1,
         data: costs,

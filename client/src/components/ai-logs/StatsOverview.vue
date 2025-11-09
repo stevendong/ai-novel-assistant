@@ -4,7 +4,7 @@
       <a-col :span="6">
         <a-card :loading="loading" :bordered="false">
           <a-statistic
-            title="总调用次数"
+            :title="t('aiLogs.stats.totalCalls')"
             :value="stats.totalCalls || 0"
             :value-style="{ color: '#1890ff' }"
           >
@@ -13,7 +13,7 @@
             </template>
           </a-statistic>
           <div class="stat-footer">
-            成功率: <strong>{{ (stats.successRate || 0).toFixed(2) }}%</strong>
+            {{ t('aiLogs.stats.successRate') }}: <strong>{{ (stats.successRate || 0).toFixed(2) }}%</strong>
           </div>
         </a-card>
       </a-col>
@@ -21,7 +21,7 @@
       <a-col :span="6">
         <a-card :loading="loading" :bordered="false">
           <a-statistic
-            title="总Token使用"
+            :title="t('aiLogs.stats.totalTokens')"
             :value="stats.totalTokens || 0"
             :value-style="{ color: '#52c41a' }"
           >
@@ -30,8 +30,8 @@
             </template>
           </a-statistic>
           <div class="stat-footer">
-            提示: {{ formatNumber(stats.promptTokens || 0) }} /
-            完成: {{ formatNumber(stats.completionTokens || 0) }}
+            {{ t('aiLogs.stats.prompt') }}: {{ formatNumber(stats.promptTokens || 0) }} /
+            {{ t('aiLogs.stats.completion') }}: {{ formatNumber(stats.completionTokens || 0) }}
           </div>
         </a-card>
       </a-col>
@@ -39,7 +39,7 @@
       <a-col :span="6">
         <a-card :loading="loading" :bordered="false">
           <a-statistic
-            title="总成本"
+            :title="t('aiLogs.stats.totalCost')"
             :value="(stats.totalCost || 0).toFixed(4)"
             prefix="$"
             :value-style="{ color: '#ff4d4f' }"
@@ -49,7 +49,7 @@
             </template>
           </a-statistic>
           <div class="stat-footer">
-            平均每次: <strong>${{ (stats.costPerCall || 0).toFixed(4) }}</strong>
+            {{ t('aiLogs.stats.avgPerCall') }}: <strong>${{ (stats.costPerCall || 0).toFixed(4) }}</strong>
           </div>
         </a-card>
       </a-col>
@@ -57,7 +57,7 @@
       <a-col :span="6">
         <a-card :loading="loading" :bordered="false">
           <a-statistic
-            title="平均延迟"
+            :title="t('aiLogs.stats.avgLatency')"
             :value="Math.round(stats.avgLatency || 0)"
             suffix="ms"
             :value-style="{ color: '#722ed1' }"
@@ -67,7 +67,7 @@
             </template>
           </a-statistic>
           <div class="stat-footer">
-            每1K Token成本: <strong>${{ (stats.costPer1kTokens || 0).toFixed(4) }}</strong>
+            {{ t('aiLogs.stats.costPer1kTokens') }}: <strong>${{ (stats.costPer1kTokens || 0).toFixed(4) }}</strong>
           </div>
         </a-card>
       </a-col>
@@ -75,7 +75,7 @@
 
     <a-row v-if="stats.mostUsedModel" :gutter="16" style="margin-top: 16px">
       <a-col :span="12">
-        <a-card title="最常用模型" :loading="loading" :bordered="false" size="small">
+        <a-card :title="t('aiLogs.stats.mostUsedModel')" :loading="loading" :bordered="false" size="small">
           <div class="most-used-model">
             <a-tag :color="getProviderColor(stats.mostUsedModel.provider)" style="font-size: 14px">
               {{ stats.mostUsedModel.provider.toUpperCase() }}
@@ -86,18 +86,18 @@
       </a-col>
 
       <a-col :span="12">
-        <a-card title="调用状态" :loading="loading" :bordered="false" size="small">
+        <a-card :title="t('aiLogs.stats.callStatus')" :loading="loading" :bordered="false" size="small">
           <div class="call-status">
             <div class="status-item">
-              <span class="status-label">成功:</span>
+              <span class="status-label">{{ t('aiLogs.stats.success') }}:</span>
               <a-tag color="success">{{ formatNumber(stats.successfulCalls || 0) }}</a-tag>
             </div>
             <div class="status-item">
-              <span class="status-label">失败:</span>
+              <span class="status-label">{{ t('aiLogs.stats.failed') }}:</span>
               <a-tag color="error">{{ formatNumber(stats.failedCalls || 0) }}</a-tag>
             </div>
             <div class="status-item">
-              <span class="status-label">总计:</span>
+              <span class="status-label">{{ t('aiLogs.stats.total') }}:</span>
               <a-tag color="default">{{ formatNumber(stats.totalCalls || 0) }}</a-tag>
             </div>
           </div>
@@ -114,6 +114,9 @@ import {
   DollarOutlined,
   ClockCircleOutlined
 } from '@ant-design/icons-vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 defineProps({
   stats: {

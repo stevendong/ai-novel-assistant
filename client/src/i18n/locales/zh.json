@@ -1,4 +1,5 @@
 {
+  "locale": "zh",
   "common": {
     "confirm": "确定",
     "cancel": "取消",
@@ -2641,17 +2642,35 @@
       "successfulCalls": "成功次数",
       "failedCalls": "失败次数",
       "successRate": "成功率",
-      "totalTokens": "总Token数",
+      "totalTokens": "总Token使用",
       "totalCost": "总成本",
       "avgLatency": "平均延迟",
       "costPerCall": "每次调用成本",
       "costPer1kTokens": "每千Token成本",
       "mostUsedModel": "最常用模型",
       "byProvider": "按提供商统计",
-      "byEndpoint": "按端点统计",
+      "byEndpoint": "按接口路径统计",
       "byTask": "按任务统计",
       "costTrend": "成本趋势",
-      "performance": "性能指标"
+      "performance": "性能指标",
+      "callStatus": "调用状态",
+      "success": "成功",
+      "failed": "失败",
+      "total": "总计",
+      "prompt": "提示",
+      "completion": "完成",
+      "avgPerCall": "平均每次",
+      "calls": "调用次数",
+      "tokens": "Token",
+      "cost": "成本",
+      "latency": "延迟",
+      "unknown": "未知",
+      "noData": "暂无数据",
+      "period": {
+        "day": "日",
+        "week": "周",
+        "month": "月"
+      }
     },
     "performance": {
       "title": "性能指标",
@@ -2659,7 +2678,35 @@
       "errorCount": "错误次数",
       "p50Latency": "P50延迟",
       "p95Latency": "P95延迟",
-      "p99Latency": "P99延迟"
+      "p99Latency": "P99延迟",
+      "latencyDistribution": "延迟分布",
+      "avgLatency": "平均延迟",
+      "totalCalls": "总调用",
+      "performanceRating": "性能评级",
+      "latencyChart": "延迟分布图",
+      "latencyMs": "延迟 (ms)",
+      "average": "平均",
+      "ratings": {
+        "A": "优秀",
+        "B": "良好",
+        "C": "一般",
+        "D": "较差"
+      },
+      "descriptions": {
+        "A": "优秀 - 性能表现出色",
+        "B": "良好 - 性能表现正常",
+        "C": "一般 - 存在优化空间",
+        "D": "较差 - 需要立即优化"
+      },
+      "status": {
+        "good": "良好",
+        "needsImprovement": "需改进",
+        "needsOptimization": "需优化"
+      },
+      "metrics": {
+        "errorRate": "错误率",
+        "responseSpeed": "响应速度"
+      }
     },
     "detail": {
       "title": "调用详情",
@@ -2677,7 +2724,15 @@
       "sessionId": "会话ID",
       "conversationId": "对话ID",
       "userAgent": "用户代理",
-      "ipAddress": "IP地址"
+      "ipAddress": "IP地址",
+      "noResponseContent": "无响应内容",
+      "close": "关闭",
+      "copyDetail": "复制详情",
+      "copySuccess": "已复制到剪贴板",
+      "copyFailed": "复制失败",
+      "relatedNovel": "关联小说",
+      "callTime": "调用时间",
+      "estimatedCost": "估算成本"
     },
     "status": {
       "success": "成功",
@@ -2686,6 +2741,7 @@
     },
     "messages": {
       "loadFailed": "加载日志失败",
+      "loadDetailFailed": "加载日志详情失败",
       "loadStatsFailed": "加载统计数据失败",
       "noData": "暂无数据",
       "refreshSuccess": "刷新成功"

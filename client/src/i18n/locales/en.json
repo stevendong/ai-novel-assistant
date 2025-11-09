@@ -1,4 +1,5 @@
 {
+  "locale": "en",
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
@@ -2641,17 +2642,35 @@
       "successfulCalls": "Successful Calls",
       "failedCalls": "Failed Calls",
       "successRate": "Success Rate",
-      "totalTokens": "Total Tokens",
+      "totalTokens": "Total Token Usage",
       "totalCost": "Total Cost",
       "avgLatency": "Avg Latency",
       "costPerCall": "Cost Per Call",
       "costPer1kTokens": "Cost Per 1K Tokens",
       "mostUsedModel": "Most Used Model",
       "byProvider": "By Provider",
-      "byEndpoint": "By Endpoint",
+      "byEndpoint": "By API Endpoint",
       "byTask": "By Task",
       "costTrend": "Cost Trend",
-      "performance": "Performance Metrics"
+      "performance": "Performance Metrics",
+      "callStatus": "Call Status",
+      "success": "Success",
+      "failed": "Failed",
+      "total": "Total",
+      "prompt": "Prompt",
+      "completion": "Completion",
+      "avgPerCall": "Avg Per Call",
+      "calls": "Calls",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "latency": "Latency",
+      "unknown": "Unknown",
+      "noData": "No data available",
+      "period": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month"
+      }
     },
     "performance": {
       "title": "Performance Metrics",
@@ -2659,7 +2678,35 @@
       "errorCount": "Error Count",
       "p50Latency": "P50 Latency",
       "p95Latency": "P95 Latency",
-      "p99Latency": "P99 Latency"
+      "p99Latency": "P99 Latency",
+      "latencyDistribution": "Latency Distribution",
+      "avgLatency": "Avg Latency",
+      "totalCalls": "Total Calls",
+      "performanceRating": "Performance Rating",
+      "latencyChart": "Latency Distribution Chart",
+      "latencyMs": "Latency (ms)",
+      "average": "Average",
+      "ratings": {
+        "A": "Excellent",
+        "B": "Good",
+        "C": "Fair",
+        "D": "Poor"
+      },
+      "descriptions": {
+        "A": "Excellent - Outstanding performance",
+        "B": "Good - Normal performance",
+        "C": "Fair - Room for optimization",
+        "D": "Poor - Requires immediate optimization"
+      },
+      "status": {
+        "good": "Good",
+        "needsImprovement": "Needs Improvement",
+        "needsOptimization": "Needs Optimization"
+      },
+      "metrics": {
+        "errorRate": "Error Rate",
+        "responseSpeed": "Response Speed"
+      }
     },
     "detail": {
       "title": "Call Detail",
@@ -2677,7 +2724,15 @@
       "sessionId": "Session ID",
       "conversationId": "Conversation ID",
       "userAgent": "User Agent",
-      "ipAddress": "IP Address"
+      "ipAddress": "IP Address",
+      "noResponseContent": "No response content",
+      "close": "Close",
+      "copyDetail": "Copy Detail",
+      "copySuccess": "Copied to clipboard",
+      "copyFailed": "Copy failed",
+      "relatedNovel": "Related Novel",
+      "callTime": "Call Time",
+      "estimatedCost": "Estimated Cost"
     },
     "status": {
       "success": "Success",
@@ -2686,6 +2741,7 @@
     },
     "messages": {
       "loadFailed": "Failed to load logs",
+      "loadDetailFailed": "Failed to load log detail",
       "loadStatsFailed": "Failed to load statistics",
       "noData": "No data available",
       "refreshSuccess": "Refreshed successfully"

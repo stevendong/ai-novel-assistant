@@ -180,9 +180,17 @@ function handleDateRangeChange() {
   }
 }
 
-function showDetail(log) {
-  selectedLog.value = log;
-  detailVisible.value = true;
+async function showDetail(log) {
+  try {
+    loading.value = true;
+    const response = await api.get(`/api/ai-logs/${log.id}`);
+    selectedLog.value = response.data;
+    detailVisible.value = true;
+  } catch (error) {
+    message.error(t('aiLogs.messages.loadDetailFailed') + ': ' + (error.response?.data?.error || error.message));
+  } finally {
+    loading.value = false;
+  }
 }
 
 function refreshData() {
