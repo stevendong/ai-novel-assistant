@@ -246,21 +246,87 @@ class AIService {
   }
 
   async chat(messages, options = {}) {
+    const startTime = Date.now();
     const provider = options.provider ? this.providers.get(options.provider) : this.getDefaultProvider();
-    
+
     if (!provider) {
       throw new Error('No AI provider available');
     }
 
-    if (provider.type === 'openai') {
-      return await this.openaiChat(provider, messages, options);
-    } else if (provider.type === 'claude') {
-      return await this.claudeChat(provider, messages, options);
-    } else if (provider.type === 'gemini') {
-      return await this.geminiChat(provider, messages, options);
-    }
+    let response;
+    let error = null;
 
-    throw new Error(`Unsupported provider type: ${provider.type}`);
+    try {
+      if (provider.type === 'openai') {
+        response = await this.openaiChat(provider, messages, options);
+      } else if (provider.type === 'claude') {
+        response = await this.claudeChat(provider, messages, options);
+      } else if (provider.type === 'gemini') {
+        response = await this.geminiChat(provider, messages, options);
+      } else {
+        throw new Error(`Unsupported provider type: ${provider.type}`);
+      }
+
+      if (options.userId) {
+        aiLoggingService.logAICall({
+          userId: options.userId,
+          novelId: options.novelId || null,
+          provider: options.provider || 'openai',
+          model: options.model || response.model,
+          endpoint: 'chat',
+          apiUrl: options.requestUrl || null,
+          taskType: options.taskType || 'default',
+          requestMessages: JSON.stringify(messages),
+          requestParams: JSON.stringify({
+            temperature: options.temperature,
+            maxTokens: options.maxTokens,
+            taskType: options.taskType
+          }),
+          responseContent: response.content,
+          responseMetadata: JSON.stringify({
+            finishReason: response.finishReason,
+            model: response.model
+          }),
+          promptTokens: response.usage?.prompt_tokens || response.usage?.promptTokens || 0,
+          completionTokens: response.usage?.completion_tokens || response.usage?.completionTokens || 0,
+          totalTokens: response.usage?.total_tokens || response.usage?.totalTokens || 0,
+          latencyMs: Date.now() - startTime,
+          status: 'success'
+        }).catch(err => logger.error('Failed to log AI call:', err));
+      }
+
+      return response;
+    } catch (err) {
+      error = err;
+
+      if (options.userId) {
+        aiLoggingService.logAICall({
+          userId: options.userId,
+          novelId: options.novelId || null,
+          provider: options.provider || 'openai',
+          model: options.model,
+          endpoint: 'chat',
+          apiUrl: options.requestUrl || null,
+          taskType: options.taskType || 'default',
+          requestMessages: JSON.stringify(messages),
+          requestParams: JSON.stringify({
+            temperature: options.temperature,
+            maxTokens: options.maxTokens
+          }),
+          responseContent: null,
+          responseMetadata: null,
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          latencyMs: Date.now() - startTime,
+          status: 'error',
+          errorMessage: err.message,
+          errorCode: err.code || err.type || null
+        }).catch(logErr => logger.error('Failed to log AI call error:', logErr));
+      }
+
+      throw err;
+    }
   }
 
   async chatStream(messages, options = {}) {
@@ -489,6 +555,7 @@ class AIService {
       temperature: options.temperature,
       maxTokens: options.maxTokens,
       stream: true, // Enable streaming
+      stream_options: { include_usage: true }, // 启用token使用统计
       ...options.additionalParams
     });
 
@@ -947,14 +1014,16 @@ class AIService {
         { role: 'user', content: userMessage }
       ];
 
+      const temperature = options.temperature || (type === 'creative' ? 0.9 : 0.7);
+
       // 3. 创建流式响应
       const stream = await this.chatStream(messages, {
-        temperature: options.temperature || (type === 'creative' ? 0.9 : 0.7),
+        temperature,
         provider: options.provider,
         model: options.model
       });
 
-      // 4. 包装流式响应以支持记忆更新
+      // 4. 包装流式响应以支持记忆更新和日志记录
       return this.wrapStreamWithMemoryUpdate(stream, {
         userMessage,
         context: {
@@ -965,11 +1034,43 @@ class AIService {
           locale
         },
         memoriesUsed: memories.length,
-        startTime
+        startTime,
+        requestOptions: {
+          provider: options.provider,
+          model: options.model,
+          temperature,
+          systemPrompt,
+          requestUrl: options.requestUrl
+        }
       });
 
     } catch (error) {
       logger.error('Memory-enhanced streaming failed:', error);
+
+      // 记录错误日志
+      if (options.userId) {
+        aiLoggingService.logAICall({
+          userId: options.userId,
+          novelId: novelContext?.id || null,
+          provider: options.provider || 'openai',
+          model: options.model,
+          endpoint: 'chat/stream',
+          apiUrl: options.requestUrl || null,
+          taskType: type,
+          requestMessages: JSON.stringify([{ role: 'user', content: userMessage }]),
+          requestParams: JSON.stringify({ temperature: options.temperature, type }),
+          responseContent: null,
+          responseMetadata: null,
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          latencyMs: Date.now() - startTime,
+          status: 'error',
+          errorMessage: error.message,
+          errorCode: error.code || error.type || null
+        }).catch(err => logger.error('Failed to log streaming error:', err));
+      }
+
       // 降级到无记忆模式
       return await this.generateResponseStreamFallback(novelContext, userMessage, type, options);
     }
@@ -995,11 +1096,17 @@ class AIService {
   }
 
   /**
-   * 包装流式响应以支持记忆更新
+   * 包装流式响应以支持记忆更新和日志记录
    */
   wrapStreamWithMemoryUpdate(originalStream, memoryContext) {
-    const { userMessage, context, memoriesUsed, startTime } = memoryContext;
+    const { userMessage, context, memoriesUsed, startTime, requestOptions } = memoryContext;
+    const self = this;
     let fullResponse = '';
+    let totalTokens = 0;
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let finishReason = null;
+    let modelUsed = null;
 
     // 创建一个新的异步生成器
     const wrappedStream = async function* () {
@@ -1012,29 +1119,112 @@ class AIService {
             fullResponse += choice.delta.content;
           }
 
-          // 原样传递chunk
-          yield chunk;
+          // 收集token使用信息
+          if (chunk.usage) {
+            totalTokens = chunk.usage.total_tokens || totalTokens;
+            promptTokens = chunk.usage.prompt_tokens || promptTokens;
+            completionTokens = chunk.usage.completion_tokens || completionTokens;
+          }
+
+          // 收集模型信息
+          if (chunk.model) {
+            modelUsed = chunk.model;
+          }
 
           // 检测到流式响应结束
           if (choice?.finish_reason) {
-            // 异步更新记忆，不阻塞响应
-            if (context.userId && fullResponse.trim()) {
-              setImmediate(async () => {
-                try {
-                  await aiService.updateMemoriesAsync(userMessage, fullResponse, context);
-
-                  // 记录性能指标
-                  const duration = Date.now() - startTime;
-                  logger.info(`Streaming response with memory: ${duration}ms, memories used: ${memoriesUsed}`);
-                } catch (error) {
-                  logger.error('Failed to update memories after streaming:', error);
-                }
-              });
-            }
+            finishReason = choice.finish_reason;
           }
+
+          // 原样传递chunk
+          yield chunk;
+        }
+
+        // 流结束后记录日志（在生成器结束前，确保执行）
+        if (context.userId && fullResponse.trim()) {
+          setImmediate(async () => {
+            try {
+              // 更新记忆
+              await self.updateMemoriesAsync(userMessage, fullResponse, context);
+
+              // 记录AI调用日志
+              await aiLoggingService.logAICall({
+                userId: context.userId,
+                novelId: context.novelId || null,
+                provider: requestOptions.provider || 'openai',
+                model: requestOptions.model || modelUsed,
+                endpoint: 'chat/stream',
+                apiUrl: requestOptions.requestUrl || null,
+                taskType: context.mode,
+                requestMessages: JSON.stringify([
+                  { role: 'system', content: requestOptions.systemPrompt },
+                  { role: 'user', content: userMessage }
+                ]),
+                requestParams: JSON.stringify({
+                  temperature: requestOptions.temperature,
+                  streaming: true,
+                  messageType: context.messageType
+                }),
+                responseContent: fullResponse,
+                responseMetadata: JSON.stringify({
+                  finishReason,
+                  model: modelUsed,
+                  memoriesUsed
+                }),
+                promptTokens,
+                completionTokens,
+                totalTokens,
+                latencyMs: Date.now() - startTime,
+                status: 'success'
+              });
+
+              // 记录性能指标
+              const duration = Date.now() - startTime;
+              logger.info(`Streaming response with memory: ${duration}ms, memories used: ${memoriesUsed}, tokens: ${totalTokens}`);
+            } catch (error) {
+              logger.error('Failed to update memories or log after streaming:', error);
+            }
+          });
         }
       } catch (error) {
         logger.error('Error in wrapped stream:', error);
+
+        // 记录错误日志
+        if (context.userId) {
+          setImmediate(async () => {
+            try {
+              await aiLoggingService.logAICall({
+                userId: context.userId,
+                novelId: context.novelId || null,
+                provider: requestOptions.provider || 'openai',
+                model: requestOptions.model,
+                endpoint: 'chat/stream',
+                apiUrl: requestOptions.requestUrl || null,
+                taskType: context.mode,
+                requestMessages: JSON.stringify([
+                  { role: 'system', content: requestOptions.systemPrompt },
+                  { role: 'user', content: userMessage }
+                ]),
+                requestParams: JSON.stringify({
+                  temperature: requestOptions.temperature,
+                  streaming: true
+                }),
+                responseContent: fullResponse || null,
+                responseMetadata: null,
+                promptTokens: promptTokens || 0,
+                completionTokens: completionTokens || 0,
+                totalTokens: totalTokens || 0,
+                latencyMs: Date.now() - startTime,
+                status: 'error',
+                errorMessage: error.message,
+                errorCode: error.code || error.type || null
+              });
+            } catch (logError) {
+              logger.error('Failed to log streaming error:', logError);
+            }
+          });
+        }
+
         throw error;
       }
     };

@@ -67,7 +67,8 @@
       "Bash(tree:*)",
       "Bash(python3:*)",
       "Bash(npm test:*)",
-      "Bash(npm config:*)"
+      "Bash(npm config:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

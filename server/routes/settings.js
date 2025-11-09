@@ -226,7 +226,9 @@ router.post('/:id/enhance', requireAuth, async (req, res) => {
       {
         taskType: 'world_building',
         userId: req.user.id,
-        messageType: 'worldbuilding'
+        novelId: setting.novelId,
+        messageType: 'worldbuilding',
+        requestUrl: req.aiRequestUrl || req.originalUrl
       }
     );
 
@@ -586,7 +588,9 @@ router.post('/:id/expand', requireAuth, async (req, res) => {
       {
         taskType: 'detail_expansion',
         userId: req.user.id,
-        messageType: 'worldbuilding'
+        novelId: setting.novelId,
+        messageType: 'worldbuilding',
+        requestUrl: req.aiRequestUrl || req.originalUrl
       }
     );
 
@@ -877,7 +881,9 @@ router.post('/:id/suggestions', requireAuth, async (req, res) => {
       {
         taskType: 'creative_analysis',
         userId: req.user.id,
-        messageType: 'worldbuilding'
+        novelId: setting.novelId,
+        messageType: 'worldbuilding',
+        requestUrl: req.aiRequestUrl || req.originalUrl
       }
     );
 
@@ -1141,7 +1147,9 @@ router.post('/batch-generate/:novelId', requireAuth, async (req, res) => {
       {
         taskType: 'world_building_batch',
         userId: req.user.id,
-        messageType: 'worldbuilding'
+        novelId: novel.id,
+        messageType: 'worldbuilding',
+        requestUrl: req.aiRequestUrl || req.originalUrl
       }
     );
 
@@ -1513,7 +1521,9 @@ router.post('/:id/consistency-check', requireAuth, async (req, res) => {
       {
         taskType: 'consistency_check',
         userId: req.user.id,
-        messageType: 'consistency'
+        novelId: setting.novelId,
+        messageType: 'consistency',
+        requestUrl: req.aiRequestUrl || req.originalUrl
       }
     );
 

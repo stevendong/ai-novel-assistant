@@ -20,9 +20,10 @@
         </template>
 
         <template v-if="column.key === 'apiUrl'">
-          <a-tooltip :title="record.apiUrl">
-            <code class="api-url">{{ record.apiUrl }}</code>
+          <a-tooltip v-if="record.apiUrl" :title="record.apiUrl">
+            <code class="api-url">{{ truncateUrl(record.apiUrl) }}</code>
           </a-tooltip>
+          <span v-else class="text-gray">-</span>
         </template>
 
         <template v-if="column.key === 'taskType'">
@@ -123,7 +124,14 @@ const columns = computed(() => [
   {
     title: t('aiLogs.table.model'),
     key: 'model',
-    ellipsis: true
+    ellipsis: true,
+    width: 150
+  },
+  {
+    title: t('aiLogs.table.apiUrl'),
+    key: 'apiUrl',
+    ellipsis: true,
+    width: 200
   },
   {
     title: t('aiLogs.table.taskType'),
@@ -224,6 +232,12 @@ function formatDate(dateString) {
   });
 }
 
+function truncateUrl(url) {
+  if (!url) return '';
+  if (url.length <= 40) return url;
+  return url.substring(0, 37) + '...';
+}
+
 function handleTableChange(pagination) {
   emit('page-change', pagination.current, pagination.pageSize);
 }
@@ -259,13 +273,24 @@ function handleDetail(record) {
 }
 
 .api-url {
-  font-size: 12px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 11px;
   padding: 2px 6px;
   background: var(--theme-bg-elevated, #f5f5f5);
   border-radius: 3px;
   color: #1890ff;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.api-url:hover {
+  background: #e6f7ff;
+  color: #0050b3;
 }
 
 .tokens-cell {

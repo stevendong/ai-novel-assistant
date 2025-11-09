@@ -61,9 +61,16 @@ router.post('/chat', requireAuth, async (req, res) => {
 
 // 流式AI对话接口
 router.post('/chat/stream', requireAuth, async (req, res) => {
+  const startTime = Date.now();
+  const aiLoggingService = require('../services/aiLoggingService');
+  let fullResponse = '';
+  let hasError = false;
+  let errorMessage = null;
+
   try {
     const { novelId, message, context, type, provider, model, locale } = req.body;
-    
+    const userId = req.user.id;
+
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -89,7 +96,7 @@ router.post('/chat/stream', requireAuth, async (req, res) => {
           include: {
             characters: { take: 10 },
             settings: { take: 10 },
-            chapters: { 
+            chapters: {
               take: 5,
               orderBy: { chapterNumber: 'desc' }
             },
@@ -107,111 +114,29 @@ router.post('/chat/stream', requireAuth, async (req, res) => {
         userId: req.user?.id,
         messageType: context?.messageType || type,
         locale,
-        requestUrl: req.aiRequestUrl || req.originalUrl // 传递请求URL用于日志
+        requestUrl: req.aiRequestUrl || req.originalUrl
       });
 
-      // 处理流式响应
-      if (provider === 'openai' || !provider) {
-        // OpenAI streaming
-        for await (const chunk of stream) {
-          const choice = chunk.choices[0];
-          if (choice && choice.delta && choice.delta.content) {
-            const data = {
-              type: 'chunk',
-              content: choice.delta.content
-            };
-            res.write(`data: ${JSON.stringify(data)}\n\n`);
-          }
-          
-          if (choice && choice.finish_reason) {
-            const data = {
-              type: 'finish',
-              reason: choice.finish_reason
-            };
-            res.write(`data: ${JSON.stringify(data)}\n\n`);
-            break;
-          }
+      // 处理流式响应 - 使用包装后的stream（包含日志记录）
+      // 注意：不要在检测到finish_reason时break，让生成器自然结束以确保日志记录完成
+      for await (const chunk of stream) {
+        const choice = chunk.choices?.[0];
+        if (choice && choice.delta && choice.delta.content) {
+          fullResponse += choice.delta.content;
+          const data = {
+            type: 'chunk',
+            content: choice.delta.content
+          };
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
         }
-      } else if (provider === 'claude') {
-        // Claude streaming
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const eventData = JSON.parse(line.slice(6));
-                if (eventData.type === 'content_block_delta' && eventData.delta?.text) {
-                  const data = {
-                    type: 'chunk',
-                    content: eventData.delta.text
-                  };
-                  res.write(`data: ${JSON.stringify(data)}\n\n`);
-                } else if (eventData.type === 'message_stop') {
-                  const data = {
-                    type: 'finish',
-                    reason: 'stop'
-                  };
-                  res.write(`data: ${JSON.stringify(data)}\n\n`);
-                  break;
-                }
-              } catch (parseError) {
-                // Skip malformed JSON
-                continue;
-              }
-            }
-          }
-        }
-      } else if (provider === 'gemini') {
-        // Gemini streaming
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
 
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const eventData = JSON.parse(line.slice(6));
-                // Gemini格式: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
-                const text = eventData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (text) {
-                  const data = {
-                    type: 'chunk',
-                    content: text
-                  };
-                  res.write(`data: ${JSON.stringify(data)}\n\n`);
-                }
-
-                // 检查是否完成
-                const finishReason = eventData.candidates?.[0]?.finishReason;
-                if (finishReason) {
-                  const data = {
-                    type: 'finish',
-                    reason: finishReason
-                  };
-                  res.write(`data: ${JSON.stringify(data)}\n\n`);
-                  break;
-                }
-              } catch (parseError) {
-                // Skip malformed JSON
-                continue;
-              }
-            }
-          }
+        if (choice && choice.finish_reason) {
+          const data = {
+            type: 'finish',
+            reason: choice.finish_reason
+          };
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
+          // 不要break，让循环继续以确保包装的生成器中的日志记录逻辑执行
         }
       }
 
@@ -219,18 +144,22 @@ router.post('/chat/stream', requireAuth, async (req, res) => {
       res.write('data: {"type":"done"}\n\n');
     } catch (streamError) {
       console.error('Streaming error:', streamError);
+      hasError = true;
+      errorMessage = streamError.message;
       const errorData = {
         type: 'error',
         message: process.env.NODE_ENV === 'development' ? streamError.message : 'AI service error'
       };
       res.write(`data: ${JSON.stringify(errorData)}\n\n`);
     }
-    
+
     res.end();
   } catch (error) {
     console.error('Error in streaming chat:', error);
+    hasError = true;
+    errorMessage = error.message;
     if (!res.headersSent) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'AI streaming service error',
         message: process.env.NODE_ENV === 'development' ? error.message : 'Streaming service temporarily unavailable'
       });

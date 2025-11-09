@@ -3,6 +3,7 @@ const multer = require('multer');
 const uploadService = require('../services/uploadService');
 const characterCardUtils = require('../utils/characterCardUtils');
 const prisma = require('../utils/prismaClient');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -276,7 +277,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // AI完善角色
-router.post('/:id/enhance', async (req, res) => {
+router.post('/:id/enhance', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { enhanceAspects, context, constraints, locale } = req.body;
@@ -367,9 +368,12 @@ ${enhanceAspects?.length > 0 ? `重点完善方面：${enhanceAspects.join('、'
 
     try {
       const aiResponse = await aiService.chat(messages, {
-        temperature: 0.8, // 创意性任务使用较高temperature
+        temperature: 0.8,
         maxTokens: 3000,
-        taskType: 'creative'
+        taskType: 'creative',
+        userId: req.user.id,
+        novelId: character.novelId,
+        requestUrl: req.aiRequestUrl || req.originalUrl
       });
 
       // 尝试解析AI响应为JSON
@@ -507,7 +511,7 @@ router.post('/:id/develop', async (req, res) => {
 });
 
 // AI生成新角色
-router.post('/generate', async (req, res) => {
+router.post('/generate', requireAuth, async (req, res) => {
   try {
     const { novelId, prompt, baseInfo, locale } = req.body;
 
@@ -588,9 +592,12 @@ ${baseInfo?.description ? `\n现有描述：${baseInfo.description}` : ''}
 
     try {
       const aiResponse = await aiService.chat(messages, {
-        temperature: 1, // 创意性任务使用较高temperature
+        temperature: 1,
         maxTokens: 3000,
-        taskType: 'creative'
+        taskType: 'creative',
+        userId: req.user.id,
+        novelId: novelId,
+        requestUrl: req.aiRequestUrl || req.originalUrl
       });
 
       // 尝试解析AI响应为JSON
@@ -730,7 +737,7 @@ router.post('/:id/avatar', upload.single('avatar'), async (req, res) => {
 });
 
 // 导入 SillyTavern 角色卡
-router.post('/import-card', upload.single('card'), async (req, res) => {
+router.post('/import-card', requireAuth, upload.single('card'), async (req, res) => {
   try {
     const { novelId, existingFileUrl, existingFileKey } = req.body;
 
@@ -864,9 +871,12 @@ ${rawDataStr}
       ];
 
       const aiResponse = await aiService.chat(messages, {
-        temperature: 0.2, // 降低温度以提高准确性
+        temperature: 0.2,
         maxTokens: 2000,
-        taskType: 'analysis'
+        taskType: 'analysis',
+        userId: req.user.id,
+        novelId: novelId,
+        requestUrl: req.aiRequestUrl || req.originalUrl
       });
 
       // 解析AI响应
