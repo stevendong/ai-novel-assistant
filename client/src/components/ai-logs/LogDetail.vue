@@ -28,7 +28,7 @@
 
         <a-descriptions-item :label="t('aiLogs.detail.taskType')">
           <a-tag v-if="log.taskType" :color="getTaskTypeColor(log.taskType)">
-            {{ getTaskTypeLabel(log.taskType) }}
+            {{ t(`taskTypes.${log.taskType}`) }}
           </a-tag>
           <span v-else>-</span>
         </a-descriptions-item>
@@ -182,7 +182,8 @@ function formatNumber(num) {
 
 function formatDate(dateString) {
   const date = new Date(dateString);
-  return date.toLocaleString('zh-CN', {
+  const locale = t('locale');
+  return date.toLocaleString(locale === 'zh' ? 'zh-CN' : 'en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -206,7 +207,7 @@ function formatParams(paramsStr) {
     const params = JSON.parse(paramsStr);
     return JSON.stringify(params, null, 2);
   } catch {
-    return paramsStr || '无参数';
+    return paramsStr || '';
   }
 }
 
@@ -238,9 +239,14 @@ function handleCopy() {
 .api-url {
   font-size: 13px;
   padding: 2px 8px;
-  background: #f5f5f5;
+  background: var(--theme-bg-elevated, #fafafa);
   border-radius: 3px;
   color: #1890ff;
+  transition: background-color 0.3s ease;
+}
+
+.api-url:hover {
+  opacity: 0.8;
 }
 
 .cost-value {
@@ -274,8 +280,8 @@ function handleCopy() {
 .params-content,
 .response-content,
 .metadata-content {
-  background: #f5f5f5;
-  border: 1px solid #d9d9d9;
+  background: var(--theme-bg-elevated, #fafafa);
+  border: 1px solid var(--theme-border, #f0f0f0);
   border-radius: 4px;
   padding: 12px;
   max-height: 300px;
@@ -285,6 +291,8 @@ function handleCopy() {
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  color: var(--theme-text, rgba(0, 0, 0, 0.85));
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 .actions {
@@ -294,6 +302,39 @@ function handleCopy() {
 
 :deep(.ant-descriptions-item-label) {
   font-weight: 600;
-  background: #fafafa;
+  background: var(--theme-bg-elevated, #fafafa);
+  color: var(--theme-text, rgba(0, 0, 0, 0.85));
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:deep(.ant-descriptions-item-content) {
+  color: var(--theme-text, rgba(0, 0, 0, 0.85));
+  transition: color 0.3s ease;
+}
+
+:deep(.ant-modal-content) {
+  background: var(--theme-bg-container, #ffffff);
+  transition: background-color 0.3s ease;
+}
+
+:deep(.ant-modal-header) {
+  background: var(--theme-bg-container, #ffffff);
+  border-bottom-color: var(--theme-border, #f0f0f0);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+:deep(.ant-modal-title) {
+  color: var(--theme-text, rgba(0, 0, 0, 0.85));
+  transition: color 0.3s ease;
+}
+
+:deep(.ant-divider) {
+  border-color: var(--theme-border, #f0f0f0);
+  transition: border-color 0.3s ease;
+}
+
+:deep(.ant-divider-inner-text) {
+  color: var(--theme-text-secondary, rgba(0, 0, 0, 0.65));
+  transition: color 0.3s ease;
 }
 </style>
