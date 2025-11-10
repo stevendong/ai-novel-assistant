@@ -1,7 +1,7 @@
 <template>
   <a-modal
     v-model:open="isVisible"
-    :title="t('aiLogs.detail.title')"
+    :title="t('aiLogs.detail.modalTitle')"
     width="900px"
     :footer="null"
     @cancel="handleClose"
@@ -12,42 +12,42 @@
           {{ formatDate(log.createdAt) }}
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.provider')">
+        <a-descriptions-item :label="t('aiLogs.detail.provider')">
           <a-tag :color="getProviderColor(log.provider)">
             {{ log.provider.toUpperCase() }}
           </a-tag>
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.model')">
+        <a-descriptions-item :label="t('aiLogs.detail.model')">
           <code>{{ log.model }}</code>
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.apiUrl')" :span="2">
+        <a-descriptions-item :label="t('aiLogs.detail.endpoint')" :span="2">
           <code class="api-url">{{ log.apiUrl || '-' }}</code>
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.taskType')">
+        <a-descriptions-item :label="t('aiLogs.detail.taskType')">
           <a-tag v-if="log.taskType" :color="getTaskTypeColor(log.taskType)">
             {{ t(`taskTypes.${log.taskType}`) }}
           </a-tag>
           <span v-else>-</span>
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.status')">
+        <a-descriptions-item :label="t('aiLogs.detail.status')">
           <a-tag :color="log.status === 'success' ? 'success' : 'error'">
-            {{ t(`aiLogs.status.${log.status}`) }}
+            {{ log.status === 'success' ? t('aiLogs.detail.statusSuccess') : t('aiLogs.detail.statusFailed') }}
           </a-tag>
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.promptTokens')">
+        <a-descriptions-item :label="t('aiLogs.detail.promptTokens')">
           {{ formatNumber(log.promptTokens) }}
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.completionTokens')">
+        <a-descriptions-item :label="t('aiLogs.detail.completionTokens')">
           {{ formatNumber(log.completionTokens) }}
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.totalTokens')">
+        <a-descriptions-item :label="t('aiLogs.detail.totalTokens')">
           <strong>{{ formatNumber(log.totalTokens) }}</strong>
         </a-descriptions-item>
 
@@ -55,7 +55,7 @@
           <strong class="cost-value">${{ (log.estimatedCost || 0).toFixed(4) }}</strong>
         </a-descriptions-item>
 
-        <a-descriptions-item :label="t('aiLogs.table.latency')">
+        <a-descriptions-item :label="t('aiLogs.detail.latency')">
           <span :class="getLatencyClass(log.latencyMs)">
             {{ log.latencyMs ? `${log.latencyMs}ms` : '-' }}
           </span>
@@ -104,7 +104,7 @@
       <div class="actions">
         <a-space>
           <a-button @click="handleClose">{{ t('aiLogs.detail.close') }}</a-button>
-          <a-button type="primary" @click="handleCopy">{{ t('aiLogs.detail.copyDetail') }}</a-button>
+          <a-button type="primary" @click="handleCopy">{{ t('aiLogs.detail.copyDetails') }}</a-button>
         </a-space>
       </div>
     </div>
@@ -163,6 +163,10 @@ function getTaskTypeColor(taskType) {
     chat: 'lime'
   };
   return colors[taskType] || 'default';
+}
+
+function getTaskTypeLabel(taskType) {
+  return t(`taskTypes.${taskType}`, taskType);
 }
 
 function getLatencyClass(latency) {

@@ -1,8 +1,8 @@
 <template>
-  <a-card :title="t('aiLogs.stats.byEndpoint')" :loading="loading" :bordered="false">
+  <a-card :title="t('aiLogs.charts.endpoint.title')" :loading="loading" :bordered="false">
     <div ref="chartRef" class="chart-container"></div>
     <div v-if="!data || data.length === 0" class="empty-state">
-      <a-empty :description="t('aiLogs.stats.noData')" />
+      <a-empty :description="t('aiLogs.charts.endpoint.noData')" />
     </div>
   </a-card>
 </template>
@@ -53,7 +53,7 @@ function initChart() {
 function updateChart() {
   if (!chartInstance || !props.data || props.data.length === 0) return;
 
-  const endpoints = props.data.map(item => item.apiUrl || t('aiLogs.stats.unknown'));
+  const endpoints = props.data.map(item => item.apiUrl || t('aiLogs.charts.endpoint.unknown'));
   const calls = props.data.map(item => item.calls);
   const costs = props.data.map(item => item.totalCost);
 
@@ -67,16 +67,16 @@ function updateChart() {
         const index = params[0].dataIndex;
         const item = props.data[index];
         return `
-          <strong>${item.apiUrl || t('aiLogs.stats.unknown')}</strong><br/>
-          ${t('aiLogs.stats.calls')}: ${item.calls.toLocaleString()}<br/>
-          ${t('aiLogs.stats.tokens')}: ${item.totalTokens.toLocaleString()}<br/>
-          ${t('aiLogs.stats.cost')}: $${item.totalCost.toFixed(4)}<br/>
-          ${t('aiLogs.stats.latency')}: ${Math.round(item.avgLatency)}ms
+          <strong>${item.apiUrl || t('aiLogs.charts.endpoint.unknown')}</strong><br/>
+          ${t('aiLogs.charts.endpoint.calls')}: ${item.calls.toLocaleString()}<br/>
+          ${t('aiLogs.charts.endpoint.totalTokens')}: ${item.totalTokens.toLocaleString()}<br/>
+          ${t('aiLogs.charts.endpoint.totalCost')}: $${item.totalCost.toFixed(4)}<br/>
+          ${t('aiLogs.charts.endpoint.avgLatency')}: ${Math.round(item.avgLatency)}ms
         `;
       }
     },
     legend: {
-      data: [t('aiLogs.stats.calls'), `${t('aiLogs.stats.cost')} ($)`]
+      data: [t('aiLogs.charts.endpoint.callsCount'), t('aiLogs.charts.endpoint.costLabel')]
     },
     grid: {
       left: '3%',
@@ -102,18 +102,18 @@ function updateChart() {
     yAxis: [
       {
         type: 'value',
-        name: t('aiLogs.stats.calls'),
+        name: t('aiLogs.charts.endpoint.callsCount'),
         position: 'left'
       },
       {
         type: 'value',
-        name: `${t('aiLogs.stats.cost')} ($)`,
+        name: t('aiLogs.charts.endpoint.costLabel'),
         position: 'right'
       }
     ],
     series: [
       {
-        name: t('aiLogs.stats.calls'),
+        name: t('aiLogs.charts.endpoint.callsCount'),
         type: 'bar',
         yAxisIndex: 0,
         data: calls,
@@ -122,7 +122,7 @@ function updateChart() {
         }
       },
       {
-        name: `${t('aiLogs.stats.cost')} ($)`,
+        name: t('aiLogs.charts.endpoint.costLabel'),
         type: 'line',
         yAxisIndex: 1,
         data: costs,

@@ -1,22 +1,25 @@
 <template>
-  <a-card title="成本趋势" :loading="loading" :bordered="false">
+  <a-card :title="t('aiLogs.charts.costTrend.title')" :loading="loading" :bordered="false">
     <template #extra>
       <a-radio-group v-model:value="period" button-style="solid" size="small" @change="handlePeriodChange">
-        <a-radio-button value="day">日</a-radio-button>
-        <a-radio-button value="week">周</a-radio-button>
-        <a-radio-button value="month">月</a-radio-button>
+        <a-radio-button value="day">{{ t('aiLogs.charts.costTrend.day') }}</a-radio-button>
+        <a-radio-button value="week">{{ t('aiLogs.charts.costTrend.week') }}</a-radio-button>
+        <a-radio-button value="month">{{ t('aiLogs.charts.costTrend.month') }}</a-radio-button>
       </a-radio-group>
     </template>
     <div ref="chartRef" class="chart-container"></div>
     <div v-if="!data || !data.trends || data.trends.length === 0" class="empty-state">
-      <a-empty description="暂无数据" />
+      <a-empty :description="t('aiLogs.charts.costTrend.noData')" />
     </div>
   </a-card>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
+
+const { t } = useI18n();
 
 const props = defineProps({
   data: {
@@ -68,7 +71,7 @@ function updateChart() {
       trigger: 'axis',
       formatter: (params) => {
         const param = params[0];
-        return `${param.name}<br/>成本: $${param.value.toFixed(4)}`;
+        return `${param.name}<br/>${t('aiLogs.charts.costTrend.cost')}: $${param.value.toFixed(4)}`;
       }
     },
     grid: {
@@ -88,14 +91,14 @@ function updateChart() {
     },
     yAxis: {
       type: 'value',
-      name: '成本 ($)',
+      name: t('aiLogs.charts.costTrend.costLabel'),
       axisLabel: {
         formatter: '${value}'
       }
     },
     series: [
       {
-        name: '成本',
+        name: t('aiLogs.charts.costTrend.cost'),
         type: 'line',
         data: costs,
         smooth: true,

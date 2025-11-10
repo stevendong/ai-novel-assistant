@@ -1,8 +1,8 @@
 <template>
-  <a-card :title="t('aiLogs.stats.byProvider')" :loading="loading" :bordered="false">
+  <a-card :title="t('aiLogs.charts.provider.title')" :loading="loading" :bordered="false">
     <div ref="chartRef" class="chart-container"></div>
     <div v-if="!data || data.length === 0" class="empty-state">
-      <a-empty :description="t('aiLogs.stats.noData')" />
+      <a-empty :description="t('aiLogs.charts.provider.noData')" />
     </div>
   </a-card>
 </template>
@@ -69,15 +69,15 @@ function updateChart() {
         const item = props.data[index];
         return `
           <strong>${item.provider.toUpperCase()} - ${item.model}</strong><br/>
-          ${t('aiLogs.stats.calls')}: ${item.calls.toLocaleString()}<br/>
-          ${t('aiLogs.stats.tokens')}: ${item.totalTokens.toLocaleString()}<br/>
-          ${t('aiLogs.stats.cost')}: $${item.totalCost.toFixed(4)}<br/>
-          ${t('aiLogs.stats.latency')}: ${Math.round(item.avgLatency)}ms
+          ${t('aiLogs.charts.provider.calls')}: ${item.calls.toLocaleString()}<br/>
+          ${t('aiLogs.charts.provider.totalTokens')}: ${item.totalTokens.toLocaleString()}<br/>
+          ${t('aiLogs.charts.provider.totalCost')}: $${item.totalCost.toFixed(4)}<br/>
+          ${t('aiLogs.charts.provider.avgLatency')}: ${Math.round(item.avgLatency)}ms
         `;
       }
     },
     legend: {
-      data: [t('aiLogs.stats.calls'), `${t('aiLogs.stats.cost')} (×0.01$)`, `${t('aiLogs.stats.tokens')} (×1000)`]
+      data: [t('aiLogs.charts.provider.callsCount'), t('aiLogs.charts.provider.costLabel'), t('aiLogs.charts.provider.tokensLabel')]
     },
     grid: {
       left: '3%',
@@ -99,7 +99,7 @@ function updateChart() {
     },
     series: [
       {
-        name: t('aiLogs.stats.calls'),
+        name: t('aiLogs.charts.provider.callsCount'),
         type: 'bar',
         data: calls,
         itemStyle: {
@@ -107,7 +107,7 @@ function updateChart() {
         }
       },
       {
-        name: `${t('aiLogs.stats.cost')} (×0.01$)`,
+        name: t('aiLogs.charts.provider.costLabel'),
         type: 'bar',
         data: costs.map(c => (c * 100).toFixed(2)),
         itemStyle: {
@@ -115,7 +115,7 @@ function updateChart() {
         }
       },
       {
-        name: `${t('aiLogs.stats.tokens')} (×1000)`,
+        name: t('aiLogs.charts.provider.tokensLabel'),
         type: 'bar',
         data: tokens.map(t => (t / 1000).toFixed(2)),
         itemStyle: {
