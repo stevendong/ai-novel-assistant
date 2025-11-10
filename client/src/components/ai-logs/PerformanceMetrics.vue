@@ -2,9 +2,9 @@
   <div class="performance-metrics">
     <a-row :gutter="16">
       <a-col :span="8">
-        <a-card title="延迟分布" :loading="loading" :bordered="false">
+        <a-card :title="t('aiLogs.performance.latencyDistribution')" :loading="loading" :bordered="false">
           <div class="metric-item">
-            <div class="metric-label">平均延迟</div>
+            <div class="metric-label">{{ t('aiLogs.performance.avgLatency') }}</div>
             <div class="metric-value" :class="getLatencyClass(data.avgLatency)">
               {{ Math.round(data.avgLatency || 0) }}ms
             </div>
@@ -28,9 +28,9 @@
       </a-col>
 
       <a-col :span="8">
-        <a-card title="错误率" :loading="loading" :bordered="false">
+        <a-card :title="t('aiLogs.performance.errorRate')" :loading="loading" :bordered="false">
           <div class="metric-item">
-            <div class="metric-label">错误率</div>
+            <div class="metric-label">{{ t('aiLogs.performance.errorRate') }}</div>
             <div class="metric-value" :class="getErrorRateClass(data.errorRate)">
               {{ (data.errorRate || 0).toFixed(2) }}%
             </div>
@@ -38,11 +38,11 @@
           <a-divider />
           <div class="error-details">
             <div class="detail-row">
-              <span class="detail-label">总调用:</span>
+              <span class="detail-label">{{ t('aiLogs.performance.totalCalls') }}:</span>
               <span class="detail-value">{{ formatNumber(data.totalCalls || 0) }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">错误次数:</span>
+              <span class="detail-label">{{ t('aiLogs.performance.errorCount') }}:</span>
               <span class="detail-value error-count">{{ formatNumber(data.errorCount || 0) }}</span>
             </div>
           </div>
@@ -50,7 +50,7 @@
       </a-col>
 
       <a-col :span="8">
-        <a-card title="性能评级" :loading="loading" :bordered="false">
+        <a-card :title="t('aiLogs.performance.performanceRating')" :loading="loading" :bordered="false">
           <div class="performance-rating">
             <div class="rating-badge" :class="getRatingClass()">
               {{ getPerformanceRating() }}
@@ -64,12 +64,12 @@
             <div class="rating-item">
               <CheckCircleOutlined v-if="(data.errorRate || 0) < 1" style="color: #52c41a" />
               <CloseCircleOutlined v-else style="color: #ff4d4f" />
-              <span>错误率 {{ (data.errorRate || 0) < 1 ? '良好' : '需改进' }}</span>
+              <span>{{ (data.errorRate || 0) < 1 ? t('aiLogs.performance.errorRateGood') : t('aiLogs.performance.errorRateNeedsImprovement') }}</span>
             </div>
             <div class="rating-item">
               <CheckCircleOutlined v-if="(data.avgLatency || 0) < 2000" style="color: #52c41a" />
               <CloseCircleOutlined v-else style="color: #ff4d4f" />
-              <span>响应速度 {{ (data.avgLatency || 0) < 2000 ? '良好' : '需优化' }}</span>
+              <span>{{ (data.avgLatency || 0) < 2000 ? t('aiLogs.performance.responseSpeedGood') : t('aiLogs.performance.responseSpeedNeedsOptimization') }}</span>
             </div>
           </div>
         </a-card>
@@ -78,7 +78,7 @@
 
     <a-row :gutter="16" style="margin-top: 16px">
       <a-col :span="24">
-        <a-card title="延迟分布图" :loading="loading" :bordered="false">
+        <a-card :title="t('aiLogs.performance.latencyChart')" :loading="loading" :bordered="false">
           <div ref="chartRef" class="chart-container"></div>
         </a-card>
       </a-col>
@@ -89,7 +89,10 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue';
+import { useI18n } from 'vue-i18n';
 import * as echarts from 'echarts';
+
+const { t } = useI18n();
 
 const props = defineProps({
   data: {
@@ -135,7 +138,7 @@ function updateChart() {
     { name: 'P50', value: data.p50Latency || 0 },
     { name: 'P95', value: data.p95Latency || 0 },
     { name: 'P99', value: data.p99Latency || 0 },
-    { name: '平均', value: data.avgLatency || 0 }
+    { name: t('aiLogs.performance.average'), value: data.avgLatency || 0 }
   ];
 
   const option = {
@@ -160,11 +163,11 @@ function updateChart() {
     },
     yAxis: {
       type: 'value',
-      name: '延迟 (ms)'
+      name: t('aiLogs.performance.latencyMs')
     },
     series: [
       {
-        name: '延迟',
+        name: t('aiLogs.performance.latencyLabel'),
         type: 'bar',
         data: latencies.map(l => l.value),
         itemStyle: {
@@ -219,13 +222,7 @@ function getRatingClass() {
 
 function getRatingDescription() {
   const rating = getPerformanceRating();
-  const descriptions = {
-    A: '优秀 - 性能表现出色',
-    B: '良好 - 性能表现正常',
-    C: '一般 - 存在优化空间',
-    D: '较差 - 需要立即优化'
-  };
-  return descriptions[rating] || '';
+  return t(`aiLogs.performance.ratings.${rating.toLowerCase()}`, '');
 }
 
 function formatNumber(num) {

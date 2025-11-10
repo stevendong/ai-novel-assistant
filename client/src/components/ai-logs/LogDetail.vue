@@ -1,110 +1,110 @@
 <template>
   <a-modal
     v-model:open="isVisible"
-    title="调用日志详情"
+    :title="t('aiLogs.detail.modalTitle')"
     width="900px"
     :footer="null"
     @cancel="handleClose"
   >
     <div v-if="log" class="log-detail">
       <a-descriptions bordered :column="2" size="small">
-        <a-descriptions-item label="调用时间" :span="2">
+        <a-descriptions-item :label="t('aiLogs.detail.callTime')" :span="2">
           {{ formatDate(log.createdAt) }}
         </a-descriptions-item>
 
-        <a-descriptions-item label="提供商">
+        <a-descriptions-item :label="t('aiLogs.detail.provider')">
           <a-tag :color="getProviderColor(log.provider)">
             {{ log.provider.toUpperCase() }}
           </a-tag>
         </a-descriptions-item>
 
-        <a-descriptions-item label="模型">
+        <a-descriptions-item :label="t('aiLogs.detail.model')">
           <code>{{ log.model }}</code>
         </a-descriptions-item>
 
-        <a-descriptions-item label="接口路径" :span="2">
+        <a-descriptions-item :label="t('aiLogs.detail.endpoint')" :span="2">
           <code class="api-url">{{ log.apiUrl || '-' }}</code>
         </a-descriptions-item>
 
-        <a-descriptions-item label="任务类型">
+        <a-descriptions-item :label="t('aiLogs.detail.taskType')">
           <a-tag v-if="log.taskType" :color="getTaskTypeColor(log.taskType)">
             {{ getTaskTypeLabel(log.taskType) }}
           </a-tag>
           <span v-else>-</span>
         </a-descriptions-item>
 
-        <a-descriptions-item label="状态">
+        <a-descriptions-item :label="t('aiLogs.detail.status')">
           <a-tag :color="log.status === 'success' ? 'success' : 'error'">
-            {{ log.status === 'success' ? '成功' : '失败' }}
+            {{ log.status === 'success' ? t('aiLogs.detail.statusSuccess') : t('aiLogs.detail.statusFailed') }}
           </a-tag>
         </a-descriptions-item>
 
-        <a-descriptions-item label="提示词Token">
+        <a-descriptions-item :label="t('aiLogs.detail.promptTokens')">
           {{ formatNumber(log.promptTokens) }}
         </a-descriptions-item>
 
-        <a-descriptions-item label="完成Token">
+        <a-descriptions-item :label="t('aiLogs.detail.completionTokens')">
           {{ formatNumber(log.completionTokens) }}
         </a-descriptions-item>
 
-        <a-descriptions-item label="总Token">
+        <a-descriptions-item :label="t('aiLogs.detail.totalTokens')">
           <strong>{{ formatNumber(log.totalTokens) }}</strong>
         </a-descriptions-item>
 
-        <a-descriptions-item label="估算成本">
+        <a-descriptions-item :label="t('aiLogs.detail.estimatedCost')">
           <strong class="cost-value">${{ (log.estimatedCost || 0).toFixed(4) }}</strong>
         </a-descriptions-item>
 
-        <a-descriptions-item label="延迟">
+        <a-descriptions-item :label="t('aiLogs.detail.latency')">
           <span :class="getLatencyClass(log.latencyMs)">
             {{ log.latencyMs ? `${log.latencyMs}ms` : '-' }}
           </span>
         </a-descriptions-item>
 
-        <a-descriptions-item label="重试次数">
+        <a-descriptions-item :label="t('aiLogs.detail.retryCount')">
           {{ log.retryCount || 0 }}
         </a-descriptions-item>
 
-        <a-descriptions-item v-if="log.novel" label="关联小说" :span="2">
+        <a-descriptions-item v-if="log.novel" :label="t('aiLogs.detail.relatedNovel')" :span="2">
           {{ log.novel.title }}
         </a-descriptions-item>
 
-        <a-descriptions-item v-if="log.sessionId" label="会话ID" :span="2">
+        <a-descriptions-item v-if="log.sessionId" :label="t('aiLogs.detail.sessionId')" :span="2">
           <code>{{ log.sessionId }}</code>
         </a-descriptions-item>
       </a-descriptions>
 
-      <a-divider>请求消息</a-divider>
+      <a-divider>{{ t('aiLogs.detail.requestMessages') }}</a-divider>
       <div class="message-section">
         <pre class="message-content">{{ formatMessages(log.requestMessages) }}</pre>
       </div>
 
-      <a-divider>请求参数</a-divider>
+      <a-divider>{{ t('aiLogs.detail.requestParams') }}</a-divider>
       <div class="params-section">
         <pre class="params-content">{{ formatParams(log.requestParams) }}</pre>
       </div>
 
-      <a-divider>响应内容</a-divider>
+      <a-divider>{{ t('aiLogs.detail.responseContent') }}</a-divider>
       <div class="response-section">
         <a-alert
           v-if="log.status === 'error'"
           type="error"
           :message="log.errorMessage"
-          :description="log.errorCode ? `错误代码: ${log.errorCode}` : null"
+          :description="log.errorCode ? `${t('aiLogs.detail.errorCode')}: ${log.errorCode}` : null"
           show-icon
         />
-        <pre v-else class="response-content">{{ log.responseContent || '无响应内容' }}</pre>
+        <pre v-else class="response-content">{{ log.responseContent || t('aiLogs.detail.noResponseContent') }}</pre>
       </div>
 
-      <a-divider v-if="log.responseMetadata">响应元数据</a-divider>
+      <a-divider v-if="log.responseMetadata">{{ t('aiLogs.detail.responseMetadata') }}</a-divider>
       <div v-if="log.responseMetadata" class="metadata-section">
         <pre class="metadata-content">{{ formatMetadata(log.responseMetadata) }}</pre>
       </div>
 
       <div class="actions">
         <a-space>
-          <a-button @click="handleClose">关闭</a-button>
-          <a-button type="primary" @click="handleCopy">复制详情</a-button>
+          <a-button @click="handleClose">{{ t('aiLogs.detail.close') }}</a-button>
+          <a-button type="primary" @click="handleCopy">{{ t('aiLogs.detail.copyDetails') }}</a-button>
         </a-space>
       </div>
     </div>
@@ -114,6 +114,9 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { message } from 'ant-design-vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const props = defineProps({
   visible: {
@@ -163,14 +166,7 @@ function getTaskTypeColor(taskType) {
 }
 
 function getTaskTypeLabel(taskType) {
-  const labels = {
-    creative: '创作',
-    outline: '大纲',
-    consistency: '一致性',
-    enhancement: '增强',
-    chat: '对话'
-  };
-  return labels[taskType] || taskType;
+  return t(`taskTypes.${taskType}`, taskType);
 }
 
 function getLatencyClass(latency) {
@@ -226,9 +222,9 @@ function formatMetadata(metadataStr) {
 function handleCopy() {
   const content = JSON.stringify(props.log, null, 2);
   navigator.clipboard.writeText(content).then(() => {
-    message.success('已复制到剪贴板');
+    message.success(t('aiLogs.detail.copySuccess'));
   }).catch(() => {
-    message.error('复制失败');
+    message.error(t('aiLogs.detail.copyFailed'));
   });
 }
 </script>
