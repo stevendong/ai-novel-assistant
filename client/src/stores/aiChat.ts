@@ -28,6 +28,7 @@ export interface ConversationSession {
   mode: 'chat' | 'enhance' | 'check'
   title: string
   messages: ChatMessage[]
+  messageCount: number
   createdAt: Date
   updatedAt: Date
   isCreating?: boolean  // 标记是否正在创建中，避免重复调用
@@ -89,6 +90,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         actions: getQuickActions(),
         metadata: { messageType: 'welcome' }  // 🔥 添加欢迎消息标记
       }],
+      messageCount: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
       isCreating: true  // 🔥 标记为创建中状态
@@ -110,6 +112,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
       // Load messages if not already loaded
       if (session.messages.length === 0) {
         session.messages = await loadSessionMessages(sessionId)
+        session.messageCount = session.messages.length
       }
       return true
     }
@@ -146,6 +149,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
     currentSession.value!.messages.push(message)
     currentSession.value!.updatedAt = new Date()
+    currentSession.value!.messageCount = currentSession.value!.messages.length
 
     // Update session title if this is the first user message
     if (role === 'user' && currentSession.value!.messages.filter(m => m.role === 'user').length === 1) {
@@ -158,6 +162,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         currentSession.value!.messages[0], // Keep welcome message
         ...currentSession.value!.messages.slice(-(settings.value.maxHistoryLength - 1))
       ]
+      currentSession.value!.messageCount = currentSession.value!.messages.length
     }
 
     if (settings.value.autoSave) {
@@ -493,6 +498,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
       // 将新的欢迎消息添加到当前会话
       currentSession.value.messages = [newWelcomeMessage]
+      currentSession.value.messageCount = currentSession.value.messages.length
 
       currentSession.value.updatedAt = new Date()
 
@@ -524,6 +530,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
           // Load messages for the new current session
           if (currentSession.value.messages.length === 0) {
             currentSession.value.messages = await loadSessionMessages(currentSession.value.id)
+            currentSession.value.messageCount = currentSession.value.messages.length
           }
         } else {
           // 允许没有会话的状态，不自动创建新会话
@@ -564,6 +571,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         // Load messages for the current session
         if (currentSession.value.messages.length === 0) {
           currentSession.value.messages = await loadSessionMessages(currentSession.value.id)
+          currentSession.value.messageCount = currentSession.value.messages.length
         }
       }
     } catch (error) {
@@ -773,6 +781,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         mode: conv.mode,
         title: conv.title,
         messages: [], // Messages will be loaded on demand
+        messageCount: conv.messageCount ?? 0,
         createdAt: new Date(conv.createdAt),
         updatedAt: new Date(conv.updatedAt)
       }))

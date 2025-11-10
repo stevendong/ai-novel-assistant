@@ -71,7 +71,7 @@
                 <div class="session-stats">
                   <span class="stat-item">
                     <MessageOutlined class="stat-icon" />
-                    {{ session.messages.length }}
+                    {{ session.messageCount ?? session.messages.length }}
                   </span>
                   <span class="stat-divider">·</span>
                   <span class="stat-item time-stat">

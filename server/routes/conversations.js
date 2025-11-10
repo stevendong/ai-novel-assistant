@@ -32,6 +32,9 @@ router.get('/', requireAuth, async (req, res) => {
         },
         novel: {
           select: { id: true, title: true }
+        },
+        _count: {
+          select: { messages: true }
         }
       },
       orderBy: { updatedAt: 'desc' },
@@ -48,7 +51,7 @@ router.get('/', requireAuth, async (req, res) => {
       settings: conv.settings ? JSON.parse(conv.settings) : null,
       createdAt: conv.createdAt,
       updatedAt: conv.updatedAt,
-      messageCount: conv.messages.length,
+      messageCount: conv._count?.messages ?? conv.messages.length,
       lastMessage: conv.messages[conv.messages.length - 1]?.content.substring(0, 100),
       novel: conv.novel
     }));
