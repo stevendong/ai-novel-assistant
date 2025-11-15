@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This audit identified **13 critical issues** in the character chat implementation across security, performance, data consistency, and architecture domains. The most severe issues include:
+This audit identified **13 issues** (2 critical, 3 high, 4 medium, 4 low) in the character chat implementation across security, performance, data consistency, and architecture domains（已修复）. The most severe issues include:
 
 - **Missing authorization checks** allowing unauthorized access to private characters
 - **Backend message persistence gaps** leading to potential data loss
@@ -80,6 +80,8 @@ router.post('/:id/chat/stream', requireAuth, async (req, res) => {
   // Continue with chat logic...
 })
 ```
+
+**Status**: （已修复 —— 后端现已在 `server/routes/characters.js` 中挂载 `requireOwnership('character')`，并在 `server/services/characterChatService.js` 内再次校验 `character.novel.userId`，未授权访问会返回 403/404。）
 
 **Impact**: High - Direct security vulnerability exposing private user data
 
@@ -182,6 +184,8 @@ router.post('/:id/chat/stream', requireAuth, requireOwnership('character'), asyn
 });
 ```
 
+**Status**: （已修复 —— 新的 `CharacterChatService` 在处理请求前创建/查询会话并通过 Prisma 落库用户消息与助手消息，流式接口在 `characterChatService.saveAssistantMessage` 中于流结束后一次性保存响应内容。）
+
 **Impact**: High - User data loss, poor reliability
 
 **Effort**: Medium - Requires transaction handling and error recovery
@@ -281,13 +285,15 @@ router.put('/:id', requireAuth, requireOwnership('character'), async (req, res) 
 
   // Update character...
 
-  // Clear all locale variants from cache
-  promptCache.del(`prompt_${id}_zh-CN`);
-  promptCache.del(`prompt_${id}_en-US`);
+  // Clear all locale variants from cache（已修复）
+  const localeKeys = promptCache.keys().filter(key => key.startsWith(`prompt_${id}_`));
+  promptCache.del(localeKeys);
 
   res.json(updatedCharacter);
 });
 ```
+
+**Status**: （已修复 —— `server/services/characterChatService.js` 通过 `NodeCache` 缓存提示词，并由 `characterChatService.invalidatePrompt` 在角色更新/删除时统一清理。）
 
 **Expected Improvement**:
 - Cache hit ratio: ~95% (assuming characters rarely change during active chats)
@@ -421,6 +427,8 @@ const retrySyncSession = async (session: ConversationSession, attempt = 1) => {
   }
 }
 ```
+
+**Status**: （已修复 —— `client/src/stores/aiChat.ts` 为会话新增 `serverConversationId`、`syncState`、`lastSyncAttempt` 等字段，通过 `linkSessionToServer` 和 `retrySyncSession` 保证前后端 ID 同步并提供指数退避重试，无需再依赖 `session_` 前缀。）
 
 **Impact**: Medium-High - Prevents data inconsistency and duplicate conversations
 
@@ -606,6 +614,8 @@ router.post('/:id/chat/stream', requireAuth, requireOwnership('character'), asyn
 - Reduced code by ~100 lines
 - Better separation of concerns
 
+**Status**: （已修复 —— `CharacterChatService` 承担角色上下文、消息历史、AI 调用与存储的全部职责，`server/routes/characters.js` 仅负责 HTTP 包装，已消除双重实现。）
+
 **Impact**: Medium - Improves long-term maintainability
 
 **Effort**: Medium - Requires careful refactoring (~4 hours)
@@ -738,6 +748,8 @@ router.post('/:id/chat/stream', async (req, res) => {
 
 **Impact**: Low-Medium - Better context management, prevents token overflow
 
+**Status**: （已修复 —— `server/services/characterChatService.js` 引入 `ConversationHistoryManager` 使用 `@dqbd/tiktoken` 控制历史消息的 token 总量，并在 `server/config/characterChat.js` 中提供可配置的最小/最大条数。）
+
 **Effort**: Medium - Requires tiktoken integration (~150 lines)
 
 ---
@@ -777,10 +789,16 @@ const chatRateLimiter = rateLimit({
   },
   keyGenerator: (req) => req.user.id,
   handler: (req, res) => {
+    const resetTime = req.rateLimit?.resetTime instanceof Date
+      ? Math.ceil((req.rateLimit.resetTime.getTime() - Date.now()) / 1000)
+      : (typeof req.rateLimit?.resetTime === 'number'
+          ? Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000)
+          : 60)
+
     res.status(429).json({
       error: 'Too Many Requests',
       message: 'Chat rate limit exceeded. Please wait before sending more messages.',
-      retryAfter: Math.ceil(req.rateLimit.resetTime / 1000)
+      retryAfter: Math.max(resetTime, 0) || 60  // ✅ handle Date/number safely（已修复）
     })
   },
   skip: (req) => req.user.role === 'admin'
@@ -818,39 +836,63 @@ router.post('/:id/chat/stream',
 **Additional Protection**:
 ```javascript
 // Track AI costs per user
-const trackAICost = async (userId, novelId, cost) => {
+const trackAICost = async (userId, novelId, cost, options = {}) => {
+  const provider = options.provider || 'openai'
+  const model = options.model || 'gpt-4o-mini'
+  const dayStart = new Date()
+  dayStart.setUTCHours(0, 0, 0, 0)
+
   await prisma.aIUsageStats.upsert({
     where: {
-      userId_novelId_date: {
+      userId_provider_model_date_novelId: {  // ✅ matches Prisma unique constraint（已修复）
         userId,
-        novelId,
-        date: new Date().toISOString().split('T')[0]
+        provider,
+        model,
+        date: dayStart,
+        novelId
       }
     },
     update: {
       totalCost: { increment: cost },
-      requestCount: { increment: 1 }
+      totalCalls: { increment: 1 }  // ✅ aligns with schema fields（已修复）
     },
     create: {
       userId,
       novelId,
-      date: new Date(),
+      provider,
+      model,
+      date: dayStart,
       totalCost: cost,
-      requestCount: 1
+      totalCalls: 1
     }
   })
 }
 
 // Check budget limits
 const checkUserBudget = async (req, res, next) => {
-  const today = new Date().toISOString().split('T')[0]
+  const provider = req.body.provider || 'openai'
+  const model = req.body.model || 'gpt-4o-mini'
+  let novelContext = req.body.novelId || null
+
+  if (!novelContext && req.params?.id) {
+    const character = await prisma.character.findUnique({
+      where: { id: req.params.id },
+      select: { novelId: true }
+    })
+    novelContext = character?.novelId || null  // ✅ derive novel scope from character（已修复）
+  }
+
+  const dayStart = new Date()
+  dayStart.setUTCHours(0, 0, 0, 0)
 
   const usage = await prisma.aIUsageStats.findUnique({
     where: {
-      userId_novelId_date: {
+      userId_provider_model_date_novelId: {  // ✅ same composite key（已修复）
         userId: req.user.id,
-        novelId: req.body.novelId || 'global',
-        date: today
+        provider,
+        model,
+        date: dayStart,
+        novelId: novelContext
       }
     }
   })
@@ -881,6 +923,8 @@ router.post('/:id/chat/stream',
 ```
 
 **Impact**: Medium - Protects against abuse and cost overruns
+
+**Status**: （已修复 —— 新增 `server/middleware/characterChatGuards.js` 提供按用户/角色限流与 `checkUserBudget`，并在两条聊天路由中串联执行，配合 `AIUsageStats` 的日度花费统计实现成本防护。）
 
 **Effort**: Low - ~100 lines with existing libraries
 
@@ -947,7 +991,10 @@ class StreamingChatClient {
 
         if (done) {
           if (buffer.trim()) {
-            this.processLine(buffer, onChunk)
+            buffer
+              .split('\n')
+              .filter(line => line.trim())
+              .forEach(line => this.processLine(line, onChunk))  // ✅ process remaining SSE lines properly（已修复）
           }
           break
         }
@@ -1033,6 +1080,8 @@ const sendCharacterChatMessage = async (userMessage, characterId, useStream = tr
 
 **Impact**: Low-Medium - Better user experience on unstable networks
 
+**Status**: （已修复 —— `client/src/stores/aiChat.ts` 实现 `StreamingChatClient`，集中处理超时、重试与 `TextDecoder` 缓冲，流事件解析改为单行 JSON，网络故障会自动回退重试。）
+
 **Effort**: Medium-High - ~200 lines, requires careful testing
 
 ---
@@ -1103,6 +1152,8 @@ if (buffer.trim() && buffer.startsWith('data: ')) {
 ```
 
 **Impact**: Low - Rare edge case, but can cause confusing errors
+
+**Status**: （已修复 —— 同一 `StreamingChatClient` 在 `client/src/stores/aiChat.ts` 中维护 `buffer` 并逐行解析，尾部残留会在 `done` 时继续处理，不再出现 JSON 被截断的情况。）
 
 **Effort**: Low - Included in Issue #8 fix
 
@@ -1192,6 +1243,8 @@ STREAM_MAX_RETRIES=3
 
 **Impact**: Low - Improves configurability
 
+**Status**: （已修复 —— 新增 `server/config/characterChat.js` 与 `.env.example` 配置项，路由及服务层全部从配置读取温度、token、缓存、速率与流式参数。）
+
 **Effort**: Low - ~50 lines
 
 ---
@@ -1265,6 +1318,8 @@ if (conversationId) {
 
 **Impact**: Low - Better logging and user awareness
 
+**Status**: （已修复 —— 会话查询统一在 `CharacterChatService` 内完成，若 `conversationId` 不存在或不属于当前用户，路由直接返回 404/403；流式接口也会推送 `type:error` 事件告知前端重新开始。）
+
 **Effort**: Low - 10 lines
 
 ---
@@ -1319,6 +1374,8 @@ const fullCharacter = await loadFullCharacterForPrompt(character.id)
 
 **Impact**: Very Low - Already addressed by caching in Issue #3
 
+**Status**: （已修复 —— `getCharacterWithOwnership` 仅查询角色基础信息，构建提示词时才在缓存未命中时拉取一次完整设定，避免每次请求都加载全部 world settings。）
+
 **Effort**: Low - Refactor existing queries
 
 ---
@@ -1346,10 +1403,15 @@ const conversation = await prisma.aIConversation.create({
       characterName: character.name,
       characterAvatar: character.avatar,
       startedAt: new Date().toISOString(),
-      locale: locale
+      locale
     })
+  },
+  include: {
+    messages: {
+      select: { id: true }
+    }
   }
-})
+})  // ✅ include messages so messageCount is defined（已修复）
 
 // Return conversation info in response
 res.json({
@@ -1357,9 +1419,11 @@ res.json({
   content: response.content,
   characterName: character.name,
   characterAvatar: character.avatar,
-  messageCount: conversation.messages.length
+  messageCount: conversation.messages?.length || 0  // ✅ safe access（已修复）
 })
 ```
+
+**Status**: （已修复 —— 每次创建会话时都会在 `AIConversation.settings` 中记录角色 ID/头像/locale 信息，并在聊天响应中返回 `conversationId` 与相关元数据，供前端列表展示。）
 
 **Impact**: Very Low - Quality of life improvement
 
@@ -1371,19 +1435,19 @@ res.json({
 
 | Priority | Issue | Security | Performance | Data | UX | Effort | Impact |
 |----------|-------|----------|-------------|------|-----|--------|--------|
-| 🔴 P0 | #1 Missing Authorization | ✅ Critical | - | - | - | Low | High |
-| 🔴 P0 | #2 Message Persistence | - | - | ✅ Critical | - | Medium | High |
-| 🟠 P1 | #3 No Prompt Caching | - | ✅ High | - | - | Low | High |
-| 🟠 P1 | #4 Session ID Sync | - | - | ✅ High | - | Medium | Medium |
-| 🟠 P1 | #5 Code Duplication | - | - | - | ✅ High | Medium | Medium |
-| 🟡 P2 | #6 History Limit | - | ✅ Medium | - | - | Medium | Medium |
-| 🟡 P2 | #7 Rate Limiting | ✅ Medium | - | - | - | Low | Medium |
-| 🟡 P2 | #8 Stream Retry | - | - | - | ✅ Medium | High | Low |
-| 🟡 P2 | #9 SSE Parsing | - | - | ✅ Medium | - | Low | Low |
-| 🔵 P3 | #10 Config Hardcode | - | - | - | ✅ Low | Low | Low |
-| 🔵 P3 | #11 Silent Failure | - | - | - | ✅ Low | Low | Low |
-| 🔵 P3 | #12 N+1 Query | - | ✅ Low | - | - | Low | Very Low |
-| 🔵 P3 | #13 Metadata | - | - | - | ✅ Low | Very Low | Very Low |
+| 🔴 P0 | #1 Missing Authorization | ✅ Critical | - | - | - | Low | High（已修复） |
+| 🔴 P0 | #2 Message Persistence | - | - | ✅ Critical | - | Medium | High（已修复） |
+| 🟠 P1 | #3 No Prompt Caching | - | ✅ High | - | - | Low | Medium-High（已修复） |
+| 🟠 P1 | #4 Session ID Sync | - | - | ✅ High | - | Medium | Medium-High（已修复） |
+| 🟠 P1 | #5 Code Duplication | - | - | - | ✅ High | Medium | Medium（已修复） |
+| 🟡 P2 | #6 History Limit | - | ✅ Medium | - | - | Medium | Low-Medium（已修复） |
+| 🟡 P2 | #7 Rate Limiting | ✅ Medium | - | - | - | Low | Medium（已修复） |
+| 🟡 P2 | #8 Stream Retry | - | - | - | ✅ Medium | Medium-High（已修复） | Low-Medium（已修复） |
+| 🟡 P2 | #9 SSE Parsing | - | - | ✅ Medium | - | Low | Low（已修复） |
+| 🔵 P3 | #10 Config Hardcode | - | - | - | ✅ Low | Low | Low（已修复） |
+| 🔵 P3 | #11 Silent Failure | - | - | - | ✅ Low | Low | Low（已修复） |
+| 🔵 P3 | #12 N+1 Query | - | ✅ Low | - | - | Low | Very Low（已修复） |
+| 🔵 P3 | #13 Metadata | - | - | - | ✅ Low | Very Low | Very Low（已修复） |
 
 ---
 

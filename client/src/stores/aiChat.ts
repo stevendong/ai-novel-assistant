@@ -5,6 +5,111 @@ import { aiService } from '@/services/aiService'
 import type { StreamChunk } from '@/services/aiService'
 import i18n, { getCurrentLocale } from '@/i18n'
 
+const STREAM_TIMEOUT = Number(import.meta.env.VITE_CHARACTER_CHAT_STREAM_TIMEOUT || 30000)
+const STREAM_MAX_RETRIES = Number(import.meta.env.VITE_CHARACTER_CHAT_STREAM_MAX_RETRIES || 3)
+const STREAM_RETRY_DELAY = Number(import.meta.env.VITE_CHARACTER_CHAT_STREAM_RETRY_DELAY || 1000)
+
+type StreamEventHandler = (data: any) => void
+
+class StreamingChatClient {
+  maxRetries: number
+  retryDelay: number
+  timeout: number
+
+  constructor(config: { maxRetries: number; retryDelay: number; timeout: number }) {
+    this.maxRetries = config.maxRetries
+    this.retryDelay = config.retryDelay
+    this.timeout = config.timeout
+  }
+
+  async streamWithRetry(url: string, init: RequestInit, onEvent: StreamEventHandler, attempt = 1): Promise<void> {
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), this.timeout)
+
+    try {
+      const response = await fetch(url, {
+        ...init,
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          if (buffer.trim()) {
+            buffer
+              .split('\n')
+              .filter(line => line.trim())
+              .forEach(line => this.processLine(line, onEvent))
+          }
+          break
+        }
+
+        buffer += decoder.decode(value, { stream: true })
+
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          this.processLine(line, onEvent)
+        }
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+
+      const isRetryable =
+        error?.name === 'AbortError' ||
+        (typeof error?.message === 'string' &&
+          (error.message.includes('network') || error.message.includes('timeout')))
+
+      if (isRetryable && attempt < this.maxRetries) {
+        await this.delay(this.retryDelay * attempt)
+        return this.streamWithRetry(url, init, onEvent, attempt + 1)
+      }
+
+      throw error
+    }
+  }
+
+  private processLine(line: string, onEvent: StreamEventHandler) {
+    if (!line.trim() || !line.startsWith('data:')) {
+      return
+    }
+
+    const payload = line.slice(5).trim()
+    if (!payload) return
+
+    try {
+      const data = JSON.parse(payload)
+      onEvent(data)
+    } catch (error) {
+      console.warn('Failed to parse SSE payload:', payload)
+    }
+  }
+
+  private delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+}
+
+const streamingClient = new StreamingChatClient({
+  maxRetries: STREAM_MAX_RETRIES,
+  retryDelay: STREAM_RETRY_DELAY,
+  timeout: STREAM_TIMEOUT
+})
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -24,6 +129,10 @@ export interface ChatMessage {
 
 export interface ConversationSession {
   id: string
+  serverConversationId: string | null
+  syncState: 'local' | 'syncing' | 'synced' | 'error'
+  lastSyncAttempt: Date | null
+  syncError?: string | null
   novelId: string | null
   mode: 'chat' | 'enhance' | 'check' | 'character_chat'
   title: string
@@ -49,6 +158,32 @@ export const useAIChatStore = defineStore('aiChat', () => {
     autoSave: true,
     maxHistoryLength: 50
   })
+
+  const linkSessionToServer = (session: ConversationSession | null, serverId: string | null | undefined) => {
+    if (!session || !serverId) {
+      return
+    }
+    session.serverConversationId = serverId
+    session.syncState = 'synced'
+    session.lastSyncAttempt = new Date()
+    session.syncError = null
+    if (session.id !== serverId) {
+      session.id = serverId
+    }
+  }
+
+  const getServerConversationId = (session: ConversationSession | null) => {
+    if (!session) return null
+    if (session.serverConversationId) {
+      return session.serverConversationId
+    }
+    if (session.id && !session.id.startsWith('session_')) {
+      session.serverConversationId = session.id
+      session.syncState = 'synced'
+      return session.id
+    }
+    return null
+  }
 
   const translate = (key: string, params?: Record<string, unknown>) => {
     return i18n.global.t(key, params) as string
@@ -80,8 +215,16 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
   // Actions
   const createNewSession = async (novelId: string | null = null, mode: 'chat' | 'enhance' | 'check' | 'character_chat' = 'chat', characterId?: string, characterName?: string, characterAvatar?: string) => {
+    const localId =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     const session: ConversationSession = {
-      id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `session_${localId}`,
+      serverConversationId: null,
+      syncState: 'local',
+      lastSyncAttempt: null,
+      syncError: null,
       novelId,
       mode,
       title: generateSessionTitle(mode, characterName),
@@ -120,7 +263,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
       currentSession.value = session
       // Load messages if not already loaded
       if (session.messages.length === 0) {
-        session.messages = await loadSessionMessages(sessionId)
+        session.messages = await loadSessionMessages(session)
         session.messageCount = session.messages.length
       }
       return true
@@ -267,11 +410,9 @@ export const useAIChatStore = defineStore('aiChat', () => {
         const url = `${import.meta.env.VITE_API_BASE_URL}/api/characters/${characterId}/chat/stream`
         const payload = {
           message: userMessage,
-          conversationId: currentSession.value.id.startsWith('session_') ? null : currentSession.value.id,
+          conversationId: getServerConversationId(currentSession.value),
           locale: getCurrentLocale()
         }
-
-        console.log('[Character Chat] Sending request:', { url, payload })
 
         const token = localStorage.getItem('sessionToken')
         const headers: Record<string, string> = {
@@ -282,70 +423,58 @@ export const useAIChatStore = defineStore('aiChat', () => {
           headers['Authorization'] = `Bearer ${token}`
         }
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers,
-          credentials: 'include',
-          body: JSON.stringify(payload)
-        })
+        try {
+          await streamingClient.streamWithRetry(
+            url,
+            {
+              method: 'POST',
+              headers,
+              credentials: 'include',
+              body: JSON.stringify(payload)
+            },
+            (data) => {
+              if (!data) return
 
-        console.log('[Character Chat] Response status:', response.status, response.statusText)
+              if (data.conversationId) {
+                linkSessionToServer(currentSession.value, data.conversationId)
+              }
 
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('[Character Chat] Request failed:', errorText)
-          throw new Error(`Character chat request failed: ${response.status} ${errorText}`)
-        }
-
-        const reader = response.body?.getReader()
-        const decoder = new TextDecoder()
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-
-            const chunk = decoder.decode(value)
-            const lines = chunk.split('\n')
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6))
-
-                  if (data.type === 'chunk' && data.content) {
-                    accumulatedContent += data.content
-                    const messageIndex = currentSession.value!.messages.findIndex(m => m.id === assistantMessage.id)
-                    if (messageIndex !== -1) {
-                      currentSession.value!.messages[messageIndex] = {
-                        ...assistantMessage,
-                        content: accumulatedContent,
-                        timestamp: assistantMessage.timestamp
-                      }
-                      currentSession.value!.updatedAt = new Date()
-                    }
-                  } else if (data.type === 'finish' || data.type === 'done') {
-                    isTyping.value = false
-                    if (assistantMessage.metadata) {
-                      assistantMessage.metadata.streaming = false
-                    }
-                  } else if (data.type === 'error') {
-                    hasError = true
-                    isTyping.value = false
-                    if (assistantMessage) {
-                      assistantMessage.content = data.message || translate('aiChat.errors.characterChatFailed')
-                      if (assistantMessage.metadata) {
-                        assistantMessage.metadata.streaming = false
-                        assistantMessage.metadata.error = true
-                      }
-                    }
+              if (data.type === 'chunk' && data.content) {
+                accumulatedContent += data.content
+                const messageIndex = currentSession.value!.messages.findIndex(m => m.id === assistantMessage.id)
+                if (messageIndex !== -1) {
+                  currentSession.value!.messages[messageIndex] = {
+                    ...assistantMessage,
+                    content: accumulatedContent,
+                    timestamp: assistantMessage.timestamp
                   }
-                } catch (e) {
-                  console.error('Failed to parse SSE data:', e)
+                  currentSession.value!.updatedAt = new Date()
                 }
+              } else if (data.type === 'done') {
+                isTyping.value = false
+                if (assistantMessage.metadata) {
+                  assistantMessage.metadata.streaming = false
+                }
+              } else if (data.type === 'error') {
+                hasError = true
+                isTyping.value = false
+                if (assistantMessage.metadata) {
+                  assistantMessage.metadata.streaming = false
+                  assistantMessage.metadata.error = true
+                }
+                assistantMessage.content = data.message || translate('aiChat.errors.characterChatFailed')
+                throw new Error(data.message || 'Character chat stream error')
               }
             }
+          )
+        } catch (error) {
+          hasError = true
+          throw error
+        } finally {
+          if (assistantMessage.metadata) {
+            assistantMessage.metadata.streaming = false
           }
+          isTyping.value = false
         }
 
         if (settings.value.autoSave && !hasError) {
@@ -356,11 +485,15 @@ export const useAIChatStore = defineStore('aiChat', () => {
       } else {
         const response = await apiClient.post(`/api/characters/${characterId}/chat`, {
           message: userMessage,
-          conversationId: currentSession.value.id.startsWith('session_') ? null : currentSession.value.id,
+          conversationId: getServerConversationId(currentSession.value),
           locale: getCurrentLocale()
         })
 
         isTyping.value = false
+
+        if (response.data?.conversationId) {
+          linkSessionToServer(currentSession.value, response.data.conversationId)
+        }
 
         return await addMessage('assistant', response.data.content)
       }
@@ -617,12 +750,14 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
 
     try {
+      const serverId = getServerConversationId(currentSession.value)
+
       // 如果会话还未同步到服务器，直接重置本地消息即可
-      if (!currentSession.value.id || currentSession.value.id.startsWith('session_')) {
+      if (!serverId) {
         currentSession.value.messages = []
       } else {
         // 调用服务器API删除所有消息（包括欢迎消息）
-        await apiClient.delete(`/api/conversations/${currentSession.value.id}/messages`)
+        await apiClient.delete(`/api/conversations/${serverId}/messages`)
 
         // 清空当前会话的所有消息
         currentSession.value.messages = []
@@ -639,8 +774,8 @@ export const useAIChatStore = defineStore('aiChat', () => {
       }
 
       // 如果会话已同步，补写欢迎消息到服务器
-      if (currentSession.value.id && !currentSession.value.id.startsWith('session_')) {
-        const response = await apiClient.post(`/api/conversations/${currentSession.value.id}/messages`, {
+      if (serverId) {
+        const response = await apiClient.post(`/api/conversations/${serverId}/messages`, {
           role: newWelcomeMessage.role,
           content: newWelcomeMessage.content,
           messageType: 'welcome',
@@ -672,11 +807,12 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const deleteSession = async (sessionId: string) => {
     const index = sessions.value.findIndex(s => s.id === sessionId)
     if (index !== -1) {
+      const session = sessions.value[index]
       sessions.value.splice(index, 1)
 
       // Delete from database
       try {
-        await deleteSessionFromDatabase(sessionId)
+        await deleteSessionFromDatabase(session)
       } catch (error) {
         console.warn('Failed to delete session from database:', error)
       }
@@ -687,7 +823,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
           currentSession.value = sessions.value[0]
           // Load messages for the new current session
           if (currentSession.value.messages.length === 0) {
-            currentSession.value.messages = await loadSessionMessages(currentSession.value.id)
+            currentSession.value.messages = await loadSessionMessages(currentSession.value)
             currentSession.value.messageCount = currentSession.value.messages.length
           }
         } else {
@@ -728,7 +864,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         currentSession.value = sessions.value[0]
         // Load messages for the current session
         if (currentSession.value.messages.length === 0) {
-          currentSession.value.messages = await loadSessionMessages(currentSession.value.id)
+          currentSession.value.messages = await loadSessionMessages(currentSession.value)
           currentSession.value.messageCount = currentSession.value.messages.length
         }
       }
@@ -816,64 +952,58 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
   // Database API functions
   const saveSessionToDatabase = async (session: ConversationSession) => {
-    // 🔥 避免在会话创建过程中重复调用
     if (session.isCreating) {
       console.log('Session is being created, skipping save...')
       return
     }
 
+    const serverId = getServerConversationId(session)
+
     try {
-      // Check if session exists in database
-      const existingSession = await apiClient.get(`/api/conversations/${session.id}`)
+      if (!serverId) {
+        await retrySyncSession(session)
+        return
+      }
 
-      if (existingSession.data) {
-        // Update existing session
-        await apiClient.put(`/api/conversations/${session.id}`, {
-          title: session.title,
-          mode: session.mode,
-          settings: session
-        })
+      const existingSession = await apiClient.get(`/api/conversations/${serverId}`)
 
-        // Add any new messages
-        const existingMessages = existingSession.data.messages
-        const newMessages = session.messages.filter(msg =>
-          !existingMessages.some((existing: any) => existing.id === msg.id)
-        )
-
-        for (const message of newMessages) {
-          const response = await apiClient.post(`/api/conversations/${session.id}/messages`, {
-            role: message.role,
-            content: message.content,
-            messageType: message.metadata?.type,
-            metadata: message.metadata,
-            actions: message.actions
-          })
-
-          // Update local message with the server-returned ID
-          if (response.data && response.data.id) {
-            message.id = response.data.id
-          }
-        }
-      } else {
+      if (!existingSession.data) {
         throw new Error('Session not found')
       }
+
+      await apiClient.put(`/api/conversations/${serverId}`, {
+        title: session.title,
+        mode: session.mode,
+        settings: session
+      })
+
+      const existingMessages = existingSession.data.messages
+      const newMessages = session.messages.filter(msg =>
+        !existingMessages.some((existing: any) => existing.id === msg.id)
+      )
+
+      for (const message of newMessages) {
+        const response = await apiClient.post(`/api/conversations/${serverId}/messages`, {
+          role: message.role,
+          content: message.content,
+          messageType: message.metadata?.type,
+          metadata: message.metadata,
+          actions: message.actions
+        })
+
+        if (response.data && response.data.id) {
+          message.id = response.data.id
+        }
+      }
+
+      session.syncState = 'synced'
+      session.syncError = null
     } catch (error: any) {
       if (error.response?.status === 404) {
-        // Session doesn't exist, create it
-        const createdSession = await createSessionInDatabase(session)
-
-        // 🔥 关键修复：创建会话后更新本地引用
-        if (createdSession && createdSession.id && currentSession.value) {
-          // 更新当前会话ID
-          currentSession.value.id = createdSession.id
-
-          // 更新sessions数组中的ID
-          const sessionIndex = sessions.value.findIndex(s => s.id === session.id)
-          if (sessionIndex !== -1) {
-            sessions.value[sessionIndex].id = createdSession.id
-          }
-        }
+        await retrySyncSession(session)
       } else {
+        session.syncState = 'error'
+        session.syncError = error.message
         throw error
       }
     }
@@ -914,8 +1044,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
         }
       }
 
-      // 🔥 重要：更新本地会话ID为服务器返回的ID
-      session.id = createdSession.id
+      linkSessionToServer(session, createdSession.id)
 
       // 🔥 关键修复：用后端返回的欢迎消息ID更新前端欢迎消息
       if (createdSession.messages && createdSession.messages.length > 0) {
@@ -931,9 +1060,33 @@ export const useAIChatStore = defineStore('aiChat', () => {
         }
       }
 
+      session.syncState = 'synced'
+      session.syncError = null
       return createdSession
     } catch (error) {
       console.error('Failed to create session in database:', error)
+      throw error
+    }
+  }
+
+  const retrySyncSession = async (session: ConversationSession, attempt = 1): Promise<void> => {
+    session.syncState = 'syncing'
+    session.lastSyncAttempt = new Date()
+
+    try {
+      const createdSession = await createSessionInDatabase(session)
+      linkSessionToServer(session, createdSession.id)
+      session.syncState = 'synced'
+      session.syncError = null
+    } catch (error) {
+      session.syncState = 'error'
+      session.syncError = (error as Error).message
+
+      if (attempt < STREAM_MAX_RETRIES) {
+        await delay(1000 * Math.pow(2, attempt))
+        return retrySyncSession(session, attempt + 1)
+      }
+
       throw error
     }
   }
@@ -945,6 +1098,10 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
       return conversations.map((conv: any): ConversationSession => ({
         id: conv.id,
+        serverConversationId: conv.id,
+        syncState: 'synced',
+        lastSyncAttempt: null,
+        syncError: null,
         novelId: conv.novelId,
         mode: conv.mode,
         title: conv.title,
@@ -959,9 +1116,14 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
   }
 
-  const loadSessionMessages = async (sessionId: string): Promise<ChatMessage[]> => {
+  const loadSessionMessages = async (session: ConversationSession | null): Promise<ChatMessage[]> => {
+    const serverId = getServerConversationId(session)
+    if (!serverId) {
+      return session?.messages || []
+    }
+
     try {
-      const response = await apiClient.get(`/api/conversations/${sessionId}`)
+      const response = await apiClient.get(`/api/conversations/${serverId}`)
       const conversation = response.data
 
       return conversation.messages.map((msg: any): ChatMessage => ({
@@ -978,13 +1140,21 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
   }
 
-  const deleteSessionFromDatabase = async (sessionId: string) => {
-    if (!sessionId || sessionId.startsWith('session_')) {
+  const deleteSessionFromDatabase = async (session: ConversationSession | string | null | undefined) => {
+    let serverId: string | null = null
+
+    if (typeof session === 'string') {
+      serverId = session.startsWith('session_') ? null : session
+    } else {
+      serverId = getServerConversationId(session || null)
+    }
+
+    if (!serverId) {
       return
     }
 
     try {
-      await apiClient.delete(`/api/conversations/${sessionId}`)
+      await apiClient.delete(`/api/conversations/${serverId}`)
     } catch (error) {
       console.error('Failed to delete session from database:', error)
       throw error
