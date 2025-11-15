@@ -1074,4 +1074,302 @@ router.get('/:id/export-card', async (req, res) => {
   }
 });
 
+async function buildCharacterChatSystemPrompt(character, novel, worldSettings, aiConstraints, locale) {
+  const languageRequirement = getLanguageRequirement(locale);
+
+  const constraintsText = aiConstraints ? `
+【内容约束】
+- 内容分级：${aiConstraints.rating}
+- 暴力程度：${aiConstraints.violence}/5
+- 浪漫程度：${aiConstraints.romance}/5
+- 语言程度：${aiConstraints.language}/5
+${aiConstraints.customRules ? `- 其他规则：${aiConstraints.customRules}` : ''}
+` : '';
+
+  const worldSettingsText = worldSettings && worldSettings.length > 0 ? `
+【世界观设定】
+${worldSettings.map(s => `- ${s.name}（${s.type}）：${s.description}`).join('\n')}
+` : '';
+
+  const characterPrompt = character.systemPrompt || '';
+
+  const prompt = `你现在要扮演角色"${character.name}"，与用户进行对话。请完全沉浸在这个角色中。
+
+【角色基本信息】
+- 姓名：${character.name}
+- 性别：${character.gender || '未设定'}
+- 年龄：${character.age || '未设定'}
+- 身份：${character.identity || '未设定'}
+- 描述：${character.description || '无'}
+
+【外貌特征】
+${character.appearance || '暂无描述'}
+
+【性格特征】
+${character.personality || '暂无描述'}
+
+【核心价值观】
+${character.values || '暂无描述'}
+
+【恐惧与弱点】
+${character.fears || '暂无描述'}
+
+【背景故事】
+${character.background || '暂无描述'}
+
+【技能与能力】
+${character.skills || '暂无描述'}
+
+${character.relationships ? `【人际关系】
+${typeof character.relationships === 'string' ? character.relationships : JSON.stringify(JSON.parse(character.relationships), null, 2)}
+` : ''}
+
+${worldSettingsText}
+
+${constraintsText}
+
+【对话指引】
+1. 始终以第一人称"我"来回应，完全从角色的视角说话
+2. 保持角色性格的一致性，所有回复都要符合角色的性格特征
+3. 回复要符合世界观设定和内容约束
+4. 用角色会使用的语气和措辞来表达
+5. 根据角色的背景、经历和价值观来思考和回应
+6. 展现角色的情感、想法和独特的说话方式
+7. 可以适当引用角色的背景故事或人际关系来丰富对话
+
+${characterPrompt ? `【角色专属提示】
+${characterPrompt}` : ''}
+
+${languageRequirement}
+
+记住：你就是${character.name}，请完全沉浸在这个角色中进行对话。`;
+
+  return prompt;
+}
+
+router.post('/:id/chat', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message, conversationId, locale } = req.body;
+    const userId = req.user.id;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const character = await prisma.character.findUnique({
+      where: { id },
+      include: {
+        novel: {
+          include: {
+            settings: true,
+            aiSettings: true
+          }
+        }
+      }
+    });
+
+    if (!character) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    const systemPrompt = await buildCharacterChatSystemPrompt(
+      character,
+      character.novel,
+      character.novel.settings,
+      character.novel.aiSettings,
+      locale
+    );
+
+    let messages = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    if (conversationId) {
+      const conversation = await prisma.aIConversation.findUnique({
+        where: { id: conversationId },
+        include: {
+          messages: {
+            orderBy: { createdAt: 'asc' },
+            take: 20
+          }
+        }
+      });
+
+      if (conversation) {
+        const historyMessages = conversation.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        messages = [...messages, ...historyMessages];
+      }
+    }
+
+    messages.push({ role: 'user', content: message });
+
+    const aiService = require('../services/aiService');
+    const response = await aiService.chat(messages, {
+      temperature: 0.9,
+      maxTokens: 1000,
+      taskType: 'character_chat',
+      userId: userId,
+      novelId: character.novelId,
+      requestUrl: req.aiRequestUrl || req.originalUrl
+    });
+
+    res.json({
+      content: response.content,
+      characterName: character.name,
+      characterAvatar: character.avatar
+    });
+
+  } catch (error) {
+    console.error('Error in character chat:', error);
+    res.status(500).json({
+      error: 'Character chat failed',
+      message: process.env.NODE_ENV === 'development' ? error.message : 'Chat service temporarily unavailable'
+    });
+  }
+});
+
+router.post('/:id/chat/stream', requireAuth, async (req, res) => {
+  const startTime = Date.now();
+  let fullResponse = '';
+  let hasError = false;
+  let errorMessage = null;
+
+  try {
+    const { id } = req.params;
+    const { message, conversationId, locale } = req.body;
+    const userId = req.user.id;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    res.write('data: {"type":"connected"}\n\n');
+
+    try {
+      const character = await prisma.character.findUnique({
+        where: { id },
+        include: {
+          novel: {
+            include: {
+              settings: true,
+              aiSettings: true
+            }
+          }
+        }
+      });
+
+      if (!character) {
+        const errorData = {
+          type: 'error',
+          message: 'Character not found'
+        };
+        res.write(`data: ${JSON.stringify(errorData)}\n\n`);
+        res.end();
+        return;
+      }
+
+      const systemPrompt = await buildCharacterChatSystemPrompt(
+        character,
+        character.novel,
+        character.novel.settings,
+        character.novel.aiSettings,
+        locale
+      );
+
+      let messages = [
+        { role: 'system', content: systemPrompt }
+      ];
+
+      if (conversationId) {
+        const conversation = await prisma.aIConversation.findUnique({
+          where: { id: conversationId },
+          include: {
+            messages: {
+              orderBy: { createdAt: 'asc' },
+              take: 20
+            }
+          }
+        });
+
+        if (conversation) {
+          const historyMessages = conversation.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          messages = [...messages, ...historyMessages];
+        }
+      }
+
+      messages.push({ role: 'user', content: message });
+
+      const aiService = require('../services/aiService');
+      const stream = await aiService.chatStream(messages, {
+        temperature: 0.9,
+        maxTokens: 1000,
+        taskType: 'character_chat',
+        userId: userId,
+        novelId: character.novelId,
+        requestUrl: req.aiRequestUrl || req.originalUrl
+      });
+
+      for await (const chunk of stream) {
+        const choice = chunk.choices?.[0];
+        if (choice && choice.delta && choice.delta.content) {
+          fullResponse += choice.delta.content;
+          const data = {
+            type: 'chunk',
+            content: choice.delta.content,
+            characterName: character.name,
+            characterAvatar: character.avatar
+          };
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
+        }
+
+        if (choice && choice.finish_reason) {
+          const data = {
+            type: 'finish',
+            reason: choice.finish_reason
+          };
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
+        }
+      }
+
+      res.write('data: {"type":"done"}\n\n');
+    } catch (streamError) {
+      console.error('Streaming error:', streamError);
+      hasError = true;
+      errorMessage = streamError.message;
+      const errorData = {
+        type: 'error',
+        message: process.env.NODE_ENV === 'development' ? streamError.message : 'Character chat error'
+      };
+      res.write(`data: ${JSON.stringify(errorData)}\n\n`);
+    }
+
+    res.end();
+  } catch (error) {
+    console.error('Error in streaming character chat:', error);
+    hasError = true;
+    errorMessage = error.message;
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Character chat streaming error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'Streaming service temporarily unavailable'
+      });
+    }
+  }
+});
+
 module.exports = router;

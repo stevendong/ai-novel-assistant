@@ -25,13 +25,16 @@ export interface ChatMessage {
 export interface ConversationSession {
   id: string
   novelId: string | null
-  mode: 'chat' | 'enhance' | 'check'
+  mode: 'chat' | 'enhance' | 'check' | 'character_chat'
   title: string
   messages: ChatMessage[]
   messageCount: number
   createdAt: Date
   updatedAt: Date
-  isCreating?: boolean  // 标记是否正在创建中，避免重复调用
+  isCreating?: boolean
+  characterId?: string
+  characterName?: string
+  characterAvatar?: string
 }
 
 export const useAIChatStore = defineStore('aiChat', () => {
@@ -76,33 +79,39 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const sessionCount = computed(() => sessions.value.length)
 
   // Actions
-  const createNewSession = async (novelId: string | null = null, mode: 'chat' | 'enhance' | 'check' = 'chat') => {
+  const createNewSession = async (novelId: string | null = null, mode: 'chat' | 'enhance' | 'check' | 'character_chat' = 'chat', characterId?: string, characterName?: string, characterAvatar?: string) => {
     const session: ConversationSession = {
       id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       novelId,
       mode,
-      title: generateSessionTitle(mode),
+      title: generateSessionTitle(mode, characterName),
       messages: [{
         id: '1',
         role: 'assistant',
-        content: getWelcomeMessage(mode),
+        content: getWelcomeMessage(mode, characterName),
         timestamp: new Date(),
         actions: getQuickActions(),
-        metadata: { messageType: 'welcome' }  // 🔥 添加欢迎消息标记
+        metadata: { messageType: 'welcome' }
       }],
       messageCount: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
-      isCreating: true  // 🔥 标记为创建中状态
+      isCreating: true,
+      characterId,
+      characterName,
+      characterAvatar
     }
 
     currentSession.value = session
     sessions.value.unshift(session)
 
-    // 推迟持久化到首次保存，避免刷新时重复创建空会话
     session.isCreating = false
 
     return session
+  }
+
+  const createCharacterChatSession = async (characterId: string, characterName: string, novelId: string, characterAvatar?: string) => {
+    return await createNewSession(novelId, 'character_chat', characterId, characterName, characterAvatar)
   }
 
   const switchSession = async (sessionId: string) => {
@@ -175,7 +184,12 @@ export const useAIChatStore = defineStore('aiChat', () => {
   const sendMessage = async (userMessage: string, novelId?: string, useStream: boolean = true) => {
     if (!userMessage.trim()) return null
 
-    // Add user message
+    console.log('[sendMessage] Current session:', {
+      mode: currentSession.value?.mode,
+      characterId: currentSession.value?.characterId,
+      sessionId: currentSession.value?.id
+    })
+
     await addMessage('user', userMessage)
     isTyping.value = true
 
@@ -185,6 +199,13 @@ export const useAIChatStore = defineStore('aiChat', () => {
     }
 
     try {
+      if (currentSession.value?.mode === 'character_chat' && currentSession.value?.characterId) {
+        console.log('[sendMessage] Detected character chat mode, calling sendCharacterChatMessage')
+        return await sendCharacterChatMessage(userMessage, currentSession.value.characterId, useStream)
+      }
+
+      console.log('[sendMessage] Using normal chat mode')
+
       if (useStream) {
         return await sendMessageStream(userMessage, novelId || currentSession.value?.novelId)
       } else {
@@ -192,7 +213,6 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
         isTyping.value = false
 
-        // Add AI response
         return await addMessage('assistant', response.content, response.actions, {
           type: response.type,
           suggestions: response.suggestions,
@@ -209,8 +229,146 @@ export const useAIChatStore = defineStore('aiChat', () => {
         ? translate('aiChat.errors.assistantDisabled')
         : translate('aiChat.errors.serviceUnavailable')
 
-      // Add fallback message
       return await addMessage('assistant', fallbackMessage)
+    }
+  }
+
+  const sendCharacterChatMessage = async (userMessage: string, characterId: string, useStream: boolean = true) => {
+    if (!currentSession.value) {
+      return null
+    }
+
+    console.log('[Character Chat] Starting character chat:', {
+      characterId,
+      sessionId: currentSession.value.id,
+      mode: currentSession.value.mode,
+      useStream
+    })
+
+    try {
+      if (useStream) {
+        const assistantMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '',
+          timestamp: new Date(),
+          metadata: {
+            streaming: true,
+            type: 'character_chat'
+          }
+        }
+
+        currentSession.value.messages.push(assistantMessage)
+        currentSession.value.updatedAt = new Date()
+
+        let accumulatedContent = ''
+        let hasError = false
+
+        const url = `${import.meta.env.VITE_API_BASE_URL}/api/characters/${characterId}/chat/stream`
+        const payload = {
+          message: userMessage,
+          conversationId: currentSession.value.id.startsWith('session_') ? null : currentSession.value.id,
+          locale: getCurrentLocale()
+        }
+
+        console.log('[Character Chat] Sending request:', { url, payload })
+
+        const token = localStorage.getItem('sessionToken')
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        }
+
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        })
+
+        console.log('[Character Chat] Response status:', response.status, response.statusText)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('[Character Chat] Request failed:', errorText)
+          throw new Error(`Character chat request failed: ${response.status} ${errorText}`)
+        }
+
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            const chunk = decoder.decode(value)
+            const lines = chunk.split('\n')
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6))
+
+                  if (data.type === 'chunk' && data.content) {
+                    accumulatedContent += data.content
+                    const messageIndex = currentSession.value!.messages.findIndex(m => m.id === assistantMessage.id)
+                    if (messageIndex !== -1) {
+                      currentSession.value!.messages[messageIndex] = {
+                        ...assistantMessage,
+                        content: accumulatedContent,
+                        timestamp: assistantMessage.timestamp
+                      }
+                      currentSession.value!.updatedAt = new Date()
+                    }
+                  } else if (data.type === 'finish' || data.type === 'done') {
+                    isTyping.value = false
+                    if (assistantMessage.metadata) {
+                      assistantMessage.metadata.streaming = false
+                    }
+                  } else if (data.type === 'error') {
+                    hasError = true
+                    isTyping.value = false
+                    if (assistantMessage) {
+                      assistantMessage.content = data.message || translate('aiChat.errors.characterChatFailed')
+                      if (assistantMessage.metadata) {
+                        assistantMessage.metadata.streaming = false
+                        assistantMessage.metadata.error = true
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.error('Failed to parse SSE data:', e)
+                }
+              }
+            }
+          }
+        }
+
+        if (settings.value.autoSave && !hasError) {
+          await saveSession()
+        }
+
+        return assistantMessage
+      } else {
+        const response = await apiClient.post(`/api/characters/${characterId}/chat`, {
+          message: userMessage,
+          conversationId: currentSession.value.id.startsWith('session_') ? null : currentSession.value.id,
+          locale: getCurrentLocale()
+        })
+
+        isTyping.value = false
+
+        return await addMessage('assistant', response.data.content)
+      }
+    } catch (error) {
+      isTyping.value = false
+      console.error('[Character Chat] Error:', error)
+      console.error('[Character Chat] Error stack:', (error as Error).stack)
+      return await addMessage('assistant', translate('aiChat.errors.characterChatFailed'))
     }
   }
 
@@ -608,11 +766,16 @@ export const useAIChatStore = defineStore('aiChat', () => {
   }
 
   // Helper functions
-  const generateSessionTitle = (mode: 'chat' | 'enhance' | 'check') => {
-    const titles: Record<'chat' | 'enhance' | 'check', string> = {
+  const generateSessionTitle = (mode: 'chat' | 'enhance' | 'check' | 'character_chat', characterName?: string) => {
+    if (mode === 'character_chat' && characterName) {
+      return translate('aiChat.modeTitles.characterChat', { name: characterName })
+    }
+
+    const titles: Record<'chat' | 'enhance' | 'check' | 'character_chat', string> = {
       chat: translate('aiChat.modeTitles.chat'),
       enhance: translate('aiChat.modeTitles.enhance'),
-      check: translate('aiChat.modeTitles.check')
+      check: translate('aiChat.modeTitles.check'),
+      character_chat: translate('aiChat.modeTitles.characterChat', { name: '' })
     }
     const localeTag = resolveLocaleTag()
     const timestamp = new Date().toLocaleString(localeTag, {
@@ -628,11 +791,16 @@ export const useAIChatStore = defineStore('aiChat', () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2)
   }
 
-  const getWelcomeMessage = (mode: 'chat' | 'enhance' | 'check') => {
-    const messages: Record<'chat' | 'enhance' | 'check', string> = {
+  const getWelcomeMessage = (mode: 'chat' | 'enhance' | 'check' | 'character_chat', characterName?: string) => {
+    if (mode === 'character_chat' && characterName) {
+      return translate('aiChat.welcome.characterChat', { name: characterName })
+    }
+
+    const messages: Record<'chat' | 'enhance' | 'check' | 'character_chat', string> = {
       chat: translate('aiChat.welcome.chat'),
       enhance: translate('aiChat.welcome.enhance'),
-      check: translate('aiChat.welcome.check')
+      check: translate('aiChat.welcome.check'),
+      character_chat: translate('aiChat.welcome.characterChat', { name: '' })
     }
     return messages[mode] || messages.chat
   }
@@ -913,6 +1081,7 @@ export const useAIChatStore = defineStore('aiChat', () => {
 
     // Actions
     createNewSession,
+    createCharacterChatSession,
     switchSession,
     updateSessionMode,
     addMessage,

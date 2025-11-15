@@ -53,9 +53,18 @@
           <!-- Actions -->
           <div class="header-actions">
             <a-space :size="8" wrap>
-              <a-tooltip :title="t('character.detail.enhanceTooltip')">
+              <a-tooltip :title="t('character.detail.chatTooltip')">
                 <a-button
                   type="primary"
+                  @click="$emit('startChat')"
+                >
+                  <template #icon><MessageOutlined /></template>
+                  {{ t('character.detail.chatWithCharacter') }}
+                </a-button>
+              </a-tooltip>
+
+              <a-tooltip :title="t('character.detail.enhanceTooltip')">
+                <a-button
                   @click="$emit('enhance')"
                   :loading="enhancing"
                 >
@@ -244,7 +253,8 @@ import {
   MoreOutlined,
   LockOutlined,
   UnlockOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  MessageOutlined
 } from '@ant-design/icons-vue'
 import type { Character } from '@/types'
 import { useI18n } from 'vue-i18n'
@@ -258,6 +268,7 @@ interface Props {
 interface Emits {
   (e: 'save', data: Partial<Character>): void
   (e: 'changeAvatar'): void
+  (e: 'startChat'): void
   (e: 'enhance'): void
   (e: 'export'): void
   (e: 'toggleLock'): void

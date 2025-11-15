@@ -204,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   MenuFoldOutlined,
@@ -311,6 +311,12 @@ onMounted(async () => {
   loadSidebarState()
 
   await projectStore.loadProjects()
+
+  window.addEventListener('open-ai-panel', handleOpenAIPanelEvent)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('open-ai-panel', handleOpenAIPanelEvent)
 })
 
 // 项目切换处理
@@ -380,6 +386,12 @@ const handleCloseAIPanel = () => {
   saveAIPanelState()
 
   console.log('AI助手面板已关闭')
+}
+
+const handleOpenAIPanelEvent = () => {
+  aiPanelCollapsed.value = false
+  saveAIPanelState()
+  console.log('AI助手面板已打开（通过角色聊天）')
 }
 
 
