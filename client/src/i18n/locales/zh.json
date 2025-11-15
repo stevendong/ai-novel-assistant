@@ -58,7 +58,8 @@
       "low": "轻微"
     },
     "suggestion": "建议：",
-    "pending": "待完善"
+    "pending": "待完善",
+    "githubRepo": "查看 GitHub 仓库"
   },
   "status": {
     "novel": {

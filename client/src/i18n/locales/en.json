@@ -58,7 +58,8 @@
       "low": "Minor"
     },
     "suggestion": "Suggestion:",
-    "pending": "Pending"
+    "pending": "Pending",
+    "githubRepo": "View on GitHub"
   },
   "status": {
     "novel": {
