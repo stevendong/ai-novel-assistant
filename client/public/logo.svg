@@ -1,0 +1,81 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient circle -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#bgGradient)" opacity="0.1"/>
+
+  <!-- Book icon -->
+  <g transform="translate(60, 70)">
+    <!-- Book cover -->
+    <path d="M 5 0 L 75 0 C 78 0 80 2 80 5 L 80 55 C 80 58 78 60 75 60 L 5 60 C 2 60 0 58 0 55 L 0 5 C 0 2 2 0 5 0 Z"
+          fill="url(#bookGradient)" opacity="0.9"/>
+    <!-- Book pages -->
+    <rect x="8" y="5" width="64" height="50" fill="white" opacity="0.3" rx="2"/>
+    <!-- Book spine lines -->
+    <line x1="15" y1="0" x2="15" y2="60" stroke="white" stroke-width="1" opacity="0.4"/>
+    <!-- Open book effect -->
+    <path d="M 40 10 Q 40 15 40 30 Q 40 45 40 50" stroke="white" stroke-width="1.5" opacity="0.6" fill="none"/>
+  </g>
+
+  <!-- AI Brain/Neural Network -->
+  <g transform="translate(100, 45)">
+    <!-- Central node -->
+    <circle cx="0" cy="0" r="8" fill="url(#aiGradient)" opacity="0.9"/>
+
+    <!-- Neural connections -->
+    <g opacity="0.7">
+      <!-- Top connections -->
+      <line x1="0" y1="-8" x2="-15" y2="-25" stroke="url(#aiGradient)" stroke-width="2"/>
+      <line x1="0" y1="-8" x2="15" y2="-25" stroke="url(#aiGradient)" stroke-width="2"/>
+
+      <!-- Side connections -->
+      <line x1="8" y1="0" x2="25" y2="-10" stroke="url(#aiGradient)" stroke-width="2"/>
+      <line x1="8" y1="0" x2="25" y2="10" stroke="url(#aiGradient)" stroke-width="2"/>
+
+      <!-- Bottom connections -->
+      <line x1="0" y1="8" x2="-15" y2="25" stroke="url(#aiGradient)" stroke-width="2"/>
+      <line x1="0" y1="8" x2="15" y2="25" stroke="url(#aiGradient)" stroke-width="2"/>
+    </g>
+
+    <!-- Outer nodes -->
+    <circle cx="-15" cy="-25" r="5" fill="url(#aiGradient)" opacity="0.8"/>
+    <circle cx="15" cy="-25" r="5" fill="url(#aiGradient)" opacity="0.8"/>
+    <circle cx="25" cy="-10" r="5" fill="url(#aiGradient)" opacity="0.8"/>
+    <circle cx="25" cy="10" r="5" fill="url(#aiGradient)" opacity="0.8"/>
+    <circle cx="-15" cy="25" r="5" fill="url(#aiGradient)" opacity="0.8"/>
+    <circle cx="15" cy="25" r="5" fill="url(#aiGradient)" opacity="0.8"/>
+  </g>
+
+  <!-- Sparkle/Magic effects around the logo -->
+  <g opacity="0.6">
+    <path d="M 45 35 L 47 40 L 52 42 L 47 44 L 45 49 L 43 44 L 38 42 L 43 40 Z" fill="#ffd700"/>
+    <path d="M 155 65 L 157 70 L 162 72 L 157 74 L 155 79 L 153 74 L 148 72 L 153 70 Z" fill="#ffd700"/>
+    <path d="M 50 140 L 52 145 L 57 147 L 52 149 L 50 154 L 48 149 L 43 147 L 48 145 Z" fill="#ffd700"/>
+    <path d="M 150 140 L 152 143 L 155 145 L 152 147 L 150 150 L 148 147 L 145 145 L 148 143 Z" fill="#ffd700"/>
+  </g>
+
+  <!-- Pen/Writing element -->
+  <g transform="translate(50, 110) rotate(-45)">
+    <rect x="0" y="0" width="8" height="35" rx="1" fill="#764ba2" opacity="0.8"/>
+    <path d="M 0 35 L 4 42 L 8 35 Z" fill="#4a5568" opacity="0.8"/>
+    <rect x="0" y="0" width="8" height="5" fill="#ffd700" opacity="0.9"/>
+  </g>
+
+  <!-- Text "AI" subtle watermark -->
+  <text x="100" y="170" font-family="Arial, sans-serif" font-size="24" font-weight="bold"
+        fill="url(#aiGradient)" text-anchor="middle" opacity="0.5">AI</text>
+</svg>

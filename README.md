@@ -2,12 +2,12 @@
 
 [项目Logo占位图 - 建议尺寸: 200x200px, PNG格式, 包含AI和书本元素的现代化图标]
 
-# AI Novel Assistant
+# Smart Pen
 
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/ai-novel-assistant?style=social)](https://github.com/yourusername/ai-novel-assistant/stargazers)
-[![GitHub Forks](https://img.shields.io/github/forks/yourusername/ai-novel-assistant?style=social)](https://github.com/yourusername/ai-novel-assistant/network/members)
-[![GitHub Issues](https://img.shields.io/github/issues/yourusername/ai-novel-assistant)](https://github.com/yourusername/ai-novel-assistant/issues)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/ai-novel-assistant/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/stevendong/ai-novel-assistant?style=social)](https://github.com/yourusername/ai-novel-assistant/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/stevendong/ai-novel-assistant?style=social)](https://github.com/yourusername/ai-novel-assistant/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/stevendong/ai-novel-assistant)](https://github.com/yourusername/ai-novel-assistant/issues)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/stevendong/ai-novel-assistant/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 [English](./README.en.md) | 简体中文
@@ -20,20 +20,6 @@
 
 </div>
 
----
-
-## 🌟 加入官方社群
-
-[社群二维码占位图 - 建议尺寸: 300x300px, 包含微信/Discord社群二维码]
-
-加入我们的社群，获取：
-- 📢 最新功能发布通知
-- 💡 创作技巧和最佳实践分享
-- 🤝 与其他作家交流创作经验
-- 🐛 问题反馈和技术支持
-
----
-
 ## ⚡ 项目概述
 
 AI Novel Assistant 是一个专为长篇小说创作设计的智能写作辅助平台，通过 AI 技术帮助作家提升创作效率和质量。
@@ -44,7 +30,7 @@ AI Novel Assistant 是一个专为长篇小说创作设计的智能写作辅助�
 2. **全流程支持** - 从大纲规划到最终定稿，覆盖小说创作的完整生命周期
 3. **知识管理** - 系统化管理角色、世界观、情节线等复杂创作要素
 4. **一致性保障** - AI 自动检测并提示角色性格、世界设定、情节逻辑等方面的矛盾
-5. **专业编辑体验** - 基于 Monaco Editor，提供接近 IDE 的强大编辑功能
+5. **专业编辑体验** - 基于 Tiptap Editor，提供接近 IDE 的强大编辑功能
 6. **灵活部署** - 支持本地部署和云端部署，数据完全可控
 
 ### 🎬 演示资源
@@ -99,14 +85,14 @@ AI Novel Assistant 是一个专为长篇小说创作设计的智能写作辅助�
 
 ### 核心组件说明
 
-| 组件 | 职责 | 关键技术 |
-|------|------|----------|
+| 组件 | 职责 | 关键技术                          |
+|------|------|-------------------------------|
 | **项目管理引擎** | 小说项目的CRUD操作、元数据管理、进度追踪 | Prisma ORM, SQLite/PostgreSQL |
-| **知识库系统** | 角色档案、世界设定、情节线的结构化存储和检索 | 关系型数据库设计、全文搜索 |
-| **智能编辑器** | 章节内容编辑、多标签管理、自动保存、版本控制 | Monaco Editor, WebSocket |
-| **AI 协作引擎** | 对话模式、内容增强、一致性检查、情节建议 | OpenAI API, Mem0 AI, 提示工程 |
-| **导出引擎** | EPUB、TXT等多格式导出，保留格式和元数据 | epub-gen, Archiver |
-| **认证系统** | 用户身份验证、会话管理、权限控制 | JWT, Clerk (可选) |
+| **知识库系统** | 角色档案、世界设定、情节线的结构化存储和检索 | 关系型数据库设计、全文搜索                 |
+| **智能编辑器** | 章节内容编辑、多标签管理、自动保存、版本控制 | Tiptap Editor, WebSocket      |
+| **AI 协作引擎** | 对话模式、内容增强、一致性检查、情节建议 | OpenAI API, Mem0 AI, 提示工程     |
+| **导出引擎** | EPUB、TXT等多格式导出，保留格式和元数据 | epub-gen, Archiver            |
+| **认证系统** | 用户身份验证、会话管理、权限控制 | JWT, Clerk (可选)               |
 
 ### 完整工作流程
 
@@ -1033,8 +1019,8 @@ server {
 
 ### 贡献方式
 
-- 🐛 **报告 Bug**：[提交 Issue](https://github.com/yourusername/ai-novel-assistant/issues/new?template=bug_report.md)
-- 💡 **功能建议**：[提交 Feature Request](https://github.com/yourusername/ai-novel-assistant/issues/new?template=feature_request.md)
+- 🐛 **报告 Bug**：[提交 Issue](https://github.com/stevendong/ai-novel-assistant/issues/new?template=bug_report.md)
+- 💡 **功能建议**：[提交 Feature Request](https://github.com/stevendong/ai-novel-assistant/issues/new?template=feature_request.md)
 - 📖 **改进文档**：修正错误、补充说明、翻译文档
 - 💻 **贡献代码**：修复 Bug、开发新功能
 
@@ -1043,7 +1029,7 @@ server {
 ```bash
 # 1. Fork 本仓库
 # 2. 克隆你的 Fork
-git clone https://github.com/YOUR_USERNAME/ai-novel-assistant.git
+git clone https://github.com/stevendong/ai-novel-assistant.git
 cd ai-novel-assistant
 
 # 3. 创建功能分支
@@ -1172,7 +1158,7 @@ git commit -m "docs: update deployment guide"
 
 ### 💬 需求征集
 
-欢迎在 [Discussions](https://github.com/yourusername/ai-novel-assistant/discussions) 中提出你的功能需求和建议！
+欢迎在 [Discussions](https://github.com/stevendong/ai-novel-assistant/discussions) 中提出你的功能需求和建议！
 
 ---
 
@@ -1246,35 +1232,35 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 [贡献者头像墙占位 - 使用 GitHub Contributors 自动生成]
 
-<a href="https://github.com/yourusername/ai-novel-assistant/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=yourusername/ai-novel-assistant" />
+<a href="https://github.com/stevendong/ai-novel-assistant/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=stevendong/ai-novel-assistant" />
 </a>
 
 ### 赞助商
 
 [赞助商 Logo 占位区域]
 
-如果这个项目帮助到了你，欢迎[赞助支持](https://github.com/sponsors/yourusername)项目发展！
+如果这个项目帮助到了你，欢迎[赞助支持](https://github.com/sponsors/stevendong)项目发展！
 
 ---
 
 ## 📞 联系我们
 
 - 📧 **Email**: support@ai-novel-assistant.com
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/ai-novel-assistant/discussions)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/ai-novel-assistant/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/stevendong/ai-novel-assistant/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/stevendong/ai-novel-assistant/issues)
 - 📱 **社交媒体**: [Twitter](https://twitter.com/yourhandle) | [知乎](#)
 
 ---
 
 ## 📊 项目统计
 
-![GitHub Stars](https://img.shields.io/github/stars/yourusername/ai-novel-assistant?style=for-the-badge)
-![GitHub Forks](https://img.shields.io/github/forks/yourusername/ai-novel-assistant?style=for-the-badge)
-![GitHub Issues](https://img.shields.io/github/issues/yourusername/ai-novel-assistant?style=for-the-badge)
-![GitHub Pull Requests](https://img.shields.io/github/issues-pr/yourusername/ai-novel-assistant?style=for-the-badge)
-![GitHub Last Commit](https://img.shields.io/github/last-commit/yourusername/ai-novel-assistant?style=for-the-badge)
-![GitHub Contributors](https://img.shields.io/github/contributors/yourusername/ai-novel-assistant?style=for-the-badge)
+![GitHub Stars](https://img.shields.io/github/stars/stevendong/ai-novel-assistant?style=for-the-badge)
+![GitHub Forks](https://img.shields.io/github/forks/stevendong/ai-novel-assistant?style=for-the-badge)
+![GitHub Issues](https://img.shields.io/github/issues/stevendong/ai-novel-assistant?style=for-the-badge)
+![GitHub Pull Requests](https://img.shields.io/github/issues-pr/stevendong/ai-novel-assistant?style=for-the-badge)
+![GitHub Last Commit](https://img.shields.io/github/last-commit/stevendong/ai-novel-assistant?style=for-the-badge)
+![GitHub Contributors](https://img.shields.io/github/contributors/stevendong/ai-novel-assistant?style=for-the-badge)
 
 ---
 
