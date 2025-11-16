@@ -1,4 +1,4 @@
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const prisma = require('../utils/prismaClient');
 const config = require('../config/characterChat');
 
@@ -25,7 +25,7 @@ const chatRateLimiter = rateLimit({
   max: (req) => resolveTierLimit(req),
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
   handler: (req, res) => {
     res.status(429).json({
       error: 'Too Many Requests',
