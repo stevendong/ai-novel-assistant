@@ -58,7 +58,8 @@
       "low": "轻微"
     },
     "suggestion": "建议：",
-    "pending": "待完善"
+    "pending": "待完善",
+    "githubRepo": "查看 GitHub 仓库"
   },
   "status": {
     "novel": {
@@ -89,12 +90,14 @@
       "streamingProcessError": "抱歉，流式传输过程中出现错误。",
       "streamingFailed": "抱歉，流式传输失败。请稍后再试。",
       "requestAborted": "请求已取消",
-      "assistantDisabled": "AI创作助手未启用，请在设置中开启后再试。"
+      "assistantDisabled": "AI创作助手未启用，请在设置中开启后再试。",
+      "characterChatFailed": "角色对话失败，请稍后重试"
     },
     "modeTitles": {
       "chat": "智能对话",
       "enhance": "内容完善",
-      "check": "质量检查"
+      "check": "质量检查",
+      "characterChat": "与{name}对话"
     },
     "modeDescriptions": {
       "chat": "切换到对话模式。你可以与我自由对话，寻求创作建议。",
@@ -105,6 +108,7 @@
       "chat": "你好！我是你的AI创作助手。我可以帮你完善角色设定、扩展世界观、生成章节大纲，还能进行一致性检查。有什么我可以帮助你的吗？",
       "enhance": "欢迎来到内容完善模式！我专注于帮你完善角色设定、扩展世界观设定，以及优化情节内容。请告诉我你想要完善什么内容。",
       "check": "欢迎来到质量检查模式！我专注于检查内容的一致性、逻辑性和连贯性。请提供需要检查的内容或告诉我要检查什么。",
+      "characterChat": "你好，我是{name}。很高兴与你对话！",
       "noSession": {
         "title": "开始新对话",
         "subtitle": "创建一个新的AI对话来获取创作帮助",
@@ -1817,6 +1821,8 @@
       "unlock": "解锁角色",
       "lock": "锁定角色",
       "delete": "删除角色",
+      "chatWithCharacter": "与角色聊天",
+      "chatTooltip": "开启与角色的对话模式",
       "tabs": {
         "basic": "基本信息",
         "personality": "性格特征",

@@ -58,7 +58,8 @@
       "low": "Minor"
     },
     "suggestion": "Suggestion:",
-    "pending": "Pending"
+    "pending": "Pending",
+    "githubRepo": "View on GitHub"
   },
   "status": {
     "novel": {
@@ -89,12 +90,14 @@
       "streamingProcessError": "Sorry, an error occurred while streaming.",
       "streamingFailed": "Sorry, the stream failed. Please try again later.",
       "requestAborted": "Request canceled",
-      "assistantDisabled": "The AI assistant is turned off. Enable it in settings to use this feature."
+      "assistantDisabled": "The AI assistant is turned off. Enable it in settings to use this feature.",
+      "characterChatFailed": "Character chat failed, please try again later"
     },
     "modeTitles": {
       "chat": "Smart Chat",
       "enhance": "Content Enhancement",
-      "check": "Quality Check"
+      "check": "Quality Check",
+      "characterChat": "Chat with {name}"
     },
     "modeDescriptions": {
       "chat": "Switched to chat mode. Feel free to ask for creative assistance.",
@@ -105,6 +108,7 @@
       "chat": "Hi! I'm your AI writing partner. I can help refine characters, expand worldbuilding, draft chapter outlines, and run consistency checks. What would you like to work on?",
       "enhance": "Welcome to enhancement mode! I specialize in enriching characters, deepening settings, and improving plot details. Let me know what you'd like to polish.",
       "check": "Welcome to quality check mode! I focus on spotting consistency, logic, and continuity issues. Tell me what to review.",
+      "characterChat": "Hello, I'm {name}. Nice to chat with you!",
       "noSession": {
         "title": "Start a new conversation",
         "subtitle": "Create a new AI chat to get help with your writing.",
@@ -1817,6 +1821,8 @@
       "unlock": "Unlock Character",
       "lock": "Lock Character",
       "delete": "Delete Character",
+      "chatWithCharacter": "Chat with Character",
+      "chatTooltip": "Start a conversation with this character",
       "tabs": {
         "basic": "Basic Information",
         "personality": "Personality Traits",

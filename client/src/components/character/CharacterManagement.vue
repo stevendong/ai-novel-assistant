@@ -20,6 +20,7 @@
           :exporting="exporting"
           @save="saveCharacter"
           @change-avatar="openAvatarSelector"
+          @start-chat="startCharacterChat"
           @enhance="requestAIEnhancement"
           @export="exportCharacterCard"
           @toggle-lock="toggleLock"
@@ -89,6 +90,7 @@ import { useI18n } from 'vue-i18n'
 import type { Character } from '@/types'
 import { useCharacter } from '@/composables/useCharacter'
 import { useProjectStore } from '@/stores/project'
+import { useAIChatStore } from '@/stores/aiChat'
 import { apiClient } from '@/utils/api'
 import CharacterList from './CharacterList.vue'
 import CharacterDetail from './CharacterDetail.vue'
@@ -99,6 +101,9 @@ import FileSelectorModal from '@/components/file/FileSelectorModal.vue'
 
 const { t } = useI18n()
 const projectStore = useProjectStore()
+const chatStore = useAIChatStore()
+
+const emit = defineEmits(['open-ai-panel'])
 
 const {
   characters,
@@ -441,6 +446,22 @@ const viewImportedCharacter = async () => {
     }
   }
   closeImportProgress()
+}
+
+const startCharacterChat = async () => {
+  if (!selectedCharacter.value) return
+
+  await chatStore.createCharacterChatSession(
+    selectedCharacter.value.id,
+    selectedCharacter.value.name,
+    selectedCharacter.value.novelId,
+    selectedCharacter.value.avatar || undefined
+  )
+
+  localStorage.setItem('ai_panel_collapsed', 'false')
+  window.dispatchEvent(new CustomEvent('open-ai-panel'))
+
+  message.success(t('character.detail.chatWithCharacter'))
 }
 </script>
 

@@ -68,7 +68,8 @@
       "Bash(python3:*)",
       "Bash(npm test:*)",
       "Bash(npm config:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "mcp__playwright__browser_close"
     ],
     "deny": [],
     "ask": []

@@ -103,6 +103,18 @@
 
               <!-- Language Toggle -->
               <LanguageToggle class="language-toggle-btn" />
+              <a-tooltip :title="$t('common.githubRepo')">
+                <a-button
+                  type="text"
+                  class="header-action-btn github-btn"
+                  data-button-type="github"
+                  @click="openGitHubRepo"
+                >
+                  <template #icon>
+                    <GithubOutlined />
+                  </template>
+                </a-button>
+              </a-tooltip>
 
             </a-space>
 
@@ -204,12 +216,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   DownOutlined,
+  GithubOutlined,
 } from '@ant-design/icons-vue'
 import type { Chapter } from '@/types'
 import { useI18n } from 'vue-i18n'
@@ -311,6 +324,12 @@ onMounted(async () => {
   loadSidebarState()
 
   await projectStore.loadProjects()
+
+  window.addEventListener('open-ai-panel', handleOpenAIPanelEvent)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('open-ai-panel', handleOpenAIPanelEvent)
 })
 
 // 项目切换处理
@@ -354,6 +373,12 @@ const toggleAIPanel = () => {
   saveAIPanelState()
 }
 
+const openGitHubRepo = () => {
+  if (typeof window !== 'undefined') {
+    window.open('https://github.com/stevendong/ai-novel-assistant', '_blank', 'noopener')
+  }
+}
+
 // 处理浮动模式切换
 const handleFloatingModeChange = (isFloating: boolean) => {
   aiPanelFloating.value = isFloating
@@ -380,6 +405,12 @@ const handleCloseAIPanel = () => {
   saveAIPanelState()
 
   console.log('AI助手面板已关闭')
+}
+
+const handleOpenAIPanelEvent = () => {
+  aiPanelCollapsed.value = false
+  saveAIPanelState()
+  console.log('AI助手面板已打开（通过角色聊天）')
 }
 
 
@@ -886,6 +917,23 @@ const formatDate = (dateString: string) => {
   filter: drop-shadow(0 0 4px rgba(52, 211, 153, 0.4));
 }
 
+/* GitHub 仓库按钮 */
+.header-action-btn[data-button-type="github"] {
+  color: #111827;
+  background: linear-gradient(135deg,
+    rgba(15, 23, 42, 0.04) 0%,
+    rgba(15, 23, 42, 0.08) 100%);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.header-action-btn[data-button-type="github"]:hover {
+  color: #24292f;
+  background: linear-gradient(135deg,
+    rgba(15, 23, 42, 0.12) 0%,
+    rgba(15, 23, 42, 0.16) 100%);
+  border-color: rgba(15, 23, 42, 0.25);
+}
+
 /* 细节优化 */
 .header {
   position: relative;
@@ -1057,6 +1105,22 @@ const formatDate = (dateString: string) => {
   box-shadow:
     0 4px 12px rgba(34, 197, 94, 0.25),
     0 2px 4px rgba(34, 197, 94, 0.2);
+}
+
+.dark .header-action-btn[data-button-type="github"] {
+  color: #e4e4e7;
+  background: linear-gradient(135deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(71, 85, 105, 0.12) 100%);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.dark .header-action-btn[data-button-type="github"]:hover {
+  color: #f8fafc;
+  background: linear-gradient(135deg,
+    rgba(148, 163, 184, 0.15) 0%,
+    rgba(71, 85, 105, 0.2) 100%);
+  border-color: rgba(148, 163, 184, 0.35);
 }
 
 /* 高对比度模式适配 */

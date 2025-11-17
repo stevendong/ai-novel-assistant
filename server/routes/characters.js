@@ -3,7 +3,13 @@ const multer = require('multer');
 const uploadService = require('../services/uploadService');
 const characterCardUtils = require('../utils/characterCardUtils');
 const prisma = require('../utils/prismaClient');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireOwnership } = require('../middleware/auth');
+const characterChatService = require('../services/characterChatService');
+const {
+  chatRateLimiter,
+  characterRateLimiter,
+  checkUserBudget
+} = require('../middleware/characterChatGuards');
 
 const router = express.Router();
 
@@ -115,6 +121,8 @@ router.get('/:id', async (req, res) => {
       ...character,
       relationships: character.relationships ? JSON.parse(character.relationships) : null
     };
+
+    characterChatService.invalidatePrompt(id);
 
     res.json(parsedCharacter);
   } catch (error) {
@@ -265,6 +273,8 @@ router.delete('/:id', async (req, res) => {
     await prisma.character.delete({
       where: { id }
     });
+
+    characterChatService.invalidatePrompt(id);
 
     res.json({ message: 'Character deleted successfully' });
   } catch (error) {
@@ -1073,5 +1083,145 @@ router.get('/:id/export-card', async (req, res) => {
     res.status(500).json({ error: '角色卡导出失败', details: error.message });
   }
 });
+
+router.post(
+  '/:id/chat',
+  requireAuth,
+  requireOwnership('character'),
+  chatRateLimiter,
+  characterRateLimiter,
+  checkUserBudget,
+  async (req, res) => {
+    try {
+      const result = await characterChatService.chat({
+        characterId: req.params.id,
+        user: req.user,
+        payload: {
+          message: req.body.message,
+          conversationId: req.body.conversationId,
+          locale: req.body.locale
+        },
+        requestMeta: {
+          requestUrl: req.aiRequestUrl || req.originalUrl
+        }
+      });
+
+      res.json(result);
+    } catch (error) {
+      handleCharacterChatError(res, error);
+    }
+  }
+);
+
+router.post(
+  '/:id/chat/stream',
+  requireAuth,
+  requireOwnership('character'),
+  chatRateLimiter,
+  characterRateLimiter,
+  checkUserBudget,
+  async (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    try {
+      const context = await characterChatService.prepareStream({
+        characterId: req.params.id,
+        user: req.user,
+        payload: {
+          message: req.body.message,
+          conversationId: req.body.conversationId,
+          locale: req.body.locale
+        },
+        requestMeta: {
+          requestUrl: req.aiRequestUrl || req.originalUrl
+        }
+      });
+
+      res.write(
+        `data: ${JSON.stringify({
+          type: 'connected',
+          conversationId: context.conversation.id,
+          characterName: context.character.name,
+          characterAvatar: context.character.avatar
+        })}\n\n`
+      );
+
+      let fullResponse = '';
+
+      for await (const chunk of context.stream) {
+        const choice = chunk.choices?.[0];
+        if (choice?.delta?.content) {
+          fullResponse += choice.delta.content;
+          res.write(
+            `data: ${JSON.stringify({
+              type: 'chunk',
+              content: choice.delta.content,
+              conversationId: context.conversation.id,
+              characterName: context.character.name,
+              characterAvatar: context.character.avatar
+            })}\n\n`
+          );
+        }
+
+        if (choice?.finish_reason) {
+          res.write(
+            `data: ${JSON.stringify({
+              type: 'finish',
+              reason: choice.finish_reason
+            })}\n\n`
+          );
+        }
+      }
+
+      await characterChatService.saveAssistantMessage(
+        context.conversation.id,
+        fullResponse,
+        context.character,
+        { locale: context.locale }
+      );
+
+      res.write('data: {"type":"done"}\n\n');
+    } catch (error) {
+      console.error('Streaming character chat failed:', error);
+      sendStreamError(res, error);
+    } finally {
+      res.end();
+    }
+  }
+);
+
+function handleCharacterChatError(res, error) {
+  const statusCode = error.statusCode || 500;
+  const isClientError = statusCode >= 400 && statusCode < 500;
+
+  res.status(statusCode).json({
+    error: 'Character chat failed',
+    message: isClientError
+      ? error.message
+      : process.env.NODE_ENV === 'development'
+        ? error.message
+        : 'Chat service temporarily unavailable'
+  });
+}
+
+function sendStreamError(res, error) {
+  const statusCode = error.statusCode || 500;
+  const payload = {
+    type: 'error',
+    message:
+      statusCode >= 400 && statusCode < 500
+        ? error.message
+        : process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Character chat streaming error'
+  };
+  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+}
 
 module.exports = router;

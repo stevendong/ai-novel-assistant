@@ -21,6 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.890.0",
     "@aws-sdk/s3-request-presigner": "^3.891.0",
+    "@dqbd/tiktoken": "^1.0.22",
     "@prisma/client": "^5.22.0",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.2",
@@ -40,6 +41,7 @@
     "markdown-it": "^14.1.0",
     "mem0ai": "^2.1.38",
     "multer": "^1.4.5-lts.1",
+    "node-cache": "^5.1.2",
     "openai": "^4.20.0",
     "pngjs": "^7.0.0",
     "prisma": "^5.6.0",
