@@ -201,7 +201,7 @@ defineExpose({
 }
 
 .input-wrapper:focus-within {
-  border-color: #1890ff;
+  border-color: #1488CC;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
 }
 
@@ -309,7 +309,7 @@ defineExpose({
 }
 
 .dark .input-wrapper:focus-within {
-  border-color: #1890ff;
+  border-color: #1488CC;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3);
 }
 </style>

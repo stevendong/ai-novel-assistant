@@ -662,7 +662,7 @@ watch(() => props.currentStatus, async () => {
 }
 
 .timeline-dot-user {
-  background: linear-gradient(135deg, #1890ff, #40a9ff);
+  background: linear-gradient(135deg, #1488CC, #1488CC);
   box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
 }
 

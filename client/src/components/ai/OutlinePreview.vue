@@ -421,7 +421,7 @@ const generateOutlineText = () => {
 .outline-title {
   font-size: 24px;
   font-weight: 600;
-  color: #1890ff;
+  color: #1488CC;
   margin-bottom: 12px;
 }
 
@@ -466,7 +466,7 @@ const generateOutlineText = () => {
 }
 
 .detail-item strong {
-  color: #1890ff;
+  color: #1488CC;
   display: inline-block;
   width: 80px;
   font-size: 13px;
@@ -477,7 +477,7 @@ const generateOutlineText = () => {
 }
 
 .themes strong {
-  color: #722ed1;
+  color: #2B32B2;
   margin-right: 8px;
 }
 
@@ -502,7 +502,7 @@ const generateOutlineText = () => {
   top: 60px;
   bottom: -16px;
   width: 2px;
-  background: linear-gradient(to bottom, #1890ff, #f0f0f0);
+  background: linear-gradient(to bottom, #1488CC, #f0f0f0);
 }
 
 .chapter-header {
@@ -524,7 +524,7 @@ const generateOutlineText = () => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #1890ff;
+  background: #1488CC;
   color: white;
   display: flex;
   align-items: center;
@@ -559,7 +559,7 @@ const generateOutlineText = () => {
 }
 
 .emotional-tone {
-  color: #722ed1;
+  color: #2B32B2;
   font-style: italic;
 }
 
@@ -584,7 +584,7 @@ const generateOutlineText = () => {
 
 .plot-points-title {
   font-weight: 500;
-  color: #1890ff;
+  color: #1488CC;
   margin-bottom: 8px;
   font-size: 13px;
 }
@@ -602,7 +602,7 @@ const generateOutlineText = () => {
 }
 
 .point-type {
-  background: #1890ff;
+  background: #1488CC;
   color: white;
   padding: 2px 8px;
   border-radius: 4px;
@@ -633,7 +633,7 @@ const generateOutlineText = () => {
 }
 
 .element-icon {
-  color: #1890ff;
+  color: #1488CC;
   margin-top: 2px;
 }
 
@@ -660,7 +660,7 @@ const generateOutlineText = () => {
   background: var(--theme-bg-container);
   padding: 6px 12px;
   border-radius: 6px;
-  border-left: 3px solid #1890ff;
+  border-left: 3px solid #1488CC;
   font-size: 12px;
   line-height: 1.4;
 }

@@ -71,7 +71,7 @@
                 <a-badge
                   :count="getCategoryCount(categoryInfo.key)"
                   :number-style="{
-                    backgroundColor: currentCategory === categoryInfo.key ? '#1890ff' : undefined,
+                    backgroundColor: currentCategory === categoryInfo.key ? '#1488CC' : undefined,
                     fontSize: '11px',
                     height: '18px',
                     minWidth: '18px',
@@ -1728,7 +1728,7 @@ onMounted(() => {
 }
 
 .category-card--active {
-  border-color: #1890ff;
+  border-color: #1488CC;
   background: var(--bg-selected);
   box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
 }
@@ -1773,13 +1773,13 @@ onMounted(() => {
 
 .category-card .ant-btn-text:hover {
   background: rgba(24, 144, 255, 0.1);
-  color: #1890ff;
+  color: #1488CC;
   border: none;
 }
 
 .dark .category-card .ant-btn-text:hover {
   background: rgba(24, 144, 255, 0.15);
-  color: #40a9ff;
+  color: #1488CC;
 }
 
 /* Selection border effect */
@@ -1790,7 +1790,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  border: 2px solid #1890ff;
+  border: 2px solid #1488CC;
   border-radius: 8px;
   pointer-events: none;
   opacity: 0.6;
@@ -1810,7 +1810,7 @@ onMounted(() => {
 }
 
 .category-card--active .ant-badge-count {
-  background: #1890ff !important;
+  background: #1488CC !important;
   color: white !important;
   border: none !important;
 }
@@ -1860,7 +1860,7 @@ onMounted(() => {
   }
 
   .category-card--active {
-    border-color: #1890ff;
+    border-color: #1488CC;
     border-width: 3px;
   }
 }

@@ -415,11 +415,11 @@ watch(() => props.visible, (newVal) => {
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    border-color: #1890ff;
+    border-color: #1488CC;
   }
 
   &.selected {
-    border-color: #1890ff;
+    border-color: #1488CC;
     background: #e6f7ff;
 
     .selected-mark {
@@ -482,7 +482,7 @@ watch(() => props.visible, (newVal) => {
     justify-content: center;
     width: 28px;
     height: 28px;
-    background: #1890ff;
+    background: #1488CC;
     border-radius: 50%;
     color: white;
     font-size: 16px;

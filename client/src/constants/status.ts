@@ -68,8 +68,8 @@ const CHAPTER_STATUS_I18N_KEY: Record<ChapterStatus, string> = {
 export const NOVEL_STATUS_COLOR: Record<NovelStatus, string> = {
   [NovelStatus.CONCEPT]: '#8c8c8c',
   [NovelStatus.DRAFT]: '#d4b106',
-  [NovelStatus.PLANNING]: '#722ed1',
-  [NovelStatus.WRITING]: '#1890ff',
+  [NovelStatus.PLANNING]: '#2B32B2',
+  [NovelStatus.WRITING]: '#1488CC',
   [NovelStatus.EDITING]: '#fa8c16',
   [NovelStatus.COMPLETED]: '#52c41a',
   [NovelStatus.PUBLISHED]: '#13c2c2'
@@ -79,8 +79,8 @@ export const NOVEL_STATUS_COLOR: Record<NovelStatus, string> = {
 export const CHAPTER_STATUS_COLOR: Record<ChapterStatus, string> = {
   [ChapterStatus.PLANNING]: '#8c8c8c',
   [ChapterStatus.OUTLINED]: '#d4b106',
-  [ChapterStatus.WRITING]: '#1890ff',
-  [ChapterStatus.REVIEWING]: '#722ed1',
+  [ChapterStatus.WRITING]: '#1488CC',
+  [ChapterStatus.REVIEWING]: '#2B32B2',
   [ChapterStatus.EDITING]: '#fa8c16',
   [ChapterStatus.COMPLETED]: '#52c41a'
 }

@@ -6,7 +6,7 @@
           <a-statistic
             :title="t('aiLogs.stats.totalCallsLabel')"
             :value="stats.totalCalls || 0"
-            :value-style="{ color: '#1890ff' }"
+            :value-style="{ color: '#1488CC' }"
           >
             <template #prefix>
               <ApiOutlined />
@@ -60,7 +60,7 @@
             :title="t('aiLogs.stats.avgLatencyLabel')"
             :value="Math.round(stats.avgLatency || 0)"
             suffix="ms"
-            :value-style="{ color: '#722ed1' }"
+            :value-style="{ color: '#2B32B2' }"
           >
             <template #prefix>
               <ClockCircleOutlined />

@@ -160,7 +160,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   color: white;
   font-size: 13px;
   font-weight: 600;
@@ -201,7 +201,7 @@ onMounted(() => {
 
 .suggestion-item.selected {
   background: linear-gradient(90deg, #f0f3ff 0%, #f5f7ff 100%);
-  border-left: 3px solid #667eea;
+  border-left: 3px solid #2B32B2;
 }
 
 /* 序号 */
@@ -213,14 +213,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: #e8eaff;
-  color: #667eea;
+  color: #2B32B2;
   border-radius: 50%;
   font-size: 12px;
   font-weight: 600;
 }
 
 .suggestion-item.selected .item-number {
-  background: #667eea;
+  background: #2B32B2;
   color: white;
 }
 

@@ -1354,7 +1354,7 @@ onMounted(() => {
         color: #fff;
 
         &.total {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
         }
 
         &.worldbook {
@@ -1478,7 +1478,7 @@ onMounted(() => {
         &:hover {
           transform: translateY(-4px);
           box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-          border-color: #1890ff;
+          border-color: #1488CC;
 
           .file-actions {
             opacity: 1;
@@ -1487,7 +1487,7 @@ onMounted(() => {
         }
 
         &.selected {
-          border-color: #1890ff;
+          border-color: #1488CC;
           background: var(--theme-selected-bg);
         }
 
@@ -1554,7 +1554,7 @@ onMounted(() => {
 
           .file-novel {
             font-size: 12px;
-            color: #1890ff;
+            color: #1488CC;
             margin-bottom: 4px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1621,7 +1621,7 @@ onMounted(() => {
           min-width: 0;
 
           .file-link {
-            color: #1890ff;
+            color: #1488CC;
             font-weight: 500;
             display: block;
             overflow: hidden;
@@ -1665,7 +1665,7 @@ onMounted(() => {
       }
 
       .novel-tag {
-        color: #1890ff;
+        color: #1488CC;
         font-size: 13px;
       }
 
@@ -1693,7 +1693,7 @@ onMounted(() => {
 
     .upload-icon {
       font-size: 48px;
-      color: #1890ff;
+      color: #1488CC;
     }
 
     .upload-text {
@@ -1767,7 +1767,7 @@ onMounted(() => {
       margin-bottom: 0;
 
       .link-text {
-        color: #1890ff;
+        color: #1488CC;
         word-break: break-all;
       }
     }

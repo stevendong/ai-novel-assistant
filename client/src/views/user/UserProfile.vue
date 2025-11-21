@@ -501,7 +501,7 @@ onMounted(() => {
 
 .strength-1 { background-color: #ff4d4f; }
 .strength-2 { background-color: #faad14; }
-.strength-3 { background-color: #1890ff; }
+.strength-3 { background-color: #1488CC; }
 .strength-4 { background-color: #52c41a; }
 
 .strength-text {

@@ -1028,7 +1028,7 @@ const handleStatusFilterChange = () => {
 
 .stat-value {
   font-weight: 600;
-  color: #1890ff;
+  color: #1488CC;
 }
 
 /* 时间单元格 */

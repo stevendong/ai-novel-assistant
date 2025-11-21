@@ -103,7 +103,7 @@ function updateChart() {
         type: 'bar',
         data: calls,
         itemStyle: {
-          color: '#1890ff'
+          color: '#1488CC'
         }
       },
       {

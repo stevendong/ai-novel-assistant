@@ -241,7 +241,7 @@ function handleCopy() {
   padding: 2px 8px;
   background: var(--theme-bg-elevated, #fafafa);
   border-radius: 3px;
-  color: #1890ff;
+  color: #1488CC;
   transition: background-color 0.3s ease;
 }
 
@@ -260,7 +260,7 @@ function handleCopy() {
 }
 
 .latency-normal {
-  color: #1890ff;
+  color: #1488CC;
   font-weight: 600;
 }
 

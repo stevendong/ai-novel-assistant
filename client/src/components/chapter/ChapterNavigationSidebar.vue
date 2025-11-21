@@ -109,8 +109,8 @@
             :percent="getProgress(chapter)"
             :show-info="false"
             :stroke-color="{
-              '0%': '#667eea',
-              '100%': '#764ba2'
+              '0%': '#2B32B2',
+              '100%': '#2B32B2'
             }"
             size="small"
           />
@@ -539,8 +539,8 @@ defineExpose({
    ============================================ */
 .chapter-nav-sidebar {
   /* 品牌色 - 亮色模式 */
-  --brand-primary: #1890ff;
-  --brand-primary-hover: #40a9ff;
+  --brand-primary: #1488CC;
+  --brand-primary-hover: #1488CC;
   --brand-primary-active: #096dd9;
 
   /* 交互状态 - 亮色模式 */
@@ -577,8 +577,8 @@ defineExpose({
 @media (prefers-color-scheme: dark) {
   .chapter-nav-sidebar {
     /* 品牌色 - 暗色模式 */
-    --brand-primary: #4096ff;
-    --brand-primary-hover: #69b1ff;
+    --brand-primary: #1488CC;
+    --brand-primary-hover: #1488CC;
     --brand-primary-active: #1677ff;
 
     /* 交互状态 - 暗色模式 */

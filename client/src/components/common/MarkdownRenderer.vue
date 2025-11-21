@@ -246,7 +246,7 @@ onMounted(() => {
 .markdown-content :deep(.markdown-blockquote) {
   margin: 1em 0;
   padding: 0.8em 1.2em;
-  border-left: 4px solid #1890ff;
+  border-left: 4px solid #1488CC;
   background: var(--theme-bg-elevated);
   border-radius: 0 4px 4px 0;
   color: var(--theme-text-secondary);
@@ -372,14 +372,14 @@ onMounted(() => {
 
 /* 链接样式 */
 .markdown-content :deep(a) {
-  color: #1890ff;
+  color: #1488CC;
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: all 0.2s;
 }
 
 .markdown-content :deep(a:hover) {
-  border-bottom-color: #1890ff;
+  border-bottom-color: #1488CC;
 }
 
 /* 分割线 */

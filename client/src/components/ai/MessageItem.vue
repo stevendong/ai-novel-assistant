@@ -303,7 +303,7 @@ const handleTypingSpeedChange = (speed: number) => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
 }
 
 .ai-avatar {
@@ -320,7 +320,7 @@ const handleTypingSpeedChange = (speed: number) => {
 }
 
 .user-message .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   color: white;
 }
 
@@ -390,7 +390,7 @@ const handleTypingSpeedChange = (speed: number) => {
 }
 
 .operation-btn:hover {
-  color: #1890ff;
+  color: #1488CC;
   background: rgba(24, 144, 255, 0.1);
   transform: scale(1.1);
 }
@@ -427,7 +427,7 @@ const handleTypingSpeedChange = (speed: number) => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #1890ff;
+  background: #1488CC;
   animation: streamingDot 1.4s infinite ease-in-out;
 }
 
@@ -464,7 +464,7 @@ const handleTypingSpeedChange = (speed: number) => {
 .followup-label {
   font-size: 12px;
   font-weight: 600;
-  color: #1890ff;
+  color: #1488CC;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -498,7 +498,7 @@ const handleTypingSpeedChange = (speed: number) => {
   text-align: left;
   padding: 6px 12px;
   font-size: 13px;
-  color: #1890ff;
+  color: #1488CC;
   border-radius: 6px;
   transition: all 0.2s ease;
   justify-content: flex-start;
@@ -529,8 +529,8 @@ const handleTypingSpeedChange = (speed: number) => {
 }
 
 .action-btn-small:hover {
-  color: #1890ff;
-  border-color: #1890ff;
+  color: #1488CC;
+  border-color: #1488CC;
   background: rgba(24, 144, 255, 0.05);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);

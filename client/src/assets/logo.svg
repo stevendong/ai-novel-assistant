@@ -3,7 +3,7 @@
   <!-- 书本主体 -->
   <g transform="translate(24, 24)">
     <path d="M-12 -8 L-12 8 Q-12 10 -10 10 L10 10 Q12 10 12 8 L12 -8 Q12 -10 10 -10 L-10 -10 Q-12 -10 -12 -8 Z"
-          fill="#1890ff"
+          fill="#1488CC"
           stroke="#096dd9"
           stroke-width="1.5"/>
 

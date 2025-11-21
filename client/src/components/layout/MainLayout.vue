@@ -557,7 +557,7 @@ const formatDate = (dateString: string) => {
 }
 
 .menu-toggle-btn:hover {
-  color: #1890ff;
+  color: #1488CC;
   background-color: rgba(24, 144, 255, 0.1);
   border-color: rgba(24, 144, 255, 0.2);
   transform: translateY(-1px) rotate(2deg);
@@ -664,7 +664,7 @@ const formatDate = (dateString: string) => {
 }
 
 .project-select :deep(.ant-select-selector):hover {
-  border-color: #1890ff;
+  border-color: #1488CC;
 }
 
 .project-select :deep(.ant-select-arrow) {
@@ -687,7 +687,7 @@ const formatDate = (dateString: string) => {
 }
 
 .project-option:hover .project-name {
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .project-avatar {
@@ -748,7 +748,7 @@ const formatDate = (dateString: string) => {
 }
 
 .header-action-btn:hover {
-  color: #1890ff;
+  color: #1488CC;
   background-color: rgba(24, 144, 255, 0.08);
   border-color: rgba(24, 144, 255, 0.2);
   transform: translateY(-1px);
@@ -773,7 +773,7 @@ const formatDate = (dateString: string) => {
 }
 
 .header-action-btn.active {
-  color: #1890ff;
+  color: #1488CC;
   background-color: rgba(24, 144, 255, 0.12);
   border-color: rgba(24, 144, 255, 0.3);
   box-shadow:
@@ -1205,12 +1205,12 @@ const formatDate = (dateString: string) => {
 
 /* 悬停状态指示 */
 .user-menu:hover .username {
-  color: #1890ff;
+  color: #1488CC;
   transform: translateX(2px);
 }
 
 .user-menu:hover .dropdown-icon {
-  color: #1890ff;
+  color: #1488CC;
   transform: rotate(180deg) scale(1.1);
 }
 
@@ -1241,7 +1241,7 @@ const formatDate = (dateString: string) => {
 
 .user-menu:hover .dropdown-icon {
   transform: rotate(180deg) scale(1.1);
-  color: #1890ff;
+  color: #1488CC;
 }
 
 /* 暗黑模式适配 */
@@ -1254,7 +1254,7 @@ const formatDate = (dateString: string) => {
 }
 
 .user-avatar {
-  background: #1890ff;
+  background: #1488CC;
 }
 
 .username {
@@ -1368,7 +1368,7 @@ const formatDate = (dateString: string) => {
 
 .user-dropdown-menu :deep(.ant-dropdown-menu-item):hover .anticon {
   transform: scale(1.1);
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .user-dropdown-menu :deep(.ant-menu-item-divider) {
@@ -1397,7 +1397,7 @@ const formatDate = (dateString: string) => {
 }
 
 .dark .user-dropdown-menu :deep(.ant-dropdown-menu-item):hover .anticon {
-  color: #4096ff;
+  color: #1488CC;
 }
 
 /* Main Content */
@@ -1471,7 +1471,7 @@ const formatDate = (dateString: string) => {
 }
 
 .ai-panel-title :deep(.anticon) {
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .close-btn {

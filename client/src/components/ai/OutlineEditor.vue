@@ -565,7 +565,7 @@ onMounted(() => {
 
 .chapter-number {
   font-weight: 600;
-  color: #1890ff;
+  color: #1488CC;
   min-width: 60px;
   font-size: 14px;
 }

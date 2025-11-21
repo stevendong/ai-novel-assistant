@@ -118,7 +118,7 @@ function updateChart() {
         yAxisIndex: 0,
         data: calls,
         itemStyle: {
-          color: '#1890ff'
+          color: '#1488CC'
         }
       },
       {

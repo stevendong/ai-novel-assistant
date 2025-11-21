@@ -650,7 +650,7 @@ defineExpose({
   position: relative;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #1890ff 0%, #74b4ff 100%);
+  background: linear-gradient(90deg, #1488CC 0%, #1488CC 100%);
   transition: width 0.3s ease;
 }
 
@@ -702,7 +702,7 @@ defineExpose({
 }
 
 .milestone.active .milestone-dot {
-  background: #1890ff;
+  background: #1488CC;
   box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.15);
 }
 

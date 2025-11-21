@@ -453,7 +453,7 @@ defineExpose({
 }
 
 .status-value.highlight {
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .status-value.time {

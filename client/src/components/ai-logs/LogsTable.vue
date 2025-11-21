@@ -278,7 +278,7 @@ function handleDetail(record) {
   padding: 2px 6px;
   background: var(--theme-bg-elevated, #f5f5f5);
   border-radius: 3px;
-  color: #1890ff;
+  color: #1488CC;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
@@ -329,7 +329,7 @@ function handleDetail(record) {
 }
 
 .latency-normal {
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .latency-slow {

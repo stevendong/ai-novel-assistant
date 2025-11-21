@@ -173,12 +173,12 @@ const getModeIcon = (mode: string) => {
 // 获取模式颜色
 const getModeColor = (mode: string) => {
   const colors: Record<string, string> = {
-    chat: '#1890ff',
+    chat: '#1488CC',
     enhance: '#52c41a',
     check: '#faad14',
-    outline: '#722ed1'
+    outline: '#2B32B2'
   }
-  return colors[mode] || '#1890ff'
+  return colors[mode] || '#1488CC'
 }
 
 // 处理切换会话
@@ -403,7 +403,7 @@ const handleDeleteSession = (sessionId: string) => {
 }
 
 .session-item.is-active .session-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   border-color: transparent;
   box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
 }
@@ -415,7 +415,7 @@ const handleDeleteSession = (sessionId: string) => {
   top: 0;
   bottom: 0;
   width: 0;
-  background: linear-gradient(135deg, #1890ff 0%, #722ed1 100%);
+  background: linear-gradient(135deg, #1488CC 0%, #2B32B2 100%);
   transition: width 0.3s ease;
 }
 

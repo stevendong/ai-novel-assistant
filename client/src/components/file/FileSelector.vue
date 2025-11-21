@@ -250,7 +250,7 @@ const handleRemove = () => {
       transition: all 0.3s;
 
       &:hover {
-        border-color: #1890ff;
+        border-color: #1488CC;
 
         .preview-mask {
           opacity: 1;
@@ -292,7 +292,7 @@ const handleRemove = () => {
           cursor: pointer;
 
           &:hover {
-            color: #1890ff;
+            color: #1488CC;
           }
         }
       }
@@ -312,7 +312,7 @@ const handleRemove = () => {
       transition: all 0.3s;
 
       &:hover {
-        border-color: #1890ff;
+        border-color: #1488CC;
         background: var(--theme-bg-elevated);
 
         .remove-icon {
@@ -378,10 +378,10 @@ const handleRemove = () => {
     transition: all 0.3s;
 
     &:hover {
-      border-color: #1890ff;
+      border-color: #1488CC;
 
       .plus-icon {
-        color: #1890ff;
+        color: #1488CC;
       }
     }
 
@@ -411,7 +411,7 @@ const handleRemove = () => {
     transition: all 0.3s;
 
     &:hover {
-      border-color: #1890ff;
+      border-color: #1488CC;
     }
 
     .empty-content {

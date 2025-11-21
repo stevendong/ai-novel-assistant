@@ -2,9 +2,9 @@
   <!-- 定义渐变色 -->
   <defs>
     <linearGradient id="aiBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1890ff;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#40a9ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#69c0ff;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#1488CC;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1488CC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1488CC;stop-opacity:1" />
     </linearGradient>
 
     <linearGradient id="centerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -39,7 +39,7 @@
   <!-- 外发光效果 -->
   <path d="M12 2L14.09 8.26L20 10L14.09 11.74L12 18L9.91 11.74L4 10L9.91 8.26L12 2Z"
         fill="none"
-        stroke="#1890ff"
+        stroke="#1488CC"
         stroke-width="0.3"
         stroke-linejoin="round"
         opacity="0.4"
@@ -48,11 +48,11 @@
 
   <!-- 左上角小四角星 -->
   <path d="M7 5L7.8 6.2L9 6.5L7.8 6.8L7 8L6.2 6.8L5 6.5L6.2 6.2L7 5Z"
-        fill="#40a9ff"
+        fill="#1488CC"
         opacity="0.7"/>
 
   <!-- 右下角小四角星 -->
   <path d="M17 14L17.8 15.2L19 15.5L17.8 15.8L17 17L16.2 15.8L15 15.5L16.2 15.2L17 14Z"
-        fill="#69c0ff"
+        fill="#1488CC"
         opacity="0.6"/>
 </svg>

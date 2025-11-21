@@ -706,7 +706,7 @@ defineExpose({
 .generating-indicator {
   position: relative;
   padding: 20px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   border-radius: 12px;
   color: white;
   margin-bottom: 16px;

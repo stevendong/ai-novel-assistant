@@ -285,12 +285,12 @@ const typeStats = computed(() => {
 // 获取设定类型颜色
 const getSettingTypeColor = (type: string): string => {
   const colors: Record<string, string> = {
-    'worldview': '#1890ff',
+    'worldview': '#1488CC',
     'location': '#52c41a',
     'rule': '#faad14',
-    'culture': '#722ed1'
+    'culture': '#2B32B2'
   }
-  return colors[type] || '#1890ff'
+  return colors[type] || '#1488CC'
 }
 
 // 获取设定类型图标

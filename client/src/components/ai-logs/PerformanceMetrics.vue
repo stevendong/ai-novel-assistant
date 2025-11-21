@@ -174,7 +174,7 @@ function updateChart() {
           color: (params) => {
             const value = params.value;
             if (value < 1000) return '#52c41a';
-            if (value < 3000) return '#1890ff';
+            if (value < 3000) return '#1488CC';
             return '#ff4d4f';
           }
         }
@@ -256,7 +256,7 @@ function formatNumber(num) {
 }
 
 .latency-normal {
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .latency-slow {
@@ -330,7 +330,7 @@ function formatNumber(num) {
 }
 
 .rating-b {
-  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+  background: linear-gradient(135deg, #1488CC 0%, #1488CC 100%);
 }
 
 .rating-c {

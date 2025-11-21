@@ -46,12 +46,12 @@
 
   /* 选中状态主题变量 */
   --theme-selected-bg: #e6f7ff;
-  --theme-selected-border: #91d5ff;
-  --theme-selected-hover-bg: #bae7ff;
+  --theme-selected-border: #1488CC;
+  --theme-selected-hover-bg: #1488CC;
 
   /* 图标背景主题变量 */
   --theme-icon-bg: #e6f7ff;
-  --theme-icon-text: #1890ff;
+  --theme-icon-text: #1488CC;
 
   /* 编辑器主题变量 */
   --theme-editor-bg: #ffffff;
@@ -59,7 +59,7 @@
   --theme-editor-toolbar: #fafafa;
   --theme-editor-border: #e8e8e8;
   --theme-editor-preview: #f9f9f9;
-  --theme-chapter-avatar: #1890ff;
+  --theme-chapter-avatar: #1488CC;
   --theme-warning-text: #ff6b35;
 
   /* 编辑器内容样式变量 */
@@ -67,8 +67,8 @@
   --theme-editor-placeholder: #bbbbbb;
   --theme-editor-dialogue: #2c5aa0;
   --theme-editor-scene: #999999;
-  --theme-editor-thought: #7b68ee;
-  --theme-editor-active-btn: #1890ff;
+  --theme-editor-thought: #2B32B2;
+  --theme-editor-active-btn: #1488CC;
   --theme-editor-secondary-text: #666666;
   --theme-editor-unsaved: #ff6b6b;
 
@@ -85,7 +85,7 @@
   --theme-consistency-low-bg: #f6ffed;
   --theme-consistency-low-border: #b7eb8f;
   --theme-consistency-low-text: #52c41a;
-  --theme-consistency-link: #1890ff;
+  --theme-consistency-link: #1488CC;
 
   /* AI增强结果主题变量 */
   --theme-ai-enhance-bg: #eff6ff;
@@ -285,7 +285,7 @@
 
     /* 图标背景主题变量 */
     --theme-icon-bg: #111b26;
-    --theme-icon-text: #4096ff;
+    --theme-icon-text: #1488CC;
 
     /* 编辑器主题变量 */
     --theme-editor-bg: #1f1f1f;
@@ -293,16 +293,16 @@
     --theme-editor-toolbar: #262626;
     --theme-editor-border: #434343;
     --theme-editor-preview: #141414;
-    --theme-chapter-avatar: #4096ff;
+    --theme-chapter-avatar: #1488CC;
     --theme-warning-text: #ff7875;
 
     /* 编辑器内容样式变量 */
     --theme-editor-focus-bg: #262626;
     --theme-editor-placeholder: #8c8c8c;
-    --theme-editor-dialogue: #91caff;
+    --theme-editor-dialogue: #1488CC;
     --theme-editor-scene: #bfbfbf;
-    --theme-editor-thought: #b37feb;
-    --theme-editor-active-btn: #4096ff;
+    --theme-editor-thought: #2B32B2;
+    --theme-editor-active-btn: #1488CC;
     --theme-editor-secondary-text: #a6a6a6;
     --theme-editor-unsaved: #ff7875;
 
@@ -319,7 +319,7 @@
     --theme-consistency-low-bg: #162312;
     --theme-consistency-low-border: #274916;
     --theme-consistency-low-text: #73d13d;
-    --theme-consistency-link: #4096ff;
+    --theme-consistency-link: #1488CC;
 
     /* AI增强结果主题变量 - 暗色模式 */
     --theme-ai-enhance-bg: #0f172a;

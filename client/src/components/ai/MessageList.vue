@@ -191,7 +191,7 @@ defineExpose({
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   border-radius: 12px;
   font-size: 24px;
   color: white;

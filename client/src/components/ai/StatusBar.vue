@@ -254,7 +254,7 @@ const maximizeTooltip = computed(() =>
 }
 
 .float-toggle-container:hover .toggle-icon {
-  color: #1890ff;
+  color: #1488CC;
   transform: scale(1.1);
 }
 
@@ -273,7 +273,7 @@ const maximizeTooltip = computed(() =>
 }
 
 .indicator-dot.active {
-  background: #1890ff;
+  background: #1488CC;
   box-shadow: 0 0 6px rgba(24, 144, 255, 0.5);
 }
 

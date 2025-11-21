@@ -924,7 +924,7 @@ defineExpose({
 }
 
 .title-icon {
-  color: #1890ff;
+  color: #1488CC;
   font-size: 18px;
 }
 

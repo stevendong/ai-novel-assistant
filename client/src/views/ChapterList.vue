@@ -724,7 +724,7 @@ const handleStatusFilter = (value: string) => {
 }
 
 .page-title .anticon {
-  color: #1890ff;
+  color: #1488CC;
   font-size: 22px;
 }
 

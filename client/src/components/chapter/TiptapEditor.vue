@@ -387,7 +387,7 @@ onBeforeUnmount(() => {
 
 .editor-toolbar :deep(.is-active) {
   background: #e6f7ff;
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .editor-wrapper {
@@ -469,7 +469,7 @@ onBeforeUnmount(() => {
 }
 
 .editor-content :deep(.ProseMirror blockquote) {
-  border-left: 3px solid #1890ff;
+  border-left: 3px solid #1488CC;
   padding-left: 1em;
   margin: 1em 0;
   color: var(--theme-text-secondary);
@@ -545,7 +545,7 @@ onBeforeUnmount(() => {
 }
 
 .ai-icon {
-  color: #667eea;
+  color: #2B32B2;
   font-size: 14px;
 }
 
@@ -576,7 +576,7 @@ onBeforeUnmount(() => {
 
 :deep(.dark) .editor-toolbar .is-active {
   background: #1f1f1f;
-  color: #1890ff;
+  color: #1488CC;
 }
 
 :deep(.dark) .ai-hint {

@@ -19,7 +19,7 @@ export const useThemeStore = defineStore('theme', () => {
       return {
         algorithm: theme.darkAlgorithm,
         token: {
-          colorPrimary: '#1890ff',
+          colorPrimary: '#1488CC',
           colorBgBase: '#141414',
           colorBgContainer: '#1f1f1f',
           colorBgElevated: '#262626',
@@ -33,7 +33,7 @@ export const useThemeStore = defineStore('theme', () => {
       return {
         algorithm: theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#1890ff',
+          colorPrimary: '#1488CC',
           colorBgBase: '#ffffff',
           colorBgContainer: '#ffffff',
           colorBgElevated: '#fafafa',
@@ -141,22 +141,22 @@ export const useThemeStore = defineStore('theme', () => {
       html.style.setProperty('--theme-selected-hover-bg', '#234a63')
       // 图标背景变量 - 暗黑模式
       html.style.setProperty('--theme-icon-bg', '#1a3a52')
-      html.style.setProperty('--theme-icon-text', '#4db8ff')
+      html.style.setProperty('--theme-icon-text', '#1488CC')
       // 编辑器变量 - 暗黑模式
       html.style.setProperty('--theme-editor-bg', '#1f1f1f')
       html.style.setProperty('--theme-editor-text', 'rgba(255, 255, 255, 0.85)')
       html.style.setProperty('--theme-editor-toolbar', '#262626')
       html.style.setProperty('--theme-editor-border', '#303030')
       html.style.setProperty('--theme-editor-preview', '#1a1a1a')
-      html.style.setProperty('--theme-chapter-avatar', '#4db8ff')
+      html.style.setProperty('--theme-chapter-avatar', '#1488CC')
       html.style.setProperty('--theme-warning-text', '#ff9a3c')
       // 编辑器内容样式变量 - 暗黑模式
       html.style.setProperty('--theme-editor-focus-bg', '#252525')
       html.style.setProperty('--theme-editor-placeholder', 'rgba(255, 255, 255, 0.35)')
-      html.style.setProperty('--theme-editor-dialogue', '#6bb6ff')
+      html.style.setProperty('--theme-editor-dialogue', '#1488CC')
       html.style.setProperty('--theme-editor-scene', 'rgba(255, 255, 255, 0.45)')
-      html.style.setProperty('--theme-editor-thought', '#b19df2')
-      html.style.setProperty('--theme-editor-active-btn', '#4db8ff')
+      html.style.setProperty('--theme-editor-thought', '#2B32B2')
+      html.style.setProperty('--theme-editor-active-btn', '#1488CC')
       html.style.setProperty('--theme-editor-secondary-text', 'rgba(255, 255, 255, 0.55)')
       html.style.setProperty('--theme-editor-unsaved', '#ff7a7a')
       // 一致性检查变量 - 暗黑模式
@@ -172,7 +172,7 @@ export const useThemeStore = defineStore('theme', () => {
       html.style.setProperty('--theme-consistency-low-bg', '#1f3a1f')
       html.style.setProperty('--theme-consistency-low-border', '#2d5c2d')
       html.style.setProperty('--theme-consistency-low-text', '#73d13d')
-      html.style.setProperty('--theme-consistency-link', '#4db8ff')
+      html.style.setProperty('--theme-consistency-link', '#1488CC')
     } else {
       html.classList.add('light')
       html.classList.remove('dark')
@@ -185,26 +185,26 @@ export const useThemeStore = defineStore('theme', () => {
       html.style.setProperty('--theme-text-secondary', 'rgba(0, 0, 0, 0.65)')
       // 选中状态变量 - 亮色模式
       html.style.setProperty('--theme-selected-bg', '#e6f7ff')
-      html.style.setProperty('--theme-selected-border', '#91d5ff')
-      html.style.setProperty('--theme-selected-hover-bg', '#bae7ff')
+      html.style.setProperty('--theme-selected-border', '#1488CC')
+      html.style.setProperty('--theme-selected-hover-bg', '#1488CC')
       // 图标背景变量 - 亮色模式
       html.style.setProperty('--theme-icon-bg', '#e6f7ff')
-      html.style.setProperty('--theme-icon-text', '#1890ff')
+      html.style.setProperty('--theme-icon-text', '#1488CC')
       // 编辑器变量 - 亮色模式
       html.style.setProperty('--theme-editor-bg', '#ffffff')
       html.style.setProperty('--theme-editor-text', '#333333')
       html.style.setProperty('--theme-editor-toolbar', '#fafafa')
       html.style.setProperty('--theme-editor-border', '#e8e8e8')
       html.style.setProperty('--theme-editor-preview', '#f9f9f9')
-      html.style.setProperty('--theme-chapter-avatar', '#1890ff')
+      html.style.setProperty('--theme-chapter-avatar', '#1488CC')
       html.style.setProperty('--theme-warning-text', '#ff6b35')
       // 编辑器内容样式变量 - 亮色模式
       html.style.setProperty('--theme-editor-focus-bg', '#fefefe')
       html.style.setProperty('--theme-editor-placeholder', '#bbbbbb')
       html.style.setProperty('--theme-editor-dialogue', '#2c5aa0')
       html.style.setProperty('--theme-editor-scene', '#999999')
-      html.style.setProperty('--theme-editor-thought', '#7b68ee')
-      html.style.setProperty('--theme-editor-active-btn', '#1890ff')
+      html.style.setProperty('--theme-editor-thought', '#2B32B2')
+      html.style.setProperty('--theme-editor-active-btn', '#1488CC')
       html.style.setProperty('--theme-editor-secondary-text', '#666666')
       html.style.setProperty('--theme-editor-unsaved', '#ff6b6b')
       // 一致性检查变量 - 亮色模式
@@ -220,7 +220,7 @@ export const useThemeStore = defineStore('theme', () => {
       html.style.setProperty('--theme-consistency-low-bg', '#f6ffed')
       html.style.setProperty('--theme-consistency-low-border', '#b7eb8f')
       html.style.setProperty('--theme-consistency-low-text', '#52c41a')
-      html.style.setProperty('--theme-consistency-link', '#1890ff')
+      html.style.setProperty('--theme-consistency-link', '#1488CC')
     }
   }
   

@@ -479,7 +479,7 @@ onMounted(async () => {
 <style scoped>
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -658,11 +658,11 @@ onMounted(async () => {
 }
 
 .dark :deep(.ant-input-affix-wrapper:hover) {
-  border-color: #4db8ff;
+  border-color: #1488CC;
 }
 
 .dark :deep(.ant-input-affix-wrapper-focused) {
-  border-color: #4db8ff;
+  border-color: #1488CC;
   box-shadow: 0 0 0 2px rgba(77, 184, 255, 0.2);
 }
 
@@ -679,11 +679,11 @@ onMounted(async () => {
 }
 
 .dark :deep(.ant-input:hover) {
-  border-color: #4db8ff;
+  border-color: #1488CC;
 }
 
 .dark :deep(.ant-input:focus) {
-  border-color: #4db8ff;
+  border-color: #1488CC;
   box-shadow: 0 0 0 2px rgba(77, 184, 255, 0.2);
 }
 
@@ -694,7 +694,7 @@ onMounted(async () => {
 
 /* 主按钮 */
 :deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   border: none;
   border-radius: 8px;
   height: 44px;
@@ -708,11 +708,11 @@ onMounted(async () => {
 
 /* 暗黑模式主按钮 */
 .dark :deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, #4db8ff 0%, #1890ff 100%);
+  background: linear-gradient(135deg, #1488CC 0%, #1488CC 100%);
 }
 
 .dark :deep(.ant-btn-primary:hover) {
-  background: linear-gradient(135deg, #73c7ff 0%, #40a9ff 100%);
+  background: linear-gradient(135deg, #1488CC 0%, #1488CC 100%);
 }
 
 .social-login-buttons {
@@ -772,7 +772,7 @@ onMounted(async () => {
 
 /* 链接按钮 */
 :deep(.ant-btn-link) {
-  color: #667eea;
+  color: #2B32B2;
   transition: color 0.3s ease;
 }
 
@@ -781,11 +781,11 @@ onMounted(async () => {
 }
 
 .dark :deep(.ant-btn-link) {
-  color: #4db8ff;
+  color: #1488CC;
 }
 
 .dark :deep(.ant-btn-link:hover) {
-  color: #73c7ff;
+  color: #1488CC;
 }
 
 /* 响应式设计 - 移动端优化 */

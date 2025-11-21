@@ -694,9 +694,9 @@ const getChapterTypeColor = (type) => {
 const getTimelineColor = (type) => {
   const colors = {
     '开篇': '#52c41a',
-    '发展': '#1890ff',
+    '发展': '#1488CC',
     '高潮': '#f5222d',
-    '结局': '#722ed1',
+    '结局': '#2B32B2',
     '过渡': '#fa8c16'
   }
   return colors[type] || '#d9d9d9'
@@ -773,7 +773,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   font-size: 24px;
-  color: #1890ff;
+  color: #1488CC;
   margin-bottom: 8px;
 }
 
@@ -955,12 +955,12 @@ onMounted(() => {
 }
 
 .chapter-card:hover {
-  border-color: #1890ff;
+  border-color: #1488CC;
   box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
 }
 
 .chapter-card.selected {
-  border-color: #1890ff;
+  border-color: #1488CC;
   background: var(--theme-bg-elevated);
 }
 
@@ -1000,7 +1000,7 @@ onMounted(() => {
 }
 
 .point-type {
-  color: #1890ff;
+  color: #1488CC;
   font-weight: 500;
 }
 
@@ -1100,7 +1100,7 @@ onMounted(() => {
 
 .chapter-number {
   font-weight: 600;
-  color: #1890ff;
+  color: #1488CC;
 }
 
 .chapter-type {
@@ -1131,7 +1131,7 @@ onMounted(() => {
 }
 
 .point-badge {
-  background: #1890ff;
+  background: #1488CC;
   color: white;
   padding: 2px 6px;
   border-radius: 4px;
@@ -1191,13 +1191,13 @@ onMounted(() => {
 }
 
 .action-card:hover {
-  border-color: #1890ff;
+  border-color: #1488CC;
   box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
 }
 
 .action-icon {
   font-size: 32px;
-  color: #1890ff;
+  color: #1488CC;
   margin-bottom: 12px;
 }
 

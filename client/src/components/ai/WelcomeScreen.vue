@@ -138,7 +138,7 @@ const handleCreateSession = () => {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   display: flex;
   align-items: center;
   justify-content: center;

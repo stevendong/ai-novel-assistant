@@ -263,7 +263,7 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2B32B2 0%, #2B32B2 100%);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
@@ -401,7 +401,7 @@ defineExpose({
 
 .menu-chapter-item.active {
   background: var(--theme-selected-bg);
-  border-left: 3px solid var(--theme-primary-color, #1890ff);
+  border-left: 3px solid var(--theme-primary-color, #1488CC);
 }
 
 .menu-chapter-number {
@@ -422,7 +422,7 @@ defineExpose({
 
 .menu-chapter-item.active .menu-chapter-title {
   font-weight: 600;
-  color: var(--theme-primary-color, #1890ff);
+  color: var(--theme-primary-color, #1488CC);
 }
 
 .menu-load-more {

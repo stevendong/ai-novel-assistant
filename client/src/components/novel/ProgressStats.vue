@@ -24,7 +24,7 @@
             <a-statistic
               :title="t('progress.metrics.totalWords')"
               :value="totalWords"
-              :value-style="{ color: '#1890ff' }"
+              :value-style="{ color: '#1488CC' }"
             >
               <template #formatter="{ value }">
                 {{ formattedTotalWords }}
@@ -58,7 +58,7 @@
               :title="t('progress.metrics.writingDays')"
               :value="writingDays"
               :suffix="t('progress.metrics.dayUnit')"
-              :value-style="{ color: '#722ed1' }"
+              :value-style="{ color: '#2B32B2' }"
             />
             <div class="metric-subtitle">{{ t('progress.metrics.writingDaysSubtitle') }}</div>
           </a-card>
@@ -253,7 +253,7 @@
                 </div>
                 <a-progress
                   :percent="Math.min((weekWords / weeklyGoal) * 100, 100)"
-                  stroke-color="#1890ff"
+                  stroke-color="#1488CC"
                   :show-info="false"
                 />
               </div>
@@ -267,7 +267,7 @@
                 </div>
                 <a-progress
                   :percent="Math.min((monthWords / monthlyGoal) * 100, 100)"
-                  stroke-color="#722ed1"
+                  stroke-color="#2B32B2"
                   :show-info="false"
                 />
               </div>
@@ -296,7 +296,7 @@
                   </div>
                   <a-progress
                     :percent="overallProgress"
-                    stroke-color="#722ed1"
+                    stroke-color="#2B32B2"
                     trail-color="var(--theme-border)"
                     :stroke-width="8"
                     class="mb-4"
@@ -314,7 +314,7 @@
                     type="circle"
                     :percent="Math.round(overallProgress)"
                     :width="120"
-                    stroke-color="#722ed1"
+                    stroke-color="#2B32B2"
                     :format="percent => `${percent}%`"
                   />
                   <p class="circle-label">{{ t('progress.overall.circleLabel') }}</p>
@@ -1374,7 +1374,7 @@ onMounted(() => {
 }
 
 .metric-card-blue {
-  border-left: 4px solid #1890ff;
+  border-left: 4px solid #1488CC;
 }
 
 .metric-card-green {
@@ -1382,7 +1382,7 @@ onMounted(() => {
 }
 
 .metric-card-purple {
-  border-left: 4px solid #722ed1;
+  border-left: 4px solid #2B32B2;
 }
 
 .metric-card-orange {
@@ -1453,7 +1453,7 @@ onMounted(() => {
 }
 
 .month-label.current-month {
-  color: #1890ff;
+  color: #1488CC;
   font-weight: 600;
   position: relative;
 }
@@ -1466,7 +1466,7 @@ onMounted(() => {
   transform: translateX(-50%);
   width: 8px;
   height: 2px;
-  background: #1890ff;
+  background: #1488CC;
   border-radius: 1px;
 }
 
@@ -1508,7 +1508,7 @@ onMounted(() => {
 
 .activity-day:hover {
   transform: scale(1.1);
-  border: 1px solid #1890ff;
+  border: 1px solid #1488CC;
 }
 
 /* 活跃度等级颜色 - 类似GitHub，支持暗色主题 */
@@ -1608,11 +1608,11 @@ html.dark .achievement-item:hover {
 }
 
 .achievement-week {
-  border-left: 3px solid #1890ff;
+  border-left: 3px solid #1488CC;
 }
 
 .achievement-month {
-  border-left: 3px solid #722ed1;
+  border-left: 3px solid #2B32B2;
 }
 
 .achievement-label {

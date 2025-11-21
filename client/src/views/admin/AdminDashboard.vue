@@ -16,7 +16,7 @@
               :loading="loading"
             >
               <template #prefix>
-                <UserOutlined style="color: #1890ff" />
+                <UserOutlined style="color: #1488CC" />
               </template>
             </a-statistic>
           </a-card>
@@ -55,7 +55,7 @@
               :loading="loading"
             >
               <template #prefix>
-                <PlusOutlined style="color: #722ed1" />
+                <PlusOutlined style="color: #2B32B2" />
               </template>
             </a-statistic>
           </a-card>
